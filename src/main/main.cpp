@@ -1,6 +1,7 @@
 #include "core/allocators.h"
 #include "core/asserts.h"
 #include "core/logs.h"
+#define VC_EXTRALEAN
 #include <windows.h>
 
 
@@ -23,44 +24,11 @@ public:
 
 	void Init()
 	{
-		HINSTANCE hInst = GetModuleHandle(NULL); //handle to current exe module
-		WNDCLASSEX wnd;
-		wnd = {};
-		wnd.cbSize = sizeof(wnd);
-		wnd.style = CS_HREDRAW | CS_VREDRAW; //redraw on horizontal or vertical resize
-		wnd.lpfnWndProc = MsgProc; // message process callback function
-		wnd.hInstance = hInst; // handle to module
-		wnd.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-		wnd.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wnd.lpszClassName = "App";
-		wnd.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-		RegisterClassExA(&wnd);
+		CreateMainWindow();
 
-		RECT rect = { 0, 0, 600, 400 };
-		AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW | WS_VISIBLE, FALSE);
+		RegisterRawInput();
 
-		m_hwnd = CreateWindowA("App",
-			"App",
-			WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-			0,
-			0,
-			rect.right - rect.left,
-			rect.bottom - rect.top,
-			NULL,
-			NULL,
-			hInst,
-			0);
-
-		//if(!m_window_mode) setFullscreenBorderless();
-
-		RAWINPUTDEVICE Rid;
-		Rid.usUsagePage = 0x01;
-		Rid.usUsage = 0x02;
-		Rid.dwFlags = 0;
-		Rid.hwndTarget = 0;
-		RegisterRawInputDevices(&Rid, 1, sizeof(Rid));
-
-		if(m_windowMode)
+		if(!m_windowMode)
 			SetFullscreenBorderless();
 	}
 
@@ -93,6 +61,37 @@ public:
 	int GetExitCode() const { return m_exitCode; }
 
 private:
+	void CreateMainWindow()
+	{
+		HINSTANCE hInst = GetModuleHandle(NULL); //handle to current exe module
+		WNDCLASSEX wnd;
+		wnd = {};
+		wnd.cbSize = sizeof(wnd);
+		wnd.style = CS_HREDRAW | CS_VREDRAW; //redraw on horizontal or vertical resize
+		wnd.lpfnWndProc = MsgProc; // message process callback function
+		wnd.hInstance = hInst; // handle to module
+		wnd.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+		wnd.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wnd.lpszClassName = "App";
+		wnd.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+		RegisterClassExA(&wnd);
+
+		RECT rect = { 0, 0, 600, 400 };
+		AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW | WS_VISIBLE, FALSE);
+
+		m_hwnd = CreateWindowA("App",
+			"App",
+			WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+			0,
+			0,
+			rect.right - rect.left,
+			rect.bottom - rect.top,
+			NULL,
+			NULL,
+			hInst,
+			0);
+	}
+
 	void SetFullscreenBorderless()
 	{
 		HMONITOR hmon = MonitorFromWindow(m_hwnd, MONITOR_DEFAULTTONEAREST);
@@ -130,7 +129,8 @@ private:
 
 		if(RegisterRawInputDevices(Rid, 2, sizeof(Rid[0])) == FALSE)
 		{
-			//DWORD err = GetLastError(); //WHERE I CAN FIND ERROR CODES DESC
+			//DWORD err = GetLastError(); //WHERE CAN I FIND ERROR CODES DESCS ???
+			Veng::LogError("RegisterRawInputDevices failed\n");
 		}
 	}
 
@@ -181,7 +181,6 @@ App* App::s_instance = nullptr;
 
 INT WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, INT)
 {
-	Veng::LogInfo("test %d\n", 1);
 	Veng::App app;
 	app.Init();
 	app.Run();
