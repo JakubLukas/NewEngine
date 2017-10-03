@@ -152,33 +152,37 @@ private:
 			bool pressed = false;
 			unsigned int scancode = raw.data.keyboard.MakeCode; // MakeCode is USHORT
 			unsigned short flags = raw.data.keyboard.Flags;
-			ASSERT(scancode <= MAX_MAKECODE);
+			ASSERT(scancode <= Scancode_PS2_v1::MAX_MAKECODE);
 
 			if((flags & RI_KEY_BREAK) == 0)
 				pressed = true;
 
 			if(flags & RI_KEY_E0)
-				scancode |= SC_E0;
+				scancode |= Scancode_PS2_v1::E0;
 			else if(flags & RI_KEY_E1)
-				scancode |= SC_E1;
+				scancode |= Scancode_PS2_v1::E1;
 
-			if(scancode == SC_PAUSE_PART1) //The pause scancode is in 2 parts: a WM_INPUT with 0xE11D and one WM_INPUT with 0x45
+			if(scancode == Scancode_PS2_v1::PAUSE_PART1) //The pause scancode is in 2 parts: a WM_INPUT with 0xE11D and one WM_INPUT with 0x45
 			{
 				pauseScancodeRead = true;
 			}
 			else if(pauseScancodeRead)
 			{
-				if(scancode == SC_PAUSE_PART2)
-					scancode = sc_pause;
+				if(scancode == Scancode_PS2_v1::PAUSE_PART2)
+					scancode = Scancode_PS2_v1::Pause;
 				pauseScancodeRead = false;
 			}
-			else if(scancode == sc_alt_printScreen) //Alt + print screen return scancode 0x54 but we want it to return 0xE037 because 0x54 will not return a name for the key
+			else if(scancode == Scancode_PS2_v1::AltPrintScreen) //Alt + print screen return scancode 0x54 but we want it to return 0xE037 because 0x54 will not return a name for the key
 			{
-				scancode = sc_printScreen;
+				scancode = Scancode_PS2_v1::PrintScreen;
 			}
 			
 			//some of those a break scancode, so we ignore them
-			if(scancode == SC_PAUSE_PART1 || scancode == SC_IGNORE1 || scancode == SC_IGNORE2 || scancode == SC_IGNORE3 || scancode == SC_IGNORE4)
+			if(scancode == Scancode_PS2_v1::PAUSE_PART1
+				|| scancode == Scancode_PS2_v1::IGNORE1
+				|| scancode == Scancode_PS2_v1::IGNORE2
+				|| scancode == Scancode_PS2_v1::IGNORE3
+				|| scancode == Scancode_PS2_v1::IGNORE4)
 				return;
 
 			// getting a human-readable string
@@ -196,14 +200,14 @@ private:
 			bool e0 = (flags & RI_KEY_E0) != 0;
 			bool e1 = (flags & RI_KEY_E1) != 0;
 
-			// these are unasigned but not reserved as of now.
+			// these are unassigned but not reserved as of now.
 			// this is bad but, you know, we'll fix it if it ever breaks.
 			#define VK_LRETURN         0x9E
 			#define VK_RRETURN         0x9F
 
 			#define UPDATE_KEY_STATE(key) do { keyState[key] = (flags & 1) ? 0 : 0xff; } while(0)
 			// note: we set all bits in the byte if the key is down. 
-			// This is becasue windows expects it to be in the high_order_bit (when using it for converting to unicode for example)
+			// This is because windows expects it to be in the high_order_bit (when using it for converting to unicode for example)
 			// and I like it to be in the low_order_bit,  
 			if(VKey == VK_CONTROL)
 			{
@@ -213,7 +217,7 @@ private:
 			}
 			else if(VKey == VK_SHIFT)
 			{
-				// because why should any api be consistant lol
+				// because why should any api be consistent lol
 				// (because we get different scancodes for l/r-shift but not for l/r ctrl etc... but still)
 				UPDATE_KEY_STATE(MapVirtualKey(raw.data.keyboard.MakeCode, MAPVK_VSC_TO_VK_EX));
 				keyState[VK_SHIFT] = keyState[VK_LSHIFT] | keyState[VK_RSHIFT];
@@ -238,10 +242,6 @@ private:
 
 			if(pressed)
 			{
-				//char utf8_buffer[32];
-				//char *buff = 0;
-				//int utf8_len = 0;
-
 				// get unicode.
 				wchar_t utf16_buffer[16] = { 0 };
 				//simulating altgr, assumes all leftalts is algr
