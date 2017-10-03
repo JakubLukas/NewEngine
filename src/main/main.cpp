@@ -4,7 +4,6 @@
 #include "core/asserts.h"
 #include "core/logs.h"
 #include "core/input/input_win.h"
-typedef unsigned __int64 QWORD;
 
 
 namespace Veng
@@ -113,20 +112,20 @@ private:
 
 	void RegisterRawInput()
 	{
-		const int DEVICE_COUNT = 1;//2;
+		const int DEVICE_COUNT = 2;
 
 		RAWINPUTDEVICE Rid[DEVICE_COUNT];
 
-		/*Rid[0].usUsagePage = 0x01;
+		Rid[0].usUsagePage = 0x01;
 		Rid[0].usUsage = 0x02;
 		Rid[0].dwFlags = RIDEV_NOLEGACY;   // adds HID mouse and also ignores legacy mouse messages
 		//if you want to be notified about WM_INPUT_DEVICE_CHANGE add flag RIDEV_DEVNOTIFY
-		Rid[0].hwndTarget = 0;*/
+		Rid[0].hwndTarget = NULL;
 
-		Rid[0].usUsagePage = 0x01;
-		Rid[0].usUsage = 0x06;
-		Rid[0].dwFlags = RIDEV_NOLEGACY;   // adds HID keyboard and also ignores legacy keyboard messages
-		Rid[0].hwndTarget = 0;
+		Rid[1].usUsagePage = 0x01;
+		Rid[1].usUsage = 0x06;
+		Rid[1].dwFlags = RIDEV_NOLEGACY;   // adds HID keyboard and also ignores legacy keyboard messages
+		Rid[1].hwndTarget = NULL;
 
 		if(RegisterRawInputDevices(Rid, DEVICE_COUNT, sizeof(Rid[0])) == FALSE)
 		{
@@ -146,114 +145,51 @@ private:
 			return;
 		}
 
-		if(raw.header.dwType == RIM_TYPEKEYBOARD)
+		DWORD deviceType = raw.header.dwType;
+
+		if(deviceType == RIM_TYPEKEYBOARD)
 		{
-			static bool pauseScancodeRead = false;
-			bool pressed = false;
-			unsigned int scancode = raw.data.keyboard.MakeCode; // MakeCode is USHORT
-			unsigned short flags = raw.data.keyboard.Flags;
-			ASSERT(scancode <= Scancode_PS2_v1::MAX_MAKECODE);
+			RAWKEYBOARD& rawKeyboard = raw.data.keyboard;
 
-			if((flags & RI_KEY_BREAK) == 0)
-				pressed = true;
+			bool pressed = ((rawKeyboard.Flags & RI_KEY_BREAK) == 0);
+			u32 scancode = getScancodeFromRawInput(&rawKeyboard);
 
-			if(flags & RI_KEY_E0)
-				scancode |= Scancode_PS2_v1::E0;
-			else if(flags & RI_KEY_E1)
-				scancode |= Scancode_PS2_v1::E1;
-
-			if(scancode == Scancode_PS2_v1::PAUSE_PART1) //The pause scancode is in 2 parts: a WM_INPUT with 0xE11D and one WM_INPUT with 0x45
-			{
-				pauseScancodeRead = true;
-			}
-			else if(pauseScancodeRead)
-			{
-				if(scancode == Scancode_PS2_v1::PAUSE_PART2)
-					scancode = Scancode_PS2_v1::Pause;
-				pauseScancodeRead = false;
-			}
-			else if(scancode == Scancode_PS2_v1::AltPrintScreen) //Alt + print screen return scancode 0x54 but we want it to return 0xE037 because 0x54 will not return a name for the key
-			{
-				scancode = Scancode_PS2_v1::PrintScreen;
-			}
-			
-			//some of those a break scancode, so we ignore them
-			if(scancode == Scancode_PS2_v1::PAUSE_PART1
-				|| scancode == Scancode_PS2_v1::IGNORE1
-				|| scancode == Scancode_PS2_v1::IGNORE2
-				|| scancode == Scancode_PS2_v1::IGNORE3
-				|| scancode == Scancode_PS2_v1::IGNORE4)
-				return;
+			u8 scUSB = Scancode_USB_HID::FromPS2(scancode);
+			u32 scPS2 = Scancode_PS2::FromUSBHID(scUSB);
 
 			// getting a human-readable string
-			//char buffer[512] = {};
-			//getScancodeName(scancode, buffer, 512);
-
+			char buffer[512] = {};
+			getScancodeName(scPS2, buffer, 512);
 			//LogInfo("%s : %s\n", buffer, (pressed) ? "down" : "up");
 
+			const i32 BUFFER_SIZE = 4;
+			wchar_t utf16_buffer[BUFFER_SIZE] = { 0 };
+			i32 readChars = getUTF16TextFromRawInput(&rawKeyboard, utf16_buffer, BUFFER_SIZE);
+			ASSERT(readChars < BUFFER_SIZE - 1);
+			if(readChars > 0)
+				OutputDebugStringW(utf16_buffer);
+		}
+		else if(deviceType == RIM_TYPEMOUSE)
+		{
+			RAWMOUSE& rawMouse = raw.data.mouse;
 
-			//------------------------------------------------------------------------------------
-			// GET UTF CHAR
-			static unsigned char keyState[256] = {};
-
-			USHORT VKey = raw.data.keyboard.VKey;
-			bool e0 = (flags & RI_KEY_E0) != 0;
-			bool e1 = (flags & RI_KEY_E1) != 0;
-
-			// these are unassigned but not reserved as of now.
-			// this is bad but, you know, we'll fix it if it ever breaks.
-			#define VK_LRETURN         0x9E
-			#define VK_RRETURN         0x9F
-
-			#define UPDATE_KEY_STATE(key) do { keyState[key] = (flags & 1) ? 0 : 0xff; } while(0)
-			// note: we set all bits in the byte if the key is down. 
-			// This is because windows expects it to be in the high_order_bit (when using it for converting to unicode for example)
-			// and I like it to be in the low_order_bit,  
-			if(VKey == VK_CONTROL)
-			{
-				if(e0)	UPDATE_KEY_STATE(VK_RCONTROL);
-				else	UPDATE_KEY_STATE(VK_LCONTROL);
-				keyState[VK_CONTROL] = keyState[VK_RCONTROL] | keyState[VK_LCONTROL];
-			}
-			else if(VKey == VK_SHIFT)
-			{
-				// because why should any api be consistent lol
-				// (because we get different scancodes for l/r-shift but not for l/r ctrl etc... but still)
-				UPDATE_KEY_STATE(MapVirtualKey(raw.data.keyboard.MakeCode, MAPVK_VSC_TO_VK_EX));
-				keyState[VK_SHIFT] = keyState[VK_LSHIFT] | keyState[VK_RSHIFT];
-			}
-			else if(VKey == VK_MENU)
-			{
-				if(e0)	UPDATE_KEY_STATE(VK_LMENU);
-				else	UPDATE_KEY_STATE(VK_RMENU);
-				keyState[VK_MENU] = keyState[VK_RMENU] | keyState[VK_LMENU];
-			}
-			else if(VKey == VK_RETURN)
-			{
-				if(e0) UPDATE_KEY_STATE(VK_RRETURN);
-				else	UPDATE_KEY_STATE(VK_LRETURN);
-				keyState[VK_RETURN] = keyState[VK_RRETURN] | keyState[VK_LRETURN];
-			}
-			else
-			{
-				UPDATE_KEY_STATE(VKey);
-			}
-			#undef UPDATE_KEY_STATE
-
-			if(pressed)
-			{
-				// get unicode.
-				wchar_t utf16_buffer[16] = { 0 };
-				//simulating altgr, assumes all leftalts is algr
-				// which seem to work since ctrl is ignored on US versions of ToUnicode. Bad way of doing it, Not sure how to detect if left alt is altgr though.
-				unsigned char ctrl = keyState[VK_CONTROL];
-				keyState[VK_CONTROL] |= keyState[VK_RMENU];
-				int utf16_len = ToUnicode(VKey, raw.data.keyboard.MakeCode, keyState, utf16_buffer, sizeof(utf16_buffer) / sizeof(utf16_buffer[0]), 0);
-				keyState[VK_CONTROL] = ctrl;
-
-				if(utf16_len > 0)
-					OutputDebugStringW(utf16_buffer);
-			}
+			LogInfo("Mouse: usFlags=%04x ulButtons=%04x usButtonFlags=%04x usButtonData=%04x ulRawButtons=%04x lLastX=%04x lLastY=%04x ulExtraInformation=%04x\r\n",
+				rawMouse.usFlags,
+				rawMouse.ulButtons,
+				rawMouse.usButtonFlags,
+				rawMouse.usButtonData,
+				rawMouse.ulRawButtons,
+				rawMouse.lLastX,
+				rawMouse.lLastY,
+				rawMouse.ulExtraInformation);
+		}
+		else if(deviceType == RIM_TYPEHID)
+		{
+			RAWHID& rawHID = raw.data.hid;
+		}
+		else
+		{
+			ASSERT2(false, "Unknown type of raw input device");
 		}
 	}
 
@@ -272,8 +208,10 @@ private:
 			case WM_CLOSE:
 				PostQuitMessage(0);
 				break;
-			//case WM_MOVE:
-			//case WM_SIZE: onResize(); break;
+			/*case WM_MOVE:
+			case WM_SIZE:
+				onResize();
+				break;*/
 			case WM_QUIT:
 				m_finished = true;
 				break;

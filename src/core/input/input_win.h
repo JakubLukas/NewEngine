@@ -2,6 +2,8 @@
 
 #include "core/int.h"
 
+struct tagRAWKEYBOARD;
+
 /*
 - Pause will send 0xE11D then 0x45, the value I use is 0xE11D45. You'll need to remember reading 0xE11D to be able to differenciate between "Pause" and "Num lock"
 - Print screen will send 0xE02A then 0xE037
@@ -9,8 +11,8 @@
 - Num pad divide and one or both shift are pressed: 0xE02A, 0xE0AA, 0xE036, 0xE0B6 can be as postfix or prefix
 */
 
-
-namespace Scancode_PS2_v1
+//Scancodes PS/2 version 1
+namespace Scancode_PS2
 {
 
 static const unsigned int MAX_MAKECODE = 0xff;
@@ -24,8 +26,9 @@ static const unsigned int IGNORE2 = 0xE0AA; //0xE02A, 0xE0AA, 0xE036, 0xE0B6: ge
 static const unsigned int IGNORE3 = 0xE036; //0xE02A, 0xE0AA, 0xE036, 0xE0B6: generated in addition of Numpad Divide and one or both Shift keys are pressed
 static const unsigned int IGNORE4 = 0xE0B6; //some of those a break scancode, so we ignore them
 
-enum
+enum : u32
 {
+	None = 0x00,
 	Escape = 0x01,
 	N1 = 0x02,
 	N2 = 0x03,
@@ -77,7 +80,7 @@ enum
 	N = 0x31,
 	M = 0x32,
 	Comma = 0x33,
-	Preiod = 0x34,
+	Period = 0x34,
 	Slash = 0x35,
 	ShiftRight = 0x36,
 	NumpadMultiply = 0x37,
@@ -200,13 +203,15 @@ enum
 	*/
 };
 
+u32 FromUSBHID(u8 scUSB);
+
 }
 
 
 namespace Scancode_USB_HID
 {
 
-enum
+enum : u8
 {
 	//HID Usage Page 07
 	None = 0x00, //None
@@ -347,7 +352,7 @@ enum
 	KeyboardEquals = 0x86, //UNASSIGNED
 	KeyboardIntl1 = 0x87, //73
 	KeyboardIntl2 = 0x88, //70
-	KeyboardIntl2 = 0x89, //7D
+	KeyboardIntl3 = 0x89, //7D
 	KeyboardIntl4 = 0x8A, //79
 	KeyboardIntl5 = 0x8B, //7B
 	KeyboardIntl6 = 0x8C, //5C
@@ -379,11 +384,11 @@ enum
 	ControlLeft = 0xE0, //1D
 	ShiftLeft = 0xE1, //2A
 	AltLeft = 0xE2, //38
-	LeftGUI = 0xE3, //E05B
+	GUILeft = 0xE3, //E05B
 	ControlRight = 0xE4, //E01D
 	ShiftRight = 0xE5, //36
 	AltRight = 0xE6, //E038
-	RightGUI = 0xE7, //E05C
+	GUIRight = 0xE7, //E05C
 	//RESERVED = 0xE8 - FFFF
 
 	//Next values should be reserved, but we use it because of HID Usage Page conflicts
@@ -420,295 +425,21 @@ enum
 	WWWFavorites = 0xBF, // original value is 0x022A, //E066
 };
 
-}
-
-
-namespace USBHID
-{
-
-static const u8 tableFromPS2[] = 
-{
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::Escape,
-	Scancode_USB_HID::N1,
-	Scancode_USB_HID::N2,
-	Scancode_USB_HID::N3,
-	Scancode_USB_HID::N4,
-	Scancode_USB_HID::N5,
-	Scancode_USB_HID::N6,
-	Scancode_USB_HID::N7,
-	Scancode_USB_HID::N8,
-	Scancode_USB_HID::N9,
-	Scancode_USB_HID::N0,
-	Scancode_USB_HID::Minus,
-	Scancode_USB_HID::Equals,
-	Scancode_USB_HID::Backspace,
-	Scancode_USB_HID::Tab,
-	Scancode_USB_HID::Q,
-	Scancode_USB_HID::W,
-	Scancode_USB_HID::E,
-	Scancode_USB_HID::R,
-	Scancode_USB_HID::T,
-	Scancode_USB_HID::Y,
-	Scancode_USB_HID::U,
-	Scancode_USB_HID::I,
-	Scancode_USB_HID::O,
-	Scancode_USB_HID::P,
-	Scancode_USB_HID::BracketLeft,
-	Scancode_USB_HID::BracketRight,
-	Scancode_USB_HID::Return,
-	Scancode_USB_HID::ControlLeft,
-	Scancode_USB_HID::A,
-	Scancode_USB_HID::S,
-	Scancode_USB_HID::D,
-	Scancode_USB_HID::F,
-	Scancode_USB_HID::G,
-	Scancode_USB_HID::H,
-	Scancode_USB_HID::J,
-	Scancode_USB_HID::K,
-	Scancode_USB_HID::L,
-	Scancode_USB_HID::Semicolon,
-	Scancode_USB_HID::Apostrophe,
-	Scancode_USB_HID::Grave,
-	Scancode_USB_HID::ShiftLeft,
-	Scancode_USB_HID::Backslash,
-	Scancode_USB_HID::Z,
-	Scancode_USB_HID::X,
-	Scancode_USB_HID::C,
-	Scancode_USB_HID::V,
-	Scancode_USB_HID::B,
-	Scancode_USB_HID::N,
-	Scancode_USB_HID::M,
-	Scancode_USB_HID::Comma,
-	Scancode_USB_HID::Period,
-	Scancode_USB_HID::Slash,
-	Scancode_USB_HID::ShiftRight,
-	Scancode_USB_HID::NumpadMultiply,
-	Scancode_USB_HID::AltLeft,
-	Scancode_USB_HID::Space,
-	Scancode_USB_HID::CapsLock,
-	Scancode_USB_HID::F1,
-	Scancode_USB_HID::F2,
-	Scancode_USB_HID::F3,
-	Scancode_USB_HID::F4,
-	Scancode_USB_HID::F5,
-	Scancode_USB_HID::F6,
-	Scancode_USB_HID::F7,
-	Scancode_USB_HID::F8,
-	Scancode_USB_HID::F9,
-	Scancode_USB_HID::F10,
-	Scancode_USB_HID::NumLock,
-	Scancode_USB_HID::ScrollLock,
-	Scancode_USB_HID::Numpad7,
-	Scancode_USB_HID::Numpad8,
-	Scancode_USB_HID::Numpad9,
-	Scancode_USB_HID::NumpadMinus,
-	Scancode_USB_HID::Numpad4,
-	Scancode_USB_HID::Numpad5,
-	Scancode_USB_HID::Numpad6,
-	Scancode_USB_HID::NumpadPlus,
-	Scancode_USB_HID::Numpad1,
-	Scancode_USB_HID::Numpad2,
-	Scancode_USB_HID::Numpad3,
-	Scancode_USB_HID::Numpad0,
-	Scancode_USB_HID::NumpadPeriod,
-	Scancode_USB_HID::None, //AltPrintScreen
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::Europe2, //BracketAngle, Key between the left shift and Z
-	Scancode_USB_HID::F11,
-	Scancode_USB_HID::F12,
-	Scancode_USB_HID::NumpadResolution,
-	Scancode_USB_HID::None, //Oem1
-	Scancode_USB_HID::None, //Oem2
-	Scancode_USB_HID::KeyboardIntl6, //Oem3
-	Scancode_USB_HID::None, //EraseEOF
-	Scancode_USB_HID::None, //Oem4
-	Scancode_USB_HID::None, //Oem5
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None, //Zoom
-	Scancode_USB_HID::None, //Help
-	Scancode_USB_HID::F13,
-	Scancode_USB_HID::F14,
-	Scancode_USB_HID::F15,
-	Scancode_USB_HID::F16,
-	Scancode_USB_HID::F17,
-	Scancode_USB_HID::F18,
-	Scancode_USB_HID::F19,
-	Scancode_USB_HID::F20,
-	Scancode_USB_HID::F21,
-	Scancode_USB_HID::F22,
-	Scancode_USB_HID::F23,
-	Scancode_USB_HID::None, //Oem6
-	Scancode_USB_HID::KeyboardIntl2, //Katakana
-	Scancode_USB_HID::None, //Oem7
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::KeyboardIntl1,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::F24,
-	Scancode_USB_HID::KeyboardLang4, //Sbcschar
-	Scancode_USB_HID::KeyboardLang3,
-	Scancode_USB_HID::KeyboardIntl4, //Convert
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::KeyboardIntl5 //Nonconvert
-};
-
-static const u8 tableFromPS2E0[]
-{
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::ScanPreviousTrack, //MediaPrevious
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::ScanNextTrack, //MediaNext
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::NumpadEnter,
-	Scancode_USB_HID::ControlRight,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::Mute, //VolumeMute
-	Scancode_USB_HID::Calculator, //LaunchApp2
-	Scancode_USB_HID::Play_Pause, //MediaPlay
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::Stop, //MediaStop
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::VolumeDown,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::VolumeUp,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::WWWHome, //BrowserHome
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::NumpadDivide,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::PrintScreen,
-	Scancode_USB_HID::AltRight,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::Break, // CTRL + Pause
-	Scancode_USB_HID::Home,
-	Scancode_USB_HID::ArrowUp,
-	Scancode_USB_HID::PageUp,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::ArrowLeft,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::ArrowRight,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::End,
-	Scancode_USB_HID::ArrowDown,
-	Scancode_USB_HID::PageDown,
-	Scancode_USB_HID::Insert,
-	Scancode_USB_HID::Delete,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::LeftGUI, //MetaLeft
-	Scancode_USB_HID::RightGUI, //MetaRight
-	Scancode_USB_HID::Application,
-	Scancode_USB_HID::KeyboardPower, //Power
-	Scancode_USB_HID::SystemSleep, //Sleep
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::SystemWake, //Wake
-	Scancode_USB_HID::None,
-	Scancode_USB_HID::WWWSearch, //BrowserSearch = 0xE065,
-	Scancode_USB_HID::WWWFavorites, //BrowserFavorites = 0xE066,
-	Scancode_USB_HID::WWWRefresh, //BrowserRefresh = 0xE067,
-	Scancode_USB_HID::WWWStop, //BrowserStop = 0xE068,
-	Scancode_USB_HID::WWWForward, //BrowserForward = 0xE069,
-	Scancode_USB_HID::WWWBack, //BrowserBack = 0xE06A,
-	Scancode_USB_HID::MyComputer, //LaunchApp1 = 0xE06B,
-	Scancode_USB_HID::Mail, //LaunchEmail = 0xE06C,
-	Scancode_USB_HID::MediaSelect //LaunchMedia = 0xE06D,
-};
-
-static const u8 tableFromPS2E1[]
-{
-	Scancode_USB_HID::Pause
-};
+u8 FromPS2(u32 scPS2);
 
 }
 
-/*
-- bit 16 - 23 contains the first byte of the scancode
-- bit 24 indicates that the scancode is 2 bytes (extended)
-*/
-inline unsigned int getScancodeName(unsigned int scancode, char* buffer, unsigned int bufferLength)
-{
 
-	unsigned int result = 0;
-	unsigned int extended = scancode & 0xffff00;
-	unsigned int lParam = 0;
+u32 getScancodeFromRawInput(const tagRAWKEYBOARD* keyboard);
 
-	if(extended != 0)
-	{
-		if(extended == 0xE11D00)
-			lParam = 0x45 << 16;
-		else
-			lParam = (0x100 | (scancode & 0xff)) << 16;
-	}
-	else
-	{
-		lParam = scancode << 16;
+i32 getUTF16TextFromRawInput(const tagRAWKEYBOARD* keyboard, wchar_t* buffer, u32 bufferSize);
 
-		if(scancode == 0x45)
-			lParam |= (0x1 << 24);
-	}
-
-	result = GetKeyNameText(lParam, buffer, bufferLength);
-	return result;
-}
+u32 getScancodeName(u32 scancode, char* buffer, u32 bufferLength);
 
 /*
 potrebujem:
-scancode -> USB HID
-USB HID -> key name
-fix USBHID, su tam duplicity (power, sleep, wake, multimedialne klavesy)
+sync keys (WM_SETFOCUS)
+clear keys (WM_KILLFOCUS)
+GetRawInputDeviceList
 
 */
