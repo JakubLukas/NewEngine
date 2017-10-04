@@ -27,7 +27,7 @@ void operator delete[](void*)
 }
 
 
-void* operator new(size_t size, void* where)
+void* operator new(size_t size, NewPlaceholder, void* where)
 {
 	return where;
 }

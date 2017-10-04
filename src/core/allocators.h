@@ -1,13 +1,12 @@
 #pragma once
 
-namespace Veng
+
+enum NewPlaceholder
 {
 
-struct NewPlaceholder {};
+};
 
-}
-
-void* operator new(size_t size, void* where);
+void* operator new(size_t size, NewPlaceholder, void* where);
 
 
 namespace Veng

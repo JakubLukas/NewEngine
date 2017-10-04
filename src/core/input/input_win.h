@@ -208,7 +208,7 @@ u32 FromUSBHID(u8 scUSB);
 }
 
 
-namespace Scancode_USB_HID
+namespace Scancode_USBHID
 {
 
 enum : u8

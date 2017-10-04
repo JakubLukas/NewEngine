@@ -145,16 +145,17 @@ private:
 			return;
 		}
 
+		HANDLE deviceHandle = raw.header.hDevice;
 		DWORD deviceType = raw.header.dwType;
 
 		if(deviceType == RIM_TYPEKEYBOARD)
 		{
-			RAWKEYBOARD& rawKeyboard = raw.data.keyboard;
+			const RAWKEYBOARD& rawKeyboard = raw.data.keyboard;
 
 			bool pressed = ((rawKeyboard.Flags & RI_KEY_BREAK) == 0);
 			u32 scancode = getScancodeFromRawInput(&rawKeyboard);
 
-			u8 scUSB = Scancode_USB_HID::FromPS2(scancode);
+			u8 scUSB = Scancode_USBHID::FromPS2(scancode);
 			u32 scPS2 = Scancode_PS2::FromUSBHID(scUSB);
 
 			// getting a human-readable string
@@ -171,7 +172,59 @@ private:
 		}
 		else if(deviceType == RIM_TYPEMOUSE)
 		{
-			RAWMOUSE& rawMouse = raw.data.mouse;
+			const RAWMOUSE& rawMouse = raw.data.mouse;
+
+			if (rawMouse.usFlags & MOUSE_ATTRIBUTES_CHANGED)
+			{
+				//Mouse attributes changed; application needs to query the mouse attributes.
+				ASSERT2(false, "what does this mean ?");
+			}
+
+			if (rawMouse.usFlags & MOUSE_MOVE_RELATIVE)
+			{
+				//Mouse movement data is relative to the last mouse position.
+				LONG xRel = rawMouse.lLastX;
+				LONG yRel = rawMouse.lLastY;
+			}
+			else if (rawMouse.usFlags & MOUSE_MOVE_ABSOLUTE)
+			{
+				ASSERT2(false, "Mouse movement should be relative");
+			}
+
+			if (rawMouse.usFlags & MOUSE_VIRTUAL_DESKTOP)
+			{
+				//Mouse coordinates are mapped to the virtual desktop (for a multiple monitor system).
+				ASSERT2(false, "Mouse movement is mapped to virtual desktop");
+			}
+
+			//rawMouse.usButtonFlags
+			/*
+			RI_MOUSE_LEFT_BUTTON_DOWN
+			RI_MOUSE_LEFT_BUTTON_DOWN
+			RI_MOUSE_LEFT_BUTTON_UP
+			RI_MOUSE_RIGHT_BUTTON_DOWN
+			RI_MOUSE_RIGHT_BUTTON_UP
+			RI_MOUSE_MIDDLE_BUTTON_DOWN
+			RI_MOUSE_MIDDLE_BUTTON_UP
+
+			RI_MOUSE_BUTTON_1_DOWN
+			RI_MOUSE_BUTTON_1_UP
+			RI_MOUSE_BUTTON_2_DOWN
+			RI_MOUSE_BUTTON_2_UP
+			RI_MOUSE_BUTTON_3_DOWN
+			RI_MOUSE_BUTTON_3_UP
+
+			RI_MOUSE_BUTTON_4_DOWN
+			RI_MOUSE_BUTTON_4_UP
+			RI_MOUSE_BUTTON_5_DOWN
+			RI_MOUSE_BUTTON_5_UP
+			RI_MOUSE_WHEEL
+			*/
+
+			if (rawMouse.usButtonFlags & RI_MOUSE_WHEEL)
+			{
+				USHORT wheelDelta = rawMouse.usButtonData;
+			}
 
 			LogInfo("Mouse: usFlags=%04x ulButtons=%04x usButtonFlags=%04x usButtonData=%04x ulRawButtons=%04x lLastX=%04x lLastY=%04x ulExtraInformation=%04x\r\n",
 				rawMouse.usFlags,
@@ -185,7 +238,7 @@ private:
 		}
 		else if(deviceType == RIM_TYPEHID)
 		{
-			RAWHID& rawHID = raw.data.hid;
+			const RAWHID& rawHID = raw.data.hid;
 		}
 		else
 		{
