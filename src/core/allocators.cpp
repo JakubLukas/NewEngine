@@ -47,6 +47,15 @@ void* HeapAllocator::Allocate(size_t size)
 }
 
 
+void* HeapAllocator::Reallocate(void* ptr, size_t size)
+{
+
+	size_t* p = static_cast<size_t*>(realloc(static_cast<size_t*>(ptr) - 1, sizeof(size_t) + size));
+	*p = size;
+	return &p[1];
+}
+
+
 void HeapAllocator::Deallocate(void* p)
 {
 	free(static_cast<size_t*>(p) - 1);
