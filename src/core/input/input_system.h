@@ -40,32 +40,99 @@ axisName
 axisId(string)
 hasAxis(string)
 */
-class InputController
+
+class InputDevice
 {
 public:
 	enum class Type : u8
 	{
-		MOUSE,
-		KEYBOARD
+		BUTTON,
+		AXIS
 	};
 
-	InputController();
-	virtual ~InputController();
+	enum class Category : u8
+	{
+		MOUSE,
+		KEYBOARD,
+		GAMEPAD
+	};
 
-	void Clear();
-	Type GetType() const { return m_type; }
-	//const char* GetName()
 
-	bool IsActive() const;
-	bool Connected() const;
-	bool Disconnected() const;
+	InputDevice(u8 deviceId, Category category)
+		: m_deviceId(deviceId)
+		, m_category(category)
+		, m_active(false)
+	{
+	}
 
-	virtual u8 GetButtonsCount() const;
+	Category GetCategory() const { return m_category; }
+	
+	u8 GetDeviceId() const { return m_deviceId; }
 
-	virtual u8 GetAxisCount() const;
+	bool IsActive() const { return m_active; };
+
+	virtual u8 GetButtonsCount() const { return 0; }
+
+	virtual u8 GetAxisCount() const { return 0; };
 
 protected:
-	Type m_type;
+	Category m_category;
+	bool m_active;
+	u8 m_deviceId;
+};
+
+
+
+class MouseDevice : public InputDevice
+{
+public:
+	enum class Button : u8
+	{
+		Left,
+		Right,
+		Middle,
+		Extra1,
+		Extra2,
+		Extra3,
+		Extra4,
+		Extra5,
+		Count
+	};
+
+	enum class Axis : u8
+	{
+		Wheel,
+		Movement,
+		Count
+	};
+
+	MouseDevice(u8 deviceId, Category category)
+		: InputDevice(deviceId, category)
+	{
+		m_category = Category::MOUSE;
+	}
+
+	virtual u8 GetButtonsCount() const override { return (u8)Button::Count; }
+
+	virtual u8 GetAxisCount() const override { return (u8)Axis::Count; };
+};
+
+
+struct InputEvent
+{
+	enum class Type : u8
+	{
+		DeviceConnect,
+		DeviceDisconnect,
+		ButtonPressed,
+		ButtonReleased,
+		AxisChanged
+	};
+
+	Type eventType;
+	float time;
+	const InputDevice& device;
+	u8 item;//USBHID code
 };
 
 
@@ -76,7 +143,7 @@ public:
 
 private:
 	IAllocator& m_allocator;
-	AssociativeArray<void*, InputController> m_controllers;
+	AssociativeArray<void*, InputDevice> m_devices;
 };
 
 
