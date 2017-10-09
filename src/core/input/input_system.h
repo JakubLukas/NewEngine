@@ -9,37 +9,8 @@
 namespace Veng
 {
 
-
-/*
-InputController Stingray functions
-
-constructor(alloc, inputManager)
-destructor
-update(float)
-flushState()
-type
-category
-name
-active
-connected (right now)
-disconnected(right now)
-#buttons
-getButton
-anyButton
-buttonName
-buttonLocaleName
-buttonId(string)
-hasButton(string)
-pressedMask ??
-releasedMask ??
-#axes
-getAxis
-deadZone
-setDeadZone
-axisName
-axisId(string)
-hasAxis(string)
-*/
+typedef u8 deviceID;
+typedef void* deviceHandle;
 
 class InputDevice
 {
@@ -58,7 +29,7 @@ public:
 	};
 
 
-	InputDevice(u8 deviceId, Category category)
+	InputDevice(deviceID deviceId, Category category)
 		: m_deviceId(deviceId)
 		, m_category(category)
 		, m_active(false)
@@ -67,7 +38,7 @@ public:
 
 	Category GetCategory() const { return m_category; }
 	
-	u8 GetDeviceId() const { return m_deviceId; }
+	deviceID GetDeviceId() const { return m_deviceId; }
 
 	bool IsActive() const { return m_active; };
 
@@ -78,43 +49,7 @@ public:
 protected:
 	Category m_category;
 	bool m_active;
-	u8 m_deviceId;
-};
-
-
-
-class MouseDevice : public InputDevice
-{
-public:
-	enum class Button : u8
-	{
-		Left,
-		Right,
-		Middle,
-		Extra1,
-		Extra2,
-		Extra3,
-		Extra4,
-		Extra5,
-		Count
-	};
-
-	enum class Axis : u8
-	{
-		Wheel,
-		Movement,
-		Count
-	};
-
-	MouseDevice(u8 deviceId, Category category)
-		: InputDevice(deviceId, category)
-	{
-		m_category = Category::MOUSE;
-	}
-
-	virtual u8 GetButtonsCount() const override { return (u8)Button::Count; }
-
-	virtual u8 GetAxisCount() const override { return (u8)Axis::Count; };
+	deviceID m_deviceId;
 };
 
 
@@ -122,28 +57,39 @@ struct InputEvent
 {
 	enum class Type : u8
 	{
-		DeviceConnect,
-		DeviceDisconnect,
-		ButtonPressed,
-		ButtonReleased,
+		DeviceActiveChanged,
+		ButtonChanged,
 		AxisChanged
 	};
 
 	Type eventType;
 	float time;
 	const InputDevice& device;
-	u8 item;//USBHID code
+	u8 code;
+	union
+	{
+		bool connected;
+		bool pressed;
+		Vector3 axis;
+	};
 };
 
 
-class InputSystem//make pure virtual interface
+class InputSystem
 {
 public:
-	explicit InputSystem(IAllocator& allocator);
+	static InputSystem* CreateInputSystem(IAllocator& allocator);
+	static void DestroyInputSystem(InputSystem* inputSystem);
 
-private:
-	IAllocator& m_allocator;
-	AssociativeArray<void*, InputDevice> m_devices;
+	virtual ~InputSystem() = 0;
+
+	virtual deviceID RegisterDevice(deviceHandle handle, InputDevice::Category category) = 0;
+	virtual void UnregisterDevice(deviceID id) = 0;
+
+	virtual const InputEvent* GetInputEventBuffer() const = 0;
+	virtual unsigned GetInputEventBufferSize() const = 0;
+
+	//push win events
 };
 
 

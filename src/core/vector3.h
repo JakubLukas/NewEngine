@@ -1,6 +1,10 @@
 #pragma once
 
 
+namespace Veng
+{
+
+
 struct Vector3
 {
 	Vector3(float x, float y, float z);
@@ -10,3 +14,6 @@ struct Vector3
 	float y;
 	float z;
 };
+
+
+}
