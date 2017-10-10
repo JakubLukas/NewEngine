@@ -16,8 +16,9 @@ public:
 		: m_allocator(allocator)
 	{
 		m_capacity = 4;
-		m_keys = static_cast<KeyType*>(m_allocator.Allocate(m_capacity * sizeof(KeyType)));
-		m_values = static_cast<ValueType*>(m_allocator.Allocate(m_capacity * sizeof(ValueType)));
+		void* data = m_allocator.Allocate(m_capacity * (sizeof(KeyType) + sizeof(ValueType)));
+		m_keys = static_cast<KeyType*>(data);
+		m_values = static_cast<ValueType*>(data + sizeof(KeyType) * m_capacity);
 	}
 
 	~AssociativeArray()
@@ -28,19 +29,24 @@ public:
 			m_values[i].~ValueType();
 		}
 		m_allocator.Deallocate(m_keys);
-		m_allocator.Deallocate(m_values);
 	}
 
 
 	void Clear()
 	{
-		ASSERT2(false, "Not implemented yet");
-		static_assert(false);
+		for(unsigned i = 0; i < m_size; ++i)
+		{
+			m_keys[i].~KeyType();
+			m_values[i].~ValueType();
+		}
+		m_size = 0;
 	}
 
 
 	bool Find(const KeyType& key, ValueType*& value)
 	{
+		if(m_size == 0) return false;
+
 		unsigned idx = GetIndex(key);
 		if (m_keys[idx] == key)
 		{
@@ -59,26 +65,25 @@ public:
 	const ValueType* end() const { return m_values + m_size; }
 
 
-	void Push(const KeyType& key, const ValueType& value)
-	{
-		if(m_size == m_capacity) Grow();
-
-		new (NewPlaceholder, (void*)(m_keys + m_size)) KeyType(key);
-		new (NewPlaceholder, (void*)(m_values + m_size)) ValueType(value);
-		++m_size;
-	}
-
-
-	bool Insert(KeyType& key, ValueType& value)
+	bool Insert(const KeyType& key, const ValueType& value)
 	{
 		unsigned idx = GetIndex(key);
-		if (m_keys[idx] != key)
+		if (m_size == 0 || m_keys[idx] != key)
 		{
-			if (m_size == m_capacity) Grow();
+			if (m_size == m_capacity) Reserve(m_capacity * 2);
 
-			//<idx, m_size> move by one
-			//insert on idx
-			static_assert(false);
+			for(unsigned i = m_size; i > idx; --i)
+			{
+				m_keys[i] = m_keys[i - 1];
+				m_keys[i].~KeyType();
+				m_values[i] = m_values[i - 1];
+				m_values[i].~ValueType();
+			}
+			
+			m_keys[idx] = key;
+			m_values[idx] = value;
+			++m_size;
+			return true;
 		}
 
 		return false;
@@ -87,8 +92,26 @@ public:
 
 	bool Erase(const KeyType& key)
 	{
-		ASSERT2(false, "Not implemented yet");
-		static_assert(false);
+		if(m_size == 0) return false;
+
+		unsigned idx = GetIndex(key);
+		if(m_keys[idx] == key)
+		{
+			m_keys[idx].~KeyType();
+			m_values[idx].~ValueType();
+
+			for(unsigned i = idx; i < m_size - 1; ++i)
+			{
+				m_keys[i] = m_keys[i + 1];
+				m_keys[i + 1].~KeyType();
+				m_values[i] = m_values[i + 1];
+				m_values[i + 1].~ValueType();
+			}
+			--m_size;
+			return true;
+		}
+
+		return false;
 	}
 
 
@@ -122,17 +145,26 @@ public:
 	}
 
 
-	void Reserve(unsigned size)
+	void Reserve(unsigned capacity)
 	{
-		ASSERT2(false, "Not implemented yet");
-		static_assert(false);
-	}
+		if(capacity <= m_capacity) return;
 
+		m_capacity = capacity;
+		void* data = m_allocator.Allocate(m_capacity * (sizeof(KeyType) + sizeof(ValueType)));
+		KeyType* newKeys = static_cast<KeyType*>(data);
+		ValueType* newValues = static_cast<ValueType*>(data + sizeof(KeyType) * m_capacity);
+		
+		for(unsigned i = 0; i < m_size; ++i)
+		{
+			newKeys[i] = m_keys[i];
+			m_keys[i].~KeyType();
+			newValues[i] = m_values[i];
+			m_values[i].~ValueType();
+		}
 
-	void Resize(unsigned size)
-	{
-		ASSERT2(false, "Not implemented yet");
-		static_assert(false);
+		m_allocator.Deallocate(m_keys);
+		m_keys = newKeys;
+		m_values = newValues;
 	}
 
 
@@ -164,15 +196,6 @@ private:
 
 		return (low == 0) ? low : low - 1;
 	}
-
-
-	void Grow()
-	{
-		m_capacity = m_capacity * 2;
-		m_keys = static_cast<KeyType*>(m_allocator.Reallocate(m_keys, m_capacity * sizeof(KeyType)));
-		m_values = static_cast<ValueType*>(m_allocator.Reallocate(m_values, m_capacity * sizeof(ValueType)));
-	}
-
 
 	IAllocator& m_allocator;
 	unsigned m_capacity = 0;

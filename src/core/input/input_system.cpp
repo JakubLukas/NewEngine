@@ -1,5 +1,8 @@
 #include "input_system.h"
 
+#include "devices/input_device_mouse.h"
+#include "devices/input_device_keyboard.h"
+
 
 namespace Veng
 {
@@ -16,7 +19,19 @@ public:
 
 	deviceID RegisterDevice(deviceHandle handle, InputDevice::Category category) override
 	{
-		
+		switch(category)
+		{
+			case InputDevice::Category::MOUSE:
+				MouseDevice device()
+				break;
+			case InputDevice::Category::KEYBOARD:
+				break;
+			case InputDevice::Category::GAMEPAD:
+				break;
+			default:
+				break;
+		}
+		//m_devices.Insert(handle, )
 	}
 
 

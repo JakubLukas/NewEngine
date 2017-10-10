@@ -19,6 +19,33 @@ public:
 	}
 
 
+	~Array()
+	{
+		for(unsigned i = 0; i < m_size; ++i)
+		{
+			m_data[i].~Type();
+		}
+		m_allocator.Deallocate(m_data);
+	}
+
+
+	void Clear()
+	{
+		for(unsigned i = 0; i < m_size; ++i)
+		{
+			m_data[i].~Type();
+		}
+		m_size = 0;
+	}
+
+
+	Type* begin() { return m_data; }
+	Type* end() { return m_data + m_size; }
+
+	const Type* begin() const { return m_data; }
+	const Type* end() const { return m_data + m_size; }
+
+
 	void Push(const Type& value)
 	{
 		if(m_size == m_capacity)
@@ -28,28 +55,61 @@ public:
 		++m_size;
 	}
 
+	void Pop()
+	{
+		ASSERT(index >= 0 && index < m_size);
+		m_data[m_size].~Type();
+		--m_size;
+	}
 
-	const Type& operator[](int index) const
+	bool Erase(unsigned idx)
+	{
+		ASSERT(index >= 0 && index < m_size);
+		m_data[idx].~Type();
+
+		for(unsigned i = idx; i < m_size - 1; ++i)
+		{
+			m_data[i] = m_data[i + 1];
+			m_data[i + 1].~Type();
+		}
+		--m_size;
+	}
+
+	const Type& operator[](unsigned index) const
 	{
 		ASSERT(index >= 0 && index < m_size);
 		return m_data[index];
 	}
 
-	//Clear
-	//Pop
-	//Resize
-	//Erase
 
-	Type& operator[](int index)
+	Type& operator[](unsigned index)
 	{
 		ASSERT(index >= 0 && index < m_size);
 		return m_data[index];
 	}
 
 
-	int Size() const { return m_size; }
+	void Reserve(unsigned capacity)
+	{
+		if(capacity <= m_capacity) return;
 
-	int Capacity() const { return m_capacity; }
+		m_capacity = capacity;
+		void* newData = static_cast<Type*>(m_allocator.Allocate(m_capacity * sizeof(Type)));
+
+		for(unsigned i = 0; i < m_size; ++i)
+		{
+			newData[i] = m_data[i];
+			m_data[i].~Type();
+		}
+
+		m_allocator.Deallocate(m_data);
+		m_data = newData;
+	}
+
+
+	unsigned Size() const { return m_size; }
+
+	unsigned Capacity() const { return m_capacity; }
 
 private:
 	void Grow()
@@ -60,8 +120,8 @@ private:
 
 
 	IAllocator& m_allocator;
-	int m_capacity = 0;
-	int m_size = 0;
+	unsigned m_capacity = 0;
+	unsigned m_size = 0;
 	Type* m_data = nullptr;
 };
 
