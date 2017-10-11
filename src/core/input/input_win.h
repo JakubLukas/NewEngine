@@ -1,8 +1,16 @@
 #pragma once
 
 #include "core/int.h"
+#include "core/input/devices/input_device_keyboard.h"
+#include "core/input/devices/input_device_mouse.h"
 
 struct tagRAWKEYBOARD;
+struct tagRAWMOUSE;
+
+
+namespace Keyboard
+{
+
 
 /*
 - Pause will send 0xE11D then 0x45, the value I use is 0xE11D45. You'll need to remember reading 0xE11D to be able to differenciate between "Pause" and "Num lock"
@@ -443,3 +451,16 @@ clear keys (WM_KILLFOCUS)
 GetRawInputDeviceList
 
 */
+
+
+}
+
+
+namespace Mouse
+{
+
+
+bool getButtonCodeFromRawInput(const tagRAWMOUSE* mouse, bool& pressed, Veng::MouseDevice::Button& code);
+
+
+}

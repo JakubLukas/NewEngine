@@ -3,53 +3,69 @@
 #include "core/int.h"
 #include "core/allocators.h"
 #include "core/vector3.h"
-#include "core/associative_array.h"
+#include "core/array.h"
+
+#include "core/input/devices/input_device_mouse.h"
+#include "core/input/devices/input_device_keyboard.h"
 
 
 namespace Veng
 {
 
-typedef u8 deviceID;
-typedef void* deviceHandle;
 
-class InputDevice
+typedef uintptr inputDeviceID;
+typedef uintptr inputDeviceHandle;
+
+
+class InputDevice final
 {
 public:
 	enum class Type : u8
 	{
-		BUTTON,
-		AXIS
+		Button,
+		Axis
 	};
 
 	enum class Category : u8
 	{
-		MOUSE,
-		KEYBOARD,
-		GAMEPAD
+		None,
+		Mouse,
+		Keyboard,
+		Gamepad
 	};
 
 
-	InputDevice(deviceID deviceId, Category category)
+	InputDevice()
+		: m_deviceId(0)
+		, m_category(Category::None)
+		, m_active(false)
+	{
+	}
+
+
+	InputDevice(inputDeviceID deviceId, Category category)
 		: m_deviceId(deviceId)
 		, m_category(category)
 		, m_active(false)
 	{
 	}
 
+	InputDevice(const InputDevice& other)
+		: m_deviceId(other.m_deviceId)
+		, m_category(other.m_category)
+		, m_active(other.m_active)
+	{
+	}
+
 	Category GetCategory() const { return m_category; }
 	
-	deviceID GetDeviceId() const { return m_deviceId; }
+	inputDeviceID GetDeviceId() const { return m_deviceId; }
 
 	bool IsActive() const { return m_active; };
-
-	virtual u8 GetButtonsCount() const { return 0; }
-
-	virtual u8 GetAxisCount() const { return 0; };
-
 protected:
 	Category m_category;
 	bool m_active;
-	deviceID m_deviceId;
+	inputDeviceID m_deviceId;
 };
 
 
@@ -78,18 +94,19 @@ struct InputEvent
 class InputSystem
 {
 public:
-	static InputSystem* CreateInputSystem(IAllocator& allocator);
-	static void DestroyInputSystem(InputSystem* inputSystem);
+	static InputSystem* Create(IAllocator& allocator);
+	static void Destroy(InputSystem* inputSystem, IAllocator& allocator);
 
-	virtual ~InputSystem() = 0;
 
-	virtual deviceID RegisterDevice(deviceHandle handle, InputDevice::Category category) = 0;
-	virtual void UnregisterDevice(deviceID id) = 0;
+	virtual const Array<InputEvent>& GetInputEventBuffer() const = 0;
 
-	virtual const InputEvent* GetInputEventBuffer() const = 0;
-	virtual unsigned GetInputEventBufferSize() const = 0;
 
-	//push win events
+	virtual inputDeviceID RegisterDevice(inputDeviceHandle handle, InputDevice::Category category) = 0;
+	virtual void UnregisterDevice(inputDeviceHandle id) = 0;
+
+	virtual bool RegisterKeyboardButtonEvent(inputDeviceHandle handle, KeyboardDevice::Button buttonId, bool pressed) = 0;
+	virtual bool RegisterMouseButtonEvent(inputDeviceHandle handle, MouseDevice::Button buttonId, bool pressed) = 0;
+	virtual bool RegisterMouseAxisEvent(inputDeviceHandle handle, MouseDevice::Axis axisId, const Vector3& delta) = 0;
 };
 
 

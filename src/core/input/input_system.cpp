@@ -1,8 +1,5 @@
 #include "input_system.h"
 
-#include "devices/input_device_mouse.h"
-#include "devices/input_device_keyboard.h"
-
 
 namespace Veng
 {
@@ -11,61 +8,75 @@ namespace Veng
 class InputSystemImpl : public InputSystem
 {
 public:
-	~InputSystemImpl() override
+	InputSystemImpl(IAllocator& allocator)
+		: m_allocator(allocator)
+		, m_devices(allocator)
+		, m_events(allocator)
 	{
 
 	}
 
 
-	deviceID RegisterDevice(deviceHandle handle, InputDevice::Category category) override
+	inputDeviceID RegisterDevice(inputDeviceHandle handle, InputDevice::Category category) override
 	{
-		switch(category)
+		inputDeviceID dID = static_cast<inputDeviceID>(handle);
+		InputDevice device(dID, category);
+		m_devices.Push(device);
+
+		return dID;
+	}
+
+
+	void UnregisterDevice(inputDeviceHandle id) override
+	{
+		for (unsigned i = 0; i < m_devices.Size(); ++i)
 		{
-			case InputDevice::Category::MOUSE:
-				MouseDevice device()
-				break;
-			case InputDevice::Category::KEYBOARD:
-				break;
-			case InputDevice::Category::GAMEPAD:
-				break;
-			default:
-				break;
+			if (m_devices[i].GetDeviceId() == id)
+			{
+				m_devices.Erase(i);
+				return;
+			}
 		}
-		//m_devices.Insert(handle, )
 	}
 
 
-	void UnregisterDevice(deviceID id) override
+	bool RegisterKeyboardButtonEvent(inputDeviceHandle handle, KeyboardDevice::Button buttonId, bool pressed) override
 	{
-
+		return false;
+	}
+	bool RegisterMouseButtonEvent(inputDeviceHandle handle, MouseDevice::Button buttonId, bool pressed) override
+	{
+		return false;
+	}
+	bool RegisterMouseAxisEvent(inputDeviceHandle handle, MouseDevice::Axis axisId, const Vector3& delta) override
+	{
+		return false;
 	}
 
 
-	const InputEvent* GetInputEventBuffer() const override
+	const Array<InputEvent>& GetInputEventBuffer() const override
 	{
-
-	}
-
-
-	unsigned GetInputEventBufferSize() const override
-	{
-
+		return m_events;
 	}
 
 private:
 	IAllocator& m_allocator;
-	AssociativeArray<deviceHandle, InputDevice> m_devices;
+	Array<InputDevice> m_devices;
+	Array<InputEvent> m_events;
 };
 
 
-InputSystem* InputSystem::CreateInputSystem(IAllocator& allocator)
+InputSystem* InputSystem::Create(IAllocator& allocator)
 {
-	return nullptr;
+	void* mem = allocator.Allocate(sizeof(InputSystemImpl));
+	return (InputSystem*)(new (NewPlaceholder(), mem) InputSystemImpl(allocator));
 }
 
-void InputSystem::DestroyInputSystem(InputSystem* inputSystem)
+void InputSystem::Destroy(InputSystem* inputSystem, IAllocator& allocator)
 {
-
+	InputSystemImpl* p = (InputSystemImpl*)inputSystem;
+	p->~InputSystemImpl();
+	allocator.Deallocate(p);
 }
 
 

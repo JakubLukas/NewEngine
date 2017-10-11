@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/allocators.h"
+#include "asserts.h"
 
 
 namespace Veng
@@ -49,28 +50,27 @@ public:
 	void Push(const Type& value)
 	{
 		if(m_size == m_capacity)
-			Grow();
+			Reserve(m_capacity * 2);
 
-		new (NewPlaceholder, (void*)(m_data + m_size)) Type(value);
+		new (NewPlaceholder(), (void*)(m_data + m_size)) Type(value);
 		++m_size;
 	}
 
 	void Pop()
 	{
-		ASSERT(index >= 0 && index < m_size);
-		m_data[m_size].~Type();
+		(m_data + m_size)->~Type();
 		--m_size;
 	}
 
-	bool Erase(unsigned idx)
+	void Erase(unsigned idx)
 	{
-		ASSERT(index >= 0 && index < m_size);
-		m_data[idx].~Type();
+		ASSERT(idx >= 0 && idx < m_size);
+		(m_data + idx)->~Type();
 
 		for(unsigned i = idx; i < m_size - 1; ++i)
 		{
-			m_data[i] = m_data[i + 1];
-			m_data[i + 1].~Type();
+			new (NewPlaceholder(), (void*)(m_data + i)) Type(m_data[i + 1]);
+			(m_data + i + 1)->~Type();
 		}
 		--m_size;
 	}
@@ -94,12 +94,12 @@ public:
 		if(capacity <= m_capacity) return;
 
 		m_capacity = capacity;
-		void* newData = static_cast<Type*>(m_allocator.Allocate(m_capacity * sizeof(Type)));
+		Type* newData = static_cast<Type*>(m_allocator.Allocate(m_capacity * sizeof(Type)));
 
 		for(unsigned i = 0; i < m_size; ++i)
 		{
-			newData[i] = m_data[i];
-			m_data[i].~Type();
+			new (NewPlaceholder(), (void*)(newData + i)) Type(m_data[i]);
+			(m_data + i)->~Type();
 		}
 
 		m_allocator.Deallocate(m_data);
@@ -112,12 +112,6 @@ public:
 	unsigned Capacity() const { return m_capacity; }
 
 private:
-	void Grow()
-	{
-		m_capacity = m_capacity * 2;
-		m_data = static_cast<Type*>(m_allocator.Reallocate(m_data, m_capacity * sizeof(Type)));
-	}
-
 
 	IAllocator& m_allocator;
 	unsigned m_capacity = 0;

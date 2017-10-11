@@ -6,6 +6,10 @@
 #include "core\asserts.h"
 
 
+namespace Keyboard
+{
+
+
 static const u32 tablePS2FromUSBHID[] =
 {
 	Scancode_PS2::None,
@@ -511,12 +515,12 @@ namespace Scancode_USBHID
 
 u8 FromPS2(u32 scPS2)
 {
-	if((scPS2 & E0_E1_MASK) == 0)
+	if ((scPS2 & E0_E1_MASK) == 0)
 	{
 		ASSERT(scPS2 < sizeof(tableUSBHIDFromPS2) / sizeof(tableUSBHIDFromPS2[0]));
 		return tableUSBHIDFromPS2[scPS2];
 	}
-	else if((scPS2 & E1_MASK) == 0)
+	else if ((scPS2 & E1_MASK) == 0)
 	{
 		scPS2 = scPS2 & SC_MASK;
 		ASSERT(scPS2 < sizeof(tableUSBHIDFromPS2E0) / sizeof(tableUSBHIDFromPS2E0[0]));
@@ -543,28 +547,28 @@ u32 getScancodeFromRawInput(const tagRAWKEYBOARD* keyboard)
 	u16 flags = keyboard->Flags;
 	ASSERT(scancode <= Scancode_PS2::MAX_MAKECODE);
 
-	if(flags & RI_KEY_E0)
+	if (flags & RI_KEY_E0)
 		scancode |= Scancode_PS2::E0;
-	else if(flags & RI_KEY_E1)
+	else if (flags & RI_KEY_E1)
 		scancode |= Scancode_PS2::E1;
 
-	if(scancode == Scancode_PS2::PAUSE_PART1) //The pause scancode is in 2 parts: a WM_INPUT with 0xE11D and one WM_INPUT with 0x45
+	if (scancode == Scancode_PS2::PAUSE_PART1) //The pause scancode is in 2 parts: a WM_INPUT with 0xE11D and one WM_INPUT with 0x45
 	{
 		pauseScancodeRead = true;
 	}
-	else if(pauseScancodeRead)
+	else if (pauseScancodeRead)
 	{
-		if(scancode == Scancode_PS2::PAUSE_PART2)
+		if (scancode == Scancode_PS2::PAUSE_PART2)
 			scancode = Scancode_PS2::Pause;
 		pauseScancodeRead = false;
 	}
-	else if(scancode == Scancode_PS2::AltPrintScreen) //Alt + print screen return scancode 0x54 but we want it to return 0xE037 because 0x54 will not return a name for the key
+	else if (scancode == Scancode_PS2::AltPrintScreen) //Alt + print screen return scancode 0x54 but we want it to return 0xE037 because 0x54 will not return a name for the key
 	{
 		scancode = Scancode_PS2::PrintScreen;
 	}
 
 	//some of those a break scancode, so we ignore them
-	if(scancode == Scancode_PS2::PAUSE_PART1
+	if (scancode == Scancode_PS2::PAUSE_PART1
 		|| scancode == Scancode_PS2::IGNORE1
 		|| scancode == Scancode_PS2::IGNORE2
 		|| scancode == Scancode_PS2::IGNORE3
@@ -587,8 +591,8 @@ i32 getUTF16TextFromRawInput(const tagRAWKEYBOARD* keyboard, wchar_t* buffer, u3
 
 	// these are unassigned but not reserved as of now.
 	// this is bad but, you know, we'll fix it if it ever breaks.
-	#define VK_LRETURN         0x9E
-	#define VK_RRETURN         0x9F
+#define VK_LRETURN         0x9E
+#define VK_RRETURN         0x9F
 
 	auto updateKeyState = [flags](auto key)
 	{
@@ -598,28 +602,28 @@ i32 getUTF16TextFromRawInput(const tagRAWKEYBOARD* keyboard, wchar_t* buffer, u3
 	// note: we set all bits in the byte if the key is down. 
 	// This is because windows expects it to be in the high_order_bit (when using it for converting to unicode for example)
 	// and I like it to be in the low_order_bit,  
-	if(keyboard->VKey == VK_CONTROL)
+	if (keyboard->VKey == VK_CONTROL)
 	{
-		if(e0)	updateKeyState(VK_RCONTROL);
+		if (e0)	updateKeyState(VK_RCONTROL);
 		else	updateKeyState(VK_LCONTROL);
 		keyState[VK_CONTROL] = keyState[VK_RCONTROL] | keyState[VK_LCONTROL];
 	}
-	else if(keyboard->VKey == VK_SHIFT)
+	else if (keyboard->VKey == VK_SHIFT)
 	{
 		// because why should any api be consistent lol
 		// (because we get different scancodes for l/r-shift but not for l/r ctrl etc... but still)
 		updateKeyState(MapVirtualKey(keyboard->MakeCode, MAPVK_VSC_TO_VK_EX));
 		keyState[VK_SHIFT] = keyState[VK_LSHIFT] | keyState[VK_RSHIFT];
 	}
-	else if(keyboard->VKey == VK_MENU)
+	else if (keyboard->VKey == VK_MENU)
 	{
-		if(e0)	updateKeyState(VK_LMENU);
+		if (e0)	updateKeyState(VK_LMENU);
 		else	updateKeyState(VK_RMENU);
 		keyState[VK_MENU] = keyState[VK_RMENU] | keyState[VK_LMENU];
 	}
-	else if(keyboard->VKey == VK_RETURN)
+	else if (keyboard->VKey == VK_RETURN)
 	{
-		if(e0) updateKeyState(VK_RRETURN);
+		if (e0) updateKeyState(VK_RRETURN);
 		else	updateKeyState(VK_LRETURN);
 		keyState[VK_RETURN] = keyState[VK_RRETURN] | keyState[VK_LRETURN];
 	}
@@ -628,7 +632,7 @@ i32 getUTF16TextFromRawInput(const tagRAWKEYBOARD* keyboard, wchar_t* buffer, u3
 		updateKeyState(keyboard->VKey);
 	}
 
-	if(pressed)
+	if (pressed)
 	{
 		// get unicode.
 
@@ -656,9 +660,9 @@ u32 getScancodeName(u32 scancode, char* buffer, u32 bufferLength)
 	unsigned int extended = scancode & 0xffff00;
 	unsigned int lParam = 0;
 
-	if(extended != 0)
+	if (extended != 0)
 	{
-		if(extended == 0xE11D00)
+		if (extended == 0xE11D00)
 			lParam = 0x45 << 16;
 		else
 			lParam = (0x100 | (scancode & 0xff)) << 16;
@@ -667,10 +671,67 @@ u32 getScancodeName(u32 scancode, char* buffer, u32 bufferLength)
 	{
 		lParam = scancode << 16;
 
-		if(scancode == 0x45)
+		if (scancode == 0x45)
 			lParam |= (0x1 << 24);
 	}
 
 	result = GetKeyNameText(lParam, buffer, bufferLength);
 	return result;
+}
+
+
+}
+
+
+namespace Mouse
+{
+
+static const u32 PRESSED_MASK = 0x0155;
+
+static const u32 BUTTON_NONE = 0x0000;
+static const u32 BUTTON_1 = 0x0003;
+static const u32 BUTTON_2 = 0x000C;
+static const u32 BUTTON_3 = 0x0030;
+static const u32 BUTTON_4 = 0x00C0;
+static const u32 BUTTON_5 = 0x0300;
+
+static const u32 WHEEL =	0x0400;
+
+
+bool getButtonCodeFromRawInput(const tagRAWMOUSE* mouse, bool& pressed, Veng::MouseDevice::Button& code)
+{
+	pressed = (mouse->usButtonFlags & PRESSED_MASK) != 0;
+
+	switch (mouse->usButtonFlags)
+	{
+	case BUTTON_NONE:
+		return false;
+	case RI_MOUSE_BUTTON_1_DOWN:
+	case RI_MOUSE_BUTTON_1_UP:
+		code = Veng::MouseDevice::Button::Left;
+		return true;
+	case RI_MOUSE_BUTTON_2_DOWN:
+	case RI_MOUSE_BUTTON_2_UP:
+		code = Veng::MouseDevice::Button::Right;
+		return true;
+	case RI_MOUSE_BUTTON_3_DOWN:
+	case RI_MOUSE_BUTTON_3_UP:
+		code = Veng::MouseDevice::Button::Middle;
+		return true;
+	case RI_MOUSE_BUTTON_4_DOWN:
+	case RI_MOUSE_BUTTON_4_UP:
+		code = Veng::MouseDevice::Button::Extra4;
+		return true;
+	case RI_MOUSE_BUTTON_5_DOWN:
+	case RI_MOUSE_BUTTON_5_UP:
+		code = Veng::MouseDevice::Button::Extra5;
+		return true;
+	default:
+		ASSERT2(false, "Unhandled mouse button");
+		break;
+	}
+	return false;
+}
+
+
 }

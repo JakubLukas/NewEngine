@@ -1,9 +1,11 @@
 #define VC_EXTRALEAN
 #include <windows.h>
 #include "core/allocators.h"
+#include "core/engine.h"
 #include "core/asserts.h"
 #include "core/logs.h"
 #include "core/input/input_win.h"
+#include "core/input/input_system.h"
 
 
 namespace Veng
@@ -14,6 +16,7 @@ class App
 {
 public:
 	App()
+		: m_allocator(m_mainAllocator)
 	{
 		s_instance = this;
 	}
@@ -31,11 +34,13 @@ public:
 
 		if(!m_windowMode)
 			SetFullscreenBorderless();
+
+		m_engine = Engine::Create(m_allocator);
 	}
 
 	void Deinit()
 	{
-
+		Engine::Destroy(m_engine, m_allocator);
 	}
 
 	void Run()
@@ -112,6 +117,19 @@ private:
 
 	void RegisterRawInput()
 	{
+		UINT numDevices;
+		GetRawInputDeviceList(
+			NULL, &numDevices, sizeof(RAWINPUTDEVICELIST));
+		if (numDevices == 0) return;
+
+		RAWINPUTDEVICELIST* deviceList = new RAWINPUTDEVICELIST[numDevices];
+		GetRawInputDeviceList(deviceList, &numDevices, sizeof(RAWINPUTDEVICELIST));
+		for (UINT i = 0; i < numDevices; ++i)
+		{
+
+		}
+
+
 		const int DEVICE_COUNT = 2;
 
 		RAWINPUTDEVICE Rid[DEVICE_COUNT];
@@ -134,6 +152,78 @@ private:
 		}
 	}
 
+	void HandleRawInputKeyboard(inputDeviceHandle deviceHandle, const RAWKEYBOARD& keyboard)
+	{
+		bool pressed = ((keyboard.Flags & RI_KEY_BREAK) == 0);
+		u32 scancodePS2 = Keyboard::getScancodeFromRawInput(&keyboard);
+
+		u8 scUSB = Keyboard::Scancode_USBHID::FromPS2(scancodePS2);
+		KeyboardDevice::Button keyCode = (KeyboardDevice::Button)scUSB;
+		m_engine->GetInputSystem()->RegisterKeyboardButtonEvent(deviceHandle, keyCode, pressed);
+
+		/*u32 scPS2 = Scancode_PS2::FromUSBHID(scUSB);
+		// getting a human-readable string
+		char buffer[512] = {};
+		getScancodeName(scPS2, buffer, 512);
+		//LogInfo("%s : %s\n", buffer, (pressed) ? "down" : "up");
+
+		const i32 BUFFER_SIZE = 4;
+		wchar_t utf16_buffer[BUFFER_SIZE] = { 0 };
+		i32 readChars = getUTF16TextFromRawInput(&rawKeyboard, utf16_buffer, BUFFER_SIZE);
+		ASSERT(readChars < BUFFER_SIZE - 1);
+		if(readChars > 0)
+		OutputDebugStringW(utf16_buffer);*/
+	}
+
+	void HandleRawInputMouse(inputDeviceHandle deviceHandle, const RAWMOUSE& mouse)
+	{
+		if (mouse.usFlags & MOUSE_ATTRIBUTES_CHANGED)
+		{
+			//Mouse attributes changed; application needs to query the mouse attributes.
+			ASSERT2(false, "what does this mean ?");
+		}
+
+		if (mouse.usFlags & MOUSE_MOVE_RELATIVE)
+		{
+			Vector3 axisMov{
+				(float)mouse.lLastX,
+				(float)mouse.lLastY,
+				0.0f
+			};
+			m_engine->GetInputSystem()->RegisterMouseAxisEvent(deviceHandle, MouseDevice::Axis::Movement, axisMov);
+		}
+		else if (mouse.usFlags & MOUSE_MOVE_ABSOLUTE)
+		{
+			ASSERT2(false, "Mouse movement should be relative");
+		}
+		else
+
+			if (mouse.usFlags & MOUSE_VIRTUAL_DESKTOP)
+			{
+				//Mouse coordinates are mapped to the virtual desktop (for a multiple monitor system).
+				ASSERT2(false, "Mouse movement is mapped to virtual desktop");
+			}
+
+		if (mouse.usButtonFlags & RI_MOUSE_WHEEL)
+		{
+			Vector3 axisWheel{
+				(float)mouse.usButtonData,
+				0.0f,
+				0.0f
+			};
+			m_engine->GetInputSystem()->RegisterMouseAxisEvent(deviceHandle, MouseDevice::Axis::Wheel, axisWheel);
+		}
+		else
+		{
+			bool pressed;
+			Veng::MouseDevice::Button code;
+			if (Mouse::getButtonCodeFromRawInput(&mouse, pressed, code))
+			{
+				m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, code, pressed);
+			}
+		}
+	}
+
 	void HandleRawInput(LPARAM lParam)
 	{
 		RAWINPUT raw;
@@ -145,104 +235,22 @@ private:
 			return;
 		}
 
-		HANDLE deviceHandle = raw.header.hDevice;
-		DWORD deviceType = raw.header.dwType;
+		inputDeviceHandle deviceHandle = (inputDeviceHandle)(raw.header.hDevice);
 
-		if(deviceType == RIM_TYPEKEYBOARD)
+		switch (raw.header.dwType)
 		{
-			const RAWKEYBOARD& rawKeyboard = raw.data.keyboard;
-
-			bool pressed = ((rawKeyboard.Flags & RI_KEY_BREAK) == 0);
-			u32 scancode = getScancodeFromRawInput(&rawKeyboard);
-
-			u8 scUSB = Scancode_USBHID::FromPS2(scancode);
-			u32 scPS2 = Scancode_PS2::FromUSBHID(scUSB);
-
-			// getting a human-readable string
-			char buffer[512] = {};
-			getScancodeName(scPS2, buffer, 512);
-			//LogInfo("%s : %s\n", buffer, (pressed) ? "down" : "up");
-
-			const i32 BUFFER_SIZE = 4;
-			wchar_t utf16_buffer[BUFFER_SIZE] = { 0 };
-			i32 readChars = getUTF16TextFromRawInput(&rawKeyboard, utf16_buffer, BUFFER_SIZE);
-			ASSERT(readChars < BUFFER_SIZE - 1);
-			if(readChars > 0)
-				OutputDebugStringW(utf16_buffer);
-		}
-		else if(deviceType == RIM_TYPEMOUSE)
-		{
-			const RAWMOUSE& rawMouse = raw.data.mouse;
-
-			if (rawMouse.usFlags & MOUSE_ATTRIBUTES_CHANGED)
-			{
-				//Mouse attributes changed; application needs to query the mouse attributes.
-				ASSERT2(false, "what does this mean ?");
-			}
-
-			if (rawMouse.usFlags & MOUSE_MOVE_RELATIVE)
-			{
-				//Mouse movement data is relative to the last mouse position.
-				LONG xRel = rawMouse.lLastX;
-				LONG yRel = rawMouse.lLastY;
-			}
-			else if (rawMouse.usFlags & MOUSE_MOVE_ABSOLUTE)
-			{
-				ASSERT2(false, "Mouse movement should be relative");
-			}
-
-			if (rawMouse.usFlags & MOUSE_VIRTUAL_DESKTOP)
-			{
-				//Mouse coordinates are mapped to the virtual desktop (for a multiple monitor system).
-				ASSERT2(false, "Mouse movement is mapped to virtual desktop");
-			}
-
-			//rawMouse.usButtonFlags
-			/*
-			RI_MOUSE_LEFT_BUTTON_DOWN
-			RI_MOUSE_LEFT_BUTTON_DOWN
-			RI_MOUSE_LEFT_BUTTON_UP
-			RI_MOUSE_RIGHT_BUTTON_DOWN
-			RI_MOUSE_RIGHT_BUTTON_UP
-			RI_MOUSE_MIDDLE_BUTTON_DOWN
-			RI_MOUSE_MIDDLE_BUTTON_UP
-
-			RI_MOUSE_BUTTON_1_DOWN
-			RI_MOUSE_BUTTON_1_UP
-			RI_MOUSE_BUTTON_2_DOWN
-			RI_MOUSE_BUTTON_2_UP
-			RI_MOUSE_BUTTON_3_DOWN
-			RI_MOUSE_BUTTON_3_UP
-
-			RI_MOUSE_BUTTON_4_DOWN
-			RI_MOUSE_BUTTON_4_UP
-			RI_MOUSE_BUTTON_5_DOWN
-			RI_MOUSE_BUTTON_5_UP
-			RI_MOUSE_WHEEL
-			*/
-
-			if (rawMouse.usButtonFlags & RI_MOUSE_WHEEL)
-			{
-				USHORT wheelDelta = rawMouse.usButtonData;
-			}
-
-			LogInfo("Mouse: usFlags=%04x ulButtons=%04x usButtonFlags=%04x usButtonData=%04x ulRawButtons=%04x lLastX=%04x lLastY=%04x ulExtraInformation=%04x\r\n",
-				rawMouse.usFlags,
-				rawMouse.ulButtons,
-				rawMouse.usButtonFlags,
-				rawMouse.usButtonData,
-				rawMouse.ulRawButtons,
-				rawMouse.lLastX,
-				rawMouse.lLastY,
-				rawMouse.ulExtraInformation);
-		}
-		else if(deviceType == RIM_TYPEHID)
-		{
-			const RAWHID& rawHID = raw.data.hid;
-		}
-		else
-		{
+		case RIM_TYPEMOUSE:
+			HandleRawInputMouse(deviceHandle, raw.data.mouse);
+			break;
+		case RIM_TYPEKEYBOARD:
+			HandleRawInputKeyboard(deviceHandle, raw.data.keyboard);
+			break;
+		case RIM_TYPEHID:
+			//handle HID
+			break;
+		default:
 			ASSERT2(false, "Unknown type of raw input device");
+			break;
 		}
 	}
 
@@ -292,6 +300,10 @@ private:
 	int m_exitCode = 0;
 	bool m_finished = false;
 	bool m_windowMode = true;
+
+	MainAllocator m_mainAllocator;
+	HeapAllocator m_allocator;
+	Engine* m_engine;
 
 	static App* s_instance;
 };

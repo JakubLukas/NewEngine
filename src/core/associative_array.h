@@ -74,14 +74,15 @@ public:
 
 			for(unsigned i = m_size; i > idx; --i)
 			{
-				m_keys[i] = m_keys[i - 1];
-				m_keys[i].~KeyType();
-				m_values[i] = m_values[i - 1];
-				m_values[i].~ValueType();
+				auto& t = m_keys[i - 1];
+				new (NewPlaceholder(), (void*)(m_keys + i)) KeyType(t);
+				(m_keys + i - 1)->~KeyType();
+				new (NewPlaceholder(), (void*)(m_values + i)) ValueType(m_values[i - 1]);
+				(m_values + i - 1)->~ValueType();
 			}
 			
-			m_keys[idx] = key;
-			m_values[idx] = value;
+			new (NewPlaceholder(), (void*)(m_keys + idx)) KeyType(key);
+			new (NewPlaceholder(), (void*)(m_values + idx)) ValueType(value);
 			++m_size;
 			return true;
 		}
@@ -102,9 +103,9 @@ public:
 
 			for(unsigned i = idx; i < m_size - 1; ++i)
 			{
-				m_keys[i] = m_keys[i + 1];
+				new (NewPlaceholder(), (void*)(m_keys + i)) KeyType(m_keys[i + 1]);
 				m_keys[i + 1].~KeyType();
-				m_values[i] = m_values[i + 1];
+				new (NewPlaceholder(), (void*)(m_values + i)) ValueType(m_values[i + 1]);
 				m_values[i + 1].~ValueType();
 			}
 			--m_size;
@@ -152,13 +153,13 @@ public:
 		m_capacity = capacity;
 		void* data = m_allocator.Allocate(m_capacity * (sizeof(KeyType) + sizeof(ValueType)));
 		KeyType* newKeys = static_cast<KeyType*>(data);
-		ValueType* newValues = static_cast<ValueType*>(data + sizeof(KeyType) * m_capacity);
+		ValueType* newValues = static_cast<ValueType*>((void*)((KeyType*)data + m_capacity));
 		
 		for(unsigned i = 0; i < m_size; ++i)
 		{
-			newKeys[i] = m_keys[i];
+			new (NewPlaceholder(), (void*)(newKeys + i)) KeyType(m_keys[i]);
 			m_keys[i].~KeyType();
-			newValues[i] = m_values[i];
+			new (NewPlaceholder(), (void*)(newValues + i)) ValueType(m_values[i]);
 			m_values[i].~ValueType();
 		}
 
@@ -186,9 +187,9 @@ private:
 			i = (low + high) >> 1;
 			mkey = &m_keys[i];
 
-			if (mkey < key)
+			if (*mkey < key)
 				low = i + 1;
-			else if (key < mkey)
+			else if (key < *mkey)
 				high = i;
 			else
 				return i;
