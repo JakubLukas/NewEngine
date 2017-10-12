@@ -6,6 +6,8 @@
 #include "core/logs.h"
 #include "core/input/input_win.h"
 #include "core/input/input_system.h"
+#include "core/array.h"
+#include "core/string.h"
 
 
 namespace Veng
@@ -30,12 +32,12 @@ public:
 	{
 		CreateMainWindow();
 
-		RegisterRawInput();
-
 		if(!m_windowMode)
 			SetFullscreenBorderless();
 
 		m_engine = Engine::Create(m_allocator);
+
+		RegisterRawInput();
 	}
 
 	void Deinit()
@@ -117,38 +119,65 @@ private:
 
 	void RegisterRawInput()
 	{
+		//REGISTER TO ENGINE
 		UINT numDevices;
-		GetRawInputDeviceList(
-			NULL, &numDevices, sizeof(RAWINPUTDEVICELIST));
+		if (GetRawInputDeviceList(NULL, &numDevices, sizeof(RAWINPUTDEVICELIST)) != 0)
+		{
+			LogError("RegisterRawInputDevices failed\n");
+			return;
+		}
 		if (numDevices == 0) return;
 
-		RAWINPUTDEVICELIST* deviceList = new RAWINPUTDEVICELIST[numDevices];
-		GetRawInputDeviceList(deviceList, &numDevices, sizeof(RAWINPUTDEVICELIST));
+		Array<RAWINPUTDEVICELIST> deviceList(m_allocator);
+		deviceList.Resize(numDevices);
+		if (GetRawInputDeviceList(&deviceList[0], &numDevices, sizeof(RAWINPUTDEVICELIST)) == -1)
+		{
+			LogError("RegisterRawInputDevices failed\n");
+			return;
+		}
+
 		for (UINT i = 0; i < numDevices; ++i)
 		{
+			const RAWINPUTDEVICELIST& device = deviceList[i];
+			
+			String deviceName(m_allocator);
+			GetNameOfDevice(device.hDevice, deviceName);
 
+			inputDeviceHandle deviceHandle = (inputDeviceHandle)(device.hDevice);
+			switch (device.dwType)
+			{
+			case RIM_TYPEMOUSE:
+				m_engine->GetInputSystem()->RegisterDevice(deviceHandle, InputDeviceCategory::Mouse, deviceName);
+				break;
+			case RIM_TYPEKEYBOARD:
+				m_engine->GetInputSystem()->RegisterDevice(deviceHandle, InputDeviceCategory::Keyboard, deviceName);
+				break;
+			default:
+				LogInfo("Unregistered HID device. handle: 0x%08X, type: 0x%04X\n", device.hDevice, device.dwType);
+				break;
+			}
 		}
 
 
+		//REGISTER TO WINAPI
 		const int DEVICE_COUNT = 2;
-
 		RAWINPUTDEVICE Rid[DEVICE_COUNT];
 
+		//mouse
 		Rid[0].usUsagePage = 0x01;
 		Rid[0].usUsage = 0x02;
-		Rid[0].dwFlags = RIDEV_NOLEGACY;   // adds HID mouse and also ignores legacy mouse messages
-		//if you want to be notified about WM_INPUT_DEVICE_CHANGE add flag RIDEV_DEVNOTIFY
+		Rid[0].dwFlags = RIDEV_NOLEGACY | RIDEV_DEVNOTIFY;
 		Rid[0].hwndTarget = NULL;
 
+		//keyboard
 		Rid[1].usUsagePage = 0x01;
 		Rid[1].usUsage = 0x06;
-		Rid[1].dwFlags = RIDEV_NOLEGACY;   // adds HID keyboard and also ignores legacy keyboard messages
+		Rid[1].dwFlags = RIDEV_NOLEGACY | RIDEV_DEVNOTIFY;
 		Rid[1].hwndTarget = NULL;
 
 		if(RegisterRawInputDevices(Rid, DEVICE_COUNT, sizeof(Rid[0])) == FALSE)
 		{
-			//DWORD err = GetLastError(); //WHERE CAN I FIND ERROR CODES DESCS ???
-			Veng::LogError("RegisterRawInputDevices failed\n");
+			LogError("RegisterRawInputDevices failed\n");
 		}
 	}
 
@@ -183,6 +212,12 @@ private:
 			ASSERT2(false, "what does this mean ?");
 		}
 
+		if (mouse.usFlags & MOUSE_VIRTUAL_DESKTOP)
+		{
+			//Mouse coordinates are mapped to the virtual desktop (for a multiple monitor system).
+			ASSERT2(false, "Mouse movement is mapped to virtual desktop");
+		}
+
 		if (mouse.usFlags & MOUSE_MOVE_RELATIVE)
 		{
 			Vector3 axisMov{
@@ -191,18 +226,13 @@ private:
 				0.0f
 			};
 			m_engine->GetInputSystem()->RegisterMouseAxisEvent(deviceHandle, MouseDevice::Axis::Movement, axisMov);
+			return;
 		}
 		else if (mouse.usFlags & MOUSE_MOVE_ABSOLUTE)
 		{
 			ASSERT2(false, "Mouse movement should be relative");
+			return;
 		}
-		else
-
-			if (mouse.usFlags & MOUSE_VIRTUAL_DESKTOP)
-			{
-				//Mouse coordinates are mapped to the virtual desktop (for a multiple monitor system).
-				ASSERT2(false, "Mouse movement is mapped to virtual desktop");
-			}
 
 		if (mouse.usButtonFlags & RI_MOUSE_WHEEL)
 		{
@@ -212,14 +242,36 @@ private:
 				0.0f
 			};
 			m_engine->GetInputSystem()->RegisterMouseAxisEvent(deviceHandle, MouseDevice::Axis::Wheel, axisWheel);
+			return;
 		}
 		else
 		{
-			bool pressed;
-			Veng::MouseDevice::Button code;
-			if (Mouse::getButtonCodeFromRawInput(&mouse, pressed, code))
+			if (mouse.usButtonFlags != Mouse::BUTTON_NONE)
 			{
-				m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, code, pressed);
+				if((mouse.usButtonFlags & RI_MOUSE_BUTTON_1_DOWN) != 0)
+					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Left, true);
+				if((mouse.usButtonFlags & RI_MOUSE_BUTTON_1_UP) != 0)
+					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Left, false);
+
+				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_2_DOWN) != 0)
+					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Right, true);
+				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_2_UP) != 0)
+					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Right, false);
+
+				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_3_DOWN) != 0)
+					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Middle, true);
+				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_3_UP) != 0)
+					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Middle, false);
+
+				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_4_DOWN) != 0)
+					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Extra4, true);
+				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_4_UP) != 0)
+					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Extra4, false);
+
+				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_5_DOWN) != 0)
+					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Extra5, true);
+				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_5_UP) != 0)
+					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Extra5, false);
 			}
 		}
 	}
@@ -254,6 +306,82 @@ private:
 		}
 	}
 
+	void HandleRawInputDeviceChange(WPARAM wparam, LPARAM lParam)
+	{
+		HANDLE deviceHandle = (void*)lParam;
+
+		RID_DEVICE_INFO deviceInfo;
+		UINT size = sizeof(RID_DEVICE_INFO);
+		if (GetRawInputDeviceInfo(deviceHandle, RIDI_DEVICEINFO, &deviceInfo, &size) > 0)
+		{
+			InputDeviceCategory category;
+			switch (deviceInfo.dwType)
+			{
+			case RIM_TYPEMOUSE:
+				category = InputDeviceCategory::Mouse;
+				break;
+			case RIM_TYPEKEYBOARD:
+				category = InputDeviceCategory::Keyboard;
+				break;
+			case RIM_TYPEHID:
+				//handle HID
+				break;
+			}
+
+			if (wparam == GIDC_ARRIVAL)
+			{
+				String deviceName(m_allocator);
+				GetNameOfDevice(deviceHandle, deviceName);
+
+				m_engine->GetInputSystem()->RegisterDevice(lParam, category, deviceName);
+			}
+			else
+				m_engine->GetInputSystem()->UnregisterDevice(lParam);
+		}
+		else
+		{
+			LogError("HandleRawInputDeviceChange: failed\n");
+		}
+	}
+
+	void GetNameOfDevice(HANDLE deviceHandle, String& deviceName)
+	{
+		UINT registryPathSize;
+		GetRawInputDeviceInfo(deviceHandle, RIDI_DEVICENAME, NULL, &registryPathSize);
+		Array<char> rawRegistrypath(m_allocator);
+		rawRegistrypath.Resize(registryPathSize);
+		if (GetRawInputDeviceInfo(deviceHandle, RIDI_DEVICENAME, &rawRegistrypath[0], &registryPathSize) <= 0)
+		{
+			LogError("RegisterRawInputDevices: failed to get device name\n");
+			return;
+		}
+
+		ASSERT(rawRegistrypath[7] == '#');
+
+		String registryPathStr("SYSTEM\\CurrentControlSet\\Enum\\HID\\", m_allocator);
+		unsigned startIdx = 8;
+		unsigned endIdx = 8;
+		for (; rawRegistrypath[endIdx] != '#'; ++endIdx);
+		registryPathStr.Cat(&rawRegistrypath[startIdx], endIdx - startIdx);
+		registryPathStr.Cat("\\");
+		startIdx = endIdx + 1;
+		endIdx = startIdx;
+		for (; rawRegistrypath[endIdx] != '#'; ++endIdx);
+		registryPathStr.Cat(&rawRegistrypath[startIdx], endIdx - startIdx);
+		
+		HKEY regKey;
+		RegOpenKeyEx(HKEY_LOCAL_MACHINE, registryPathStr.Cstr(), 0, KEY_READ, &regKey);
+		char entry[256] = { 0 };
+		DWORD entryLength = 256;
+		RegQueryValueEx(regKey, "DeviceDesc", NULL, NULL, (LPBYTE)entry, &entryLength);
+		RegCloseKey(regKey);
+
+		startIdx = entryLength - 1;
+		for (; entry[startIdx] != ';' || startIdx == 0; --startIdx);
+		++startIdx;
+		deviceName.Set(&entry[startIdx], entryLength - startIdx);
+	}
+
 	LRESULT OnMessage(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	{
 		switch(msg)
@@ -278,6 +406,9 @@ private:
 				break;
 			case WM_INPUT:
 				HandleRawInput(lparam);
+				break;
+			case WM_INPUT_DEVICE_CHANGE:
+				HandleRawInputDeviceChange(wparam, lparam);
 				break;
 			case WM_SYSCOMMAND:
 				if(wparam == SC_KEYMENU) //Remove beeping sound when ALT + some key is pressed.

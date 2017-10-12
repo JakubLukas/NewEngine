@@ -12,13 +12,9 @@ template<class KeyType, class ValueType>
 class AssociativeArray
 {
 public:
-	AssociativeArray(IAllocator& allocator)
+	explicit AssociativeArray(IAllocator& allocator)
 		: m_allocator(allocator)
 	{
-		m_capacity = 4;
-		void* data = m_allocator.Allocate(m_capacity * (sizeof(KeyType) + sizeof(ValueType)));
-		m_keys = static_cast<KeyType*>(data);
-		m_values = static_cast<ValueType*>(data + sizeof(KeyType) * m_capacity);
 	}
 
 	~AssociativeArray()
@@ -50,7 +46,7 @@ public:
 		unsigned idx = GetIndex(key);
 		if (m_keys[idx] == key)
 		{
-			value = &m_values[i];
+			value = &m_values[idx];
 			return true;
 		}
 
@@ -70,7 +66,7 @@ public:
 		unsigned idx = GetIndex(key);
 		if (m_size == 0 || m_keys[idx] != key)
 		{
-			if (m_size == m_capacity) Reserve(m_capacity * 2);
+			if (m_size == m_capacity) Enlarge();
 
 			for(unsigned i = m_size; i > idx; --i)
 			{
@@ -125,8 +121,8 @@ public:
 		}
 		else
 		{
-			ASSERT2(false, "Key not find");
-			return ValueType();
+			ASSERT2(false, "Key not found");
+			return m_values[0];
 		}
 	}
 
@@ -140,8 +136,8 @@ public:
 		}
 		else
 		{
-			ASSERT2(false, "Key not find");
-			return ValueType();
+			ASSERT2(false, "Key not found");
+			return m_values[0];
 		}
 	}
 
@@ -169,11 +165,17 @@ public:
 	}
 
 
-	int Size() const { return m_size; }
+	unsigned Size() const { return m_size; }
 
-	int Capacity() const { return m_capacity; }
+	unsigned Capacity() const { return m_capacity; }
 
 private:
+	void Enlarge()
+	{
+		unsigned newCapacity = (m_capacity == 0) ? 4 : m_capacity * 2;
+		Reserve(newCapacity);
+	}
+
 	unsigned GetIndex(const KeyType& key)
 	{
 		//binary search: O(log n)

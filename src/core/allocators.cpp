@@ -66,6 +66,7 @@ void* MainAllocator::Reallocate(void* ptr, size_t size)
 
 void MainAllocator::Deallocate(void* p)
 {
+	if (p == nullptr) return;
 	free(static_cast<size_t*>(p) - 1);
 }
 

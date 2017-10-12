@@ -12,11 +12,9 @@ template<class Type>
 class Array
 {
 public:
-	Array(IAllocator& allocator)
+	explicit Array(IAllocator& allocator)
 		: m_allocator(allocator)
 	{
-		m_capacity = 4;
-		m_data = static_cast<Type*>(m_allocator.Allocate(m_capacity * sizeof(Type)));
 	}
 
 
@@ -50,7 +48,7 @@ public:
 	void Push(const Type& value)
 	{
 		if(m_size == m_capacity)
-			Reserve(m_capacity * 2);
+			Enlarge();
 
 		new (NewPlaceholder(), (void*)(m_data + m_size)) Type(value);
 		++m_size;
@@ -107,11 +105,38 @@ public:
 	}
 
 
+	void Resize(unsigned size)
+	{
+		if (size == m_size && size == m_capacity) return;
+
+		Type* newData = static_cast<Type*>(m_allocator.Allocate(size * sizeof(Type)));
+
+		unsigned sizeMin = (size < m_size) ? size : m_size;
+		for (unsigned i = 0; i < sizeMin; ++i)
+		{
+			new (NewPlaceholder(), (void*)(newData + i)) Type(m_data[i]);
+		}
+		for (unsigned i = 0; i < m_size; ++i)
+		{
+			(m_data + i)->~Type();
+		}
+
+		m_allocator.Deallocate(m_data);
+		m_data = newData;
+		m_capacity = m_size = size;
+	}
+
+
 	unsigned Size() const { return m_size; }
 
 	unsigned Capacity() const { return m_capacity; }
 
 private:
+	void Enlarge()
+	{
+		unsigned newCapacity = (m_capacity == 0) ? 4 : m_capacity * 2;
+		Reserve(newCapacity);
+	}
 
 	IAllocator& m_allocator;
 	unsigned m_capacity = 0;

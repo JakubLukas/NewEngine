@@ -460,7 +460,7 @@ namespace Mouse
 {
 
 
-bool getButtonCodeFromRawInput(const tagRAWMOUSE* mouse, bool& pressed, Veng::MouseDevice::Button& code);
+const u32 BUTTON_NONE = 0x0000;
 
 
 }

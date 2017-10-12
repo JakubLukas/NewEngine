@@ -4,6 +4,7 @@
 #include "core/allocators.h"
 #include "core/vector3.h"
 #include "core/array.h"
+#include "core/string.h"
 
 #include "core/input/devices/input_device_mouse.h"
 #include "core/input/devices/input_device_keyboard.h"
@@ -17,55 +18,12 @@ typedef uintptr inputDeviceID;
 typedef uintptr inputDeviceHandle;
 
 
-class InputDevice final
+enum class InputDeviceCategory : u8
 {
-public:
-	enum class Type : u8
-	{
-		Button,
-		Axis
-	};
-
-	enum class Category : u8
-	{
-		None,
-		Mouse,
-		Keyboard,
-		Gamepad
-	};
-
-
-	InputDevice()
-		: m_deviceId(0)
-		, m_category(Category::None)
-		, m_active(false)
-	{
-	}
-
-
-	InputDevice(inputDeviceID deviceId, Category category)
-		: m_deviceId(deviceId)
-		, m_category(category)
-		, m_active(false)
-	{
-	}
-
-	InputDevice(const InputDevice& other)
-		: m_deviceId(other.m_deviceId)
-		, m_category(other.m_category)
-		, m_active(other.m_active)
-	{
-	}
-
-	Category GetCategory() const { return m_category; }
-	
-	inputDeviceID GetDeviceId() const { return m_deviceId; }
-
-	bool IsActive() const { return m_active; };
-protected:
-	Category m_category;
-	bool m_active;
-	inputDeviceID m_deviceId;
+	None,
+	Mouse,
+	Keyboard,
+	Gamepad
 };
 
 
@@ -78,10 +36,18 @@ struct InputEvent
 		AxisChanged
 	};
 
-	Type eventType;
+	InputEvent() {}
+
+	Type type;
 	float time;
-	const InputDevice& device;
-	u8 code;
+	inputDeviceID deviceId;
+	InputDeviceCategory deviceCategory;
+	union
+	{
+		MouseDevice::Button mbCode;
+		MouseDevice::Axis maCode;
+		KeyboardDevice::Button kbCode;
+	};
 	union
 	{
 		bool connected;
@@ -98,11 +64,12 @@ public:
 	static void Destroy(InputSystem* inputSystem, IAllocator& allocator);
 
 
+	virtual bool IsDeviceActive(inputDeviceID id) const = 0;
 	virtual const Array<InputEvent>& GetInputEventBuffer() const = 0;
 
 
-	virtual inputDeviceID RegisterDevice(inputDeviceHandle handle, InputDevice::Category category) = 0;
-	virtual void UnregisterDevice(inputDeviceHandle id) = 0;
+	virtual inputDeviceID RegisterDevice(inputDeviceHandle handle, InputDeviceCategory category, const String& name) = 0;
+	virtual void UnregisterDevice(inputDeviceHandle handle) = 0;
 
 	virtual bool RegisterKeyboardButtonEvent(inputDeviceHandle handle, KeyboardDevice::Button buttonId, bool pressed) = 0;
 	virtual bool RegisterMouseButtonEvent(inputDeviceHandle handle, MouseDevice::Button buttonId, bool pressed) = 0;
