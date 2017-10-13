@@ -38,10 +38,6 @@ struct InputDevice
 	inputDeviceID id;
 	bool active;
 	char name[MAX_NAME_LENGTH] = { 0 };
-	//TODO: deviceName
-		//from GetRawInputDeviceInfo, uiCommand = RIDI_DEVICENAME can be obtained registry path
-		//than lookup in registry
-		//https://stackoverflow.com/questions/8663809/how-to-get-device-display-name-in-vc
 };
 
 
@@ -93,7 +89,7 @@ public:
 	}
 
 
-	bool RegisterKeyboardButtonEvent(inputDeviceHandle handle, KeyboardDevice::Button buttonId, bool pressed) override
+	bool RegisterButtonEvent(inputDeviceHandle handle, KeyboardDevice::Button buttonId, bool pressed) override
 	{
 		InputDevice* device;
 		if (m_devices.Find(handle, device))
@@ -105,13 +101,13 @@ public:
 			newEvent.deviceCategory = device->category;
 			newEvent.kbCode = buttonId;
 			newEvent.pressed = pressed;
-			//m_events.Push(newEvent);
+			m_events.Push(newEvent);
 			return true;
 		}
 		return false;
 	}
 
-	bool RegisterMouseButtonEvent(inputDeviceHandle handle, MouseDevice::Button buttonId, bool pressed) override
+	bool RegisterButtonEvent(inputDeviceHandle handle, MouseDevice::Button buttonId, bool pressed) override
 	{
 		InputDevice* device;
 		if (m_devices.Find(handle, device))
@@ -123,13 +119,31 @@ public:
 			newEvent.deviceCategory = device->category;
 			newEvent.mbCode = buttonId;
 			newEvent.pressed = pressed;
-			//m_events.Push(newEvent);
+			m_events.Push(newEvent);
 			return true;
 		}
 		return false;
 	}
 
-	bool RegisterMouseAxisEvent(inputDeviceHandle handle, MouseDevice::Axis axisId, const Vector3& delta) override
+	bool RegisterButtonEvent(inputDeviceHandle handle, GamepadDevice::Button buttonId, bool pressed) override
+	{
+		InputDevice* device;
+		if (m_devices.Find(handle, device))
+		{
+			InputEvent newEvent;
+			newEvent.type = InputEvent::Type::ButtonChanged;
+			newEvent.time = 0.0f;
+			newEvent.deviceId = device->id;
+			newEvent.deviceCategory = device->category;
+			newEvent.gbCode = buttonId;
+			newEvent.pressed = pressed;
+			m_events.Push(newEvent);
+			return true;
+		}
+		return false;
+	}
+
+	bool RegisterAxisEvent(inputDeviceHandle handle, MouseDevice::Axis axisId, const Vector3& delta) override
 	{
 		InputDevice* device;
 		if (m_devices.Find(handle, device))
@@ -141,10 +155,34 @@ public:
 			newEvent.deviceCategory = device->category;
 			newEvent.maCode = axisId;
 			newEvent.axis = delta;
-			//m_events.Push(newEvent);
+			m_events.Push(newEvent);
 			return true;
 		}
 		return false;
+	}
+
+	bool RegisterAxisEvent(inputDeviceHandle handle, GamepadDevice::Axis axisId, const Vector3& delta) override
+	{
+		InputDevice* device;
+		if (m_devices.Find(handle, device))
+		{
+			InputEvent newEvent;
+			newEvent.type = InputEvent::Type::AxisChanged;
+			newEvent.time = 0.0f;
+			newEvent.deviceId = device->id;
+			newEvent.deviceCategory = device->category;
+			newEvent.gaCode = axisId;
+			newEvent.axis = delta;
+			m_events.Push(newEvent);
+			return true;
+		}
+		return false;
+	}
+
+
+	void Update(float deltaTime) override
+	{
+		m_events.Clear();
 	}
 
 

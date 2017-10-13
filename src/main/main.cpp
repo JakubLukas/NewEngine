@@ -8,6 +8,9 @@
 #include "core/input/input_system.h"
 #include "core/array.h"
 #include "core/string.h"
+#include <hidusage.h>
+#include <hidclass.h>
+#include <hidsdi.h>
 
 
 namespace Veng
@@ -50,6 +53,7 @@ public:
 		while(!m_finished)
 		{
 			Sleep(1000 / 60);
+			m_engine->Update(1000 / 60);
 			HandleEvents();
 		}
 	}
@@ -152,6 +156,17 @@ private:
 			case RIM_TYPEKEYBOARD:
 				m_engine->GetInputSystem()->RegisterDevice(deviceHandle, InputDeviceCategory::Keyboard, deviceName);
 				break;
+			case RIM_TYPEHID:
+			{
+				USHORT usage = GetHIDType(device.hDevice);
+				switch (usage)
+				{
+				case HID_USAGE_GENERIC_GAMEPAD:
+					m_engine->GetInputSystem()->RegisterDevice(deviceHandle, InputDeviceCategory::Gamepad, deviceName);
+					break;
+				}
+			}
+			break;
 			default:
 				LogInfo("Unregistered HID device. handle: 0x%08X, type: 0x%04X\n", device.hDevice, device.dwType);
 				break;
@@ -160,35 +175,43 @@ private:
 
 
 		//REGISTER TO WINAPI
-		const int DEVICE_COUNT = 2;
-		RAWINPUTDEVICE Rid[DEVICE_COUNT];
+		const int DEVICE_COUNT = 3;
+		RAWINPUTDEVICE rid[DEVICE_COUNT];
 
 		//mouse
-		Rid[0].usUsagePage = 0x01;
-		Rid[0].usUsage = 0x02;
-		Rid[0].dwFlags = RIDEV_NOLEGACY | RIDEV_DEVNOTIFY;
-		Rid[0].hwndTarget = NULL;
+		rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
+		rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
+		rid[0].dwFlags = RIDEV_NOLEGACY | RIDEV_DEVNOTIFY;
+		rid[0].hwndTarget = NULL;//TODO: m_hwnd ??
 
 		//keyboard
-		Rid[1].usUsagePage = 0x01;
-		Rid[1].usUsage = 0x06;
-		Rid[1].dwFlags = RIDEV_NOLEGACY | RIDEV_DEVNOTIFY;
-		Rid[1].hwndTarget = NULL;
+		rid[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
+		rid[1].usUsage = HID_USAGE_GENERIC_KEYBOARD;
+		rid[1].dwFlags = RIDEV_NOLEGACY | RIDEV_DEVNOTIFY;
+		rid[1].hwndTarget = NULL;
 
-		if(RegisterRawInputDevices(Rid, DEVICE_COUNT, sizeof(Rid[0])) == FALSE)
+		//gamepad
+		rid[2].usUsagePage = HID_USAGE_PAGE_GENERIC;
+		rid[2].usUsage = HID_USAGE_GENERIC_GAMEPAD;
+		rid[2].dwFlags = RIDEV_DEVNOTIFY;
+		rid[2].hwndTarget = NULL;
+
+		if(RegisterRawInputDevices(rid, DEVICE_COUNT, sizeof(RAWINPUTDEVICE)) == FALSE)
 		{
 			LogError("RegisterRawInputDevices failed\n");
 		}
 	}
 
-	void HandleRawInputKeyboard(inputDeviceHandle deviceHandle, const RAWKEYBOARD& keyboard)
+	void HandleRawInputKeyboard(HANDLE hDevice, const RAWKEYBOARD& keyboard)
 	{
+		inputDeviceHandle deviceHandle = (inputDeviceHandle)(hDevice);
+
 		bool pressed = ((keyboard.Flags & RI_KEY_BREAK) == 0);
 		u32 scancodePS2 = Keyboard::getScancodeFromRawInput(&keyboard);
 
 		u8 scUSB = Keyboard::Scancode_USBHID::FromPS2(scancodePS2);
 		KeyboardDevice::Button keyCode = (KeyboardDevice::Button)scUSB;
-		m_engine->GetInputSystem()->RegisterKeyboardButtonEvent(deviceHandle, keyCode, pressed);
+		m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, keyCode, pressed);
 
 		/*u32 scPS2 = Scancode_PS2::FromUSBHID(scUSB);
 		// getting a human-readable string
@@ -204,8 +227,10 @@ private:
 		OutputDebugStringW(utf16_buffer);*/
 	}
 
-	void HandleRawInputMouse(inputDeviceHandle deviceHandle, const RAWMOUSE& mouse)
+	void HandleRawInputMouse(HANDLE hDevice, const RAWMOUSE& mouse)
 	{
+		inputDeviceHandle deviceHandle = (inputDeviceHandle)(hDevice);
+
 		if (mouse.usFlags & MOUSE_ATTRIBUTES_CHANGED)
 		{
 			//Mouse attributes changed; application needs to query the mouse attributes.
@@ -218,14 +243,14 @@ private:
 			ASSERT2(false, "Mouse movement is mapped to virtual desktop");
 		}
 
-		if (mouse.usFlags & MOUSE_MOVE_RELATIVE)
+		if (mouse.lLastX != 0 && mouse.lLastY != 0)
 		{
 			Vector3 axisMov{
 				(float)mouse.lLastX,
 				(float)mouse.lLastY,
 				0.0f
 			};
-			m_engine->GetInputSystem()->RegisterMouseAxisEvent(deviceHandle, MouseDevice::Axis::Movement, axisMov);
+			m_engine->GetInputSystem()->RegisterAxisEvent(deviceHandle, MouseDevice::Axis::Movement, axisMov);
 			return;
 		}
 		else if (mouse.usFlags & MOUSE_MOVE_ABSOLUTE)
@@ -241,7 +266,7 @@ private:
 				0.0f,
 				0.0f
 			};
-			m_engine->GetInputSystem()->RegisterMouseAxisEvent(deviceHandle, MouseDevice::Axis::Wheel, axisWheel);
+			m_engine->GetInputSystem()->RegisterAxisEvent(deviceHandle, MouseDevice::Axis::Wheel, axisWheel);
 			return;
 		}
 		else
@@ -249,31 +274,90 @@ private:
 			if (mouse.usButtonFlags != Mouse::BUTTON_NONE)
 			{
 				if((mouse.usButtonFlags & RI_MOUSE_BUTTON_1_DOWN) != 0)
-					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Left, true);
+					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Left, true);
 				if((mouse.usButtonFlags & RI_MOUSE_BUTTON_1_UP) != 0)
-					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Left, false);
+					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Left, false);
 
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_2_DOWN) != 0)
-					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Right, true);
+					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Right, true);
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_2_UP) != 0)
-					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Right, false);
+					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Right, false);
 
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_3_DOWN) != 0)
-					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Middle, true);
+					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Middle, true);
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_3_UP) != 0)
-					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Middle, false);
+					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Middle, false);
 
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_4_DOWN) != 0)
-					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Extra4, true);
+					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra4, true);
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_4_UP) != 0)
-					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Extra4, false);
+					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra4, false);
 
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_5_DOWN) != 0)
-					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Extra5, true);
+					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra5, true);
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_5_UP) != 0)
-					m_engine->GetInputSystem()->RegisterMouseButtonEvent(deviceHandle, MouseDevice::Button::Extra5, false);
+					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra5, false);
 			}
 		}
+	}
+
+	void HandleRawInputHID(HANDLE hDevice, const RAWHID& hid)
+	{
+		USHORT usage = GetHIDType(hDevice);
+		switch (usage)
+		{
+		case HID_USAGE_GENERIC_GAMEPAD:
+			HandleRawInputGamepad(hDevice, hid);
+			break;
+		}
+	}
+
+	void HandleRawInputGamepad(HANDLE hDevice, const RAWHID& hid)
+	{
+		UINT preparseBufferSize;
+		GetRawInputDeviceInfo(hDevice, RIDI_PREPARSEDDATA, NULL, &preparseBufferSize);
+		if (preparseBufferSize == 0)
+		{
+			LogError("HandleRawInputHID: failed to parse HID data\n");
+			return;
+		}
+
+		PHIDP_PREPARSED_DATA preparsedData = (PHIDP_PREPARSED_DATA)m_allocator.Allocate(preparseBufferSize);
+		if (GetRawInputDeviceInfo(hDevice, RIDI_PREPARSEDDATA, preparsedData, &preparseBufferSize) <= 0)
+		{
+			LogError("HandleRawInputHID: failed to parse HID data\n");
+		}
+
+		bool buttonState[256] = { false };
+
+		HIDP_CAPS caps;
+		HidP_GetCaps(preparsedData, &caps);
+		//https://www.codeproject.com/Articles/185522/Using-the-Raw-Input-API-to-Process-Joystick-Input
+
+		USHORT buttonCapsLength = caps.NumberInputButtonCaps;//buttons?
+		PHIDP_BUTTON_CAPS buttonCaps = (PHIDP_BUTTON_CAPS)m_allocator.Allocate(buttonCapsLength * sizeof(HIDP_BUTTON_CAPS));
+		HidP_GetButtonCaps(HidP_Input, buttonCaps, &buttonCapsLength, preparsedData);
+
+		USHORT numberOfButtons = buttonCaps->Range.UsageMax - buttonCaps->Range.UsageMin + 1;
+		ULONG usageLength = (ULONG)numberOfButtons;
+		PUSAGE usage = (PUSAGE)m_allocator.Allocate(numberOfButtons * sizeof(USAGE));
+		HidP_GetUsages(HidP_Input, buttonCaps->UsagePage, 0, usage, &usageLength, preparsedData, (PCHAR)hid.bRawData, hid.dwSizeHid);
+
+
+		USHORT valuesLength = caps.NumberInputValueCaps;//axes?
+		PHIDP_VALUE_CAPS valuesCaps = (PHIDP_VALUE_CAPS)m_allocator.Allocate(valuesLength * sizeof(HIDP_VALUE_CAPS));
+		HidP_GetValueCaps(HidP_Input, valuesCaps, &valuesLength, preparsedData);
+
+		for (unsigned i = 0; i < caps.NumberInputValueCaps; ++i)
+		{
+			ULONG value;
+			HidP_GetUsageValue(HidP_Input, valuesCaps[i].UsagePage, 0, valuesCaps[i].Range.UsageMin, &value, preparsedData, (PCHAR)hid.bRawData, hid.dwSizeHid);
+
+			//switch (pValueCaps[i].Range.UsageMin)
+		}
+
+		m_allocator.Deallocate(buttonCaps);
+		m_allocator.Deallocate(preparsedData);
 	}
 
 	void HandleRawInput(LPARAM lParam)
@@ -287,18 +371,16 @@ private:
 			return;
 		}
 
-		inputDeviceHandle deviceHandle = (inputDeviceHandle)(raw.header.hDevice);
-
 		switch (raw.header.dwType)
 		{
 		case RIM_TYPEMOUSE:
-			HandleRawInputMouse(deviceHandle, raw.data.mouse);
+			HandleRawInputMouse(raw.header.hDevice, raw.data.mouse);
 			break;
 		case RIM_TYPEKEYBOARD:
-			HandleRawInputKeyboard(deviceHandle, raw.data.keyboard);
+			HandleRawInputKeyboard(raw.header.hDevice, raw.data.keyboard);
 			break;
 		case RIM_TYPEHID:
-			//handle HID
+			HandleRawInputHID(raw.header.hDevice, raw.data.hid);
 			break;
 		default:
 			ASSERT2(false, "Unknown type of raw input device");
@@ -314,7 +396,7 @@ private:
 		UINT size = sizeof(RID_DEVICE_INFO);
 		if (GetRawInputDeviceInfo(deviceHandle, RIDI_DEVICEINFO, &deviceInfo, &size) > 0)
 		{
-			InputDeviceCategory category;
+			InputDeviceCategory category = InputDeviceCategory::None;
 			switch (deviceInfo.dwType)
 			{
 			case RIM_TYPEMOUSE:
@@ -324,9 +406,20 @@ private:
 				category = InputDeviceCategory::Keyboard;
 				break;
 			case RIM_TYPEHID:
-				//handle HID
-				break;
+			{
+				USHORT usage = GetHIDType(deviceHandle);
+				switch (usage)
+				{
+				case HID_USAGE_GENERIC_GAMEPAD:
+					category = InputDeviceCategory::Gamepad;
+					break;
+				}
 			}
+			break;
+			}
+
+			if (category == InputDeviceCategory::None)
+				return;
 
 			if (wparam == GIDC_ARRIVAL)
 			{
@@ -344,10 +437,30 @@ private:
 		}
 	}
 
+	USHORT GetHIDType(HANDLE deviceHandle)
+	{
+		UINT infoSize;
+		GetRawInputDeviceInfo(deviceHandle, RIDI_DEVICEINFO, NULL, &infoSize);
+		if (infoSize == 0)
+			return 0;
+
+		RID_DEVICE_INFO info;
+		if (GetRawInputDeviceInfo(deviceHandle, RIDI_DEVICEINFO, &info, &infoSize) <= 0)
+		{
+			LogError("GetHIDType: failed to get device type\n");
+			return 0;
+		}
+		ASSERT(info.dwType == RIM_TYPEHID);
+		return info.hid.usUsage;
+	}
+
 	void GetNameOfDevice(HANDLE deviceHandle, String& deviceName)
 	{
 		UINT registryPathSize;
 		GetRawInputDeviceInfo(deviceHandle, RIDI_DEVICENAME, NULL, &registryPathSize);
+		if (registryPathSize == 0)
+			return;
+
 		Array<char> rawRegistrypath(m_allocator);
 		rawRegistrypath.Resize(registryPathSize);
 		if (GetRawInputDeviceInfo(deviceHandle, RIDI_DEVICENAME, &rawRegistrypath[0], &registryPathSize) <= 0)

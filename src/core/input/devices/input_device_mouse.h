@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/int.h"
+
 
 namespace Veng
 {

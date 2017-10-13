@@ -22,6 +22,12 @@ public:
 	}
 
 
+	void Update(float deltaTime) override
+	{
+		m_inputSystem->Update(deltaTime);
+	}
+
+
 	InputSystem* GetInputSystem() const override
 	{
 		return m_inputSystem;
