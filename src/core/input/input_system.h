@@ -70,7 +70,7 @@ class InputSystem
 {
 public:
 	static InputSystem* Create(IAllocator& allocator);
-	static void Destroy(InputSystem* inputSystem, IAllocator& allocator);
+	static void Destroy(InputSystem* system, IAllocator& allocator);
 
 	virtual inputDeviceID RegisterDevice(inputDeviceHandle handle, InputDeviceCategory category, const String& name) = 0;
 	virtual void UnregisterDevice(inputDeviceHandle handle) = 0;

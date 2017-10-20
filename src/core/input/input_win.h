@@ -8,6 +8,10 @@ struct tagRAWKEYBOARD;
 struct tagRAWMOUSE;
 
 
+namespace Veng
+{
+
+
 namespace Keyboard
 {
 
@@ -461,6 +465,9 @@ namespace Mouse
 
 
 const u32 BUTTON_NONE = 0x0000;
+
+
+}
 
 
 }

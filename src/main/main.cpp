@@ -8,8 +8,6 @@
 #include "core/input/input_system.h"
 #include "core/array.h"
 #include "core/string.h"
-#include <hidusage.h>
-#include <hidclass.h>
 #include <hidsdi.h>
 
 
@@ -53,7 +51,7 @@ public:
 		while(!m_finished)
 		{
 			Sleep(1000 / 60);
-			m_engine->Update(1000 / 60);
+			//m_engine->Update(1000 / 60);
 			HandleEvents();
 		}
 	}
@@ -469,7 +467,11 @@ private:
 			return;
 		}
 
-		ASSERT(rawRegistrypath[7] == '#');
+		if (rawRegistrypath[7] != '#')
+		{
+			deviceName.Set("Unknown device");
+			return;
+		}
 
 		String registryPathStr("SYSTEM\\CurrentControlSet\\Enum\\HID\\", m_allocator);
 		unsigned startIdx = 8;
@@ -517,7 +519,7 @@ private:
 			case WM_QUIT:
 				m_finished = true;
 				break;
-			case WM_INPUT:
+			/*case WM_INPUT:
 				HandleRawInput(lparam);
 				break;
 			case WM_INPUT_DEVICE_CHANGE:
@@ -526,7 +528,7 @@ private:
 			case WM_SYSCOMMAND:
 				if(wparam == SC_KEYMENU) //Remove beeping sound when ALT + some key is pressed.
 					return 0;
-				break;
+				break;*/
 		}
 		return DefWindowProc(hwnd, msg, wparam, lparam);
 	}

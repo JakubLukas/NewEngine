@@ -1,6 +1,7 @@
 #include "string.h"
 
 #include "asserts.h"
+#include "memory.h"
 #include <cstring>
 
 
@@ -16,7 +17,7 @@ int StrLength(const char* str)
 
 void StrCopy(char* destination, const char* source, unsigned length)
 {
-	memcpy(destination, source, length);
+	MemCpy(destination, source, length);
 }
 
 

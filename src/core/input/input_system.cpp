@@ -216,9 +216,9 @@ InputSystem* InputSystem::Create(IAllocator& allocator)
 	return (InputSystem*)(new (NewPlaceholder(), mem) InputSystemImpl(allocator));
 }
 
-void InputSystem::Destroy(InputSystem* inputSystem, IAllocator& allocator)
+void InputSystem::Destroy(InputSystem* system, IAllocator& allocator)
 {
-	InputSystemImpl* p = (InputSystemImpl*)inputSystem;
+	InputSystemImpl* p = (InputSystemImpl*)system;
 	p->~InputSystemImpl();
 	allocator.Deallocate(p);
 }

@@ -32,6 +32,9 @@ public:
 	void* Reallocate(void* ptr, size_t size) override;
 	void Deallocate(void* p) override;
 	size_t AllocatedSize(void* p) override;
+
+private:
+	unsigned m_allocCount;
 };
 
 

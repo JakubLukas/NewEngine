@@ -6,6 +6,10 @@
 #include "core\asserts.h"
 
 
+namespace Veng
+{
+
+
 namespace Keyboard
 {
 
@@ -677,6 +681,9 @@ u32 getScancodeName(u32 scancode, char* buffer, u32 bufferLength)
 
 	result = GetKeyNameText(lParam, buffer, bufferLength);
 	return result;
+}
+
+
 }
 
 
