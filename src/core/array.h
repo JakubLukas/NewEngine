@@ -38,11 +38,11 @@ public:
 	}
 
 
-	Type* begin() { return m_data; }
-	Type* end() { return m_data + m_size; }
+	Type* Begin() { return m_data; }
+	Type* End() { return m_data + m_size; }
 
-	const Type* begin() const { return m_data; }
-	const Type* end() const { return m_data + m_size; }
+	const Type* Begin() const { return m_data; }
+	const Type* End() const { return m_data + m_size; }
 
 
 	void Push(const Type& value)
@@ -143,6 +143,34 @@ private:
 	unsigned m_size = 0;
 	Type* m_data = nullptr;
 };
+
+
+template<class Type>
+Type* begin(Array<Type>& a)
+{
+	return a.Begin();
+}
+
+
+template<class Type>
+Type* end(Array<Type>& a)
+{
+	return a.End();
+}
+
+
+template<class Type>
+const Type* begin(const Array<Type>& a)
+{
+	return a.Begin();
+}
+
+
+template<class Type>
+const Type* end(const Array<Type>& a)
+{
+	return a.End();
+}
 
 
 }

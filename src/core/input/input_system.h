@@ -2,7 +2,7 @@
 
 #include "core/int.h"
 #include "core/allocators.h"
-#include "core/vector3.h"
+#include "core/vector.h"
 #include "core/array.h"
 #include "core/string.h"
 

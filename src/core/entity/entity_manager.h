@@ -8,15 +8,14 @@ namespace Veng
 {
 
 
-typedef u32 Entity;
-//enum Entity : u32 {};
+enum class Entity : u32 {};
 
 
-class EntitySystem
+class EntityManager
 {
 public:
-	static EntitySystem* Create(IAllocator& allocator);
-	static void Destroy(EntitySystem* system, IAllocator& allocator);
+	static EntityManager* Create(IAllocator& allocator);
+	static void Destroy(EntityManager* system, IAllocator& allocator);
 
 	virtual Entity CreateEntity() = 0;
 	virtual void DestroyEntity(Entity entity) = 0;

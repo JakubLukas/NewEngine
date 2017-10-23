@@ -1,4 +1,4 @@
-#include "entity_system.h"
+#include "entity_manager.h"
 
 #include "core/array.h"
 
@@ -7,17 +7,17 @@ namespace Veng
 {
 
 
-class EntitySystemImpl : public EntitySystem
+class EntityManagerImpl : public EntityManager
 {
 public:
-	EntitySystemImpl(IAllocator& allocator)
+	EntityManagerImpl(IAllocator& allocator)
 		: m_allocator(allocator)
 		, m_entities(m_allocator)
 	{
 
 	}
 
-	~EntitySystemImpl()
+	~EntityManagerImpl()
 	{
 
 	}
@@ -32,14 +32,13 @@ public:
 		else
 		{
 			++m_currentId;
-			m_entities.Push(m_currentId);
-			return m_currentId;
+			m_entities.Push((Entity)m_currentId);
+			return (Entity)m_currentId;
 		}
 	}
 
 	void DestroyEntity(Entity entity) override
 	{
-		unsigned index;
 		for (unsigned i = 0; i < m_entities.Size(); ++i)
 		{
 			if (m_entities[i] == entity)
@@ -62,17 +61,17 @@ private:
 };
 
 
-EntitySystem* EntitySystem::Create(IAllocator& allocator)
+EntityManager* EntityManager::Create(IAllocator& allocator)
 {
-	void* p = allocator.Allocate(sizeof(EntitySystemImpl));
-	return new (NewPlaceholder(), p) EntitySystemImpl(allocator);
+	void* p = allocator.Allocate(sizeof(EntityManagerImpl));
+	return new (NewPlaceholder(), p) EntityManagerImpl(allocator);
 }
 
 
-void EntitySystem::Destroy(EntitySystem* system, IAllocator& allocator)
+void EntityManager::Destroy(EntityManager* inst, IAllocator& allocator)
 {
-	EntitySystemImpl* p = (EntitySystemImpl*)system;
-	p->~EntitySystemImpl();
+	auto* p = (EntityManagerImpl*)inst;
+	p->~EntityManagerImpl();
 	allocator.Deallocate(p);
 }
 
