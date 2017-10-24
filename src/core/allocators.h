@@ -1,9 +1,6 @@
 #pragma once
 
-
-struct NewPlaceholder { };
-
-void* operator new(size_t size, NewPlaceholder, void* where);
+#include "memory.h"
 
 
 namespace Veng
@@ -54,6 +51,13 @@ private:
 };
 
 
+template<class Type, class... Params>
+Type* New(IAllocator& allocator, Params&&... args)
+{
+	return new (NewPlaceholder(), allocator) Type(forward<Params>(args)...);
+}
+
+
 //PoolAllocator
 
 
@@ -73,3 +77,9 @@ private:
 
 
 }
+
+struct NewPlaceholder { };
+
+void* operator new(size_t size, NewPlaceholder, void* where);
+
+void* operator new(size_t size, NewPlaceholder, Veng::IAllocator& allocator);

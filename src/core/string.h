@@ -8,7 +8,10 @@ namespace Veng
 
 
 int StrLength(const char* str);
+
 void StrCopy(char* destination, const char* source, unsigned length);
+
+bool StrEqual(const char* str1, const char* str2);
 
 
 template<int size>

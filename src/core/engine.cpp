@@ -12,6 +12,7 @@ class EngineImpl : Engine
 public:
 	EngineImpl(IAllocator& allocator)
 		: m_allocator(allocator)
+		, m_plugins(m_allocator)
 	{
 		m_inputSystem = InputSystem::Create(m_allocator);
 	}
@@ -22,8 +23,24 @@ public:
 	}
 
 
+	bool AddPlugin(IPlugin* plugin) override
+	{
+		return false;
+	}
+
+
+	void RemovePlugin(IPlugin* plugin) override
+	{
+
+	}
+
+
 	void Update(float deltaTime) override
 	{
+		for (IPlugin* plugin : m_plugins)
+		{
+			plugin->Update(deltaTime);
+		}
 		m_inputSystem->Update(deltaTime);
 	}
 
@@ -36,13 +53,13 @@ public:
 private:
 	InputSystem* m_inputSystem;
 	IAllocator& m_allocator;
+	Array<IPlugin*> m_plugins;
 };
 
 
 Engine* Engine::Create(IAllocator& allocator)
 {
-	void* mem = allocator.Allocate(sizeof(EngineImpl));
-	return (Engine*)(new (NewPlaceholder(), mem) EngineImpl(allocator));
+	return (Engine*)new (NewPlaceholder(), allocator) EngineImpl(allocator);
 }
 
 

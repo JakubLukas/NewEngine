@@ -27,13 +27,6 @@ void operator delete[](void*)
 }
 
 
-void* operator new(size_t size, NewPlaceholder, void* where)
-{
-	return where;
-}
-
-
-
 namespace Veng
 {
 
@@ -112,4 +105,16 @@ size_t HeapAllocator::AllocatedSize(void* p)
 }
 
 
+}
+
+
+void* operator new(size_t size, NewPlaceholder, void* where)
+{
+	return where;
+}
+
+
+void* operator new(size_t size, NewPlaceholder, Veng::IAllocator& allocator)
+{
+	return allocator.Allocate(size);
 }

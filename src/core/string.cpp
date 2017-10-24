@@ -21,6 +21,12 @@ void StrCopy(char* destination, const char* source, unsigned length)
 }
 
 
+bool StrEqual(const char* str1, const char* str2)
+{
+	return strcmp(str1, str2) == 0;
+}
+
+
 
 String::String(IAllocator& allocator)
 	: m_allocator(allocator)
