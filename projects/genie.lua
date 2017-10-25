@@ -9,12 +9,12 @@ newoption {
 	trigger = "workdir",
 	description = "Defines debugger working directory"
 }
-if(_OPTIONS["working_dir"]) then
-	WORKING_DIR = _OPTIONS["working_dir"]
+if(_OPTIONS["workdir"]) then
+	WORKING_DIR = _OPTIONS["workdir"]
 end
 
 
-solution "VoxelEngine"
+solution "NewEngine"
 	configurations {
 		"Debug",
 		"Release"
@@ -56,8 +56,6 @@ solution "VoxelEngine"
 project "core"
 	kind "StaticLib"
 	
-	debugdir(WORKING_DIR)
-	
 	includedirs {
 	}
 	
@@ -70,10 +68,27 @@ project "core"
 	configuration {}
 	
 	
+project "renderer"
+	kind "StaticLib"
+	
+	links { "core" }
+	
+	includedirs {
+	}
+	
+	files {
+		SRC_DIR .. "renderer/**.h",
+		SRC_DIR .. "renderer/**.inl",
+		SRC_DIR .. "renderer/**.cpp"
+	}
+	
+	configuration {}
+	
+	
 project "main"
 	kind "WindowedApp"
 	
-	links { "core" }
+	links { "core", "renderer" }
 	
 	debugdir(WORKING_DIR)
 	
@@ -85,7 +100,7 @@ project "main"
 		SRC_DIR .. "main/**.inl",
 		SRC_DIR .. "main/**.cpp"
 	}
-	
+
 	configuration {}
 	
 	

@@ -5,25 +5,25 @@
 
 void* operator new(size_t)
 {
-	ASSERT2(false, "Use of new is forbidden");
+	ASSERT2(false, "Usage of new is forbidden, use placement new instead");
 	return nullptr;
 }
 
 void operator delete(void*)
 {
-	ASSERT2(false, "Use of new is forbidden");
+	ASSERT2(false, "Usage of new is forbidden, use placement new instead");
 }
 
 
 void* operator new[](size_t)
 {
-	ASSERT2(false, "Use of new is forbidden");
+	ASSERT2(false, "Usage of new is forbidden, use placement new instead");
 	return nullptr;
 }
 
 void operator delete[](void*)
 {
-	ASSERT2(false, "Use of new is forbidden");
+	ASSERT2(false, "Usage of new is forbidden, use placement new instead");
 }
 
 

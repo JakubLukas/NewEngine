@@ -11,8 +11,13 @@
 #include <hidsdi.h>
 
 
+#include "renderer/irenderer.h"
+
+
 namespace Veng
 {
+
+RenderSystem* m_tmpPlugRender = nullptr;
 
 
 class App
@@ -37,12 +42,21 @@ public:
 			SetFullscreenBorderless();
 
 		m_engine = Engine::Create(m_allocator);
+		InitPlugins();
 
 		RegisterRawInput();
 	}
 
+	void InitPlugins()
+	{
+		ASSERT(m_engine != nullptr);
+		m_tmpPlugRender = RenderSystem::Create(*m_engine);
+		m_engine->AddPlugin(m_tmpPlugRender);
+	}
+
 	void Deinit()
 	{
+		RenderSystem::Destroy(m_tmpPlugRender);
 		Engine::Destroy(m_engine, m_allocator);
 	}
 
@@ -50,8 +64,8 @@ public:
 	{
 		while(!m_finished)
 		{
-			Sleep(1000 / 60);
-			//m_engine->Update(1000 / 60);
+			Sleep(1000 / 60);//TODO
+			m_engine->Update(1000 / 60);
 			HandleEvents();
 		}
 	}
@@ -61,6 +75,9 @@ public:
 		MSG msg;
 		while(PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+
 			OnMessage(msg.hwnd, msg.message, msg.wParam, msg.lParam);
 		}
 	}
@@ -70,33 +87,36 @@ public:
 private:
 	void CreateMainWindow()
 	{
+		static const char* WINDOW_CLASS_NAME = "App";
+
 		HINSTANCE hInst = GetModuleHandle(NULL); //handle to current exe module
-		WNDCLASSEX wnd;
-		wnd = {};
+		WNDCLASSEX wnd = {};
 		wnd.cbSize = sizeof(wnd);
 		wnd.style = CS_HREDRAW | CS_VREDRAW; //redraw on horizontal or vertical resize
 		wnd.lpfnWndProc = MsgProc; // message process callback function
 		wnd.hInstance = hInst; // handle to module
 		wnd.hIcon = LoadIcon(NULL, IDI_APPLICATION);
 		wnd.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wnd.lpszClassName = "App";
+		wnd.lpszClassName = WINDOW_CLASS_NAME;
 		wnd.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-		RegisterClassExA(&wnd);
+		ASSERT(RegisterClassEx(&wnd));
 
 		RECT rect = { 0, 0, 600, 400 };
-		AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW | WS_VISIBLE, FALSE);
+		ASSERT(AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW | WS_VISIBLE, FALSE));
 
-		m_hwnd = CreateWindowA("App",
-			"App",
+		m_hwnd = CreateWindow(
+			WINDOW_CLASS_NAME,
+			WINDOW_CLASS_NAME,
 			WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-			0,
-			0,
+			CW_USEDEFAULT,
+			CW_USEDEFAULT,
 			rect.right - rect.left,
 			rect.bottom - rect.top,
 			NULL,
 			NULL,
 			hInst,
-			0);
+			NULL);
+		ASSERT(m_hwnd != 0);
 	}
 
 	void SetFullscreenBorderless()
@@ -179,8 +199,8 @@ private:
 		//mouse
 		rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
 		rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
-		rid[0].dwFlags = RIDEV_NOLEGACY | RIDEV_DEVNOTIFY;
-		rid[0].hwndTarget = NULL;//TODO: m_hwnd ??
+		rid[0].dwFlags = RIDEV_DEVNOTIFY; //if RIDEV_NOLEGACY is used, window will be unresponsive
+		rid[0].hwndTarget = NULL;
 
 		//keyboard
 		rid[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
@@ -211,13 +231,12 @@ private:
 		KeyboardDevice::Button keyCode = (KeyboardDevice::Button)scUSB;
 		m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, keyCode, pressed);
 
-		/*u32 scPS2 = Scancode_PS2::FromUSBHID(scUSB);
-		// getting a human-readable string
+		u32 scPS2 = Keyboard::Scancode_PS2::FromUSBHID(scUSB);
 		char buffer[512] = {};
-		getScancodeName(scPS2, buffer, 512);
-		//LogInfo("%s : %s\n", buffer, (pressed) ? "down" : "up");
+		Keyboard::getScancodeName(scPS2, buffer, 512); // getting a human-readable string
+		LogInfo("%s : %s\n", buffer, (pressed) ? "down" : "up");
 
-		const i32 BUFFER_SIZE = 4;
+		/*const i32 BUFFER_SIZE = 4;
 		wchar_t utf16_buffer[BUFFER_SIZE] = { 0 };
 		i32 readChars = getUTF16TextFromRawInput(&rawKeyboard, utf16_buffer, BUFFER_SIZE);
 		ASSERT(readChars < BUFFER_SIZE - 1);
@@ -312,7 +331,7 @@ private:
 
 	void HandleRawInputGamepad(HANDLE hDevice, const RAWHID& hid)
 	{
-		UINT preparseBufferSize;
+		/*UINT preparseBufferSize;
 		GetRawInputDeviceInfo(hDevice, RIDI_PREPARSEDDATA, NULL, &preparseBufferSize);
 		if (preparseBufferSize == 0)
 		{
@@ -355,7 +374,7 @@ private:
 		}
 
 		m_allocator.Deallocate(buttonCaps);
-		m_allocator.Deallocate(preparsedData);
+		m_allocator.Deallocate(preparsedData);*/
 	}
 
 	void HandleRawInput(LPARAM lParam)
@@ -501,31 +520,29 @@ private:
 	{
 		switch(msg)
 		{
-			/*case WM_KILLFOCUS:
-				m_engine->getInputSystem().enable(false);
-				return 0;
-				break;*/
-			/*case WM_SETFOCUS:
-				m_engine->getInputSystem().enable(true);
-				return 0;
-				break;*/
+			case WM_KILLFOCUS:
+				//m_engine->getInputSystem().enable(false);
+				break;
+			case WM_SETFOCUS:
+				//m_engine->getInputSystem().enable(true);
+				break;
 			case WM_CLOSE:
 				PostQuitMessage(0);
 				break;
-			/*case WM_MOVE:
+			case WM_MOVE:
 			case WM_SIZE:
-				onResize();
-				break;*/
+				//onResize();
+				break;
 			case WM_QUIT:
 				m_finished = true;
 				break;
-			/*case WM_INPUT:
+			case WM_INPUT:
 				HandleRawInput(lparam);
 				break;
 			case WM_INPUT_DEVICE_CHANGE:
 				HandleRawInputDeviceChange(wparam, lparam);
 				break;
-			case WM_SYSCOMMAND:
+			/*case WM_SYSCOMMAND:
 				if(wparam == SC_KEYMENU) //Remove beeping sound when ALT + some key is pressed.
 					return 0;
 				break;*/

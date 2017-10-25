@@ -1,6 +1,7 @@
 #include "engine.h"
 
 #include "input/input_system.h"
+#include "string.h"
 
 
 namespace Veng
@@ -25,13 +26,22 @@ public:
 
 	bool AddPlugin(IPlugin* plugin) override
 	{
-		return false;
+		m_plugins.Push(plugin);
+		return true;
 	}
 
 
-	void RemovePlugin(IPlugin* plugin) override
+	void RemovePlugin(const char* name) override
 	{
-
+		for (unsigned i = 0; i < m_plugins.Size(); ++i)
+		{
+			if (StrEqual(m_plugins[i]->GetName(), name))
+			{
+				m_plugins[i]->~IPlugin();
+				m_plugins.Erase(i);
+				return;
+			}
+		}
 	}
 
 
@@ -42,6 +52,12 @@ public:
 			plugin->Update(deltaTime);
 		}
 		m_inputSystem->Update(deltaTime);
+	}
+
+
+	IAllocator& GetAllocator() const override
+	{
+		return m_allocator;
 	}
 
 

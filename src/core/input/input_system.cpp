@@ -212,8 +212,7 @@ private:
 
 InputSystem* InputSystem::Create(IAllocator& allocator)
 {
-	void* mem = allocator.Allocate(sizeof(InputSystemImpl));
-	return (InputSystem*)(new (NewPlaceholder(), mem) InputSystemImpl(allocator));
+	return (InputSystem*)(new (NewPlaceholder(), allocator) InputSystemImpl(allocator));
 }
 
 void InputSystem::Destroy(InputSystem* system, IAllocator& allocator)

@@ -83,8 +83,6 @@ public:
 
 	virtual void Update(float deltaTime) = 0;
 
-
-
 	virtual bool IsDeviceActive(inputDeviceID id) const = 0;
 	virtual const Array<InputEvent>& GetInputEventBuffer() const = 0;
 };
