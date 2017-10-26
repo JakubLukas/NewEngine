@@ -1,11 +1,14 @@
 #pragma once
 
+#include "int.h"
+
 
 namespace Veng
 {
 
 
-class Engine;
+class World;
+enum class Entity : u32;
 
 
 class IPlugin

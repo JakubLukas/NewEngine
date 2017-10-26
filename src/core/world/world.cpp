@@ -8,9 +8,10 @@ namespace Veng
 {
 
 
-World::World(IAllocator& allocator)
+World::World(IAllocator& allocator, u32 id)
 	: m_allocator(allocator)
 	, m_entities(m_allocator)
+	, m_id(id)
 {
 
 }
@@ -31,9 +32,9 @@ Entity World::CreateEntity()
 	}
 	else
 	{
-		++m_currentId;
-		m_entities.Push((Entity)m_currentId);
-		return (Entity)m_currentId;
+		++m_currentEntityId;
+		m_entities.Push((Entity)m_currentEntityId);
+		return (Entity)m_currentEntityId;
 	}
 }
 

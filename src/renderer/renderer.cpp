@@ -2,6 +2,7 @@
 
 #include "core/allocators.h"
 #include "core/engine.h"
+#include "core/associative_array.h"
 
 
 namespace Veng
@@ -13,7 +14,8 @@ class RenderSystemImpl : public RenderSystem
 public:
 	RenderSystemImpl(Engine& engine)
 		: m_engine(engine)
-		, m_allocator(engine.GetAllocator())
+		, m_allocator(HeapAllocator(engine.GetAllocator()))
+		, m_meshes(m_allocator)
 	{
 
 	}
@@ -33,11 +35,30 @@ public:
 
 	const char* GetName() const override { return "renderer"; }
 
+
+	void AddMeshComponent(Entity entity, worldId world) override
+	{
+		m_meshes.Insert(entity, Mesh());
+	}
+
+	void RemoveMeshComponent(Entity entity, worldId world) override
+	{
+		m_meshes.Erase(entity);
+	}
+
+	bool HasMeshComponent(Entity entity, worldId world) override
+	{
+		Mesh* mesh;
+		return m_meshes.Find(entity, mesh);
+	}
+
+
 	Engine& GetEngine() const override { return m_engine; }
 
 private:
 	Engine& m_engine;
 	IAllocator& m_allocator;
+	AssociativeArray<Entity, Mesh> m_meshes;
 };
 
 
