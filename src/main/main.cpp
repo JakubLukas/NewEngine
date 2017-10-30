@@ -17,7 +17,7 @@
 namespace Veng
 {
 
-RenderSystem* m_tmpPlugRender = nullptr;
+RenderSystem* m_tmpPlugRender = nullptr;////////////////////////////////
 
 
 class App

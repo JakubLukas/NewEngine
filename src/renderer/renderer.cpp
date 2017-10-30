@@ -89,7 +89,15 @@ public:
 		, m_meshes(m_allocator)
 	{
 		///////////////
-		/*bgfx::init(bgfx::RendererType::Enum::Direct3D12, BGFX_PCI_ID_NVIDIA);
+		BGFX bgfx platform data like window handle or backbuffer must be set.
+
+			bgfx::PlatformData d;
+		setMemory(&d, 0, sizeof(d));
+		d.nwh = window_handle;
+		d.ndt = display;
+		bgfx::setPlatformData(d);
+
+		bgfx::init(bgfx::RendererType::Enum::Direct3D12, BGFX_PCI_ID_NVIDIA);
 		bgfx::reset(600, 400, BGFX_RESET_VSYNC);
 
 		bgfx::setDebug(BGFX_DEBUG_NONE);
@@ -115,7 +123,7 @@ public:
 		m_ibh = bgfx::createIndexBuffer(
 			// Static data can be passed with bgfx::makeRef
 			bgfx::makeRef(s_cubeTriStrip, sizeof(s_cubeTriStrip))
-		);*/
+		);
 
 		// Create program from shaders.
 		//m_program = loadProgram("vs_cubes", "fs_cubes");
@@ -128,12 +136,12 @@ public:
 
 	~RenderSystemImpl() override
 	{
-		/*bgfx::destroy(m_ibh);
+		bgfx::destroy(m_ibh);
 		bgfx::destroy(m_vbh);
 		//bgfx::destroy(m_program);
 
 		// Shutdown bgfx.
-		bgfx::shutdown();*/
+		bgfx::shutdown();
 	}
 
 
@@ -171,10 +179,10 @@ private:
 	AssociativeArray<Entity, Mesh> m_meshes;
 
 	/////////////////////
-	//bgfx::VertexBufferHandle m_vbh;
-	//bgfx::IndexBufferHandle m_ibh;
-	//bgfx::ProgramHandle m_program;
-	//int64_t m_timeOffset;
+	bgfx::VertexBufferHandle m_vbh;
+	bgfx::IndexBufferHandle m_ibh;
+	bgfx::ProgramHandle m_program;
+	int64_t m_timeOffset;
 	/////////////////////
 };
 
