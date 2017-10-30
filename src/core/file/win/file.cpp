@@ -42,14 +42,14 @@ static DWORD moveMethodTable[] =
 
 
 File::File()
-	: m_data(nullptr)
+	: m_data(INVALID_HANDLE_VALUE)
 {
 
 }
 
 File::~File()
 {
-	ASSERT2(m_data == nullptr, "File wasn't close");
+	ASSERT2(m_data == INVALID_HANDLE_VALUE, "File wasn't close");
 }
 
 bool File::Open(const char* path, FileMode mode)
@@ -60,7 +60,7 @@ bool File::Open(const char* path, FileMode mode)
 	if (mode.flags & FileMode::FlagWriteThrough)
 		flags = flags | FILE_FLAG_WRITE_THROUGH;
 
-	HANDLE hndl = CreateFile(
+	m_data = CreateFile(
 		path,
 		(mode.access == FileMode::Access::Read) ? GENERIC_READ : GENERIC_WRITE,
 		shareModeTable[(unsigned)mode.shareMode],
@@ -70,21 +70,15 @@ bool File::Open(const char* path, FileMode mode)
 		NULL
 	);
 
-	if (INVALID_HANDLE_VALUE != hndl)
-	{
-		m_data = (void*)hndl;
-		return true;
-	}
-
-	return false;
+	return (m_data != INVALID_HANDLE_VALUE);
 }
 
 bool File::Close()
 {
-	if (m_data != nullptr)
+	if (m_data != INVALID_HANDLE_VALUE)
 	{
 		bool result = (CloseHandle((HANDLE)m_data) != 0);
-		m_data = nullptr;
+		m_data = INVALID_HANDLE_VALUE;
 		return result;
 	}
 	return false;
@@ -92,19 +86,14 @@ bool File::Close()
 
 bool File::Flush()
 {
-	if (m_data != nullptr)
-	{
-		bool result = (FlushFileBuffers((HANDLE)m_data) != 0);
-		m_data = nullptr;
-		return result;
-	}
-	return false;
+	ASSERT(m_data != INVALID_HANDLE_VALUE);
+	return (FlushFileBuffers((HANDLE)m_data) != 0);
 }
 
 
 bool File::Read(void* buffer, size_t size)
 {
-	ASSERT(m_data != nullptr);
+	ASSERT(m_data != INVALID_HANDLE_VALUE);
 	DWORD bytesReaded = 0;
 	bool result = (ReadFile(
 		m_data,
@@ -118,7 +107,7 @@ bool File::Read(void* buffer, size_t size)
 
 bool File::Write(void* data, size_t size)
 {
-	ASSERT(m_data != nullptr);
+	ASSERT(m_data != INVALID_HANDLE_VALUE);
 	DWORD bytesWritten = 0;
 	bool result = (WriteFile(
 		m_data,
@@ -132,7 +121,7 @@ bool File::Write(void* data, size_t size)
 
 bool File::MovePosition(MoveMethod method, u64 position)
 {
-	ASSERT(m_data != nullptr);
+	ASSERT(m_data != INVALID_HANDLE_VALUE);
 	LARGE_INTEGER pos;
 	pos.QuadPart = (LONGLONG)position;
 	return (SetFilePointerEx(
@@ -145,7 +134,7 @@ bool File::MovePosition(MoveMethod method, u64 position)
 
 u64 File::GetPosition() const
 {
-	ASSERT(m_data != nullptr);
+	ASSERT(m_data != INVALID_HANDLE_VALUE);
 	LARGE_INTEGER pos = {};
 	LARGE_INTEGER filePointer;
 	bool result = (SetFilePointerEx(
@@ -160,7 +149,7 @@ u64 File::GetPosition() const
 
 size_t File::GetSize() const
 {
-	ASSERT(m_data != nullptr);
+	ASSERT(m_data != INVALID_HANDLE_VALUE);
 	return GetFileSize(m_data, NULL);
 }
 
