@@ -29,7 +29,8 @@ solution "NewEngine"
 		"NoPCH",
 		"NoExceptions",
 		"NoRTTI",
-		"WinMain"
+		"WinMain",
+		"StaticRuntime" --do I want static or dynamic ?
 	}
 	
 	language "C++"
@@ -74,6 +75,7 @@ project "renderer"
 	links { "core" }
 	
 	includedirs {
+		"../external/bgfx/include"
 	}
 	
 	files {
@@ -101,6 +103,12 @@ project "main"
 		SRC_DIR .. "main/**.cpp"
 	}
 
+	libdirs { "../external/bgfx/lib/win64" }
+	
+	configuration { "Debug", "x64" }
+		links { "bgfxDebug", "bxDebug" }
+	configuration { "Release", "x64" }
+		links { "bgfxRelease", "bxRelease" }
 	configuration {}
 	
 	

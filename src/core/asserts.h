@@ -6,4 +6,4 @@
 
 
 #define ASSERT(cond) if(!(cond)) { DEBUG_BREAK(); DEBUGGER_LOG(#cond); }
-#define ASSERT2(cond, text) if(!cond) { DEBUG_BREAK(); DEBUGGER_LOG(text); }
+#define ASSERT2(cond, text) if(!(cond)) { DEBUG_BREAK(); DEBUGGER_LOG(text); }
