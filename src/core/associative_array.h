@@ -147,9 +147,12 @@ public:
 		if(capacity <= m_capacity) return;
 
 		m_capacity = capacity;
-		void* data = m_allocator.Allocate(m_capacity * (sizeof(KeyType) + sizeof(ValueType)));
+		void* data = m_allocator.Allocate(m_capacity * sizeof(KeyType) + ((m_capacity + 1) * sizeof(ValueType)), ALIGN_OF(KeyType));
 		KeyType* newKeys = static_cast<KeyType*>(data);
-		ValueType* newValues = static_cast<ValueType*>((void*)((KeyType*)data + m_capacity));
+		ValueType* newValuesUnaligned = static_cast<ValueType*>((void*)((KeyType*)data + m_capacity));
+		ValueType* newValues = static_cast<ValueType*>((void*)((uintptr_t)(newValuesUnaligned + 1) & ~(uintptr_t)ALIGN_OF(ValueType)));
+
+
 		
 		for(unsigned i = 0; i < m_size; ++i)
 		{

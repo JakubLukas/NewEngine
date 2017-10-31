@@ -24,6 +24,17 @@ public:
 	}
 
 
+	void SetPlatformData(const PlatformData& data) override
+	{
+		m_platformData = data;
+	}
+
+	const PlatformData& GetPlatformData() const override
+	{
+		return m_platformData;
+	}
+
+
 	bool AddPlugin(IPlugin* plugin) override
 	{
 		m_plugins.Push(plugin);
@@ -67,15 +78,16 @@ public:
 	}
 
 private:
-	InputSystem* m_inputSystem;
+	PlatformData m_platformData;
 	IAllocator& m_allocator;
+	InputSystem* m_inputSystem;
 	Array<IPlugin*> m_plugins;
 };
 
 
 Engine* Engine::Create(IAllocator& allocator)
 {
-	return (Engine*)new (NewPlaceholder(), allocator) EngineImpl(allocator);
+	return (Engine*)new (allocator, ALIGN_OF(EngineImpl)) EngineImpl(allocator);
 }
 
 

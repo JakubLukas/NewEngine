@@ -38,7 +38,7 @@ String::String(const char* str, IAllocator& allocator)
 	: m_allocator(allocator)
 {
 	m_size = StrLength(str);
-	m_data = (char*)m_allocator.Allocate(m_size + 1);
+	m_data = (char*)m_allocator.Allocate(m_size + 1, sizeof(char));
 	StrCopy(m_data, str, m_size);
 	m_data[m_size] = '\0';
 }
@@ -48,7 +48,7 @@ String::String(const char* str, unsigned length, IAllocator& allocator)
 	: m_allocator(allocator)
 	, m_size(length)
 {
-	m_data = (char*)m_allocator.Allocate(m_size + 1);
+	m_data = (char*)m_allocator.Allocate(m_size + 1, sizeof(char));
 	StrCopy(m_data, str, m_size);
 	m_data[m_size] = '\0';
 }
@@ -79,7 +79,7 @@ String& String::Cat(const char* str)
 	if (str != nullptr && str[0] != '\0')
 	{
 		unsigned strLen = StrLength(str);
-		char* newData = (char*)m_allocator.Allocate(m_size + strLen + 1);
+		char* newData = (char*)m_allocator.Allocate(m_size + strLen + 1, sizeof(char));
 		StrCopy(newData, m_data, m_size);
 		StrCopy(newData + m_size, str, strLen);
 		m_size += strLen;
@@ -93,7 +93,7 @@ String& String::Cat(const char* str)
 
 String& String::Cat(const char* str, unsigned length)
 {
-	char* newData = (char*)m_allocator.Allocate(m_size + length + 1);
+	char* newData = (char*)m_allocator.Allocate(m_size + length + 1, sizeof(char));
 	StrCopy(newData, m_data, m_size);
 	StrCopy(newData + m_size, str, length);
 	m_size += length;
@@ -117,7 +117,7 @@ void String::Set(const char* str)
 	{
 		m_size = strLen;
 		m_allocator.Deallocate(m_data);
-		m_data = (char*)m_allocator.Allocate(m_size + 1);
+		m_data = (char*)m_allocator.Allocate(m_size + 1, sizeof(char));
 		StrCopy(m_data, str, m_size);
 		m_data[m_size] = '\0';
 	}
@@ -134,7 +134,7 @@ void String::Set(const char* str, unsigned length)
 	{
 		m_size = length;
 		m_allocator.Deallocate(m_data);
-		m_data = (char*)m_allocator.Allocate(m_size + 1);
+		m_data = (char*)m_allocator.Allocate(m_size + 1, sizeof(char));
 		StrCopy(m_data, str, m_size);
 		m_data[m_size] = '\0';
 	}

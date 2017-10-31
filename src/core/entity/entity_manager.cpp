@@ -63,8 +63,7 @@ private:
 
 EntityManager* EntityManager::Create(IAllocator& allocator)
 {
-	void* p = allocator.Allocate(sizeof(EntityManagerImpl));
-	return new (NewPlaceholder(), p) EntityManagerImpl(allocator);
+	return new (allocator, ALIGN_OF(EntityManagerImpl)) EntityManagerImpl(allocator);
 }
 
 

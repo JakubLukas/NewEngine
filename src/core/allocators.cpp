@@ -3,7 +3,7 @@
 #include <cstdlib>
 
 
-void* operator new(size_t)
+/*void* operator new(size_t)
 {
 	ASSERT2(false, "Usage of new is forbidden, use placement new instead");
 	return nullptr;
@@ -24,7 +24,7 @@ void* operator new[](size_t)
 void operator delete[](void*)
 {
 	ASSERT2(false, "Usage of new is forbidden, use placement new instead");
-}
+}*/
 
 
 namespace Veng
@@ -43,38 +43,34 @@ MainAllocator::~MainAllocator()
 	ASSERT(m_allocCount == 0);
 }
 
-void* MainAllocator::Allocate(size_t size)
+void* MainAllocator::Allocate(size_t size, size_t alignment)
 {
 	++m_allocCount;
-	size_t* p = static_cast<size_t*>(malloc(sizeof(size_t) + size));
-	*p = size;
-	return &p[1];
+	return _aligned_malloc(size, alignment);
 }
 
-void* MainAllocator::Reallocate(void* ptr, size_t size)
+void* MainAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 {
-	size_t* p = static_cast<size_t*>(realloc(static_cast<size_t*>(ptr) - 1, sizeof(size_t) + size));
-	*p = size;
-	return &p[1];
+	return _aligned_realloc(ptr, size, alignment);
 }
 
 void MainAllocator::Deallocate(void* p)
 {
 	if (p == nullptr) return;
 	--m_allocCount;
-	free(static_cast<size_t*>(p) - 1);
+	_aligned_free(p);
 }
 
 size_t MainAllocator::AllocatedSize(void* p)
 {
-	return static_cast<size_t*>(p)[-1];
+	return 0;//TODO: fix
 }
 
 
 // ---------------- HEAP ALLOCATOR ----------------
 
 HeapAllocator::HeapAllocator(IAllocator& allocator)
-	: m_allocator(allocator)
+	: m_source(allocator)
 {
 
 }
@@ -84,24 +80,24 @@ HeapAllocator::~HeapAllocator()
 
 }
 
-void* HeapAllocator::Allocate(size_t size)
+void* HeapAllocator::Allocate(size_t size, size_t alignment)
 {
-	return m_allocator.Allocate(size);
+	return m_source.Allocate(size, alignment);
 }
 
-void* HeapAllocator::Reallocate(void* ptr, size_t size)
+void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 {
-	return m_allocator.Reallocate(ptr, size);
+	return m_source.Reallocate(ptr, size, alignment);
 }
 
 void HeapAllocator::Deallocate(void* p)
 {
-	m_allocator.Deallocate(p);
+	m_source.Deallocate(p);
 }
 
 size_t HeapAllocator::AllocatedSize(void* p)
 {
-	return m_allocator.AllocatedSize(p);
+	return m_source.AllocatedSize(p);
 }
 
 
@@ -114,7 +110,7 @@ void* operator new(size_t size, NewPlaceholder, void* where)
 }
 
 
-void* operator new(size_t size, NewPlaceholder, Veng::IAllocator& allocator)
+void* operator new(size_t size, Veng::IAllocator& allocator, size_t alignment)
 {
-	return allocator.Allocate(size);
+	return allocator.Allocate(size, alignment);
 }

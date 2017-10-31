@@ -42,6 +42,9 @@ public:
 			SetFullscreenBorderless();
 
 		m_engine = Engine::Create(m_allocator);
+		Engine::PlatformData platformData;
+		platformData.windowHndl = m_hwnd;
+		m_engine->SetPlatformData(platformData);
 		InitPlugins();
 
 		RegisterRawInput();

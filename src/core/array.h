@@ -92,7 +92,7 @@ public:
 		if(capacity <= m_capacity) return;
 
 		m_capacity = capacity;
-		Type* newData = static_cast<Type*>(m_allocator.Allocate(m_capacity * sizeof(Type)));
+		Type* newData = static_cast<Type*>(m_allocator.Allocate(m_capacity * sizeof(Type), ALIGN_OF(Type)));
 
 		for(unsigned i = 0; i < m_size; ++i)
 		{
@@ -109,7 +109,7 @@ public:
 	{
 		if (size == m_size && size == m_capacity) return;
 
-		Type* newData = static_cast<Type*>(m_allocator.Allocate(size * sizeof(Type)));
+		Type* newData = static_cast<Type*>(m_allocator.Allocate(size * sizeof(Type), ALIGN_OF(Type)));
 
 		unsigned sizeMin = (size < m_size) ? size : m_size;
 		for (unsigned i = 0; i < sizeMin; ++i)
