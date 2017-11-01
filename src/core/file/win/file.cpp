@@ -49,7 +49,7 @@ File::File()
 
 File::~File()
 {
-	ASSERT2(m_data == INVALID_HANDLE_VALUE, "File wasn't close");
+	ASSERT2(m_data == INVALID_HANDLE_VALUE, "File wasn't closed\n");
 }
 
 bool File::Open(const char* path, FileMode mode)

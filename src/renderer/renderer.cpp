@@ -383,31 +383,26 @@ public:
 			FS::FileMode::FlagNone
 		};
 		FS::File fileVS;
-		ASSERT(fileVS.Open("D:/NewEngine/shaders/dx11/vs_cubes.bin", mode));
+		ASSERT(fileVS.Open("D:/projects/NewEngine/shaders/dx11/vs_cubes.bin", mode));
 		size_t fileVSSize = fileVS.GetSize();
 		u8* fileVSData = (u8*)m_allocator.Allocate(fileVSSize, 1);
-		ASSERT(fileVS.Read(fileVSData, fileVSSize));
-		bgfx::Memory memVS;
-		memVS.size = (u32)fileVSSize;
-		memVS.data = fileVSData;
-		memVS.data[memVS.size - 1] = '\0';
+		const bgfx::Memory* memVS = bgfx::alloc((u32)fileVSSize + 1);
+		ASSERT(fileVS.Read(memVS->data, fileVSSize));
+		memVS->data[memVS->size - 1] = '\0';
+		fileVS.Close();
 		FS::File fileFS;
-		ASSERT(fileFS.Open("D:/NewEngine/shaders/dx11/fs_cubes.bin", mode));
+		ASSERT(fileFS.Open("D:/projects/NewEngine/shaders/dx11/fs_cubes.bin", mode));
 		size_t fileFSSize = fileFS.GetSize();
 		u8* fileFSData = (u8*)m_allocator.Allocate(fileFSSize, 1);
-		ASSERT(fileFS.Read(fileFSData, fileFSSize));
-		bgfx::Memory memFS;
-		memFS.size = (u32)fileFSSize;
-		memFS.data = fileFSData;
-		memFS.data[memFS.size - 1] = '\0';
-		bgfx::ShaderHandle fsh = bgfx::createShader(&memFS);
-		bgfx::ShaderHandle vsh = bgfx::createShader(&memVS);
+		const bgfx::Memory* memFS = bgfx::alloc((u32)fileFSSize + 1);
+		ASSERT(fileFS.Read(memFS->data, fileFSSize));
+		memFS->data[memFS->size - 1] = '\0';
+		fileFS.Close();
+		bgfx::ShaderHandle fsh = bgfx::createShader(memFS);
+		bgfx::ShaderHandle vsh = bgfx::createShader(memVS);
 		bgfx::setName(fsh, "shaders/dx11/fs_cubes.bin");
 		bgfx::setName(vsh, "shaders/dx11/vs_cubes.bin");
-		bgfx::createProgram(vsh, fsh, true /* destroy shaders when program is destroyed */);
-		//m_program = bgfx::loadProgram("vs_cubes", "fs_cubes");
-
-		//m_timeOffset = bx::getHPCounter();
+		m_program = bgfx::createProgram(vsh, fsh, true /* destroy shaders when program is destroyed */);
 
 		///////////////
 	}
@@ -417,7 +412,7 @@ public:
 	{
 		bgfx::destroy(m_ibh);
 		bgfx::destroy(m_vbh);
-		//bgfx::destroy(m_program);
+		bgfx::destroy(m_program);
 
 		// Shutdown bgfx.
 		bgfx::shutdown();
@@ -427,7 +422,7 @@ public:
 	void Update(float deltaTime) override
 	{
 		static float time = 0;
-		time += deltaTime;
+		time += deltaTime * 0.001f;
 		static const u32 m_width = 600;
 		static const u32 m_height = 400;
 		float at[3] = { 0.0f, 0.0f,   0.0f };
