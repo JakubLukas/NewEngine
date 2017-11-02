@@ -37,12 +37,10 @@ struct InputEvent
 		AxisChanged
 	};
 
-	InputEvent() {}
-	InputEvent(const InputEvent& other)
-	{
-		memcpy(this, &other, sizeof(InputEvent));
-	}
+	InputEvent();
+	InputEvent(const InputEvent& other);
 
+	InputEvent& operator=(const InputEvent& other);
 
 
 	Type type;

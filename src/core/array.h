@@ -24,7 +24,8 @@ public:
 		{
 			m_data[i].~Type();
 		}
-		m_allocator.Deallocate(m_data);
+		if(m_data != nullptr)
+			m_allocator.Deallocate(m_data);
 	}
 
 
@@ -100,7 +101,8 @@ public:
 			(m_data + i)->~Type();
 		}
 
-		m_allocator.Deallocate(m_data);
+		if(m_data != nullptr)
+			m_allocator.Deallocate(m_data);
 		m_data = newData;
 	}
 
@@ -121,7 +123,8 @@ public:
 			(m_data + i)->~Type();
 		}
 
-		m_allocator.Deallocate(m_data);
+		if(m_data != nullptr)
+			m_allocator.Deallocate(m_data);
 		m_data = newData;
 		m_capacity = m_size = size;
 	}

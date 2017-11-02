@@ -56,7 +56,7 @@ void* MainAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 
 void MainAllocator::Deallocate(void* p)
 {
-	if (p == nullptr) return;
+	ASSERT(p != nullptr);
 	--m_allocCount;
 	_aligned_free(p);
 }
@@ -71,17 +71,19 @@ size_t MainAllocator::AllocatedSize(void* p)
 
 HeapAllocator::HeapAllocator(IAllocator& allocator)
 	: m_source(allocator)
+	, m_allocCount(0)
 {
 
 }
 
 HeapAllocator::~HeapAllocator()
 {
-
+	ASSERT(m_allocCount == 0);
 }
 
 void* HeapAllocator::Allocate(size_t size, size_t alignment)
 {
+	++m_allocCount;
 	return m_source.Allocate(size, alignment);
 }
 
@@ -92,6 +94,8 @@ void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 
 void HeapAllocator::Deallocate(void* p)
 {
+	ASSERT(p != nullptr);
+	--m_allocCount;
 	m_source.Deallocate(p);
 }
 

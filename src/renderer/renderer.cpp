@@ -6,18 +6,16 @@
 #include "core/logs.h"
 
 #include <bgfx/bgfx.h>///////////////
-//#include <bgfx/platform.h>///////////////
 
 #include <math.h>
 #include "core/memory.h"
 #include "core/file/file_system.h"
 namespace bx
 {
+
 /// Abstract allocator interface.
-///
 struct AllocatorI
 {
-	///
 	virtual ~AllocatorI() { }
 
 	/// Allocates, resizes memory block, or frees memory.
@@ -47,10 +45,6 @@ inline float toRad(float _deg)
 {
 	return _deg * kPi / 180.0f;
 }
-template<Handness::Enum HandnessT>
-void mtxProjXYWH(float* _result, float _x, float _y, float _width, float _height, float _near, float _far, bool _oglNdc);
-template<Handness::Enum HandnessT>
-void mtxProjImpl(float* _result, float _fovy, float _aspect, float _near, float _far, bool _oglNdc);
 void mtxProj(float* _result, float _fovy, float _aspect, float _near, float _far, bool _oglNdc);
 inline void vec3Cross(float* _result, const float* _a, const float* _b)
 {
@@ -82,8 +76,6 @@ inline void vec3Sub(float* _result, const float* _a, const float* _b)
 	_result[1] = _a[1] - _b[1];
 	_result[2] = _a[2] - _b[2];
 }
-void mtxLookAtImpl(float* _result, const float* _eye, const float* _view, const float* _up);
-void mtxLookAtLh(float* _result, const float* _eye, const float* _at, const float* _up);
 void mtxLookAt(float* _result, const float* _eye, const float* _at, const float* _up = NULL);
 
 inline void mtxQuat(float* _result, const float* _quat)
@@ -292,63 +284,60 @@ static const uint16_t s_cubeTriStrip[] =
 ///////////////
 
 
+struct BgfxCallback : public bgfx::CallbackI
+{
+	BgfxCallback() {}
+	~BgfxCallback() {}
+	void fatal(bgfx::Fatal::Enum _code, const char* _str) override
+	{
+		switch (_code)
+		{
+		case bgfx::Fatal::DebugCheck:
+			LogError("Error: bgfx: DebugCheck: %s\n", _str);
+			break;
+		case bgfx::Fatal::InvalidShader:
+			LogError("Error: bgfx: InvalidShader: %s\n", _str);
+			break;
+		case bgfx::Fatal::UnableToInitialize:
+			LogError("Error: bgfx: UnableToInitialize: %s\n", _str);
+			break;
+		case bgfx::Fatal::UnableToCreateTexture:
+			LogError("Error: bgfx: UnableToCreateTexture: %s\n", _str);
+			break;
+		case bgfx::Fatal::DeviceLost:
+			LogError("Error: bgfx: DeviceLost: %s\n", _str);
+			break;
+		}
+	}
+	void traceVargs(const char* _filePath, uint16_t _line, const char* _format, va_list _argList) override {}
+	void profilerBegin(const char* _name, uint32_t _abgr, const char* _filePath, uint16_t _line) override {}
+	void profilerBeginLiteral(const char* _name, uint32_t _abgr, const char* _filePath, uint16_t _line) override {}
+	void profilerEnd() override {}
+	uint32_t cacheReadSize(uint64_t _id) override { return 0; }
+	bool cacheRead(uint64_t _id, void* _data, uint32_t _size) override { return false; }
+	void cacheWrite(uint64_t _id, const void* _data, uint32_t _size) override {}
+	void screenShot(const char* _filePath, uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _data, uint32_t _size, bool _yflip) override {}
+	void captureBegin(uint32_t _width, uint32_t _height, uint32_t _pitch, bgfx::TextureFormat::Enum _format, bool _yflip) override {}
+	void captureEnd() override {}
+	void captureFrame(const void* _data, uint32_t _size) override {}
+};
+
 
 class RenderSystemImpl : public RenderSystem
 {
 public:
-	struct BgfxCallback : public bgfx::CallbackI
-	{
-		BgfxCallback() {}
-		~BgfxCallback() {}
-		void fatal(bgfx::Fatal::Enum _code, const char* _str) override
-		{
-			switch (_code)
-			{
-			case bgfx::Fatal::DebugCheck:
-				LogError("Error: bgfx: DebugCheck: %s\n", _str);
-				break;
-			case bgfx::Fatal::InvalidShader:
-				LogError("Error: bgfx: InvalidShader: %s\n", _str);
-				break;
-			case bgfx::Fatal::UnableToInitialize:
-				LogError("Error: bgfx: UnableToInitialize: %s\n", _str);
-				break;
-			case bgfx::Fatal::UnableToCreateTexture:
-				LogError("Error: bgfx: UnableToCreateTexture: %s\n", _str);
-				break;
-			case bgfx::Fatal::DeviceLost:
-				LogError("Error: bgfx: DeviceLost: %s\n", _str);
-				break;
-			}
-		}
-		void traceVargs(const char* _filePath, uint16_t _line, const char* _format, va_list _argList) override {}
-		void profilerBegin(const char* _name, uint32_t _abgr, const char* _filePath, uint16_t _line) override {}
-		void profilerBeginLiteral(const char* _name, uint32_t _abgr, const char* _filePath, uint16_t _line) override {}
-		void profilerEnd() override {}
-		uint32_t cacheReadSize(uint64_t _id) override { return 0; }
-		bool cacheRead(uint64_t _id, void* _data, uint32_t _size) override { return false; }
-		void cacheWrite(uint64_t _id, const void* _data, uint32_t _size) override {}
-		void screenShot(const char* _filePath, uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _data, uint32_t _size, bool _yflip) override {}
-		void captureBegin(uint32_t _width, uint32_t _height, uint32_t _pitch, bgfx::TextureFormat::Enum _format, bool _yflip) override {}
-		void captureEnd() override {}
-		void captureFrame(const void* _data, uint32_t _size) override {}
-	};
-
-public:
 	RenderSystemImpl(Engine& engine)
 		: m_engine(engine)
-		//, m_allocator(HeapAllocator(engine.GetAllocator()))//TODO, how to make custom allocator per system
 		, m_allocator(engine.GetAllocator())
 		, m_bgfxAllocator(m_allocator)
 		, m_meshes(m_allocator)
 	{
 		///////////////
-		bgfx::PlatformData d = { 0 };
+		bgfx::PlatformData d { 0 };
 		d.nwh = m_engine.GetPlatformData().windowHndl;
 		bgfx::setPlatformData(d);
 
 		bgfx::init(bgfx::RendererType::Enum::Direct3D12, BGFX_PCI_ID_NONE, 0, &m_bgfxCallback, &m_bgfxAllocator);
-		bgfx::reset(600, 400, BGFX_RESET_VSYNC);
 
 		bgfx::setDebug(BGFX_DEBUG_NONE);
 
@@ -383,21 +372,21 @@ public:
 			FS::FileMode::FlagNone
 		};
 		FS::File fileVS;
-		ASSERT(fileVS.Open("D:/projects/NewEngine/shaders/dx11/vs_cubes.bin", mode));
+		ASSERT(fileVS.Open("shaders/dx11/vs_cubes.bin", mode));
 		size_t fileVSSize = fileVS.GetSize();
-		u8* fileVSData = (u8*)m_allocator.Allocate(fileVSSize, 1);
 		const bgfx::Memory* memVS = bgfx::alloc((u32)fileVSSize + 1);
 		ASSERT(fileVS.Read(memVS->data, fileVSSize));
 		memVS->data[memVS->size - 1] = '\0';
 		fileVS.Close();
+
 		FS::File fileFS;
-		ASSERT(fileFS.Open("D:/projects/NewEngine/shaders/dx11/fs_cubes.bin", mode));
+		ASSERT(fileFS.Open("shaders/dx11/fs_cubes.bin", mode));
 		size_t fileFSSize = fileFS.GetSize();
-		u8* fileFSData = (u8*)m_allocator.Allocate(fileFSSize, 1);
 		const bgfx::Memory* memFS = bgfx::alloc((u32)fileFSSize + 1);
 		ASSERT(fileFS.Read(memFS->data, fileFSSize));
 		memFS->data[memFS->size - 1] = '\0';
 		fileFS.Close();
+
 		bgfx::ShaderHandle fsh = bgfx::createShader(memFS);
 		bgfx::ShaderHandle vsh = bgfx::createShader(memVS);
 		bgfx::setName(fsh, "shaders/dx11/fs_cubes.bin");
@@ -423,9 +412,7 @@ public:
 	{
 		static float time = 0;
 		time += deltaTime * 0.001f;
-		static const u32 m_width = 600;
-		static const u32 m_height = 400;
-		float at[3] = { 0.0f, 0.0f,   0.0f };
+		float at[3] =  { 0.0f, 0.0f,   0.0f };
 		float eye[3] = { 0.0f, 0.0f, -35.0f };
 
 		const bgfx::HMD* hmd = bgfx::getHMD();
@@ -496,6 +483,14 @@ public:
 	const char* GetName() const override { return "renderer"; }
 
 
+	void Resize(u32 width, u32 height) override
+	{
+		m_width = width;
+		m_height = height;
+		bgfx::reset(m_width, m_height, BGFX_RESET_VSYNC);
+	}
+
+
 	void AddMeshComponent(Entity entity, worldId world) override
 	{
 		m_meshes.Insert(entity, Mesh());
@@ -516,22 +511,22 @@ public:
 	Engine& GetEngine() const override { return m_engine; }
 
 private:
+	HeapAllocator m_allocator;//must be first
 	Engine& m_engine;
-	IAllocator& m_allocator;
 	AssociativeArray<Entity, Mesh> m_meshes;
 
 	/////////////////////
+	u32 m_width = 0;
+	u32 m_height = 0;
 	BGFXAllocator m_bgfxAllocator;
 	BgfxCallback m_bgfxCallback;
+	u32 m_bgfxResetFlags = BGFX_RESET_NONE;
 	bgfx::VertexBufferHandle m_vbh;
 	bgfx::IndexBufferHandle m_ibh;
 	bgfx::ProgramHandle m_program;
 	int64_t m_timeOffset;
 	/////////////////////
 };
-
-
-
 
 
 RenderSystem* RenderSystem::Create(Engine& engine)

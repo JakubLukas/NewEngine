@@ -7,6 +7,25 @@ namespace Veng
 {
 
 
+InputEvent::InputEvent()
+{
+
+}
+
+
+InputEvent::InputEvent(const InputEvent& other)
+{
+	memcpy(this, &other, sizeof(InputEvent));
+}
+
+
+InputEvent& InputEvent::operator=(const InputEvent& other)
+{
+	memcpy(this, &other, sizeof(InputEvent));
+	return *this;
+}
+
+
 struct InputDevice
 {
 	static const int MAX_NAME_LENGTH = 128;
@@ -17,7 +36,6 @@ struct InputDevice
 		, active(false)
 	{
 	}
-
 
 	InputDevice(inputDeviceID deviceId, InputDeviceCategory category)
 		: category(category)
@@ -31,6 +49,12 @@ struct InputDevice
 		, id(other.id)
 		, active(other.active)
 	{
+	}
+
+	InputDevice& operator=(const InputDevice& other)
+	{
+		memcpy(this, &other, sizeof(InputDevice));
+		return *this;
 	}
 
 
@@ -212,7 +236,7 @@ private:
 
 InputSystem* InputSystem::Create(IAllocator& allocator)
 {
-	return (InputSystem*)(new (allocator, ALIGN_OF(InputSystemImpl)) InputSystemImpl(allocator));
+	return new (allocator, ALIGN_OF(InputSystemImpl)) InputSystemImpl(allocator);
 }
 
 void InputSystem::Destroy(InputSystem* system, IAllocator& allocator)

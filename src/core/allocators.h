@@ -1,5 +1,6 @@
 #pragma once
 
+#include "int.h"
 #include "memory.h"
 
 
@@ -34,7 +35,7 @@ public:
 	size_t AllocatedSize(void* p) override;
 
 private:
-	unsigned m_allocCount;
+	i32 m_allocCount;
 };
 
 
@@ -51,6 +52,7 @@ public:
 
 private:
 	IAllocator& m_source;
+	i32 m_allocCount;
 };
 
 
