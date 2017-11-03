@@ -5,6 +5,8 @@
 #include "core/associative_array.h"
 #include "core/logs.h"
 
+#include "shader_manager.h"
+
 #include <bgfx/bgfx.h>///////////////
 
 #include <math.h>
@@ -250,22 +252,6 @@ static PosColorVertex s_cubeVertices[] =
 	{ 1.0f, -1.0f, -1.0f, 0xffffffff },
 };
 
-static const uint16_t s_cubeTriList[] =
-{
-	0, 1, 2, // 0
-	1, 3, 2,
-	4, 6, 5, // 2
-	5, 6, 7,
-	0, 2, 4, // 4
-	4, 2, 6,
-	1, 5, 3, // 6
-	5, 7, 3,
-	0, 4, 1, // 8
-	4, 5, 1,
-	2, 3, 6, // 10
-	6, 3, 7,
-};
-
 static const uint16_t s_cubeTriStrip[] =
 {
 	0, 1, 2,
@@ -323,6 +309,27 @@ struct BgfxCallback : public bgfx::CallbackI
 };
 
 
+static bgfx::ShaderHandle CreateShader(const char* path)
+{
+	static FS::FileMode mode{
+		FS::FileMode::Access::Read,
+		FS::FileMode::ShareMode::ShareRead,
+		FS::FileMode::CreationDisposition::OpenExisting,
+		FS::FileMode::FlagNone
+	};
+
+	FS::File file;
+	ASSERT(file.Open(path, mode));
+	size_t fileSize = file.GetSize();
+	const bgfx::Memory* mem = bgfx::alloc((u32)fileSize + 1);
+	ASSERT(file.Read(mem->data, fileSize));
+	mem->data[mem->size - 1] = '\0';
+	file.Close();
+
+	return bgfx::createShader(mem);
+}
+
+
 class RenderSystemImpl : public RenderSystem
 {
 public:
@@ -330,6 +337,7 @@ public:
 		: m_engine(engine)
 		, m_allocator(engine.GetAllocator())
 		, m_bgfxAllocator(m_allocator)
+		, m_shaderManager(m_allocator)
 		, m_meshes(m_allocator)
 	{
 		///////////////
@@ -364,31 +372,8 @@ public:
 			bgfx::makeRef(s_cubeTriStrip, sizeof(s_cubeTriStrip))
 		);
 
-		// Create program from shaders.
-		FS::FileMode mode{
-			FS::FileMode::Access::Read,
-			FS::FileMode::ShareMode::NoShare,
-			FS::FileMode::CreationDisposition::OpenExisting,
-			FS::FileMode::FlagNone
-		};
-		FS::File fileVS;
-		ASSERT(fileVS.Open("shaders/dx11/vs_cubes.bin", mode));
-		size_t fileVSSize = fileVS.GetSize();
-		const bgfx::Memory* memVS = bgfx::alloc((u32)fileVSSize + 1);
-		ASSERT(fileVS.Read(memVS->data, fileVSSize));
-		memVS->data[memVS->size - 1] = '\0';
-		fileVS.Close();
-
-		FS::File fileFS;
-		ASSERT(fileFS.Open("shaders/dx11/fs_cubes.bin", mode));
-		size_t fileFSSize = fileFS.GetSize();
-		const bgfx::Memory* memFS = bgfx::alloc((u32)fileFSSize + 1);
-		ASSERT(fileFS.Read(memFS->data, fileFSSize));
-		memFS->data[memFS->size - 1] = '\0';
-		fileFS.Close();
-
-		bgfx::ShaderHandle fsh = bgfx::createShader(memFS);
-		bgfx::ShaderHandle vsh = bgfx::createShader(memVS);
+		bgfx::ShaderHandle fsh = CreateShader("shaders/dx11/fs_cubes.bin");
+		bgfx::ShaderHandle vsh = CreateShader("shaders/dx11/vs_cubes.bin");
 		bgfx::setName(fsh, "shaders/dx11/fs_cubes.bin");
 		bgfx::setName(vsh, "shaders/dx11/vs_cubes.bin");
 		m_program = bgfx::createProgram(vsh, fsh, true /* destroy shaders when program is destroyed */);
@@ -513,6 +498,7 @@ public:
 private:
 	HeapAllocator m_allocator;//must be first
 	Engine& m_engine;
+	ShaderManager m_shaderManager;
 	AssociativeArray<Entity, Mesh> m_meshes;
 
 	/////////////////////
