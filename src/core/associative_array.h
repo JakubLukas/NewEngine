@@ -62,7 +62,7 @@ public:
 	const ValueType* end() const { return m_values + m_size; }
 
 
-	bool Insert(const KeyType& key, const ValueType& value)
+	ValueType* Insert(const KeyType& key, const ValueType& value)
 	{
 		unsigned idx = GetIndex(key);
 		if (m_size == 0 || m_keys[idx] != key)
@@ -78,13 +78,12 @@ public:
 				(m_values + i - 1)->~ValueType();
 			}
 			
-			new (NewPlaceholder(), (void*)(m_keys + idx)) KeyType(key);
-			new (NewPlaceholder(), (void*)(m_values + idx)) ValueType(value);
 			++m_size;
-			return true;
+			new (NewPlaceholder(), (void*)(m_keys + idx)) KeyType(key);
+			return new (NewPlaceholder(), (void*)(m_values + idx)) ValueType(value);
 		}
 
-		return false;
+		return nullptr;
 	}
 
 
@@ -148,10 +147,9 @@ public:
 		if(capacity <= m_capacity) return;
 
 		m_capacity = capacity;
-		void* data = m_allocator.Allocate(m_capacity * sizeof(KeyType) + ((m_capacity + 1) * sizeof(ValueType)), ALIGN_OF(KeyType));
+		void* data = m_allocator.Allocate(m_capacity * (sizeof(KeyType) + sizeof(ValueType)) + ALIGN_OF(ValueType), ALIGN_OF(KeyType));
 		KeyType* newKeys = static_cast<KeyType*>(data);
-		ValueType* newValuesUnaligned = static_cast<ValueType*>((void*)((KeyType*)data + m_capacity));
-		ValueType* newValues = static_cast<ValueType*>((void*)((uintptr_t)(newValuesUnaligned + 1) & ~(uintptr_t)ALIGN_OF(ValueType)));
+		ValueType* newValues = static_cast<ValueType*>(AllignPointer(newKeys + m_capacity, ALIGN_OF(ValueType)));
 
 
 		
@@ -170,9 +168,9 @@ public:
 	}
 
 
-	unsigned Size() const { return m_size; }
+	unsigned GetSize() const { return m_size; }
 
-	unsigned Capacity() const { return m_capacity; }
+	unsigned GetCapacity() const { return m_capacity; }
 
 private:
 	void Enlarge()
@@ -205,6 +203,7 @@ private:
 		return (low == 0) ? low : low - 1;
 	}
 
+private:
 	IAllocator& m_allocator;
 	unsigned m_capacity = 0;
 	unsigned m_size = 0;

@@ -25,7 +25,7 @@ World::~World()
 
 Entity World::CreateEntity()
 {
-	if (m_aliveEntitiesCount < m_entities.Size())
+	if (m_aliveEntitiesCount < m_entities.GetSize())
 	{
 		++m_aliveEntitiesCount;
 		return m_entities[m_aliveEntitiesCount - 1];
@@ -41,7 +41,7 @@ Entity World::CreateEntity()
 
 void World::DestroyEntity(Entity entity)
 {
-	for (unsigned i = 0; i < m_entities.Size(); ++i)
+	for (unsigned i = 0; i < m_entities.GetSize(); ++i)
 	{
 		if (m_entities[i] == entity)
 		{

@@ -15,13 +15,13 @@ InputEvent::InputEvent()
 
 InputEvent::InputEvent(const InputEvent& other)
 {
-	memcpy(this, &other, sizeof(InputEvent));
+	MemCpy(this, &other, sizeof(InputEvent));
 }
 
 
 InputEvent& InputEvent::operator=(const InputEvent& other)
 {
-	memcpy(this, &other, sizeof(InputEvent));
+	MemCpy(this, &other, sizeof(InputEvent));
 	return *this;
 }
 
@@ -53,7 +53,7 @@ struct InputDevice
 
 	InputDevice& operator=(const InputDevice& other)
 	{
-		memcpy(this, &other, sizeof(InputDevice));
+		MemCpy(this, &other, sizeof(InputDevice));
 		return *this;
 	}
 
