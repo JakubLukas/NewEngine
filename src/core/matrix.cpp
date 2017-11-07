@@ -58,7 +58,23 @@ Matrix44 Matrix44::Multiply(const Matrix44& mat1, const Matrix44& mat2)
 
 Vector4 Matrix44::Multiply(const Matrix44& mat, const Vector4& vec)
 {
+	return Vector4(
+		mat.m11 * vec.x + mat.m12 * vec.y + mat.m13 * vec.z + mat.m14 * vec.w,
+		mat.m21 * vec.x + mat.m22 * vec.y + mat.m23 * vec.z + mat.m24 * vec.w,
+		mat.m31 * vec.x + mat.m32 * vec.y + mat.m33 * vec.z + mat.m34 * vec.w,
+		mat.m41 * vec.x + mat.m42 * vec.y + mat.m43 * vec.z + mat.m44 * vec.w
+	);
+}
 
+
+Vector4 Matrix44::Multiply(const Vector4& vec, const Matrix44& mat)
+{
+	return Vector4(
+		vec.x * mat.m11 + vec.y * mat.m21 + vec.z * mat.m31 + vec.w * mat.m41,
+		vec.x * mat.m12 + vec.y * mat.m22 + vec.z * mat.m32 + vec.w * mat.m42,
+		vec.x * mat.m13 + vec.y * mat.m23 + vec.z * mat.m33 + vec.w * mat.m43,
+		vec.x * mat.m14 + vec.y * mat.m24 + vec.z * mat.m34 + vec.w * mat.m44
+	);
 }
 
 

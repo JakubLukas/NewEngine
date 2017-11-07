@@ -40,11 +40,6 @@ struct Handness
 		Right,
 	};
 };
-const float kPi = 3.1415926535897932384626433832795f;
-inline float toRad(float _deg)
-{
-	return _deg * kPi / 180.0f;
-}
 void mtxProj(float* _result, float _fovy, float _aspect, float _near, float _far, bool _oglNdc);
 inline void vec3Cross(float* _result, const float* _a, const float* _b)
 {

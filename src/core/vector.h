@@ -11,8 +11,12 @@ struct Vector3
 	Vector3(float x, float y, float z);
 	explicit Vector3(const Vector3& vec);
 
-<<<<<<< HEAD
 	Vector3& operator=(const Vector3& vec);
+
+	static float Dot(const Vector3& vec1, const Vector3& vec2);
+
+	//right hand
+	static Vector3 Cross(const Vector3& vec1, const Vector3& vec2);
 
 	float x;
 	float y;
@@ -28,9 +32,6 @@ struct Vector4
 	Vector4(const Vector4& vec);
 
 	Vector4& operator=(const Vector4& vec);
-=======
-	Vector3& operator =(const Vector3& other);
->>>>>>> 453ce2f7f17ead375d14a42e856ce0145e48c646
 
 	float x;
 	float y;
