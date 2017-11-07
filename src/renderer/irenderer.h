@@ -29,6 +29,8 @@ public:
 	virtual void Update(float deltaTime) override = 0;
 	virtual const char* GetName() const override = 0;
 
+	virtual void Resize(u32 width, u32 height) = 0;
+
 
 	virtual void AddMeshComponent(Entity entity, worldId world) = 0;
 	virtual void RemoveMeshComponent(Entity entity, worldId world) = 0;

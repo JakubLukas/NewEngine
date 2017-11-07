@@ -24,7 +24,8 @@ public:
 			m_keys[i].~KeyType();
 			m_values[i].~ValueType();
 		}
-		m_allocator.Deallocate(m_keys);
+		if(m_keys != nullptr)
+			m_allocator.Deallocate(m_keys);
 	}
 
 
@@ -162,7 +163,8 @@ public:
 			m_values[i].~ValueType();
 		}
 
-		m_allocator.Deallocate(m_keys);
+		if(m_keys != nullptr)
+			m_allocator.Deallocate(m_keys);
 		m_keys = newKeys;
 		m_values = newValues;
 	}

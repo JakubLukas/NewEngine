@@ -54,6 +54,13 @@ public:
 	{
 		ASSERT(m_engine != nullptr);
 		m_tmpPlugRender = RenderSystem::Create(*m_engine);
+		RECT rect;
+		if (GetClientRect(m_hwnd, &rect))
+		{
+			u32 width = rect.right - rect.left;
+			u32 height = rect.bottom - rect.top;
+			m_tmpPlugRender->Resize(width, height);
+		}
 		m_engine->AddPlugin(m_tmpPlugRender);
 	}
 
@@ -208,7 +215,7 @@ private:
 		//keyboard
 		rid[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
 		rid[1].usUsage = HID_USAGE_GENERIC_KEYBOARD;
-		rid[1].dwFlags = RIDEV_NOLEGACY | RIDEV_DEVNOTIFY;
+		rid[1].dwFlags = RIDEV_DEVNOTIFY | RIDEV_NOLEGACY;
 		rid[1].hwndTarget = NULL;
 
 		//gamepad
@@ -519,6 +526,14 @@ private:
 		deviceName.Set(&entry[startIdx], entryLength - startIdx);
 	}
 
+	void HandleResize(LPARAM lparam)
+	{
+		WORD width = LOWORD(lparam);
+		WORD height = HIWORD(lparam);
+		if(m_tmpPlugRender != nullptr)
+			m_tmpPlugRender->Resize(width, height);
+	}
+
 	LRESULT OnMessage(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	{
 		switch(msg)
@@ -534,7 +549,7 @@ private:
 				break;
 			case WM_MOVE:
 			case WM_SIZE:
-				//onResize();
+				HandleResize(lparam);
 				break;
 			case WM_QUIT:
 				m_finished = true;
@@ -561,7 +576,7 @@ private:
 	}
 
 private:
-	HWND m_hwnd;
+	HWND m_hwnd = nullptr;
 
 	int m_exitCode = 0;
 	bool m_finished = false;
@@ -569,7 +584,7 @@ private:
 
 	MainAllocator m_mainAllocator;
 	HeapAllocator m_allocator;
-	Engine* m_engine;
+	Engine* m_engine = nullptr;
 
 	static App* s_instance;
 };

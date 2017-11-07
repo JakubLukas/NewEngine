@@ -8,7 +8,7 @@ namespace Veng
 {
 
 
-class EngineImpl : Engine
+class EngineImpl : public Engine
 {
 public:
 	EngineImpl(IAllocator& allocator)
@@ -87,7 +87,7 @@ private:
 
 Engine* Engine::Create(IAllocator& allocator)
 {
-	return (Engine*)new (allocator, ALIGN_OF(EngineImpl)) EngineImpl(allocator);
+	return new (allocator, ALIGN_OF(EngineImpl)) EngineImpl(allocator);
 }
 
 

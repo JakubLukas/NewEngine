@@ -56,7 +56,8 @@ String::String(const char* str, unsigned length, IAllocator& allocator)
 
 String::~String()
 {
-	m_allocator.Deallocate(m_data);
+	if(m_data != nullptr)
+		m_allocator.Deallocate(m_data);
 }
 
 
@@ -116,7 +117,8 @@ void String::Set(const char* str)
 	else
 	{
 		m_size = strLen;
-		m_allocator.Deallocate(m_data);
+		if(m_data != nullptr)
+			m_allocator.Deallocate(m_data);
 		m_data = (char*)m_allocator.Allocate(m_size + 1, sizeof(char));
 		StrCopy(m_data, str, m_size);
 		m_data[m_size] = '\0';
@@ -133,7 +135,8 @@ void String::Set(const char* str, unsigned length)
 	else
 	{
 		m_size = length;
-		m_allocator.Deallocate(m_data);
+		if(m_data != nullptr)
+			m_allocator.Deallocate(m_data);
 		m_data = (char*)m_allocator.Allocate(m_size + 1, sizeof(char));
 		StrCopy(m_data, str, m_size);
 		m_data[m_size] = '\0';
