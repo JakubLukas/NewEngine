@@ -10,6 +10,8 @@ namespace Veng
 
 #define ALIGN_OF(x) __alignof(x)
 
+void* AllignPointer(void* ptr, size_t alignment);
+
 
 class IAllocator
 {

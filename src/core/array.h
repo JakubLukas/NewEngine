@@ -57,8 +57,9 @@ public:
 
 	void Pop()
 	{
-		(m_data + m_size)->~Type();
+		ASSERT(m_size > 0);
 		--m_size;
+		(m_data + m_size)->~Type();
 	}
 
 	void Erase(unsigned idx)
@@ -130,9 +131,9 @@ public:
 	}
 
 
-	unsigned Size() const { return m_size; }
+	unsigned GetSize() const { return m_size; }
 
-	unsigned Capacity() const { return m_capacity; }
+	unsigned GetCapacity() const { return m_capacity; }
 
 private:
 	void Enlarge()
@@ -141,6 +142,7 @@ private:
 		Reserve(newCapacity);
 	}
 
+private:
 	IAllocator& m_allocator;
 	unsigned m_capacity = 0;
 	unsigned m_size = 0;

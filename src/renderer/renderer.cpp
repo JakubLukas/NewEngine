@@ -9,9 +9,8 @@
 
 #include <bgfx/bgfx.h>///////////////
 
-#include <math.h>
+#include "core/math.h"
 #include "core/memory.h"
-#include "core/file/file_system.h"
 namespace bx
 {
 
@@ -41,7 +40,6 @@ struct Handness
 		Right,
 	};
 };
-float ftan(float _a);
 const float kPi = 3.1415926535897932384626433832795f;
 inline float toRad(float _deg)
 {
@@ -58,10 +56,9 @@ inline float vec3Dot(const float* _a, const float* _b)
 {
 	return _a[0] * _b[0] + _a[1] * _b[1] + _a[2] * _b[2];
 }
-float fsqrt(float _a);
 inline float vec3Length(const float* _a)
 {
-	return fsqrt(vec3Dot(_a, _a));
+	return Veng::sqrtf(vec3Dot(_a, _a));
 }
 inline float vec3Norm(float* _result, const float* _a)
 {
@@ -168,7 +165,6 @@ struct PlatformData
 };
 
 void setPlatformData(const PlatformData& _data);
-
 
 bgfx::ProgramHandle loadProgram(const char* _vsName, const char* _fsName);
 
@@ -309,27 +305,6 @@ struct BgfxCallback : public bgfx::CallbackI
 };
 
 
-static bgfx::ShaderHandle CreateShader(const char* path)
-{
-	static FS::FileMode mode{
-		FS::FileMode::Access::Read,
-		FS::FileMode::ShareMode::ShareRead,
-		FS::FileMode::CreationDisposition::OpenExisting,
-		FS::FileMode::FlagNone
-	};
-
-	FS::File file;
-	ASSERT(file.Open(path, mode));
-	size_t fileSize = file.GetSize();
-	const bgfx::Memory* mem = bgfx::alloc((u32)fileSize + 1);
-	ASSERT(file.Read(mem->data, fileSize));
-	mem->data[mem->size - 1] = '\0';
-	file.Close();
-
-	return bgfx::createShader(mem);
-}
-
-
 class RenderSystemImpl : public RenderSystem
 {
 public:
@@ -372,11 +347,11 @@ public:
 			bgfx::makeRef(s_cubeTriStrip, sizeof(s_cubeTriStrip))
 		);
 
-		bgfx::ShaderHandle fsh = CreateShader("shaders/dx11/fs_cubes.bin");
-		bgfx::ShaderHandle vsh = CreateShader("shaders/dx11/vs_cubes.bin");
-		bgfx::setName(fsh, "shaders/dx11/fs_cubes.bin");
-		bgfx::setName(vsh, "shaders/dx11/vs_cubes.bin");
-		m_program = bgfx::createProgram(vsh, fsh, true /* destroy shaders when program is destroyed */);
+		Shader* fs = m_shaderManager.GetShader("shaders/dx11/fs_cubes.bin");
+		Shader* vs = m_shaderManager.GetShader("shaders/dx11/vs_cubes.bin");
+		bgfx::setName(fs->handle, "shaders/dx11/fs_cubes.bin");
+		bgfx::setName(vs->handle, "shaders/dx11/vs_cubes.bin");
+		m_program = bgfx::createProgram(vs->handle, fs->handle, true /* destroy shaders when program is destroyed */);
 
 		///////////////
 	}

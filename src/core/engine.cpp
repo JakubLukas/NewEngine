@@ -44,7 +44,7 @@ public:
 
 	void RemovePlugin(const char* name) override
 	{
-		for (unsigned i = 0; i < m_plugins.Size(); ++i)
+		for (unsigned i = 0; i < m_plugins.GetSize(); ++i)
 		{
 			if (StrEqual(m_plugins[i]->GetName(), name))
 			{

@@ -31,6 +31,11 @@ namespace Veng
 {
 
 
+void* AllignPointer(void* ptr, size_t alignment)
+{
+	return (void*)(((uintptr)ptr + (uintptr)alignment) & ~(uintptr)alignment);
+}
+
 // ---------------- MAIN ALLOCATOR ----------------
 
 MainAllocator::MainAllocator()

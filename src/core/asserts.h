@@ -1,9 +1,9 @@
-#include <windows.h>
+#pragma once
 
 
-#define DEBUG_BREAK() __debugbreak()
-#define DEBUGGER_LOG(text) OutputDebugString(text)
+void MyDebugBreak();
+void MyOutputDebugString(const char* text);
 
 
-#define ASSERT(cond) if(!(cond)) { DEBUG_BREAK(); DEBUGGER_LOG(#cond); }
-#define ASSERT2(cond, text) if(!(cond)) { DEBUG_BREAK(); DEBUGGER_LOG(text); }
+#define ASSERT(cond) if(!(cond)) { MyDebugBreak(); MyOutputDebugString(#cond); }
+#define ASSERT2(cond, text) if(!(cond)) { MyDebugBreak(); MyOutputDebugString(text); }
