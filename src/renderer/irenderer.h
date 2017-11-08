@@ -11,12 +11,6 @@ class Engine;
 typedef u32 worldId;
 
 
-struct Mesh
-{
-
-};
-
-
 class RenderSystem : public IPlugin
 {
 public:
