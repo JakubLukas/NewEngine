@@ -46,7 +46,7 @@ public:
 	{
 		for (unsigned i = 0; i < m_plugins.GetSize(); ++i)
 		{
-			if (StrEqual(m_plugins[i]->GetName(), name))
+			if (string::Equal(m_plugins[i]->GetName(), name))
 			{
 				m_plugins[i]->~IPlugin();
 				m_plugins.Erase(i);

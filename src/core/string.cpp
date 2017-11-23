@@ -9,21 +9,28 @@ namespace Veng
 {
 
 
-int StrLength(const char* str)
+namespace string
 {
-	return (int)strlen(str);
+
+
+size_t Length(const char* str)
+{
+	return strlen(str);
 }
 
 
-void StrCopy(char* destination, const char* source, unsigned length)
+void Copy(char* destination, const char* source, size_t length)
 {
-	MemCpy(destination, source, length);
+	memory::Copy(destination, source, length);
 }
 
 
-bool StrEqual(const char* str1, const char* str2)
+bool Equal(const char* str1, const char* str2)
 {
 	return strcmp(str1, str2) == 0;
+}
+
+
 }
 
 
@@ -34,22 +41,22 @@ String::String(IAllocator& allocator)
 }
 
 
-String::String(const char* str, IAllocator& allocator)
+String::String(IAllocator& allocator, const char* str)
 	: m_allocator(allocator)
 {
-	m_size = StrLength(str);
+	m_size = string::Length(str);
 	m_data = (char*)m_allocator.Allocate(m_size + 1, sizeof(char));
-	StrCopy(m_data, str, m_size);
+	string::Copy(m_data, str, m_size);
 	m_data[m_size] = '\0';
 }
 
 
-String::String(const char* str, unsigned length, IAllocator& allocator)
+String::String(IAllocator& allocator, const char* str, unsigned length)
 	: m_allocator(allocator)
 	, m_size(length)
 {
 	m_data = (char*)m_allocator.Allocate(m_size + 1, sizeof(char));
-	StrCopy(m_data, str, m_size);
+	string::Copy(m_data, str, m_size);
 	m_data[m_size] = '\0';
 }
 
@@ -79,10 +86,10 @@ String& String::Cat(const char* str)
 {
 	if (str != nullptr && str[0] != '\0')
 	{
-		unsigned strLen = StrLength(str);
+		size_t strLen = string::Length(str);
 		char* newData = (char*)m_allocator.Allocate(m_size + strLen + 1, sizeof(char));
-		StrCopy(newData, m_data, m_size);
-		StrCopy(newData + m_size, str, strLen);
+		string::Copy(newData, m_data, m_size);
+		string::Copy(newData + m_size, str, strLen);
 		m_size += strLen;
 		newData[m_size] = '\0';
 		m_allocator.Deallocate(m_data);
@@ -95,8 +102,8 @@ String& String::Cat(const char* str)
 String& String::Cat(const char* str, unsigned length)
 {
 	char* newData = (char*)m_allocator.Allocate(m_size + length + 1, sizeof(char));
-	StrCopy(newData, m_data, m_size);
-	StrCopy(newData + m_size, str, length);
+	string::Copy(newData, m_data, m_size);
+	string::Copy(newData + m_size, str, length);
 	m_size += length;
 	newData[m_size] = '\0';
 	m_allocator.Deallocate(m_data);
@@ -108,11 +115,11 @@ String& String::Cat(const char* str, unsigned length)
 
 void String::Set(const char* str)
 {
-	unsigned strLen = StrLength(str);
+	size_t strLen = string::Length(str);
 
 	if (m_size == strLen)
 	{
-		StrCopy(m_data, str, strLen);
+		string::Copy(m_data, str, strLen);
 	}
 	else
 	{
@@ -120,7 +127,7 @@ void String::Set(const char* str)
 		if(m_data != nullptr)
 			m_allocator.Deallocate(m_data);
 		m_data = (char*)m_allocator.Allocate(m_size + 1, sizeof(char));
-		StrCopy(m_data, str, m_size);
+		string::Copy(m_data, str, m_size);
 		m_data[m_size] = '\0';
 	}
 }
@@ -130,7 +137,7 @@ void String::Set(const char* str, unsigned length)
 {
 	if (m_size == length)
 	{
-		StrCopy(m_data, str, length);
+		string::Copy(m_data, str, length);
 	}
 	else
 	{
@@ -138,7 +145,7 @@ void String::Set(const char* str, unsigned length)
 		if(m_data != nullptr)
 			m_allocator.Deallocate(m_data);
 		m_data = (char*)m_allocator.Allocate(m_size + 1, sizeof(char));
-		StrCopy(m_data, str, m_size);
+		string::Copy(m_data, str, m_size);
 		m_data[m_size] = '\0';
 	}
 }

@@ -28,11 +28,18 @@ inline Type&& forward(typename remove_reference<Type>::type& Arg)
 }
 
 
-void MemCpy(void* destination, const void* source, size_t size);
+namespace memory
+{
 
-void MemMove(void* destination, const void* source, size_t size);
 
-void MemSet(void* destination, unsigned char value, size_t size);
+void Copy(void* destination, const void* source, size_t size);
+
+void Move(void* destination, const void* source, size_t size);
+
+void Set(void* destination, unsigned char value, size_t size);
+
+
+}
 
 
 }

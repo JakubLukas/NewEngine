@@ -6,6 +6,7 @@
 #include "core/logs.h"
 
 #include "shader_manager.h"
+#include "model.h"
 
 #include <bgfx/bgfx.h>///////////////
 
@@ -41,35 +42,7 @@ struct Handness
 	};
 };
 void mtxProj(float* _result, float _fovy, float _aspect, float _near, float _far, bool _oglNdc);
-inline void vec3Cross(float* _result, const float* _a, const float* _b)
-{
-	_result[0] = _a[1] * _b[2] - _a[2] * _b[1];
-	_result[1] = _a[2] * _b[0] - _a[0] * _b[2];
-	_result[2] = _a[0] * _b[1] - _a[1] * _b[0];
-}
-inline float vec3Dot(const float* _a, const float* _b)
-{
-	return _a[0] * _b[0] + _a[1] * _b[1] + _a[2] * _b[2];
-}
-inline float vec3Length(const float* _a)
-{
-	return Veng::sqrtf(vec3Dot(_a, _a));
-}
-inline float vec3Norm(float* _result, const float* _a)
-{
-	const float len = vec3Length(_a);
-	const float invLen = 1.0f / len;
-	_result[0] = _a[0] * invLen;
-	_result[1] = _a[1] * invLen;
-	_result[2] = _a[2] * invLen;
-	return len;
-}
-inline void vec3Sub(float* _result, const float* _a, const float* _b)
-{
-	_result[0] = _a[0] - _b[0];
-	_result[1] = _a[1] - _b[1];
-	_result[2] = _a[2] - _b[2];
-}
+
 void mtxLookAt(float* _result, const float* _eye, const float* _at, const float* _up = NULL);
 
 inline void mtxQuat(float* _result, const float* _quat)
@@ -170,7 +143,6 @@ namespace Veng
 {
 
 
-///////////////
 struct BGFXAllocator : public bx::AllocatorI
 {
 	static const size_t NATURAL_ALIGNEMENT = 8;
@@ -208,57 +180,6 @@ struct BGFXAllocator : public bx::AllocatorI
 
 	IAllocator& m_source;
 };
-
-
-struct PosColorVertex
-{
-	float m_x;
-	float m_y;
-	float m_z;
-	uint32_t m_abgr;
-
-	static void init()
-	{
-		ms_decl
-			.begin()
-			.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
-			.end();
-	};
-
-	static bgfx::VertexDecl ms_decl;
-};
-
-bgfx::VertexDecl PosColorVertex::ms_decl;
-
-static PosColorVertex s_cubeVertices[] =
-{
-	{ -1.0f,  1.0f,  1.0f, 0xff000000 },
-	{ 1.0f,  1.0f,  1.0f, 0xff0000ff },
-	{ -1.0f, -1.0f,  1.0f, 0xff00ff00 },
-	{ 1.0f, -1.0f,  1.0f, 0xff00ffff },
-	{ -1.0f,  1.0f, -1.0f, 0xffff0000 },
-	{ 1.0f,  1.0f, -1.0f, 0xffff00ff },
-	{ -1.0f, -1.0f, -1.0f, 0xffffff00 },
-	{ 1.0f, -1.0f, -1.0f, 0xffffffff },
-};
-
-static const uint16_t s_cubeTriStrip[] =
-{
-	0, 1, 2,
-	3,
-	7,
-	1,
-	5,
-	0,
-	4,
-	2,
-	6,
-	7,
-	4,
-	5,
-};
-///////////////
 
 
 struct BgfxCallback : public bgfx::CallbackI
@@ -300,6 +221,7 @@ struct BgfxCallback : public bgfx::CallbackI
 };
 
 
+
 class RenderSystemImpl : public RenderSystem
 {
 public:
@@ -315,7 +237,7 @@ public:
 		d.nwh = m_engine.GetPlatformData().windowHndl;
 		bgfx::setPlatformData(d);
 
-		bgfx::init(bgfx::RendererType::Enum::Direct3D12, BGFX_PCI_ID_NONE, 0, &m_bgfxCallback, &m_bgfxAllocator);
+		bgfx::init(bgfx::RendererType::Count, BGFX_PCI_ID_NONE, 0, &m_bgfxCallback, &m_bgfxAllocator);
 
 		bgfx::setDebug(BGFX_DEBUG_NONE);
 
@@ -326,27 +248,14 @@ public:
 			, 0
 		);
 
-		// Create vertex stream declaration.
-		PosColorVertex::init();
-
-		// Create static vertex buffer.
-		m_vbh = bgfx::createVertexBuffer(
-			// Static data can be passed with bgfx::makeRef
-			bgfx::makeRef(s_cubeVertices, sizeof(s_cubeVertices))
-			, PosColorVertex::ms_decl
-		);
-
-		// Create static index buffer.
-		m_ibh = bgfx::createIndexBuffer(
-			// Static data can be passed with bgfx::makeRef
-			bgfx::makeRef(s_cubeTriStrip, sizeof(s_cubeTriStrip))
-		);
-
-		Shader* fs = m_shaderManager.GetShader("shaders/dx11/fs_cubes.bin");
-		Shader* vs = m_shaderManager.GetShader("shaders/dx11/vs_cubes.bin");
-		bgfx::setName(fs->handle, "shaders/dx11/fs_cubes.bin");
-		bgfx::setName(vs->handle, "shaders/dx11/vs_cubes.bin");
-		m_program = bgfx::createProgram(vs->handle, fs->handle, true /* destroy shaders when program is destroyed */);
+		// DUMMY test
+		Entity e = (Entity)0;
+		AddMeshComponent(e, 0);
+		Mesh* mesh;
+		m_meshes.Find(e, mesh);
+		mesh->Load();
+		mesh->material = new (m_allocator, ALIGN_OF(Material)) Material();
+		mesh->material->shader = m_shaderManager.GetShader("shaders/dx11/vs_cubes.bin", "shaders/dx11/fs_cubes.bin");
 
 		///////////////
 	}
@@ -354,9 +263,10 @@ public:
 
 	~RenderSystemImpl() override
 	{
-		bgfx::destroy(m_ibh);
-		bgfx::destroy(m_vbh);
-		bgfx::destroy(m_program);
+		// DUMMY test
+		Mesh* mesh = m_meshes.begin();//HAAAACK
+		mesh->material->~Material();
+		m_allocator.Deallocate(mesh->material);
 
 		// Shutdown bgfx.
 		bgfx::shutdown();
@@ -415,8 +325,10 @@ public:
 				bgfx::setTransform(mtx);
 
 				// Set vertex and index buffer.
-				bgfx::setVertexBuffer(0, m_vbh);
-				bgfx::setIndexBuffer(m_ibh);
+				// DUMMY test
+				Mesh* mesh = m_meshes.begin();//HAAAACK
+				bgfx::setVertexBuffer(0, mesh->vertexBufferHandle);
+				bgfx::setIndexBuffer(mesh->indexBufferHandle);
 
 				// Set render states.
 				bgfx::setState(0
@@ -425,7 +337,8 @@ public:
 				);
 
 				// Submit primitive for rendering to view 0.
-				bgfx::submit(0, m_program);
+				// DUMMY test
+				bgfx::submit(0, mesh->material->shader.program.handle);
 			}
 		}
 
@@ -477,10 +390,6 @@ private:
 	BGFXAllocator m_bgfxAllocator;
 	BgfxCallback m_bgfxCallback;
 	u32 m_bgfxResetFlags = BGFX_RESET_NONE;
-	bgfx::VertexBufferHandle m_vbh;
-	bgfx::IndexBufferHandle m_ibh;
-	bgfx::ProgramHandle m_program;
-	int64_t m_timeOffset;
 	/////////////////////
 };
 

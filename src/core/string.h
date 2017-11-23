@@ -7,29 +7,26 @@ namespace Veng
 {
 
 
-int StrLength(const char* str);
-
-void StrCopy(char* destination, const char* source, unsigned length);
-
-bool StrEqual(const char* str1, const char* str2);
-
-
-template<int size>
-class StaticString
+namespace string
 {
-public:
 
-private:
-	char m_data[size];
-};
+
+size_t Length(const char* str);
+
+void Copy(char* destination, const char* source, size_t length);
+
+bool Equal(const char* str1, const char* str2);
+
+
+}
 
 
 class String
 {
 public:
 	explicit String(IAllocator& allocator);
-	String(const char* str, IAllocator& allocator);
-	String(const char* str, unsigned length, IAllocator& allocator);
+	String(IAllocator& allocator, const char* str);
+	String(IAllocator& allocator, const char* str, unsigned length);
 	~String();
 
 	char operator[](unsigned index);
@@ -42,12 +39,12 @@ public:
 	void Set(const char* str, unsigned length);
 
 	const char* Cstr() const { return m_data; }
-	unsigned Length() const { return m_size; }
+	size_t Length() const { return m_size; }
 
 private:
 	IAllocator& m_allocator;
 	char* m_data = nullptr;
-	unsigned m_size = 0;
+	size_t m_size = 0;
 };
 
 

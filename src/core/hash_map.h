@@ -65,7 +65,15 @@ private:
 			, next(next)
 		{}
 
-		HashNode& operator=(const HashNode& other)
+		HashNode(const HashNode<KeyType, ValueType>& other)
+		{
+			key = other.key;
+			value = other.value;
+			next = other.next;
+			return *this;
+		}
+
+		HashNode<KeyType, ValueType>& operator=(const HashNode<KeyType, ValueType>& other)
 		{
 			key = other.key;
 			value = other.value;
@@ -79,6 +87,11 @@ private:
 	};
 
 	typedef HashNode<KeyType, ValueType> Node;
+
+	struct Iterator
+	{
+
+	};
 
 public:
 	HashMap(IAllocator& allocator)
@@ -182,33 +195,7 @@ public:
 		return true;
 	}
 
-	const ValueType& operator[](const KeyType& key) const
-	{
-		ValueType* value;
-		if (Find(key, value))
-		{
-			return *value;
-		}
-		else
-		{
-			ASSERT2(false, "Key not found");
-			return m_table[0];
-		}
-	}
-
-	ValueType& operator[](const KeyType& key)
-	{
-		ValueType* value;
-		if (Find(key, value))
-		{
-			return *value;
-		}
-		else
-		{
-			ASSERT2(false, "Key not found");
-			return m_table[0];
-		}
-	}
+	
 
 	void Rehash(unsigned bucketSize)
 	{

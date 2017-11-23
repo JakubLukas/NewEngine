@@ -1,5 +1,7 @@
 #include "vector.h"
 
+#include "math.h"
+
 
 namespace Veng
 {
@@ -35,6 +37,40 @@ Vector3& Vector3::operator=(const Vector3& vec)
 }
 
 
+Vector3 Vector3::operator+(const Vector3& other) const
+{
+	return Vector3(
+		x + other.x,
+		y + other.y,
+		z + other.z
+	);
+}
+
+Vector3 Vector3::operator-(const Vector3& other) const
+{
+	return Vector3(
+		x - other.x,
+		y - other.y,
+		z - other.z
+	);
+}
+
+
+float Vector3::Length() const
+{
+	return sqrtf(Dot(*this, *this));
+}
+
+
+void Vector3::Normalize()
+{
+	float invLength = 1.0f / Length();
+	x *= invLength;
+	y *= invLength;
+	z *= invLength;
+}
+
+
 float Vector3::Dot(const Vector3& vec1, const Vector3& vec2)
 {
 	return vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z;
@@ -42,9 +78,11 @@ float Vector3::Dot(const Vector3& vec1, const Vector3& vec2)
 
 Vector3 Vector3::Cross(const Vector3& vec1, const Vector3& vec2)
 {
-	/*
-	
-	*/
+	return Vector3(
+		vec1.y * vec2.z - vec1.z * vec2.y,
+		vec1.z * vec2.x - vec1.x * vec2.z,
+		vec1.x * vec2.y - vec1.y * vec2.x
+	);
 }
 
 

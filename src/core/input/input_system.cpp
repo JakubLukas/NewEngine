@@ -15,13 +15,13 @@ InputEvent::InputEvent()
 
 InputEvent::InputEvent(const InputEvent& other)
 {
-	MemCpy(this, &other, sizeof(InputEvent));
+	memory::Copy(this, &other, sizeof(InputEvent));
 }
 
 
 InputEvent& InputEvent::operator=(const InputEvent& other)
 {
-	MemCpy(this, &other, sizeof(InputEvent));
+	memory::Copy(this, &other, sizeof(InputEvent));
 	return *this;
 }
 
@@ -53,7 +53,7 @@ struct InputDevice
 
 	InputDevice& operator=(const InputDevice& other)
 	{
-		MemCpy(this, &other, sizeof(InputDevice));
+		memory::Copy(this, &other, sizeof(InputDevice));
 		return *this;
 	}
 
@@ -84,8 +84,8 @@ public:
 		InputDevice device(dID, category);
 		device.active = true;
 		m_devices.Insert(handle, device);
-		unsigned strLen = (InputDevice::MAX_NAME_LENGTH < name.Length()) ? InputDevice::MAX_NAME_LENGTH : name.Length();
-		StrCopy(device.name, name.Cstr(), strLen);
+		size_t strLen = (InputDevice::MAX_NAME_LENGTH < name.Length()) ? InputDevice::MAX_NAME_LENGTH : name.Length();
+		string::Copy(device.name, name.Cstr(), strLen);
 
 		return dID;
 	}

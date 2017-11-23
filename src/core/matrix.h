@@ -24,6 +24,7 @@ struct Matrix44
 
 	static Vector4 Multiply(const Vector4& vec, const Matrix44& mat);
 
+
 	float m11, m12, m13, m14;
 	float m21, m22, m23, m24;
 	float m31, m32, m33, m34;

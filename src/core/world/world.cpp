@@ -1,6 +1,5 @@
 #include "world.h"
 
-#include "core/entity/entity_manager.h"
 #include "scene.h"
 
 

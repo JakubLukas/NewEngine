@@ -502,7 +502,7 @@ private:
 			return;
 		}
 
-		String registryPathStr("SYSTEM\\CurrentControlSet\\Enum\\HID\\", m_allocator);
+		String registryPathStr(m_allocator, "SYSTEM\\CurrentControlSet\\Enum\\HID\\");
 		unsigned startIdx = 8;
 		unsigned endIdx = 8;
 		for (; rawRegistrypath[endIdx] != '#'; ++endIdx);

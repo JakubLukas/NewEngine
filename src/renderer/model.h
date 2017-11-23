@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/array.h"
+#include "shader_manager.h"
 
 #include <bgfx/bgfx.h>
 
@@ -8,29 +9,14 @@
 namespace Veng
 {
 
-struct ShaderInternal
-{
-	bgfx::ShaderHandle handle;
-};
 
-struct ShaderProgramInternal
-{
-	bgfx::ProgramHandle handle;
-};
+struct Shader;
 
-struct Shader
-{
-	ShaderInternal vertex;
-	ShaderInternal fragment;
-	ShaderProgramInternal program;
-	//Uniforms
-	//TextureSlots
-};
 
 //TODO move ?
 struct Material
 {
-	Shader* shader;
+	Shader shader;
 	//Textures
 	//Uniforms?
 	//commandBuffer*
@@ -43,6 +29,9 @@ struct Mesh
 	bgfx::VertexBufferHandle vertexBufferHandle;
 	bgfx::IndexBufferHandle indexBufferHandle;
 	Material* material;
+
+	bool Load(/*FileBlob*/);
+	void Clear();
 };
 
 

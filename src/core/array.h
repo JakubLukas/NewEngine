@@ -64,7 +64,7 @@ public:
 
 	void Erase(unsigned idx)
 	{
-		ASSERT(idx >= 0 && idx < m_size);
+		ASSERT(idx < m_size);
 		(m_data + idx)->~Type();
 
 		for(unsigned i = idx; i < m_size - 1; ++i)
@@ -77,14 +77,14 @@ public:
 
 	const Type& operator[](unsigned index) const
 	{
-		ASSERT(index >= 0 && index < m_size);
+		ASSERT(index < m_size);
 		return m_data[index];
 	}
 
 
 	Type& operator[](unsigned index)
 	{
-		ASSERT(index >= 0 && index < m_size);
+		ASSERT(index < m_size);
 		return m_data[index];
 	}
 
