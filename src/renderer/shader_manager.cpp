@@ -54,7 +54,15 @@ ShaderManager::ShaderManager(IAllocator& allocator)
 
 ShaderManager::~ShaderManager()
 {
-	m_shaders
+	for (const HashMap<ProgramHashPair, ShaderProgramInternal>::Node& program : m_programs)
+	{
+		bgfx::destroy(program.value.handle);
+	}
+
+	for (const HashMap<const char*, ShaderInternal>::Node& shader : m_shaders)
+	{
+		bgfx::destroy(shader.value.handle);
+	}
 }
 
 
@@ -99,7 +107,7 @@ ShaderProgramInternal* ShaderManager::GetProgramInt(
 		return programInt;
 	
 	ShaderProgramInternal newProgramInt;
-	newProgramInt.handle = bgfx::createProgram(vertShaderInt.handle, fragShaderInt.handle, true /* destroy shaders when program is destroyed */);
+	newProgramInt.handle = bgfx::createProgram(vertShaderInt.handle, fragShaderInt.handle, false);
 
 	if(bgfx::isValid(newProgramInt.handle))
 		return m_programs.Insert(key, newProgramInt);

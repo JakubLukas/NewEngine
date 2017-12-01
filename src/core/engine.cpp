@@ -48,7 +48,6 @@ public:
 		{
 			if (string::Equal(m_plugins[i]->GetName(), name))
 			{
-				m_plugins[i]->~IPlugin();
 				m_plugins.Erase(i);
 				return;
 			}
@@ -87,15 +86,14 @@ private:
 
 Engine* Engine::Create(IAllocator& allocator)
 {
-	return new (allocator, ALIGN_OF(EngineImpl)) EngineImpl(allocator);
+	return NEW_OBJECT(allocator, EngineImpl)(allocator);
 }
 
 
 void Engine::Destroy(Engine* engine, IAllocator& allocator)
 {
-	EngineImpl* p = (EngineImpl*)engine;
-	p->~EngineImpl();
-	allocator.Deallocate(p);
+	EngineImpl* ptr = static_cast<EngineImpl*>(engine);
+	DELETE_OBJECT(allocator, ptr);
 }
 
 

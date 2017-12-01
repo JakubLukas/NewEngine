@@ -236,7 +236,7 @@ private:
 
 InputSystem* InputSystem::Create(IAllocator& allocator)
 {
-	return new (allocator, ALIGN_OF(InputSystemImpl)) InputSystemImpl(allocator);
+	return NEW_OBJECT(allocator, InputSystemImpl)(allocator);
 }
 
 void InputSystem::Destroy(InputSystem* system, IAllocator& allocator)

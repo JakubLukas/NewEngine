@@ -9,6 +9,7 @@
 #include "model.h"
 
 #include <bgfx/bgfx.h>///////////////
+#include "core/delegate.h"///////////////////////////////////
 
 #include "core/math.h"
 #include "core/memory.h"
@@ -221,6 +222,11 @@ struct BgfxCallback : public bgfx::CallbackI
 };
 
 
+static bool asd()
+{
+	return false;
+}
+
 
 class RenderSystemImpl : public RenderSystem
 {
@@ -229,7 +235,6 @@ public:
 		: m_engine(engine)
 		, m_allocator(engine.GetAllocator())
 		, m_bgfxAllocator(m_allocator)
-		, m_shaderManager(m_allocator)
 		, m_meshes(m_allocator)
 	{
 		///////////////
@@ -248,14 +253,19 @@ public:
 			, 0
 		);
 
+		m_shaderManager = NEW_OBJECT(m_allocator, ShaderManager)(m_allocator);
+
 		// DUMMY test
 		Entity e = (Entity)0;
 		AddMeshComponent(e, 0);
 		Mesh* mesh;
 		m_meshes.Find(e, mesh);
 		mesh->Load();
-		mesh->material = new (m_allocator, ALIGN_OF(Material)) Material();
-		mesh->material->shader = m_shaderManager.GetShader("shaders/dx11/vs_cubes.bin", "shaders/dx11/fs_cubes.bin");
+		mesh->material = NEW_OBJECT(m_allocator, Material)();
+		mesh->material->shader = m_shaderManager->GetShader("shaders/dx11/vs_cubes.bin", "shaders/dx11/fs_cubes.bin");
+
+		Function<bool(void)> f = &asd;
+		//auto f = Function<bool(void)>(inst, &funct);
 
 		///////////////
 	}
@@ -264,9 +274,10 @@ public:
 	~RenderSystemImpl() override
 	{
 		// DUMMY test
-		Mesh* mesh = m_meshes.begin();//HAAAACK
-		mesh->material->~Material();
-		m_allocator.Deallocate(mesh->material);
+		Mesh* mesh = m_meshes.begin();//HAAAACK to clean up material resource
+		DELETE_OBJECT(m_allocator, mesh->material);
+
+		DELETE_OBJECT(m_allocator, m_shaderManager);
 
 		// Shutdown bgfx.
 		bgfx::shutdown();
@@ -381,7 +392,7 @@ public:
 private:
 	HeapAllocator m_allocator;//must be first
 	Engine& m_engine;
-	ShaderManager m_shaderManager;
+	ShaderManager* m_shaderManager;
 	AssociativeArray<Entity, Mesh> m_meshes;
 
 	/////////////////////
@@ -396,15 +407,14 @@ private:
 
 RenderSystem* RenderSystem::Create(Engine& engine)
 {
-	return new (engine.GetAllocator(), ALIGN_OF(RenderSystemImpl)) RenderSystemImpl(engine);
+	return NEW_OBJECT(engine.GetAllocator(), RenderSystemImpl)(engine);
 }
 
 void RenderSystem::Destroy(RenderSystem* system)
 {
-	RenderSystemImpl* p = (RenderSystemImpl*)system;
 	IAllocator& allocator = system->GetEngine().GetAllocator();
-	p->~RenderSystemImpl();
-	allocator.Deallocate(p);
+	RenderSystemImpl* ptr = (RenderSystemImpl*)system;
+	DELETE_OBJECT(allocator, ptr);
 }
 
 }

@@ -10,7 +10,7 @@ namespace Veng
 
 #define ALIGN_OF(x) __alignof(x)
 
-void* AllignPointer(void* ptr, size_t alignment);
+void* AlignPointer(void* ptr, size_t alignment);
 
 
 class IAllocator
@@ -58,13 +58,6 @@ private:
 };
 
 
-template<class Type, class... Params>
-Type* New(IAllocator& allocator, Params&&... args)
-{
-	return new (NewPlaceholder(), allocator) Type(forward<Params>(args)...);
-}
-
-
 //PoolAllocator
 
 
@@ -85,8 +78,40 @@ Type* New(IAllocator& allocator, Params&&... args)
 
 }
 
+
+namespace Veng
+{
+
 struct NewPlaceholder { };
 
-void* operator new(size_t size, NewPlaceholder, void* where);
+}
+
+void* operator new(size_t size, Veng::NewPlaceholder, void* where);
 
 void* operator new(size_t size, Veng::IAllocator& allocator, size_t alignment);
+
+
+template<class Type>
+void DeleteObject(Type* ptr)
+{
+	if (ptr != nullptr)
+	{
+		ptr->~Type();
+	}
+}
+
+template<class Type>
+void DeleteObject(Veng::IAllocator& allocator, Type* ptr)
+{
+	if (ptr != nullptr)
+	{
+		ptr->~Type();
+		allocator.Deallocate(ptr);
+	}
+}
+
+#define NEW_OBJECT(allocator, Type) new (allocator, ALIGN_OF(Type)) Type
+#define DELETE_OBJECT(allocator, object) DeleteObject(allocator, object);
+
+#define NEW_PLACEMENT(ptr, Type) new (Veng::NewPlaceholder(), static_cast<void*>(ptr)) Type
+#define DELETE_PLACEMENT(ptr) DeleteObject(ptr);

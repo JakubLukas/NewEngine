@@ -21,6 +21,7 @@ namespace Veng
 #	error Platform not supported
 #endif
 
+
 typedef char i8;
 typedef unsigned char u8;
 typedef short i16;
@@ -41,11 +42,13 @@ typedef unsigned long long u64;
 #	endif
 #endif
 
+
 #ifdef PLATFORM64
 typedef u64 uintptr;
 #else
 typedef u32 uintptr;
 #endif
+
 
 static_assert(sizeof(i8) == 1, "Incorrect size of i8");
 static_assert(sizeof(i16) == 2, "Incorrect size of i16");

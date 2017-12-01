@@ -52,7 +52,7 @@ struct HashCalculator<ProgramHashPair>
 {
 	static u32 Get(const ProgramHashPair& key)
 	{
-		//TODO: just dummy value to test
+		//TODO: just dummy value to test (internally in bgfx are handles 16b values)
 		return (key.vertex.handle.idx << 16u) + key.fragment.handle.idx;
 	}
 };

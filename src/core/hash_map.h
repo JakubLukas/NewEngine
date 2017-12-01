@@ -50,9 +50,15 @@ private:
 	static const int ENLARGE_MULTIPLIER = 2;
 	static const int INVALID_INDEX = -1;
 
+public:
+	typedef HashMap<KeyType, ValueType, HashFunction> Map;
+
+
 	template<class KeyType, class ValueType>
 	struct HashNode
 	{
+		friend Map;
+
 		HashNode(const KeyType& key, const ValueType& value)
 			: key(key)
 			, value(value)
@@ -83,15 +89,12 @@ private:
 
 		KeyType key;
 		ValueType value;
+	private:
 		int next;
 	};
 
+	
 	typedef HashNode<KeyType, ValueType> Node;
-
-	struct Iterator
-	{
-
-	};
 
 public:
 	HashMap(IAllocator& allocator)
@@ -102,7 +105,7 @@ public:
 	{
 		for (unsigned i = 0; i < m_size; ++i)
 		{
-			m_table[i].~Node();
+			DELETE_PLACEMENT(m_table + i);
 		}
 		if (m_buckets != nullptr)
 			m_allocator.Deallocate(m_buckets);
@@ -116,10 +119,16 @@ public:
 		}
 		for (unsigned i = 0; i < m_size; ++i)
 		{
-			m_table[i]->~Node();
+			DELETE_PLACEMENT(m_table + i);
 		}
 		m_size = 0;
 	}
+
+	Node* Begin() { return m_table; }
+	Node* End() { return m_table + m_size; }
+
+	const Node* Begin() const { return m_table; }
+	const Node* End() const { return m_table + m_size; }
 
 	bool Find(const KeyType& key, ValueType*& value) const
 	{
@@ -179,7 +188,7 @@ public:
 
 		*pointingIdx = node->next;
 
-		node->~Node();
+		DELETE_PLACEMENT(node);
 
 		Node& lastNode = m_table[m_size - 1];
 		unsigned lastNodeIdx = GetIndex(lastNode.key);
@@ -195,8 +204,6 @@ public:
 		return true;
 	}
 
-	
-
 	void Rehash(unsigned bucketSize)
 	{
 		ASSERT(bucketSize > m_bucketSize);
@@ -210,7 +217,7 @@ public:
 		m_size = 0;
 		void* data = m_allocator.Allocate(bucketSize * (sizeof(int) + sizeof(Node)) + ALIGN_OF(Node), ALIGN_OF(Node));
 		m_buckets = static_cast<int*>(data);
-		m_table = static_cast<Node*>(AllignPointer(m_buckets + bucketSize, ALIGN_OF(Node)));
+		m_table = static_cast<Node*>(AlignPointer(m_buckets + bucketSize, ALIGN_OF(Node)));
 
 		for (unsigned i = 0; i < m_bucketSize; ++i)
 		{
@@ -227,7 +234,7 @@ public:
 			m_allocator.Deallocate(oldBuckets);
 	}
 
-	unsigned BucketsSize() { return m_buckets; }
+	unsigned BucketsSize() { return m_bucketSize; }
 
 	unsigned GetSize() const { return m_size; }
 
@@ -238,7 +245,7 @@ private:
 
 		if (m_buckets[bucketIdx] == INVALID_INDEX)
 		{
-			Node* newNode = new (NewPlaceholder(), m_table + m_size) Node(key, value);
+			Node* newNode = NEW_PLACEMENT(m_table + m_size, Node)(key, value);
 			m_buckets[bucketIdx] = m_size;
 			++m_size;
 			return &newNode->value;
@@ -256,7 +263,7 @@ private:
 		}
 		else
 		{
-			Node* newNode = new (NewPlaceholder(), m_table + m_size) Node(key, value);
+			Node* newNode = NEW_PLACEMENT(m_table + m_size, Node)(key, value);
 			node.next = m_size;
 			++m_size;
 			return &newNode->value;
@@ -267,6 +274,12 @@ private:
 	{
 		u32 hash = HashFunction::Get(key);
 		return hash % m_bucketSize;
+	}
+
+	Node* GetNode(unsigned index)
+	{
+		ASSERT(index < m_bucketSize);
+		return &m_table[index];
 	}
 
 private:
@@ -280,6 +293,34 @@ private:
 
 template<class KeyType, class ValueType, class HashFunction>
 const float HashMap<KeyType, ValueType, HashFunction>::MAX_FACTOR = 0.7f;
+
+
+template<class KeyType, class ValueType, class HashFunction>
+typename HashMap<KeyType, ValueType, HashFunction>::Node* begin(HashMap<KeyType, ValueType, HashFunction>& a)
+{
+	return a.Begin();
+}
+
+
+template<class KeyType, class ValueType, class HashFunction>
+typename HashMap<KeyType, ValueType, HashFunction>::Node* end(HashMap<KeyType, ValueType, HashFunction>& a)
+{
+	return a.End();
+}
+
+
+template<class KeyType, class ValueType, class HashFunction>
+typename const HashMap<KeyType, ValueType, HashFunction>::Node* begin(const HashMap<KeyType, ValueType, HashFunction>& a)
+{
+	return a.Begin();
+}
+
+
+template<class KeyType, class ValueType, class HashFunction>
+typename const HashMap<KeyType, ValueType, HashFunction>::Node* end(const HashMap<KeyType, ValueType, HashFunction>& a)
+{
+	return a.End();
+}
 
 
 }

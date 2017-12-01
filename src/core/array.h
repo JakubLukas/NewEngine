@@ -22,7 +22,7 @@ public:
 	{
 		for(unsigned i = 0; i < m_size; ++i)
 		{
-			m_data[i].~Type();
+			DELETE_PLACEMENT(m_data + i);
 		}
 		if(m_data != nullptr)
 			m_allocator.Deallocate(m_data);
@@ -33,7 +33,7 @@ public:
 	{
 		for(unsigned i = 0; i < m_size; ++i)
 		{
-			m_data[i].~Type();
+			DELETE_PLACEMENT(m_data + i);
 		}
 		m_size = 0;
 	}
@@ -51,7 +51,7 @@ public:
 		if(m_size == m_capacity)
 			Enlarge();
 
-		new (NewPlaceholder(), (void*)(m_data + m_size)) Type(value);
+		NEW_PLACEMENT(m_data + m_size, Type)(value);
 		++m_size;
 	}
 
@@ -59,18 +59,18 @@ public:
 	{
 		ASSERT(m_size > 0);
 		--m_size;
-		(m_data + m_size)->~Type();
+		DELETE_PLACEMENT(m_data + m_size);
 	}
 
 	void Erase(unsigned idx)
 	{
 		ASSERT(idx < m_size);
-		(m_data + idx)->~Type();
+		DELETE_PLACEMENT(m_data + idx);
 
 		for(unsigned i = idx; i < m_size - 1; ++i)
 		{
-			new (NewPlaceholder(), (void*)(m_data + i)) Type(m_data[i + 1]);
-			(m_data + i + 1)->~Type();
+			NEW_PLACEMENT(m_data + i, Type)(m_data[i + 1]);
+			DELETE_PLACEMENT(m_data + i + 1);
 		}
 		--m_size;
 	}
@@ -98,8 +98,8 @@ public:
 
 		for(unsigned i = 0; i < m_size; ++i)
 		{
-			new (NewPlaceholder(), (void*)(newData + i)) Type(m_data[i]);
-			(m_data + i)->~Type();
+			NEW_PLACEMENT(newData + i, Type)(m_data[i]);
+			DELETE_PLACEMENT(m_data + i);
 		}
 
 		if(m_data != nullptr)
@@ -117,11 +117,11 @@ public:
 		unsigned sizeMin = (size < m_size) ? size : m_size;
 		for (unsigned i = 0; i < sizeMin; ++i)
 		{
-			new (NewPlaceholder(), (void*)(newData + i)) Type(m_data[i]);
+			NEW_PLACEMENT(newData + i, Type)(m_data[i]);
 		}
 		for (unsigned i = 0; i < m_size; ++i)
 		{
-			(m_data + i)->~Type();
+			DELETE_PLACEMENT(m_data + i);
 		}
 
 		if(m_data != nullptr)

@@ -31,7 +31,7 @@ namespace Veng
 {
 
 
-void* AllignPointer(void* ptr, size_t alignment)
+void* AlignPointer(void* ptr, size_t alignment)
 {
 	return (void*)(((uintptr)ptr + (uintptr)alignment) & ~(uintptr)alignment);
 }
@@ -113,7 +113,7 @@ size_t HeapAllocator::AllocatedSize(void* p)
 }
 
 
-void* operator new(size_t size, NewPlaceholder, void* where)
+void* operator new(size_t size, Veng::NewPlaceholder, void* where)
 {
 	return where;
 }

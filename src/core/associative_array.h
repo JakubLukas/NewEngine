@@ -21,8 +21,8 @@ public:
 	{
 		for (unsigned i = 0; i < m_size; ++i)
 		{
-			m_keys[i].~KeyType();
-			m_values[i].~ValueType();
+			DELETE_PLACEMENT(m_keys + i);
+			DELETE_PLACEMENT(m_values + i);
 		}
 		if(m_keys != nullptr)
 			m_allocator.Deallocate(m_keys);
@@ -33,8 +33,8 @@ public:
 	{
 		for(unsigned i = 0; i < m_size; ++i)
 		{
-			m_keys[i].~KeyType();
-			m_values[i].~ValueType();
+			DELETE_PLACEMENT(m_keys + i);
+			DELETE_PLACEMENT(m_values + i);
 		}
 		m_size = 0;
 	}
@@ -72,15 +72,15 @@ public:
 			for(unsigned i = m_size; i > idx; --i)
 			{
 				auto& t = m_keys[i - 1];
-				new (NewPlaceholder(), (void*)(m_keys + i)) KeyType(t);
-				(m_keys + i - 1)->~KeyType();
-				new (NewPlaceholder(), (void*)(m_values + i)) ValueType(m_values[i - 1]);
-				(m_values + i - 1)->~ValueType();
+				NEW_PLACEMENT(m_keys + i, KeyType)(t);
+				DELETE_PLACEMENT(m_keys + i - 1);
+				NEW_PLACEMENT(m_values + i, ValueType)(m_values[i - 1]);
+				DELETE_PLACEMENT(m_values + i - 1);
 			}
 			
 			++m_size;
-			new (NewPlaceholder(), (void*)(m_keys + idx)) KeyType(key);
-			return new (NewPlaceholder(), (void*)(m_values + idx)) ValueType(value);
+			NEW_PLACEMENT(m_keys + idx, KeyType)(key);
+			return NEW_PLACEMENT(m_values + idx, ValueType)(value);
 		}
 
 		return nullptr;
@@ -94,15 +94,15 @@ public:
 		unsigned idx = GetIndex(key);
 		if(m_keys[idx] == key)
 		{
-			m_keys[idx].~KeyType();
-			m_values[idx].~ValueType();
+			DELETE_PLACEMENT(m_keys + idx);
+			DELETE_PLACEMENT(m_values + idx);
 
 			for(unsigned i = idx; i < m_size - 1; ++i)
 			{
-				new (NewPlaceholder(), (void*)(m_keys + i)) KeyType(m_keys[i + 1]);
-				m_keys[i + 1].~KeyType();
-				new (NewPlaceholder(), (void*)(m_values + i)) ValueType(m_values[i + 1]);
-				m_values[i + 1].~ValueType();
+				NEW_PLACEMENT(m_keys + i, KeyType)(m_keys[i + 1]);
+				DELETE_PLACEMENT(m_keys + i + 1);
+				NEW_PLACEMENT(m_values + i, ValueType)(m_values[i + 1]);
+				DELETE_PLACEMENT(m_values + i + 1);
 			}
 			--m_size;
 			return true;
@@ -149,16 +149,16 @@ public:
 		m_capacity = capacity;
 		void* data = m_allocator.Allocate(m_capacity * (sizeof(KeyType) + sizeof(ValueType)) + ALIGN_OF(ValueType), ALIGN_OF(KeyType));
 		KeyType* newKeys = static_cast<KeyType*>(data);
-		ValueType* newValues = static_cast<ValueType*>(AllignPointer(newKeys + m_capacity, ALIGN_OF(ValueType)));
+		ValueType* newValues = static_cast<ValueType*>(AlignPointer(newKeys + m_capacity, ALIGN_OF(ValueType)));
 
 
 		
 		for(unsigned i = 0; i < m_size; ++i)
 		{
-			new (NewPlaceholder(), (void*)(newKeys + i)) KeyType(m_keys[i]);
-			m_keys[i].~KeyType();
-			new (NewPlaceholder(), (void*)(newValues + i)) ValueType(m_values[i]);
-			m_values[i].~ValueType();
+			NEW_PLACEMENT(newKeys + i, KeyType)(m_keys[i]);
+			DELETE_PLACEMENT(m_keys + i);
+			NEW_PLACEMENT(newValues + i, ValueType)(m_values[i]);
+			DELETE_PLACEMENT(m_values + i);
 		}
 
 		if(m_keys != nullptr)
