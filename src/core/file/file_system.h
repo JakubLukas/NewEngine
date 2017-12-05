@@ -1,6 +1,8 @@
 #pragma once
 
 #include "core/int.h"
+#include "path.h"
+#include "core/array.h"
 
 
 namespace Veng
@@ -85,9 +87,19 @@ private:
 };
 
 
+typedef u32 fileHandle;
+
+
 class FileSystem
 {
+public:
+	fileHandle OpenFile(const Path& path, FileMode mode);
+	void CloseFile(fileHandle handle);
 
+	bool Read(fileHandle handle, void* buffer, size_t size);
+	bool Write(fileHandle handle, void* data, size_t size);
+private:
+	Array<void*> m_fileHandles;
 };
 
 

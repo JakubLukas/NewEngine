@@ -264,7 +264,8 @@ public:
 		mesh->material = NEW_OBJECT(m_allocator, Material)();
 		mesh->material->shader = m_shaderManager->GetShader("shaders/dx11/vs_cubes.bin", "shaders/dx11/fs_cubes.bin");
 
-		Function<bool(void)> f = &asd;
+		Function<bool()> f;
+		f.Bind<Mesh, &Mesh::Load>(mesh);
 		//auto f = Function<bool(void)>(inst, &funct);
 
 		///////////////
