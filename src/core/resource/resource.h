@@ -11,7 +11,7 @@ namespace Veng
 class Resource
 {
 public:
-	enum State
+	enum class State
 	{
 		Empty,
 		Loading,
@@ -23,6 +23,7 @@ public:
 
 private:
 	Path m_path;
+	State m_state = Empty;
 	volatile u32 m_refCount = 0;
 };
 

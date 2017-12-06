@@ -260,12 +260,19 @@ public:
 		AddMeshComponent(e, 0);
 		Mesh* mesh;
 		m_meshes.Find(e, mesh);
-		mesh->Load();
+
+		Function<bool()> f;
+		f.Bind(mesh, &Mesh::Load);
+		f();
+
+		Function<bool()> b;
+		b.Bind(&asd);
+		b();
+
+		//mesh->Load();
 		mesh->material = NEW_OBJECT(m_allocator, Material)();
 		mesh->material->shader = m_shaderManager->GetShader("shaders/dx11/vs_cubes.bin", "shaders/dx11/fs_cubes.bin");
 
-		Function<bool()> f;
-		f.Bind<Mesh, &Mesh::Load>(mesh);
 		//auto f = Function<bool(void)>(inst, &funct);
 
 		///////////////

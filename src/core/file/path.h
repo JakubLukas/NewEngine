@@ -18,7 +18,7 @@ struct Path
 	inline bool operator==(const Path& other);
 	inline bool operator!=(const Path& other);
 
-	char path[MAX_LENGTH + 1];;
+	char path[MAX_LENGTH + 1];
 };
 
 

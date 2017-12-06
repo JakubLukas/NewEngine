@@ -12,107 +12,77 @@ class Function;
 template<class ReturnType, class... Arguments>
 class Function <ReturnType(Arguments...)>
 {
-private:
-	typedef ReturnType(*functionStubPtr)(void*, Arguments...);
-
-	template<ReturnType(*function)(Arguments...)>
-	static ReturnType FunctionStub(void*, Arguments... args)
-	{
-		return (function)(args...);
-	}
-
-	template<class ObjectType, ReturnType(ObjectType::*method)(Arguments...)>
-	static ReturnType ObjectStub(void* instance, Arguments... args)
-	{
-		return (static_cast<ObjectType*>(instance)->*method)(args...);
-	}
-
-
-
-	template<class ObjectType>
-	struct ObjectWrapper
-	{
-		typedef ReturnType(ObjectType::*methodPtr)(Arguments...);
-
-		ObjectWrapper(ObjectType* instance, methodPtr method)
-			: instance(instance)
-			, method(method)
-		{}
-
-
-		ReturnType operator()(Arguments... args)
-		{
-			return (static_cast<ObjectType*>(instance)->*method)(args...);
-		}
-
-
-		ObjectType* instance;
-		methodPtr method;
-	};
-
-	//template <class ObjectType>
-	//using member_pair = ObjectWrapper<ObjectType>;
-
-
-
-
-	template<class ObjectType, ReturnType(ObjectType::* function)(Arguments...) const>
-	static ReturnType ObjectStubConst(void* instance, Arguments... args)
-	{
-		return (static_cast<ObjectType*>(instance)->*function)(args...);
-	}
+public:
+	using functionPtr = ReturnType(*)(Arguments...);
 
 public:
 	Function()
-		: m_object(nullptr)
-		, m_functionStub(nullptr)
+		: m_functionStub(nullptr)
 	{}
 
 
-	/*void Bind(ReturnType(*function)(Arguments...))
+	void Bind(functionPtr function)
 	{
-		m_function = function;
-		m_functionStub = &FunctionStub;
+		m_functionStub = &FunctionWrapStub;
+		NEW_PLACEMENT(&m_wrap, FunctionWrap) { function };
 	}
 
-	template<class ObjectType, ReturnType(ObjectType::*method)(Arguments...)>
-	void Bind(ObjectType* object)
-	{
-		m_object = object;
-		m_functionStub = &ObjectStub<ObjectType, method>;
-
-	}
-
-	template<class ObjectType, ReturnType(ObjectType::*method)(Arguments...) const>
-	void Bind(ObjectType* object)
-	{
-		m_object = object;
-		m_functionStub = &ObjectStubConst<ObjectType, method>;
-
-	}*/
 
 	template<class ObjectType>
 	void Bind(ObjectType* object, ReturnType(ObjectType::*method)(Arguments...))
 	{
-		test = new ObjectWrapper<ObjectType>(object, method);
-		//m_object = object;
-		//m_functionStub = &ObjectStubConst<ObjectType, method>;
+		ASSERT(sizeof(ObjectWrap<ObjectType>) <= WRAP_SIZE);
 
+		m_functionStub = &ObjWrapStub<ObjectType>;
+		NEW_PLACEMENT(&m_wrap, ObjectWrap<ObjectType>) { object, method };
 	}
 
 
 	ReturnType operator()(Arguments... args)
 	{
-		//ASSERT(m_object != nullptr);
-		//ASSERT(m_function != nullptr);
-		//return (m_function)(m_object, m_function, args);
-		return test();
+		ASSERT(m_wrap != nullptr);
+		ASSERT(m_functionStub != nullptr);
+		return m_functionStub(&m_wrap);
 	}
 
+
 private:
-	void* m_object;
+	using functionStubPtr = ReturnType(*)(void*, Arguments...);
+
+	struct FunctionWrap
+	{
+		functionPtr function;
+	};
+
+	static ReturnType FunctionWrapStub(void* functionWrap, Arguments... args)
+	{
+		FunctionWrap* wrap = static_cast<FunctionWrap*>(functionWrap);
+		return (wrap->function)(args...);
+	}
+
+
+	template<class T>
+	struct ObjectWrap
+	{
+		using memberPtr = ReturnType(T::*)(Arguments...);
+
+		T* instance;
+		memberPtr method;
+	};
+
+	template<class ObjectType>
+	static ReturnType ObjWrapStub(void* objWrap, Arguments... args)
+	{
+		ObjectWrap<ObjectType>* wrap = static_cast<ObjectWrap<ObjectType>*>(objWrap);
+		return (wrap->instance->*(wrap->method))(args...);
+	}
+
+
+private:
+	static const unsigned WRAP_SIZE = sizeof(uintptr) * 2;
+	uintptr m_wrap[2] = {0};
+
 	functionStubPtr m_functionStub;
-	ObjectWrapper* test;
 };
 
 
