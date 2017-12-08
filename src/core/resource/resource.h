@@ -23,7 +23,7 @@ public:
 
 private:
 	Path m_path;
-	State m_state = Empty;
+	State m_state = State::Empty;
 	volatile u32 m_refCount = 0;
 };
 

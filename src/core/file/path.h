@@ -11,9 +11,13 @@ struct Path
 	Path();
 	Path(const char* str);
 	Path(const Path& other);
+	Path(Path&& other);
 
-	inline void operator=(const Path& other);
-	inline void operator=(const char* str);
+	void Swap(Path& other);
+
+	inline Path& operator=(const Path& other);
+	inline Path& operator=(Path&& other);
+	inline Path& operator=(const char* str);
 
 	inline bool operator==(const Path& other);
 	inline bool operator!=(const Path& other);

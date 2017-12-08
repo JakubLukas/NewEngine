@@ -2,6 +2,7 @@
 
 #include "core/asserts.h"
 #include "core/string.h"
+#include "core/utility.h"
 
 
 namespace Veng
@@ -20,20 +21,43 @@ Path::Path(const char* str)
 
 Path::Path(const Path& other)
 {
-	operator=(other);
+	string::Copy(path, other.path, MAX_LENGTH + 1);
 }
 
-
-void Path::operator=(const Path& other)
+Path::Path(Path&& other)
 {
-	string::Copy(path, other.path, MAX_LENGTH);
+	Swap(Utils::Move(other));
 }
 
-void Path::operator=(const char* str)
+
+void Path::Swap(Path& other)
+{
+	char tmp[MAX_LENGTH + 1];
+	string::Copy(tmp, other.path, MAX_LENGTH + 1);
+	string::Copy(other.path, path, MAX_LENGTH + 1);
+	string::Copy(path, tmp, MAX_LENGTH + 1);
+}
+
+
+Path& Path::operator=(const Path& other)
+{
+	string::Copy(path, other.path, MAX_LENGTH + 1);
+	return *this;
+}
+
+Path& Path::operator=(Path&& other)
+{
+	Swap(Utils::Move(other));
+	return *this;
+}
+
+Path& Path::operator=(const char* str)
 {
 	size_t len = string::Length(str);
 	ASSERT(len <= MAX_LENGTH);
 	string::Copy(path, str, len);
+	path[len] = '\0';
+	return *this;
 }
 
 

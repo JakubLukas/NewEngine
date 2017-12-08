@@ -161,7 +161,7 @@ public:
 	{
 		if (m_bucketSize == 0)
 			Rehash(INITIAL_SIZE);
-		if ((m_size / m_bucketSize) > MAX_FACTOR)
+		if ((m_size / (float)m_bucketSize) > MAX_FACTOR)
 			Rehash(m_bucketSize * ENLARGE_MULTIPLIER);
 
 		unsigned bucketIdx = GetIndex(key);

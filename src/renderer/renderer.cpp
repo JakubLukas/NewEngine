@@ -9,7 +9,6 @@
 #include "model.h"
 
 #include <bgfx/bgfx.h>///////////////
-#include "core/delegate.h"///////////////////////////////////
 
 #include "core/math.h"
 #include "core/memory.h"
@@ -255,21 +254,13 @@ public:
 
 		m_shaderManager = NEW_OBJECT(m_allocator, ShaderManager)(m_allocator);
 
+
 		// DUMMY test
 		Entity e = (Entity)0;
 		AddMeshComponent(e, 0);
 		Mesh* mesh;
 		m_meshes.Find(e, mesh);
-
-		Function<bool()> f;
-		f.Bind(mesh, &Mesh::Load);
-		f();
-
-		Function<bool()> b;
-		b.Bind(&asd);
-		b();
-
-		//mesh->Load();
+		mesh->Load();
 		mesh->material = NEW_OBJECT(m_allocator, Material)();
 		mesh->material->shader = m_shaderManager->GetShader("shaders/dx11/vs_cubes.bin", "shaders/dx11/fs_cubes.bin");
 
