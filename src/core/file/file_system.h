@@ -3,6 +3,7 @@
 #include "core/int.h"
 #include "path.h"
 #include "core/array.h"
+#include "core/function.h"
 
 
 namespace Veng
@@ -62,11 +63,11 @@ enum class MoveMethod
 };
 
 
-class File
+class FileSync
 {
 public:
-	File();
-	~File();
+	FileSync();
+	~FileSync();
 
 	bool Open(const char* path, FileMode mode);
 	bool Close();
@@ -87,7 +88,21 @@ private:
 };
 
 
-typedef u32 fileHandle;
+
+using nativeAsyncHandle = void*;
+using nativeFileHandle = void*;
+using fileHandle = u64;
+
+
+struct File
+{
+	nativeFileHandle handle;
+	nativeAsyncHandle asyncHandle;
+	u64 refCount;
+};
+
+
+nativeAsyncHandle CreateAsyncHandle();
 
 
 class FileSystem
@@ -99,7 +114,7 @@ public:
 	bool Read(fileHandle handle, void* buffer, size_t size);
 	bool Write(fileHandle handle, void* data, size_t size);
 private:
-	Array<void*> m_fileHandles;
+	Array<File> m_fileHandles;
 };
 
 

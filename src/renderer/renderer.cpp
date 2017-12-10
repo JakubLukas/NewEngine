@@ -263,9 +263,6 @@ public:
 		mesh->Load();
 		mesh->material = NEW_OBJECT(m_allocator, Material)();
 		mesh->material->shader = m_shaderManager->GetShader("shaders/dx11/vs_cubes.bin", "shaders/dx11/fs_cubes.bin");
-
-		//auto f = Function<bool(void)>(inst, &funct);
-
 		///////////////
 	}
 

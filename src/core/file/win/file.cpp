@@ -41,18 +41,18 @@ static DWORD moveMethodTable[] =
 };
 
 
-File::File()
+FileSync::FileSync()
 	: m_data(INVALID_HANDLE_VALUE)
 {
 
 }
 
-File::~File()
+FileSync::~FileSync()
 {
 	ASSERT2(m_data == INVALID_HANDLE_VALUE, "File wasn't closed\n");
 }
 
-bool File::Open(const char* path, FileMode mode)
+bool FileSync::Open(const char* path, FileMode mode)
 {
 	DWORD flags = FILE_ATTRIBUTE_NORMAL;
 	if (mode.flags & FileMode::FlagDeleteOnClose)
@@ -73,7 +73,7 @@ bool File::Open(const char* path, FileMode mode)
 	return (m_data != INVALID_HANDLE_VALUE);
 }
 
-bool File::Close()
+bool FileSync::Close()
 {
 	if (m_data != INVALID_HANDLE_VALUE)
 	{
@@ -84,18 +84,18 @@ bool File::Close()
 	return false;
 }
 
-bool File::Flush()
+bool FileSync::Flush()
 {
 	ASSERT(m_data != INVALID_HANDLE_VALUE);
 	return (FlushFileBuffers((HANDLE)m_data) != 0);
 }
 
 
-bool File::Read(void* buffer, size_t size)
+bool FileSync::Read(void* buffer, size_t size)
 {
 	ASSERT(m_data != INVALID_HANDLE_VALUE);
 	DWORD bytesReaded = 0;
-	bool result = (ReadFile(
+	bool result = (::ReadFile(
 		m_data,
 		buffer,
 		(DWORD)size,
@@ -105,7 +105,7 @@ bool File::Read(void* buffer, size_t size)
 	return result && size == bytesReaded;
 }
 
-bool File::Write(void* data, size_t size)
+bool FileSync::Write(void* data, size_t size)
 {
 	ASSERT(m_data != INVALID_HANDLE_VALUE);
 	DWORD bytesWritten = 0;
@@ -119,7 +119,7 @@ bool File::Write(void* data, size_t size)
 	return result && size == bytesWritten;
 }
 
-bool File::MovePosition(MoveMethod method, u64 position)
+bool FileSync::MovePosition(MoveMethod method, u64 position)
 {
 	ASSERT(m_data != INVALID_HANDLE_VALUE);
 	LARGE_INTEGER pos;
@@ -132,7 +132,7 @@ bool File::MovePosition(MoveMethod method, u64 position)
 	) != 0);
 }
 
-u64 File::GetPosition() const
+u64 FileSync::GetPosition() const
 {
 	ASSERT(m_data != INVALID_HANDLE_VALUE);
 	LARGE_INTEGER pos = {};
@@ -147,18 +147,128 @@ u64 File::GetPosition() const
 	return filePointer.QuadPart;
 }
 
-size_t File::GetSize() const
+size_t FileSync::GetSize() const
 {
 	ASSERT(m_data != INVALID_HANDLE_VALUE);
 	return GetFileSize(m_data, NULL);
 }
 
 
-bool File::Exists(const char* path)
+bool FileSync::Exists(const char* path)
 {
 	DWORD attribs = GetFileAttributes(path);
 	return (attribs != INVALID_FILE_ATTRIBUTES
 		&& !(attribs & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+
+}
+
+
+namespace FS
+{
+
+
+bool CreateAsyncHandle(nativeAsyncHandle& asyncHandle)
+{
+	HANDLE hPort = CreateIoCompletionPort(
+		INVALID_HANDLE_VALUE, //create new port
+		NULL, //create new port
+		NULL, //ignored, so use NULL
+		0 //as many concurrently running threads as there are processors in the system
+	);
+
+	if(hPort == NULL)
+	{
+		return false;
+	}
+	else
+	{
+		asyncHandle = hPort;
+		return true;
+	}
+}
+
+
+bool DestroyAsyncHandle(nativeAsyncHandle asyncHandle)
+{
+	ASSERT(asyncHandle != NULL);
+	return (CloseHandle(asyncHandle) == TRUE);
+}
+
+
+bool OpenFile(nativeFileHandle& fileHandle, nativeAsyncHandle asyncHandle, const Path& path, const FileMode& mode)
+{
+	DWORD flags = FILE_ATTRIBUTE_NORMAL;
+	flags |= FILE_FLAG_OVERLAPPED; //open for async use
+	if(mode.flags & FileMode::FlagDeleteOnClose)
+		flags |= FILE_FLAG_DELETE_ON_CLOSE;
+	if(mode.flags & FileMode::FlagWriteThrough)
+		flags |= FILE_FLAG_WRITE_THROUGH;
+
+	HANDLE hFile = CreateFile(
+		path.path,
+		(mode.access == FileMode::Access::Read) ? GENERIC_READ : GENERIC_WRITE,
+		shareModeTable[(unsigned)mode.shareMode],
+		NULL,
+		creationDispositionTable[(unsigned)mode.creationDisposition],
+		flags,
+		NULL
+	);
+
+	if(hFile == INVALID_HANDLE_VALUE)
+		return false;
+
+	HANDLE hPort = CreateIoCompletionPort(
+		hFile,
+		asyncHandle,
+		NULL, //user value
+		0); //ignored
+
+	if(hPort == NULL)
+		return false;
+
+	fileHandle = hFile;
+	return true;
+}
+
+
+bool CloseFile(nativeFileHandle fileHandle)
+{
+	ASSERT(fileHandle != INVALID_HANDLE_VALUE);
+	return (CloseHandle(fileHandle) == TRUE);
+}
+
+
+bool RemoveFile(const Path& path)
+{
+	return (DeleteFile(path.path) == TRUE);
+}
+
+
+bool ReadFile(nativeFileHandle fileHandle, void* buffer, size_t size)
+{
+	ASSERT(fileHandle != INVALID_HANDLE_VALUE);
+	DWORD bytesReaded = 0;
+
+	u64 where = 0;
+	OVERLAPPED foo;
+	foo.hEvent = NULL;
+	foo.Internal = 0;
+	foo.InternalHigh = 0;
+	foo.Offset = (DWORD)(where & 0xFFffFFff);
+	foo.OffsetHigh = (DWORD)(where >> 32);
+	foo.Pointer = NULL;
+
+
+	BOOL result = ::ReadFile(
+		fileHandle,
+		buffer,
+		(DWORD)size,
+		&bytesReaded,
+		&foo //TODO fix this
+	);
+	return result && size == bytesReaded;
 }
 
 
