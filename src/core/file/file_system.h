@@ -1,16 +1,12 @@
 #pragma once
 
 #include "core/int.h"
+#include "core/allocators.h"
 #include "path.h"
-#include "core/array.h"
 #include "core/function.h"
 
 
 namespace Veng
-{
-
-
-namespace FS
 {
 
 
@@ -61,64 +57,35 @@ enum class MoveMethod
 	Current,
 	End,
 };
+//bool MovePosition(MoveMethod method, u64 position);
+//u64 GetPosition();
 
 
-class FileSync
-{
-public:
-	FileSync();
-	~FileSync();
-
-	bool Open(const char* path, FileMode mode);
-	bool Close();
-	bool Flush();
-
-	bool Read(void* buffer, size_t size);
-	bool Write(void* data, size_t size);
-
-	bool MovePosition(MoveMethod method, u64 position);
-	u64 GetPosition() const;
-
-	size_t GetSize() const;
-
-	static bool Exists(const char* path);
-
-private:
-	void* m_data;
-};
-
-
-
-using nativeAsyncHandle = void*;
-using nativeFileHandle = void*;
 using fileHandle = u64;
-
-
-struct File
-{
-	nativeFileHandle handle;
-	nativeAsyncHandle asyncHandle;
-	u64 refCount;
-};
-
-
-nativeAsyncHandle CreateAsyncHandle();
 
 
 class FileSystem
 {
 public:
-	fileHandle OpenFile(const Path& path, FileMode mode);
-	void CloseFile(fileHandle handle);
+	static FileSystem* Create(IAllocator& allocator);
+	static void Destroy(FileSystem* system, IAllocator& allocator);
 
-	bool Read(fileHandle handle, void* buffer, size_t size);
-	bool Write(fileHandle handle, void* data, size_t size);
-private:
-	Array<File> m_fileHandles;
+public:
+	virtual ~FileSystem() {}
+
+	virtual bool OpenFile(fileHandle& handle, const Path& path, FileMode mode) = 0;
+	virtual void CloseFile(fileHandle handle) = 0;
+
+	virtual bool Read(fileHandle handle, void* buffer, size_t size, Function<void()> callback) = 0;
+	virtual bool Write(fileHandle handle, void* data, size_t size, Function<void()> callback) = 0;
+
+	/*
+	remove file
+	create folder
+	remove folder
+	get file size
+	*/
 };
-
-
-}
 
 
 }

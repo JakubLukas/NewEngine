@@ -17,7 +17,7 @@ public:
 	static RenderSystem* Create(Engine& engine);
 	static void Destroy(RenderSystem* system);
 
-
+public:
 	virtual ~RenderSystem() override {}
 
 	virtual void Update(float deltaTime) override = 0;

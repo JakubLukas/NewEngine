@@ -20,7 +20,7 @@ public:
 
 	~Array()
 	{
-		for(unsigned i = 0; i < m_size; ++i)
+		for(size_t i = 0; i < m_size; ++i)
 		{
 			DELETE_PLACEMENT(m_data + i);
 		}
@@ -31,7 +31,7 @@ public:
 
 	void Clear()
 	{
-		for(unsigned i = 0; i < m_size; ++i)
+		for(size_t i = 0; i < m_size; ++i)
 		{
 			DELETE_PLACEMENT(m_data + i);
 		}
@@ -55,6 +55,15 @@ public:
 		++m_size;
 	}
 
+	void Push()
+	{
+		if (m_size == m_capacity)
+			Enlarge();
+
+		NEW_PLACEMENT(m_data + m_size, Type)();
+		++m_size;
+	}
+
 	void Pop()
 	{
 		ASSERT(m_size > 0);
@@ -75,28 +84,28 @@ public:
 		--m_size;
 	}
 
-	const Type& operator[](unsigned index) const
+	const Type& operator[](size_t index) const
 	{
 		ASSERT(index < m_size);
 		return m_data[index];
 	}
 
 
-	Type& operator[](unsigned index)
+	Type& operator[](size_t index)
 	{
 		ASSERT(index < m_size);
 		return m_data[index];
 	}
 
 
-	void Reserve(unsigned capacity)
+	void Reserve(size_t capacity)
 	{
 		if(capacity <= m_capacity) return;
 
 		m_capacity = capacity;
 		Type* newData = static_cast<Type*>(m_allocator.Allocate(m_capacity * sizeof(Type), ALIGN_OF(Type)));
 
-		for(unsigned i = 0; i < m_size; ++i)
+		for(size_t i = 0; i < m_size; ++i)
 		{
 			NEW_PLACEMENT(newData + i, Type)(m_data[i]);
 			DELETE_PLACEMENT(m_data + i);
@@ -108,18 +117,18 @@ public:
 	}
 
 
-	void Resize(unsigned size)
+	void Resize(size_t size)
 	{
 		if (size == m_size && size == m_capacity) return;
 
 		Type* newData = static_cast<Type*>(m_allocator.Allocate(size * sizeof(Type), ALIGN_OF(Type)));
 
-		unsigned sizeMin = (size < m_size) ? size : m_size;
-		for (unsigned i = 0; i < sizeMin; ++i)
+		size_t sizeMin = (size < m_size) ? size : m_size;
+		for (size_t i = 0; i < sizeMin; ++i)
 		{
 			NEW_PLACEMENT(newData + i, Type)(m_data[i]);
 		}
-		for (unsigned i = 0; i < m_size; ++i)
+		for (size_t i = 0; i < m_size; ++i)
 		{
 			DELETE_PLACEMENT(m_data + i);
 		}
@@ -131,21 +140,21 @@ public:
 	}
 
 
-	unsigned GetSize() const { return m_size; }
+	size_t GetSize() const { return m_size; }
 
-	unsigned GetCapacity() const { return m_capacity; }
+	size_t GetCapacity() const { return m_capacity; }
 
 private:
 	void Enlarge()
 	{
-		unsigned newCapacity = (m_capacity == 0) ? 4 : m_capacity * 2;
+		size_t newCapacity = (m_capacity == 0) ? 4 : m_capacity * 2;
 		Reserve(newCapacity);
 	}
 
 private:
 	IAllocator& m_allocator;
-	unsigned m_capacity = 0;
-	unsigned m_size = 0;
+	size_t m_capacity = 0;
+	size_t m_size = 0;
 	Type* m_data = nullptr;
 };
 

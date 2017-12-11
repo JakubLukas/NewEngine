@@ -409,8 +409,7 @@ RenderSystem* RenderSystem::Create(Engine& engine)
 void RenderSystem::Destroy(RenderSystem* system)
 {
 	IAllocator& allocator = system->GetEngine().GetAllocator();
-	RenderSystemImpl* ptr = (RenderSystemImpl*)system;
-	DELETE_OBJECT(allocator, ptr);
+	DELETE_OBJECT(allocator, system);
 }
 
 }

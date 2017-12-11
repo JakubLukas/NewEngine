@@ -73,9 +73,11 @@ public:
 		: m_allocator(allocator)
 		, m_devices(allocator)
 		, m_events(allocator)
-	{
+	{}
 
-	}
+
+	~InputSystemImpl() override
+	{}
 
 
 	inputDeviceID RegisterDevice(inputDeviceHandle handle, InputDeviceCategory category, const String& name) override
@@ -241,9 +243,7 @@ InputSystem* InputSystem::Create(IAllocator& allocator)
 
 void InputSystem::Destroy(InputSystem* system, IAllocator& allocator)
 {
-	InputSystemImpl* p = (InputSystemImpl*)system;
-	p->~InputSystemImpl();
-	allocator.Deallocate(p);
+	DELETE_OBJECT(allocator, system);
 }
 
 

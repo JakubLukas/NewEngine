@@ -20,10 +20,10 @@ public:
 		, m_instance(nullptr)
 	{}
 
-	Function(const Function&) = delete;
-	Function(const Function&&) = delete;
-	Function& operator=(const Function&) = delete;
-	Function& operator=(const Function&&) = delete;
+	Function(const Function<ReturnType(Arguments...)>&) = default;
+	//Function(const Function<ReturnType(Arguments...)>&&) = default;
+	Function& operator=(const Function<ReturnType(Arguments...)>&) = default;
+	//Function& operator=(const Function<ReturnType(Arguments...)>&&) = default;
 
 
 	template<ReturnType(*function)(Arguments...)>
@@ -38,6 +38,13 @@ public:
 	{
 		m_functionStub = &ObjectStub<ObjectType, method>;
 		m_instance = object;
+	}
+
+
+	void Clear()
+	{
+		m_functionStub = nullptr;
+		m_instance = nullptr;
 	}
 
 

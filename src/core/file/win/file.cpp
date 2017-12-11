@@ -1,4 +1,6 @@
-#include "core/file/file_system.h"
+#include "../file.h"
+
+#include "../file_system.h"
 
 #define VC_EXTRALEAN
 #include <windows.h>
@@ -41,7 +43,7 @@ static DWORD moveMethodTable[] =
 };
 
 
-FileSync::FileSync()
+/*FileSync::FileSync()
 	: m_data(INVALID_HANDLE_VALUE)
 {
 
@@ -159,7 +161,7 @@ bool FileSync::Exists(const char* path)
 	DWORD attribs = GetFileAttributes(path);
 	return (attribs != INVALID_FILE_ATTRIBUTES
 		&& !(attribs & FILE_ATTRIBUTE_DIRECTORY));
-}
+}*/
 
 
 }
@@ -167,6 +169,22 @@ bool FileSync::Exists(const char* path)
 
 namespace FS
 {
+
+
+struct Operation : public OVERLAPPED
+{
+	static Operation* Create(IAllocator& allocator, size_t filePosition)
+	{
+		Operation foo;
+		foo.hEvent = NULL;
+		foo.Internal = 0;
+		foo.InternalHigh = 0;
+		foo.Offset = (DWORD)(filePosition & 0xFFFFffff);
+		foo.OffsetHigh = (DWORD)(filePosition >> 32);
+		foo.Pointer = NULL;
+		return &foo;//bullshit, just saved code;
+	}
+};
 
 
 bool CreateAsyncHandle(nativeAsyncHandle& asyncHandle)
@@ -246,29 +264,34 @@ bool RemoveFile(const Path& path)
 }
 
 
-bool ReadFile(nativeFileHandle fileHandle, void* buffer, size_t size)
+bool ReadFile(nativeFileHandle fileHandle, Operation* operation, size_t filePosition, void* buffer, size_t size)
 {
 	ASSERT(fileHandle != INVALID_HANDLE_VALUE);
-	DWORD bytesReaded = 0;
-
-	u64 where = 0;
-	OVERLAPPED foo;
-	foo.hEvent = NULL;
-	foo.Internal = 0;
-	foo.InternalHigh = 0;
-	foo.Offset = (DWORD)(where & 0xFFffFFff);
-	foo.OffsetHigh = (DWORD)(where >> 32);
-	foo.Pointer = NULL;
-
 
 	BOOL result = ::ReadFile(
 		fileHandle,
 		buffer,
 		(DWORD)size,
-		&bytesReaded,
-		&foo //TODO fix this
+		NULL,
+		operation
 	);
-	return result && size == bytesReaded;
+	return (result == TRUE);
+}
+
+
+bool WriteFile(nativeFileHandle fileHandle, Operation* operation, size_t filePosition, void* data, size_t size)
+{
+	ASSERT(fileHandle != INVALID_HANDLE_VALUE);
+
+	DWORD bytesWritten = 0;
+	BOOL result = WriteFile(
+		fileHandle,
+		data,
+		(DWORD)size,
+		NULL,
+		operation
+	);
+	return (result == TRUE);
 }
 
 
