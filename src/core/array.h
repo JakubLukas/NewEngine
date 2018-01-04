@@ -46,22 +46,24 @@ public:
 	const Type* End() const { return m_data + m_size; }
 
 
-	void Push(const Type& value)
+	Type& Push(const Type& value)
 	{
 		if(m_size == m_capacity)
 			Enlarge();
 
 		NEW_PLACEMENT(m_data + m_size, Type)(value);
-		++m_size;
+
+		return m_data[m_size++];
 	}
 
-	void Push()
+	Type& Push()
 	{
 		if (m_size == m_capacity)
 			Enlarge();
 
 		NEW_PLACEMENT(m_data + m_size, Type)();
-		++m_size;
+
+		return m_data[m_size++];
 	}
 
 	void Pop()

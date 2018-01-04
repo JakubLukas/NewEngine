@@ -38,8 +38,7 @@ struct FileMode
 	{
 		FlagNone = 0x00,
 		FlagDeleteOnClose = 0x01, // delete file on close
-								  //Overlapped, //async
-								  FlagWriteThrough = 0x02, // don't cache write to buffer
+		FlagWriteThrough = 0x02, // don't cache write to buffer
 	};
 
 
@@ -61,7 +60,7 @@ enum class MoveMethod
 //u64 GetPosition();
 
 
-using fileHandle = u64;
+typedef u64 fileHandle;
 
 
 class FileSystem
@@ -79,11 +78,17 @@ public:
 	virtual bool Read(fileHandle handle, void* buffer, size_t size, Function<void()> callback) = 0;
 	virtual bool Write(fileHandle handle, void* data, size_t size, Function<void()> callback) = 0;
 
+	virtual void SetPosition(fileHandle handle, MoveMethod method, size_t position) = 0;
+	virtual size_t GetPosition(fileHandle handle) = 0;
+
+	virtual size_t GetSize(fileHandle handle) = 0;
+
+	virtual void Update(float deltaTime) = 0;
+
 	/*
 	remove file
 	create folder
 	remove folder
-	get file size
 	*/
 };
 

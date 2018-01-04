@@ -170,8 +170,14 @@ bool FileSync::Exists(const char* path)
 namespace FS
 {
 
+static_assert(sizeof(OVERLAPPED)											== sizeof(Operation),				"Must be the same");
+static_assert(sizeof(OVERLAPPED::Internal)									== sizeof(Operation::internal),		"Must be the same");
+static_assert(sizeof(OVERLAPPED::InternalHigh)								== sizeof(Operation::internalHigh),	"Must be the same");
+static_assert(sizeof(OVERLAPPED::Offset) + sizeof(OVERLAPPED::OffsetHigh)	== sizeof(Operation::offset),		"Must be the same");
+static_assert(sizeof(OVERLAPPED::hEvent)									== sizeof(Operation::hEvent),		"Must be the same");
 
-struct Operation : public OVERLAPPED
+
+/*struct Operation : public OVERLAPPED
 {
 	static Operation* Create(IAllocator& allocator, size_t filePosition)
 	{
@@ -184,7 +190,7 @@ struct Operation : public OVERLAPPED
 		foo.Pointer = NULL;
 		return &foo;//bullshit, just saved code;
 	}
-};
+};*/
 
 
 bool CreateAsyncHandle(nativeAsyncHandle& asyncHandle)
@@ -240,7 +246,7 @@ bool OpenFile(nativeFileHandle& fileHandle, nativeAsyncHandle asyncHandle, const
 	HANDLE hPort = CreateIoCompletionPort(
 		hFile,
 		asyncHandle,
-		NULL, //user value
+		(ULONG_PTR)hFile, //user defined value
 		0); //ignored
 
 	if(hPort == NULL)
@@ -268,12 +274,19 @@ bool ReadFile(nativeFileHandle fileHandle, Operation* operation, size_t filePosi
 {
 	ASSERT(fileHandle != INVALID_HANDLE_VALUE);
 
+	OVERLAPPED* overlapped = reinterpret_cast<OVERLAPPED*>(operation);
+	overlapped->Internal = 0;
+	overlapped->InternalHigh = 0;
+	overlapped->Offset = (DWORD)(filePosition & 0xFFFFffff);
+	overlapped->OffsetHigh = (DWORD)(filePosition >> 32);
+	overlapped->hEvent = NULL;
+
 	BOOL result = ::ReadFile(
 		fileHandle,
 		buffer,
 		(DWORD)size,
 		NULL,
-		operation
+		overlapped
 	);
 	return (result == TRUE);
 }
@@ -283,15 +296,89 @@ bool WriteFile(nativeFileHandle fileHandle, Operation* operation, size_t filePos
 {
 	ASSERT(fileHandle != INVALID_HANDLE_VALUE);
 
+	OVERLAPPED* overlapped = reinterpret_cast<OVERLAPPED*>(operation);
+	overlapped->Internal = 0;
+	overlapped->InternalHigh = 0;
+	overlapped->Offset = (DWORD)(filePosition & 0xFFFFffff);
+	overlapped->OffsetHigh = (DWORD)(filePosition >> 32);
+	overlapped->hEvent = NULL;
+
 	DWORD bytesWritten = 0;
-	BOOL result = WriteFile(
+	BOOL result = ::WriteFile(
 		fileHandle,
 		data,
 		(DWORD)size,
 		NULL,
-		operation
+		overlapped
 	);
 	return (result == TRUE);
+}
+
+
+size_t GetFileSize(nativeFileHandle fileHandle)
+{
+	LARGE_INTEGER size;
+	ASSERT(::GetFileSizeEx(fileHandle, &size));
+	return static_cast<size_t>(size.QuadPart);
+}
+
+
+void QueryChanges(nativeAsyncHandle asyncHandle, Function<void(nativeFileHandle, size_t)> callback)
+{
+	static const int OVERLAPPED_SIZE = 64;
+	OVERLAPPED_ENTRY overlapped[OVERLAPPED_SIZE] = { 0 };
+	ULONG count = 0;
+
+	while(true)
+	{
+		BOOL result = ::GetQueuedCompletionStatusEx(
+			(HANDLE)asyncHandle,
+			overlapped,
+			(ULONG)OVERLAPPED_SIZE,
+			&count,
+			0, //wait infinite time
+			FALSE); //dunno
+
+		if(result != FALSE)
+		{
+			for(ULONG i = 0; i < count; ++i)
+			{
+				nativeFileHandle hFile = reinterpret_cast<nativeFileHandle>(overlapped[i].lpCompletionKey);
+				LPOVERLAPPED ol = overlapped[i].lpOverlapped;
+				DWORD bytesTransferred = overlapped[i].dwNumberOfBytesTransferred;
+
+				DWORD bytes_transfered = 0;
+				result = GetOverlappedResult(
+					hFile, //file
+					ol, //overlapped
+					&bytes_transfered,
+					FALSE //nonblocking
+				);
+
+				if(result != 0)
+				{
+					callback(hFile, (size_t)bytesTransferred); // success
+				}
+				else
+				{
+					ASSERT(false);
+				}
+			}
+		}
+		else
+		{
+			DWORD err = GetLastError();
+
+			switch(err)
+			{
+				case ERROR_ABANDONED_WAIT_0:
+					ASSERT2(false, "CompletionPort handle was closed or is invalid");
+					return;
+				default:
+					return;
+			return; //no more finished file requests
+		}
+	}
 }
 
 

@@ -14,11 +14,10 @@ namespace Veng
 struct File
 {
 	nativeFileHandle handle;
-	nativeAsyncHandle asyncHandle;
-	FS::Operation* operation;
+	FS::Operation* operation = nullptr;
 	Function<void()> callback;
-	size_t position;
-	i32 refCount;
+	size_t position = 0;
+	size_t size = 0;
 };
 
 
@@ -27,13 +26,18 @@ class FileSystemImpl : public FileSystem
 public:
 	FileSystemImpl(IAllocator& allocator)
 		: m_allocator(allocator)
+		, m_operations(m_allocator)
 		, m_files(m_allocator)
 		, m_freeIndex(-1)
-	{}
+	{
+		ASSERT(FS::CreateAsyncHandle(m_asyncHandle));
+	}
 
 
 	~FileSystemImpl() override
-	{}
+	{
+		ASSERT(FS::DestroyAsyncHandle(m_asyncHandle));
+	}
 
 
 	bool OpenFile(fileHandle& handle, const Path& path, FileMode mode) override
@@ -49,18 +53,13 @@ public:
 		else
 		{
 			idx = m_files.GetSize();
-			m_files.Push();
-			file = &(m_files[idx]);
-			if (!FS::CreateAsyncHandle(file->asyncHandle))
-			{
-				m_files.Pop();
-				return false;
-			}
+			file = &m_files.Push();
+			file->operation = &m_operations.Push();
 		}
 
-		if (FS::OpenFile(file->handle, file->asyncHandle, path, mode))
+		if (FS::OpenFile(file->handle, m_asyncHandle, path, mode))
 		{
-			file->refCount++;
+			file->size = FS::GetFileSize(file->handle);
 			handle = (fileHandle)idx;
 			return true;
 		}
@@ -79,7 +78,6 @@ public:
 
 		file.callback.Clear();
 		file.position = 0;
-		file.refCount--;
 		file.handle = (nativeFileHandle)m_freeIndex;
 		m_freeIndex = (i64)handle;
 	}
@@ -88,18 +86,85 @@ public:
 	bool Read(fileHandle handle, void* buffer, size_t size, Function<void()> callback) override
 	{
 		File& file = m_files[(size_t)handle];
-
 		file.callback = callback;
+		if(FS::ReadFile(file.handle, file.operation, file.position, buffer, size))
+		{
+			return true;
+		}
+		else
+		{
+			ASSERT(false);
+			return false;
+		}
 	}
 
 
 	bool Write(fileHandle handle, void* data, size_t size, Function<void()> callback) override
 	{
+		File& file = m_files[(size_t)handle];
+		file.callback = callback;
 
+		if(FS::WriteFile(file.handle, file.operation, file.position, data, size))
+		{
+			return true;
+		}
+		else
+		{
+			ASSERT(false);
+			return false;
+		}
+	}
+
+
+	void SetPosition(fileHandle handle, MoveMethod method, size_t position) override
+	{
+		File& file = m_files[(size_t)handle];
+
+		switch(method)
+		{
+			case MoveMethod::Begin:
+				file.position = position;
+				break;
+			case MoveMethod::Current:
+				file.position += position;
+			case MoveMethod::End:
+		}
+		file.position = position;
+	}
+
+
+	size_t GetPosition(fileHandle handle) override
+	{
+		File& file = m_files[(size_t)handle];
+		return file.position;
+	}
+
+
+	size_t GetSize(fileHandle handle) override
+	{
+		File& file = m_files[(size_t)handle];
+		return file.size;
+	}
+
+
+	void Update(float deltaTime) override
+	{
+		Function<void(nativeFileHandle, size_t)> func;
+		func.Bind<FileSystemImpl, &FileSystemImpl::Callback>(this);
+		FS::QueryChanges(m_asyncHandle, func);
+	}
+
+private:
+	void Callback(nativeFileHandle handle, size_t bytesTransfered)
+	{
+		//update file size
+		ASSERT(false);
 	}
 
 private:
 	IAllocator& m_allocator;
+	nativeAsyncHandle m_asyncHandle;
+	Array<FS::Operation> m_operations;
 	Array<File> m_files;
 	i64 m_freeIndex;
 };
