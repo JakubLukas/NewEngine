@@ -173,7 +173,8 @@ void ResourceManager::FileSystemCallback(fileHandle handle)
 	ResourceLoadingTemp* tmp;
 	if (m_loadingTemps.Find(handle, tmp))
 	{
-		if (ResourceLoaded(tmp->resource, tmp->buffer, tmp->bufferSize))
+		InputBlob blob(tmp->buffer, tmp->bufferSize);
+		if (ResourceLoaded(tmp->resource, blob))
 		{
 			tmp->resource->m_state = Resource::State::Ready;
 			if (m_owner != nullptr)

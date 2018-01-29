@@ -9,118 +9,6 @@ namespace Veng
 {
 
 
-/*bool Shader::IsValid() const
-{
-	return (
-		   bgfx::isValid(vertex.handle)
-		&& bgfx::isValid(fragment.handle)
-		&& bgfx::isValid(program.handle)
-		);
-}
-
-
-static bgfx::ShaderHandle CreateShader(const char* path)
-{
-	static FileMode mode{
-		FileMode::Access::Read,
-		FileMode::ShareMode::ShareRead,
-		FileMode::CreationDisposition::OpenExisting,
-		FileMode::FlagNone
-	};
-
-	fileHandle file;
-	ASSERT(file.Open(path, mode));
-	size_t fileSize = file.GetSize();
-	const bgfx::Memory* mem = bgfx::alloc((u32)fileSize + 1);
-	ASSERT(file.Read(mem->data, fileSize));
-	mem->data[mem->size - 1] = '\0';
-	file.Close();
-
-	bgfx::ShaderHandle handle = bgfx::createShader(mem);
-
-	bgfx::setName(handle, path);
-
-	return handle;
-}
-
-
-
-ShaderManager::ShaderManager(IAllocator& allocator)
-	: m_allocator(allocator)
-	, m_shaders(m_allocator)
-	, m_programs(m_allocator)
-{
-}
-
-ShaderManager::~ShaderManager()
-{
-	for (const HashMap<ProgramHashPair, ShaderProgramInternal>::Node& program : m_programs)
-	{
-		bgfx::destroy(program.value.handle);
-	}
-
-	for (const HashMap<const char*, ShaderInternal>::Node& shader : m_shaders)
-	{
-		bgfx::destroy(shader.value.handle);
-	}
-}
-
-
-Shader ShaderManager::GetShader(const char* vertexPath, const char* fragmentPath)
-{
-	Shader result;
-
-	result.vertex = *GetShaderInt(vertexPath);
-	result.fragment = *GetShaderInt(fragmentPath);
-	result.program = *GetProgramInt(vertexPath, fragmentPath, result.vertex, result.fragment);
-
-	return result;
-}
-
-
-ShaderInternal* ShaderManager::GetShaderInt(const char* path)
-{
-	ShaderInternal* shaderInt;
-	if(m_shaders.Find(path, shaderInt))
-		return shaderInt;
-
-	ShaderInternal newShaderInt;
-	newShaderInt.handle = CreateShader(path);
-
-	if(bgfx::isValid(newShaderInt.handle))
-		return m_shaders.Insert(path, newShaderInt);
-	else
-		ASSERT2(false, "Invalid handle");
-
-	return nullptr;
-}
-
-
-ShaderProgramInternal* ShaderManager::GetProgramInt(
-	const char* vertexPath, const char* fragmentPath,
-	ShaderInternal vertShaderInt, ShaderInternal fragShaderInt)
-{
-	ProgramHashPair key = { vertShaderInt, fragShaderInt };
-
-	ShaderProgramInternal* programInt;
-	if(m_programs.Find(key, programInt))
-		return programInt;
-	
-	ShaderProgramInternal newProgramInt;
-	newProgramInt.handle = bgfx::createProgram(vertShaderInt.handle, fragShaderInt.handle, false);
-
-	if(bgfx::isValid(newProgramInt.handle))
-		return m_programs.Insert(key, newProgramInt);
-	else
-		ASSERT2(false, "Invalid handle");
-
-	return nullptr;
-}*/
-
-
-
-
-
 ShaderInternalManager::ShaderInternalManager(IAllocator& allocator, FileSystem& fileSystem)
 	: ResourceManager(allocator, fileSystem)
 {}
@@ -176,12 +64,12 @@ void ShaderInternalManager::ReloadResource(Resource* resource)
 }
 
 
-bool ShaderInternalManager::ResourceLoaded(Resource* resource, void* buffer, size_t bufferSize)
+bool ShaderInternalManager::ResourceLoaded(Resource* resource, InputBlob& data)
 {
 	ShaderInternal* shaderInt = static_cast<ShaderInternal*>(resource);
 
-	const bgfx::Memory* mem = bgfx::alloc((u32)bufferSize + 1);
-	memory::Copy(mem->data, buffer, bufferSize);
+	const bgfx::Memory* mem = bgfx::alloc((u32)data.GetSize() + 1);
+	memory::Copy(mem->data, data.GetData(), data.GetSize());
 	mem->data[mem->size - 1] = '\0';
 
 	shaderInt->handle = bgfx::createShader(mem);
@@ -199,9 +87,6 @@ bool ShaderInternalManager::ResourceLoaded(Resource* resource, void* buffer, siz
 
 
 //=============================================================================
-
-
-
 
 
 ShaderManager::ShaderManager(IAllocator& allocator, FileSystem& fileSystem)
@@ -263,34 +148,20 @@ void ShaderManager::ReloadResource(Resource* resource)
 }
 
 
-bool ShaderManager::ResourceLoaded(Resource* resource, void* const buffer, size_t bufferSize)
+bool ShaderManager::ResourceLoaded(Resource* resource, InputBlob& data)
 {
 	Shader* shader = static_cast<Shader*>(resource);
 
-	char* filePtr = (char*)buffer;
-	char* begin = filePtr;
-	size_t size = 0;
-	for (size_t i = 0; i < bufferSize; ++i)
-	{
-		if (filePtr[i] != '\0' && filePtr[i] != '\r' && filePtr[i] != '\n')
-		{
-			size++;
-		}
-		else
-		{
-			if (size != 0)
-			{
-				shader->vsHandle = m_internalShaders.Load(Path(begin, size));
-				m_internalShaders.AddDependency(resource, static_cast<resourceHandle>(shader->vsHandle));
-			}
-			size = 0;
-			begin = filePtr + i + 1;
-		}
-	}
+	char vsPath[Path::MAX_LENGTH + 1] = { '\0' };
 
-	ASSERT(size != 0);
+	ASSERT(data.ReadString(vsPath, Path::MAX_LENGTH));
+	shader->vsHandle = m_internalShaders.Load(Path(vsPath));
+	m_internalShaders.AddDependency(resource, static_cast<resourceHandle>(shader->vsHandle));
 
-	shader->fsHandle = m_internalShaders.Load(Path(begin, size));
+	data.Trim();
+	char fsPath[Path::MAX_LENGTH + 1] = { '\0' };
+	ASSERT(data.ReadString(fsPath, Path::MAX_LENGTH));
+	shader->fsHandle = m_internalShaders.Load(Path(fsPath));
 	m_internalShaders.AddDependency(resource, static_cast<resourceHandle>(shader->fsHandle));
 
 	return true;

@@ -4,6 +4,7 @@
 #include "core/array.h"
 #include "core/hash_map.h"
 #include "core/file/file_system.h"
+#include "core/file/blob.h"
 #include "resource.h"
 
 
@@ -56,7 +57,7 @@ protected:
 	virtual Resource* CreateResource() = 0;
 	virtual void DestroyResource(Resource* resource) = 0;
 	virtual void ReloadResource(Resource* resource) = 0;
-	virtual bool ResourceLoaded(Resource* resource, void* const buffer, size_t bufferSize) = 0;
+	virtual bool ResourceLoaded(Resource* resource, InputBlob& data) = 0;
 	virtual bool ChildResourceLoaded(resourceHandle childResource) { return true; }
 
 public:///////////////////////////////////////////////////////////////////////////////////
