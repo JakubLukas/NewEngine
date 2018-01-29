@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/allocators.h"
+#include "core/array.h"
 #include "core/hash_map.h"
 #include "core/file/file_system.h"
 #include "resource.h"
@@ -13,84 +14,71 @@ namespace Veng
 enum resourceHandle : u64 {};
 
 
-class ResourceManager final
+template<>
+struct HashCalculator<fileHandle>
 {
-	//static_assert(std::is_base_of<Key, T>::value, "T must inherit from Key");
+	static u64 Get(const fileHandle& key)
+	{
+		return static_cast<u64>(key);
+	}
+};
+
+
+class ResourceManager
+{
+private:
+	struct ResourceLoadingTemp
+	{
+		void* buffer;
+		size_t bufferSize;
+		Resource* resource;
+	};
+
+	struct DependencyPair
+	{
+		resourceHandle parent;
+		resourceHandle child;
+	};
 
 public:
-	ResourceManager(IAllocator& allocator, FileSystem& fileSystem)
-		: m_allocator(allocator)
-		, m_fileSystem(fileSystem)
-		, m_resources(allocator)
-	{
-	}
-	~ResourceManager()
-	{
-	}
+	ResourceManager(IAllocator& allocator, FileSystem& fileSystem);
+	virtual ~ResourceManager();
 
-	resourceHandle Load(const Path& path)
-	{
-		u32 hash = Path::GetHash(path);
-		Resource* item;
-		if(!m_resources.Find(hash, item))
-		{
-			item = CreateResource(path);
-			m_resources.Insert(hash, item);
-		}
+protected:
+	resourceHandle LoadInternal(const Path& path);
+	void UnloadInternal(resourceHandle handle);
+	void ReloadInternal(resourceHandle handle);
 
-		item->m_refCount++;
+protected:
+	Resource* GetResource(resourceHandle handle);
+	void SetResourceState(Resource* resource, Resource::State state) { resource->m_state = state; }
 
-		return static_cast<resourceHandle>(item);
-	}
+	virtual Resource* CreateResource() = 0;
+	virtual void DestroyResource(Resource* resource) = 0;
+	virtual void ReloadResource(Resource* resource) = 0;
+	virtual bool ResourceLoaded(Resource* resource, void* const buffer, size_t bufferSize) = 0;
+	virtual bool ChildResourceLoaded(resourceHandle childResource) { return true; }
 
-	void Unload(resourceHandle handle)
-	{
-		Resource* resource = static_cast<Resource*>(handle);
-		u32 hash = Path::GetHash(resource.m_path);
-		Resource* item;
-		if(m_resources.Find(hash, item))
-		{
-			ASSERT(resource == item);
-			if(0 == --item->m_refCount)
-			{
-				m_resources.Erase(hash);
-				ResourceTypeTraits::DestroyResource(m_allocator, item);
-			}
-		}
-		else
-		{
-			ASSERT2(false, "Resource with given handle doesn't exist");
-		}
-	}
-
-	void Reload(resourceHandle handle)
-	{
-		Resource* resource = static_cast<Resource*>(handle);
-		u32 hash = Path::GetHash(resource.m_path);
-		Resource* item;
-		if(m_resources.Find(hash, item))
-		{
-			ASSERT(resource == item);
-			ResourceTypeTraits::ReloadResource(item);
-		}
-		else
-		{
-			ASSERT2(false, "Resource with given handle doesn't exist");
-		}
-	}
-
-	ResourceType& GetResource(resourceHandle handle)
-	{
-		return *static_cast<Resource*>(handle);
-	}
+public:///////////////////////////////////////////////////////////////////////////////////
+	void SetOwner(ResourceManager* parent) { m_owner = parent; }
+	void AddDependency(Resource* parent, resourceHandle child);
+	void RemoveDependency(resourceHandle parent, resourceHandle child);
+	void RemoveAllDependencies(resourceHandle parent);
 
 private:
-	virtual Resource* CreateResource(const Path& path) = 0;
+	void LoadResource(const Path& path, Resource* resource);
+	void FileSystemCallback(fileHandle handle);
 
-private:
+protected:
 	IAllocator& m_allocator;
+private:
 	FileSystem& m_fileSystem;
+	HashMap<fileHandle, ResourceLoadingTemp> m_loadingTemps;
+protected:
 	HashMap<u32, Resource*> m_resources;
+private:
+	ResourceManager* m_owner = nullptr;
+	Array<DependencyPair> m_dependencies;
 };
 
 

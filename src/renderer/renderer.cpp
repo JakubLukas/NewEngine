@@ -252,7 +252,7 @@ public:
 			, 0
 		);
 
-		m_shaderManager = NEW_OBJECT(m_allocator, NewShaderManager)(m_allocator, *m_engine.GetFileSystem());
+		m_shaderManager = NEW_OBJECT(m_allocator, ShaderManager)(m_allocator, *m_engine.GetFileSystem());
 
 
 		// DUMMY test
@@ -346,7 +346,8 @@ public:
 
 				// Submit primitive for rendering to view 0.
 				// DUMMY test
-				//bgfx::submit(0, mesh->material->shader.program.handle);
+				Shader* shader = m_shaderManager->GetResource(mesh->material->shader);
+				bgfx::submit(0, shader->program.handle);
 			}
 		}
 
@@ -389,7 +390,7 @@ public:
 private:
 	HeapAllocator m_allocator;//must be first
 	Engine& m_engine;
-	NewShaderManager* m_shaderManager;
+	ShaderManager* m_shaderManager;
 	AssociativeArray<Entity, Mesh> m_meshes;
 
 	/////////////////////

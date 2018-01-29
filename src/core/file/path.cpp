@@ -10,12 +10,6 @@ namespace Veng
 {
 
 
-u32 Path::GetHash(const Path& path)
-{
-	return crc32((u8*)path.path, string::Length(path.path));
-}
-
-
 Path::Path()
 {
 	path[0] = '\0';
@@ -26,35 +20,24 @@ Path::Path(const char* str)
 	operator=(str);
 }
 
+Path::Path(const char* str, size_t length)
+{
+	string::Copy(path, str, length);
+	path[length] = '\0';
+	hash = crc32_string((u8*)path);
+}
+
 Path::Path(const Path& other)
 {
 	string::Copy(path, other.path, MAX_LENGTH + 1);
-}
-
-Path::Path(Path&& other)
-{
-	Swap(Utils::Move(other));
-}
-
-
-void Path::Swap(Path& other)
-{
-	char tmp[MAX_LENGTH + 1];
-	string::Copy(tmp, other.path, MAX_LENGTH + 1);
-	string::Copy(other.path, path, MAX_LENGTH + 1);
-	string::Copy(path, tmp, MAX_LENGTH + 1);
+	hash = crc32_string((u8*)path);
 }
 
 
 Path& Path::operator=(const Path& other)
 {
 	string::Copy(path, other.path, MAX_LENGTH + 1);
-	return *this;
-}
-
-Path& Path::operator=(Path&& other)
-{
-	Swap(Utils::Move(other));
+	hash = crc32_string((u8*)path);
 	return *this;
 }
 
@@ -64,13 +47,14 @@ Path& Path::operator=(const char* str)
 	ASSERT(len <= MAX_LENGTH);
 	string::Copy(path, str, len);
 	path[len] = '\0';
+	hash = crc32_string((u8*)path);
 	return *this;
 }
 
 
 bool Path::operator==(const Path& other)
 {
-	return string::Equal(path, other.path);
+	return hash == other.hash;
 }
 
 bool Path::operator!=(const Path& other)

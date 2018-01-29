@@ -93,25 +93,31 @@ private:
 
 
 
+enum shaderHandle : u64 {};
+
+enum shaderInternalHandle : u64 {};
 
 
-template<>
-struct HashCalculator<fileHandle>
+struct ShaderInternal : public Resource
 {
-	static u64 Get(const fileHandle& key)
-	{
-		return static_cast<u64>(key);
-	}
+	bgfx::ShaderHandle handle = BGFX_INVALID_HANDLE;
 };
 
 
-
-struct NewShader : public Resource
+struct ShaderProgramInternal
 {
-	char* fileContent;
+	bgfx::ProgramHandle handle = BGFX_INVALID_HANDLE;
 };
 
-
+struct Shader : public Resource
+{
+	//char* fileContent = nullptr;
+	shaderInternalHandle vsHandle;
+	shaderInternalHandle fsHandle;
+	ShaderProgramInternal program;
+	bool vsLoaded = false;
+	bool fsLoaded = false;
+};
 
 
 
@@ -119,188 +125,63 @@ struct NewShader : public Resource
 {
 	bgfx::ShaderHandle handle = BGFX_INVALID_HANDLE;
 };
+*/
 
 
-class NewShaderInternalTraits
-{
-	Resource* Create(IAllocator& allocator, FileSystem& fileSystem, const Path& path)
-	{
-		static FileMode mode{
-			FileMode::Access::Read,
-			FileMode::ShareMode::ShareRead,
-			FileMode::CreationDisposition::OpenExisting,
-			FileMode::FlagNone
-		};
-
-		fileHandle file;
-		ASSERT(file.Open(path, mode));
-		size_t fileSize = file.GetSize();
-		const bgfx::Memory* mem = bgfx::alloc((u32)fileSize + 1);
-		ASSERT(file.Read(mem->data, fileSize));
-		mem->data[mem->size - 1] = '\0';
-		file.Close();
-
-		bgfx::ShaderHandle handle = bgfx::createShader(mem);
-
-		bgfx::setName(handle, path);
-
-		return handle;
-	}
-
-	void Destroy(IAllocator& m_allocator, Resource* item)
-	{
-
-	}
-
-	void Reload(Resource* item)
-	{
-
-	}
-};
 
 
-struct NewShaderProgramInternal : public Resource
-{
-	bgfx::ProgramHandle handle = BGFX_INVALID_HANDLE;
-};
-
-class NewShaderProgramInternalTraits
-{
-	Resource* Create(IAllocator& allocator, FileSystem& fileSystem, const Path& path)
-	{
-		return nullptr;
-	}
-
-	void Destroy(IAllocator& m_allocator, Resource* item)
-	{
-
-	}
-
-	void Reload(Resource* item)
-	{
-
-	}
-};*/
-
-
-struct NewShaderManagerResourceTemp
-{
-	fileHandle handle;
-	void* buffer;
-	size_t bufferSize;
-	Resource* resource;
-};
-
-
-enum shaderHandle : u64 {};
-
-
-class NewShaderManager final
+class ShaderInternalManager final : public ResourceManager
 {
 public:
-	NewShaderManager(IAllocator& allocator, FileSystem& fileSystem) : m_allocator(allocator), m_fileSystem(fileSystem), m_temps(m_allocator), m_resources(m_allocator) {}
-	~NewShaderManager()
-	{
-		for(auto& tmp : m_temps)
-			ASSERT2(false, "Manager still waits for some async file system operation");
-		for(auto& node : m_resources)
-			ASSERT2(false, "Resource not released");
-	}
+	ShaderInternalManager(IAllocator& allocator, FileSystem& fileSystem);
+	~ShaderInternalManager() override;
 
-	shaderHandle Load(const Path& path)
-	{
-		u32 hash = Path::GetHash(path);
-		Resource** item;
-		if(!m_resources.Find(hash, item))
-		{
-			Resource* shader = CreateShader(path);
-			item = m_resources.Insert(hash, shader);
-		}
 
-		(*item)->m_refCount++;
+	shaderInternalHandle Load(const Path& path);
+	void Unload(shaderInternalHandle handle);
+	void Reload(shaderInternalHandle handle);
 
-		return (shaderHandle)((u64)(*item));
-	}
+	ShaderInternal* GetResource(shaderInternalHandle handle);
 
-	void Unload(shaderHandle handle)
-	{
-		Resource* resource = (Resource*)(handle);
-		u32 hash = Path::GetHash(resource->m_path);
-		Resource** item;
-		if(m_resources.Find(hash, item))
-		{
-			ASSERT(resource == *item);
-			if(0 == --resource->m_refCount)
-			{
-				m_resources.Erase(hash);
-				DestroyShader(resource);
-			}
-		}
-		else
-		{
-			ASSERT2(false, "Resource with given handle doesn't exist");
-		}
-	}
 
 private:
-	Resource* CreateShader(const Path& path)
-	{
-		static FileMode mode{
-			FileMode::Access::Read,
-			FileMode::ShareMode::ShareRead,
-			FileMode::CreationDisposition::OpenExisting,
-			FileMode::FlagNone
-		};
+	Resource* CreateResource() override;
+	void DestroyResource(Resource* resource) override;
+	void ReloadResource(Resource* resource) override;
+	bool ResourceLoaded(Resource* resource, void* const buffer, size_t bufferSize) override;
+};
 
-		NewShaderManagerResourceTemp tmp;
-		m_fileSystem.OpenFile(tmp.handle, path, mode);
-		tmp.bufferSize = m_fileSystem.GetSize(tmp.handle);
-		tmp.buffer = m_allocator.Allocate(tmp.bufferSize, ALIGN_OF(char));
-		Function<void(fileHandle)> f;
-		f.Bind<NewShaderManager, &NewShaderManager::FileSystemCallback>(this);
-		m_fileSystem.Read(tmp.handle, tmp.buffer, tmp.bufferSize, f);
 
-		tmp.resource = NEW_OBJECT(m_allocator, NewShader)();
-		tmp.resource->m_path = path;
-		tmp.resource->m_state = Resource::State::Loading;
 
-		m_temps.Insert(tmp.handle, tmp);
 
-		return tmp.resource;
-	}
 
-	void DestroyShader(Resource* resource)
-	{
-		NewShader* shader = static_cast<NewShader*>(resource);
-		m_allocator.Deallocate(shader->fileContent);
-		DELETE_OBJECT(m_allocator, resource);
-	}
 
-	void FileSystemCallback(fileHandle handle)
-	{
-		NewShaderManagerResourceTemp* tmp;
-		if(m_temps.Find(handle, tmp))
-		{
-			ASSERT(m_temps.Erase(handle));
-			NewShader* shader = static_cast<NewShader*>(tmp->resource);
-			shader->fileContent = (char*)m_allocator.Allocate(tmp->bufferSize + 1, ALIGN_OF(char));
-			shader->fileContent[tmp->bufferSize] = '\0';
-			string::Copy(shader->fileContent, (char*)tmp->buffer, tmp->bufferSize);
-			m_allocator.Deallocate(tmp->buffer);
-			shader->m_state = Resource::State::Ready;
-		}
-		else
-		{
-			ASSERT2(false, "No tmp structure for file handle returned by callback");
-		}
-	}
 
-	IAllocator& m_allocator;
-	FileSystem& m_fileSystem;
-	HashMap<fileHandle, NewShaderManagerResourceTemp> m_temps;
-	//ResourceManager<NewShaderInternal, NewShaderInternalTraits> m_shaders;
-	//ResourceManager<NewShaderProgramInternal, NewShaderProgramInternalTraits> m_programs;
-	HashMap<u32, Resource*> m_resources;
+class ShaderManager final : public ResourceManager
+{
+public:
+	ShaderManager(IAllocator& allocator, FileSystem& fileSystem);
+	~ShaderManager() override;
+
+
+	shaderHandle Load(const Path& path);
+	void Unload(shaderHandle handle);
+	void Reload(shaderHandle handle);
+
+	Shader* GetResource(shaderHandle handle);
+
+
+private:
+	Resource* CreateResource() override;
+	void DestroyResource(Resource* resource) override;
+	void ReloadResource(Resource* resource) override;
+	bool ResourceLoaded(Resource* resource, void* const buffer, size_t bufferSize) override;
+	bool ChildResourceLoaded(resourceHandle childResource) override;
+
+	bool FinalizeShader(Shader* shader);
+
+private:
+	ShaderInternalManager m_internalShaders;
 };
 
 

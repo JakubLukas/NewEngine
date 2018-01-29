@@ -37,11 +37,24 @@ constexpr u32 crc32_impl(const u8* p, size_t len, u32 crc)
 }
 
 
+constexpr u32 crc32_impl_string(const u8* p, u32 crc)
+{
+	return *p ?
+		crc32_impl_string(p + 1, (crc >> 8) ^ crc_table[(crc & 0xFF) ^ *p])
+		: crc;
+}
+
+
 }
 
 constexpr u32 crc32(const u8* data, size_t length)
 {
 	return ~crc32_detail::crc32_impl(data, length, ~0);
+}
+
+constexpr u32 crc32_string(const u8* data)
+{
+	return ~crc32_detail::crc32_impl_string(data, ~0);
 }
 
 //constexpr u32 crc32(const u8* data, size_t length);

@@ -164,6 +164,7 @@ private:
 			if(file.handle == handle)
 			{
 				file.size = FS::GetFileSize(handle);
+				file.position += bytesTransfered;
 				file.callback((fileHandle)i);
 				return;
 			}
