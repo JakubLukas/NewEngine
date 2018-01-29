@@ -1,12 +1,17 @@
 #pragma once
 
+#include "core/int.h"
+
+
 namespace Veng
 {
 
 
 struct Path
 {
-	static const unsigned MAX_LENGTH = 260;
+	static const size_t MAX_LENGTH = 260;
+
+	static u32 GetHash(const Path& path);
 
 	Path();
 	Path(const char* str);
@@ -15,12 +20,12 @@ struct Path
 
 	void Swap(Path& other);
 
-	inline Path& operator=(const Path& other);
-	inline Path& operator=(Path&& other);
-	inline Path& operator=(const char* str);
+	Path& operator=(const Path& other);
+	Path& operator=(Path&& other);
+	Path& operator=(const char* str);
 
-	inline bool operator==(const Path& other);
-	inline bool operator!=(const Path& other);
+	bool operator==(const Path& other);
+	bool operator!=(const Path& other);
 
 	char path[MAX_LENGTH + 1];
 };

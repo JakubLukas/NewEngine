@@ -15,7 +15,7 @@ struct File
 {
 	nativeFileHandle handle;
 	FS::Operation* operation = nullptr;
-	Function<void()> callback;
+	Function<void(fileHandle)> callback;
 	size_t position = 0;
 	size_t size = 0;
 };
@@ -31,6 +31,8 @@ public:
 		, m_freeIndex(-1)
 	{
 		ASSERT(FS::CreateAsyncHandle(m_asyncHandle));
+
+		m_callback.Bind<FileSystemImpl, &FileSystemImpl::Callback>(this);
 	}
 
 
@@ -83,7 +85,7 @@ public:
 	}
 
 
-	bool Read(fileHandle handle, void* buffer, size_t size, Function<void()> callback) override
+	bool Read(fileHandle handle, void* buffer, size_t size, Function<void(fileHandle)> callback) override
 	{
 		File& file = m_files[(size_t)handle];
 		file.callback = callback;
@@ -99,7 +101,7 @@ public:
 	}
 
 
-	bool Write(fileHandle handle, void* data, size_t size, Function<void()> callback) override
+	bool Write(fileHandle handle, void* data, size_t size, Function<void(fileHandle)> callback) override
 	{
 		File& file = m_files[(size_t)handle];
 		file.callback = callback;
@@ -128,6 +130,7 @@ public:
 			case MoveMethod::Current:
 				file.position += position;
 			case MoveMethod::End:
+				file.position = file.size - position;
 		}
 		file.position = position;
 	}
@@ -149,16 +152,24 @@ public:
 
 	void Update(float deltaTime) override
 	{
-		Function<void(nativeFileHandle, size_t)> func;
-		func.Bind<FileSystemImpl, &FileSystemImpl::Callback>(this);
-		FS::QueryChanges(m_asyncHandle, func);
+		FS::QueryChanges(m_asyncHandle, m_callback);
 	}
 
 private:
 	void Callback(nativeFileHandle handle, size_t bytesTransfered)
 	{
-		//update file size
-		ASSERT(false);
+		for(size_t i = 0; i < m_files.GetSize(); ++i)
+		{
+			File& file = m_files[i];
+			if(file.handle == handle)
+			{
+				file.size = FS::GetFileSize(handle);
+				file.callback((fileHandle)i);
+				return;
+			}
+		}
+
+		ASSERT2(false, "File with given handle doesn't exist");
 	}
 
 private:
@@ -166,6 +177,7 @@ private:
 	nativeAsyncHandle m_asyncHandle;
 	Array<FS::Operation> m_operations;
 	Array<File> m_files;
+	Function<void(nativeFileHandle, size_t)> m_callback;
 	i64 m_freeIndex;
 };
 

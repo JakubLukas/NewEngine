@@ -76,7 +76,6 @@ public:
 			key = other.key;
 			value = other.value;
 			next = other.next;
-			return *this;
 		}
 
 		HashNode<KeyType, ValueType>& operator=(const HashNode<KeyType, ValueType>& other)
@@ -177,29 +176,37 @@ public:
 
 		int* pointingIdx = &m_buckets[bucketIdx];
 		Node* node = &m_table[*pointingIdx];
-		while (node.next != INVALID_INDEX && node.key != key)
+		while (node->next != INVALID_INDEX && node->key != key)
 		{
 			pointingIdx = &node->next;
-			node = &m_table[node.next];
+			node = &m_table[node->next];
 		}
 
-		if (node.key != key)
+		if (node->key != key)
 			return false;
 
+		int freeNodeIdx = *pointingIdx;
 		*pointingIdx = node->next;
 
 		DELETE_PLACEMENT(node);
+		--m_size;
 
-		Node& lastNode = m_table[m_size - 1];
-		unsigned lastNodeIdx = GetIndex(lastNode.key);
-		pointingIdx = &m_buckets[lastNodeIdx];
-		node = &m_table[*pointingIdx];
-		while (node.key != lastNode.key)
+		if(m_size > 0)
 		{
-			pointingIdx = &node->next;
-			node = &m_table[node.next];
+			//fill up hole in m_table
+			Node& lastNode = m_table[m_size];
+			unsigned lastNodeBucketIdx = GetIndex(lastNode.key);
+			pointingIdx = &m_buckets[lastNodeBucketIdx];
+			while(m_table[*pointingIdx].key != lastNode.key)
+			{
+				pointingIdx = &(m_table[*pointingIdx].next);
+			}
+
+			*pointingIdx = freeNodeIdx;
+
+			NEW_PLACEMENT(node, Node)(lastNode);
+			DELETE_PLACEMENT(&lastNode);
 		}
-		*pointingIdx = node->next;
 
 		return true;
 	}
@@ -246,8 +253,7 @@ private:
 		if (m_buckets[bucketIdx] == INVALID_INDEX)
 		{
 			Node* newNode = NEW_PLACEMENT(m_table + m_size, Node)(key, value);
-			m_buckets[bucketIdx] = m_size;
-			++m_size;
+			m_buckets[bucketIdx] = m_size++;
 			return &newNode->value;
 		}
 
@@ -264,15 +270,14 @@ private:
 		else
 		{
 			Node* newNode = NEW_PLACEMENT(m_table + m_size, Node)(key, value);
-			node.next = m_size;
-			++m_size;
+			node.next = m_size++;
 			return &newNode->value;
 		}
 	}
 
 	unsigned GetIndex(const KeyType& key) const
 	{
-		u32 hash = HashFunction::Get(key);
+		auto hash = HashFunction::Get(key);
 		return hash % m_bucketSize;
 	}
 

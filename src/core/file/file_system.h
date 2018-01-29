@@ -60,7 +60,7 @@ enum class MoveMethod
 //u64 GetPosition();
 
 
-typedef u64 fileHandle;
+enum fileHandle : u64 {};
 
 
 class FileSystem
@@ -75,8 +75,8 @@ public:
 	virtual bool OpenFile(fileHandle& handle, const Path& path, FileMode mode) = 0;
 	virtual void CloseFile(fileHandle handle) = 0;
 
-	virtual bool Read(fileHandle handle, void* buffer, size_t size, Function<void()> callback) = 0;
-	virtual bool Write(fileHandle handle, void* data, size_t size, Function<void()> callback) = 0;
+	virtual bool Read(fileHandle handle, void* buffer, size_t size, Function<void(fileHandle)> callback) = 0;
+	virtual bool Write(fileHandle handle, void* data, size_t size, Function<void(fileHandle)> callback) = 0;
 
 	virtual void SetPosition(fileHandle handle, MoveMethod method, size_t position) = 0;
 	virtual size_t GetPosition(fileHandle handle) = 0;

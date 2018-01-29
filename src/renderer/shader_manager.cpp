@@ -9,7 +9,7 @@ namespace Veng
 {
 
 
-bool Shader::IsValid() const
+/*bool Shader::IsValid() const
 {
 	return (
 		   bgfx::isValid(vertex.handle)
@@ -21,14 +21,14 @@ bool Shader::IsValid() const
 
 static bgfx::ShaderHandle CreateShader(const char* path)
 {
-	static FS::FileMode mode{
-		FS::FileMode::Access::Read,
-		FS::FileMode::ShareMode::ShareRead,
-		FS::FileMode::CreationDisposition::OpenExisting,
-		FS::FileMode::FlagNone
+	static FileMode mode{
+		FileMode::Access::Read,
+		FileMode::ShareMode::ShareRead,
+		FileMode::CreationDisposition::OpenExisting,
+		FileMode::FlagNone
 	};
 
-	FS::File file;
+	fileHandle file;
 	ASSERT(file.Open(path, mode));
 	size_t fileSize = file.GetSize();
 	const bgfx::Memory* mem = bgfx::alloc((u32)fileSize + 1);
@@ -115,7 +115,7 @@ ShaderProgramInternal* ShaderManager::GetProgramInt(
 		ASSERT2(false, "Invalid handle");
 
 	return nullptr;
-}
+}*/
 
 
 }

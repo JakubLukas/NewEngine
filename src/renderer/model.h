@@ -16,7 +16,7 @@ struct Shader;
 //TODO move ?
 struct Material
 {
-	Shader shader;
+	shaderHandle shader;
 	//Textures
 	//Uniforms?
 	//commandBuffer*

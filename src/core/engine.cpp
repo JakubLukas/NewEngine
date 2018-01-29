@@ -1,5 +1,6 @@
 #include "engine.h"
 
+#include "file/file_system.h"
 #include "input/input_system.h"
 #include "string.h"
 
@@ -15,12 +16,14 @@ public:
 		: m_allocator(allocator)
 		, m_plugins(m_allocator)
 	{
+		m_fileSystem = FileSystem::Create(m_allocator);
 		m_inputSystem = InputSystem::Create(m_allocator);
 	}
 
 	~EngineImpl()
 	{
 		InputSystem::Destroy(m_inputSystem, m_allocator);
+		FileSystem::Destroy(m_fileSystem, m_allocator);
 	}
 
 
@@ -61,6 +64,7 @@ public:
 		{
 			plugin->Update(deltaTime);
 		}
+		m_fileSystem->Update(deltaTime);
 		m_inputSystem->Update(deltaTime);
 	}
 
@@ -68,6 +72,12 @@ public:
 	IAllocator& GetAllocator() const override
 	{
 		return m_allocator;
+	}
+
+
+	FileSystem* GetFileSystem() const override
+	{
+		return m_fileSystem;
 	}
 
 
@@ -79,6 +89,7 @@ public:
 private:
 	PlatformData m_platformData;
 	IAllocator& m_allocator;
+	FileSystem* m_fileSystem;
 	InputSystem* m_inputSystem;
 	Array<IPlugin*> m_plugins;
 };

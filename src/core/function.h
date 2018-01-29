@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/asserts.h"
+
 
 namespace Veng
 {
@@ -51,7 +53,7 @@ public:
 	ReturnType operator()(Arguments... args)
 	{
 		ASSERT(m_functionStub != nullptr);
-		return m_functionStub(m_instance);
+		return m_functionStub(m_instance, args...);
 	}
 
 

@@ -10,6 +10,9 @@ namespace Veng
 
 class Resource
 {
+	friend class NewShaderManager;
+	friend class ResourceManager;
+
 public:
 	enum class State
 	{
@@ -18,8 +21,6 @@ public:
 		Ready,
 		Failure,
 	};
-
-	void Load(Path path);
 
 private:
 	Path m_path;

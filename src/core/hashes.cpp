@@ -5,7 +5,7 @@ namespace Veng
 {
 
 
-namespace crc32_detail
+/*namespace crc32_detail
 {
 
 
@@ -38,7 +38,7 @@ constexpr u32 crc32_impl(const u8* p, size_t len, u32 crc) {
 
 constexpr u32 crc32(const u8* data, size_t length) {
 	return ~crc32_detail::crc32_impl(data, length, ~0);
-}
+}*/
 
 
 namespace murmur_detail

@@ -3,10 +3,17 @@
 #include "core/asserts.h"
 #include "core/string.h"
 #include "core/utility.h"
+#include "core/hashes.h"
 
 
 namespace Veng
 {
+
+
+u32 Path::GetHash(const Path& path)
+{
+	return crc32((u8*)path.path, string::Length(path.path));
+}
 
 
 Path::Path()
@@ -68,7 +75,7 @@ bool Path::operator==(const Path& other)
 
 bool Path::operator!=(const Path& other)
 {
-	return !(operator!=(other));
+	return !(operator==(other));
 }
 
 

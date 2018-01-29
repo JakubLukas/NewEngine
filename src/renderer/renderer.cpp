@@ -252,7 +252,7 @@ public:
 			, 0
 		);
 
-		m_shaderManager = NEW_OBJECT(m_allocator, ShaderManager)(m_allocator);
+		m_shaderManager = NEW_OBJECT(m_allocator, NewShaderManager)(m_allocator, *m_engine.GetFileSystem());
 
 
 		// DUMMY test
@@ -262,7 +262,7 @@ public:
 		m_meshes.Find(e, mesh);
 		mesh->Load();
 		mesh->material = NEW_OBJECT(m_allocator, Material)();
-		mesh->material->shader = m_shaderManager->GetShader("shaders/dx11/vs_cubes.bin", "shaders/dx11/fs_cubes.bin");
+		mesh->material->shader = m_shaderManager->Load("shaders/cubes.esh");
 		///////////////
 	}
 
@@ -271,6 +271,7 @@ public:
 	{
 		// DUMMY test
 		Mesh* mesh = m_meshes.begin();//HAAAACK to clean up material resource
+		m_shaderManager->Unload(mesh->material->shader);
 		DELETE_OBJECT(m_allocator, mesh->material);
 
 		DELETE_OBJECT(m_allocator, m_shaderManager);
@@ -345,7 +346,7 @@ public:
 
 				// Submit primitive for rendering to view 0.
 				// DUMMY test
-				bgfx::submit(0, mesh->material->shader.program.handle);
+				//bgfx::submit(0, mesh->material->shader.program.handle);
 			}
 		}
 
@@ -388,7 +389,7 @@ public:
 private:
 	HeapAllocator m_allocator;//must be first
 	Engine& m_engine;
-	ShaderManager* m_shaderManager;
+	NewShaderManager* m_shaderManager;
 	AssociativeArray<Entity, Mesh> m_meshes;
 
 	/////////////////////

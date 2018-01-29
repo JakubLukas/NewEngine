@@ -7,6 +7,7 @@
 namespace Veng
 {
 
+class FileSystem;
 class InputSystem;
 
 typedef void* windowHandle;
@@ -34,6 +35,8 @@ public:
 	virtual void Update(float deltaTime) = 0;
 
 	virtual IAllocator& GetAllocator() const = 0;
+
+	virtual FileSystem* GetFileSystem() const = 0;
 	virtual InputSystem* GetInputSystem() const = 0;
 };
 

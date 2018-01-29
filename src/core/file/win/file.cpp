@@ -170,11 +170,11 @@ bool FileSync::Exists(const char* path)
 namespace FS
 {
 
-static_assert(sizeof(OVERLAPPED)											== sizeof(Operation),				"Must be the same");
-static_assert(sizeof(OVERLAPPED::Internal)									== sizeof(Operation::internal),		"Must be the same");
-static_assert(sizeof(OVERLAPPED::InternalHigh)								== sizeof(Operation::internalHigh),	"Must be the same");
-static_assert(sizeof(OVERLAPPED::Offset) + sizeof(OVERLAPPED::OffsetHigh)	== sizeof(Operation::offset),		"Must be the same");
-static_assert(sizeof(OVERLAPPED::hEvent)									== sizeof(Operation::hEvent),		"Must be the same");
+static_assert(sizeof(OVERLAPPED) == sizeof(Operation), "Must be the same");
+static_assert(sizeof(OVERLAPPED::Internal) == sizeof(Operation::internal), "Must be the same");
+static_assert(sizeof(OVERLAPPED::InternalHigh) == sizeof(Operation::internalHigh), "Must be the same");
+static_assert(sizeof(OVERLAPPED::Offset) + sizeof(OVERLAPPED::OffsetHigh) == sizeof(Operation::offset), "Must be the same");
+static_assert(sizeof(OVERLAPPED::hEvent) == sizeof(Operation::hEvent), "Must be the same");
 
 
 /*struct Operation : public OVERLAPPED
@@ -288,7 +288,7 @@ bool ReadFile(nativeFileHandle fileHandle, Operation* operation, size_t filePosi
 		NULL,
 		overlapped
 	);
-	return (result == TRUE);
+	return (result == FALSE);//async ReadFile returns FALSE
 }
 
 
@@ -376,9 +376,12 @@ void QueryChanges(nativeAsyncHandle asyncHandle, Function<void(nativeFileHandle,
 					return;
 				default:
 					return;
-			return; //no more finished file requests
+					return; //no more finished file requests
+			}
 		}
 	}
+
+
 }
 
 
