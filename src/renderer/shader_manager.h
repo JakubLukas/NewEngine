@@ -1,18 +1,9 @@
 #pragma once
 
-#include "core/hash_map.h"
-
 #include <bgfx/bgfx.h>
-
-
-
 
 #include "core/resource/resource.h"
 #include "core/resource/resource_manager.h"
-#include "core/file/file_system.h"
-#include "core/file/path.h"
-#include "core/array.h"
-#include "core/string.h"
 
 
 
@@ -24,6 +15,7 @@ enum shaderHandle : u64 {};
 
 enum shaderInternalHandle : u64 {};
 
+//=============================================================================
 
 struct ShaderInternal : public Resource
 {
@@ -36,6 +28,7 @@ struct ShaderProgramInternal
 	bgfx::ProgramHandle handle = BGFX_INVALID_HANDLE;
 };
 
+//=============================================================================
 
 struct Shader : public Resource
 {
@@ -48,6 +41,7 @@ struct Shader : public Resource
 };
 
 
+//=============================================================================
 
 
 class ShaderInternalManager final : public ResourceManager
@@ -61,7 +55,7 @@ public:
 	void Unload(shaderInternalHandle handle);
 	void Reload(shaderInternalHandle handle);
 
-	ShaderInternal* GetResource(shaderInternalHandle handle);
+	const ShaderInternal* GetResource(shaderInternalHandle handle) const;
 
 
 private:
@@ -72,9 +66,7 @@ private:
 };
 
 
-
-
-
+//=============================================================================
 
 
 class ShaderManager final : public ResourceManager
@@ -88,7 +80,7 @@ public:
 	void Unload(shaderHandle handle);
 	void Reload(shaderHandle handle);
 
-	Shader* GetResource(shaderHandle handle);
+	const Shader* GetResource(shaderHandle handle) const;
 
 
 private:
@@ -96,9 +88,9 @@ private:
 	void DestroyResource(Resource* resource) override;
 	void ReloadResource(Resource* resource) override;
 	bool ResourceLoaded(Resource* resource, InputBlob& data) override;
-	bool ChildResourceLoaded(resourceHandle childResource) override;
+	void ChildResourceLoaded(resourceHandle childResource) override;
 
-	bool FinalizeShader(Shader* shader);
+	void FinalizeShader(Shader* shader);
 
 private:
 	ShaderInternalManager m_internalShaders;

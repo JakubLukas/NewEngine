@@ -56,8 +56,6 @@ enum class MoveMethod
 	Current,
 	End,
 };
-//bool MovePosition(MoveMethod method, u64 position);
-//u64 GetPosition();
 
 
 enum fileHandle : u64 {};
@@ -79,9 +77,9 @@ public:
 	virtual bool Write(fileHandle handle, void* data, size_t size, Function<void(fileHandle)> callback) = 0;
 
 	virtual void SetPosition(fileHandle handle, MoveMethod method, size_t position) = 0;
-	virtual size_t GetPosition(fileHandle handle) = 0;
+	virtual size_t GetPosition(fileHandle handle) const  = 0;
 
-	virtual size_t GetSize(fileHandle handle) = 0;
+	virtual size_t GetSize(fileHandle handle) const = 0;
 
 	virtual void Update(float deltaTime) = 0;
 

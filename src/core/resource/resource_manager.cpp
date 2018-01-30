@@ -85,7 +85,7 @@ void ResourceManager::ReloadInternal(resourceHandle handle)
 }
 
 
-Resource* ResourceManager::GetResource(resourceHandle handle)
+Resource* ResourceManager::GetResource(resourceHandle handle) const
 {
 	return reinterpret_cast<Resource*>(handle);
 }

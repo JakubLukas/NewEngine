@@ -136,16 +136,16 @@ public:
 	}
 
 
-	size_t GetPosition(fileHandle handle) override
+	size_t GetPosition(fileHandle handle) const override
 	{
-		File& file = m_files[(size_t)handle];
+		const File& file = m_files[(size_t)handle];
 		return file.position;
 	}
 
 
-	size_t GetSize(fileHandle handle) override
+	size_t GetSize(fileHandle handle) const override
 	{
-		File& file = m_files[(size_t)handle];
+		const File& file = m_files[(size_t)handle];
 		return file.size;
 	}
 

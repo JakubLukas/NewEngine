@@ -346,7 +346,7 @@ public:
 
 				// Submit primitive for rendering to view 0.
 				// DUMMY test
-				Shader* shader = m_shaderManager->GetResource(mesh->material->shader);
+				const Shader* shader = m_shaderManager->GetResource(mesh->material->shader);
 				bgfx::submit(0, shader->program.handle);
 			}
 		}

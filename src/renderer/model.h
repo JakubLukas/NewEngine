@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/array.h"
-#include "shader_manager.h"
+#include "material_manager.h"
 
 #include <bgfx/bgfx.h>
 
@@ -13,14 +13,7 @@ namespace Veng
 struct Shader;
 
 
-//TODO move ?
-struct Material
-{
-	shaderHandle shader;
-	//Textures
-	//Uniforms?
-	//commandBuffer*
-};
+
 
 
 struct Mesh

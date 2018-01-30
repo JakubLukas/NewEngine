@@ -51,14 +51,14 @@ protected:
 	void ReloadInternal(resourceHandle handle);
 
 protected:
-	Resource* GetResource(resourceHandle handle);
-	void SetResourceState(Resource* resource, Resource::State state) { resource->m_state = state; }
+	Resource* GetResource(resourceHandle handle) const;
 
 	virtual Resource* CreateResource() = 0;
 	virtual void DestroyResource(Resource* resource) = 0;
 	virtual void ReloadResource(Resource* resource) = 0;
+
 	virtual bool ResourceLoaded(Resource* resource, InputBlob& data) = 0;
-	virtual bool ChildResourceLoaded(resourceHandle childResource) { return true; }
+	virtual void ChildResourceLoaded(resourceHandle childResource) { }
 
 public:///////////////////////////////////////////////////////////////////////////////////
 	void SetOwner(ResourceManager* parent) { m_owner = parent; }

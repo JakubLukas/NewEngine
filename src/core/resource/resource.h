@@ -24,8 +24,9 @@ public:
 	};
 
 public:
-	const Path& GetPath() { return m_path; }
-	State GetState() { return m_state; }
+	const Path& GetPath() const { return m_path; }
+	State GetState() const { return m_state; }
+	void SetState(State state) { m_state = state; }
 
 private:
 	Path m_path;
