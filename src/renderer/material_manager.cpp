@@ -5,8 +5,9 @@ namespace Veng
 {
 
 
-MaterialManager::MaterialManager(IAllocator& allocator, FileSystem& fileSystem)
+MaterialManager::MaterialManager(IAllocator& allocator, FileSystem& fileSystem, ShaderManager* shaderManager)
 	: ResourceManager(allocator, fileSystem)
+	, m_shaderManager(shaderManager)
 {
 
 }
@@ -52,8 +53,7 @@ void MaterialManager::DestroyResource(Resource* resource)
 {
 	Material* material = static_cast<Material*>(resource);
 
-	//m_internalShaders.Unload(shader->vsHandle);
-	//m_internalShaders.Unload(shader->fsHandle);
+	m_shaderManager->Unload(material->shader);
 
 	DELETE_OBJECT(m_allocator, material);
 }
@@ -71,8 +71,8 @@ bool MaterialManager::ResourceLoaded(Resource* resource, InputBlob& data)
 
 	char shaderPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(data.ReadString(shaderPath, Path::MAX_LENGTH));
-	//material->shader = m_internalShaders.Load(Path(vsPath));
-	//m_internalShaders.AddDependency(resource, static_cast<resourceHandle>(shader->vsHandle));
+	material->shader = m_shaderManager->Load(Path(shaderPath));
+	m_shaderManager->AddDependency(resource, static_cast<resourceHandle>(material->shader));
 
 	return true;
 }
@@ -80,13 +80,22 @@ bool MaterialManager::ResourceLoaded(Resource* resource, InputBlob& data)
 
 void MaterialManager::ChildResourceLoaded(resourceHandle childResource)
 {
+	shaderHandle childHandle = static_cast<shaderHandle>(childResource);
 
+	for(auto& res : m_resources)
+	{
+		Material* material = static_cast<Material*>(res.value);
+		if(material->shader == childHandle)
+		{
+			FinalizeMaterial(material);
+		}
+	}
 }
 
 
-void MaterialManager::FinalizeMaterial(Material* shader)
+void MaterialManager::FinalizeMaterial(Material* material)
 {
-	
+	material->SetState(Resource::State::Ready);
 }
 
 

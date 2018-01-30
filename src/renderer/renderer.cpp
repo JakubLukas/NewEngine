@@ -252,8 +252,11 @@ public:
 			, 0
 		);
 
-		m_shaderManager = NEW_OBJECT(m_allocator, ShaderManager)(m_allocator, *m_engine.GetFileSystem());
-
+		m_shaderInternalManager = NEW_OBJECT(m_allocator, ShaderInternalManager)(m_allocator, *m_engine.GetFileSystem());
+		m_shaderManager = NEW_OBJECT(m_allocator, ShaderManager)(m_allocator, *m_engine.GetFileSystem(), m_shaderInternalManager);
+		m_shaderInternalManager->SetOwner(m_shaderManager);
+		m_materialManager = NEW_OBJECT(m_allocator, MaterialManager)(m_allocator, *m_engine.GetFileSystem(), m_shaderManager);
+		m_shaderManager->SetOwner(m_materialManager);
 
 		// DUMMY test
 		Entity e = (Entity)0;
@@ -261,20 +264,22 @@ public:
 		Mesh* mesh;
 		m_meshes.Find(e, mesh);
 		mesh->Load();
-		mesh->material = NEW_OBJECT(m_allocator, Material)();
-		mesh->material->shader = m_shaderManager->Load("shaders/cubes.esh");
+		mesh->material = m_materialManager->Load("materials/cubes.emt");
 		///////////////
 	}
 
 
 	~RenderSystemImpl() override
 	{
-		// DUMMY test
-		Mesh* mesh = m_meshes.begin();//HAAAACK to clean up material resource
-		m_shaderManager->Unload(mesh->material->shader);
-		DELETE_OBJECT(m_allocator, mesh->material);
+		for(Mesh& mesh : m_meshes)
+		{
+			mesh.Clear();
+			m_materialManager->Unload(mesh.material);
+		}
 
+		DELETE_OBJECT(m_allocator, m_materialManager);
 		DELETE_OBJECT(m_allocator, m_shaderManager);
+		DELETE_OBJECT(m_allocator, m_shaderInternalManager);
 
 		// Shutdown bgfx.
 		bgfx::shutdown();
@@ -334,20 +339,23 @@ public:
 
 				// Set vertex and index buffer.
 				// DUMMY test
-				Mesh* mesh = m_meshes.begin();//HAAAACK
-				bgfx::setVertexBuffer(0, mesh->vertexBufferHandle);
-				bgfx::setIndexBuffer(mesh->indexBufferHandle);
 
-				// Set render states.
-				bgfx::setState(0
-					| BGFX_STATE_DEFAULT
-					| BGFX_STATE_PT_TRISTRIP
-				);
+				for(Mesh& mesh : m_meshes)
+				{
+					const Material* material = m_materialManager->GetResource(mesh.material);
+					if(material->GetState() == Resource::State::Ready)
+					{
+						bgfx::setVertexBuffer(0, mesh.vertexBufferHandle);
+						bgfx::setIndexBuffer(mesh.indexBufferHandle);
 
-				// Submit primitive for rendering to view 0.
-				// DUMMY test
-				const Shader* shader = m_shaderManager->GetResource(mesh->material->shader);
-				bgfx::submit(0, shader->program.handle);
+						// Set render states.
+						bgfx::setState(0 | BGFX_STATE_DEFAULT | BGFX_STATE_PT_TRISTRIP);
+
+						// Submit primitive for rendering to view 0.
+						const Shader* shader = m_shaderManager->GetResource(material->shader);
+						bgfx::submit(0, shader->program.handle);
+					}
+				}
 			}
 		}
 
@@ -390,7 +398,11 @@ public:
 private:
 	HeapAllocator m_allocator;//must be first
 	Engine& m_engine;
+
+	ShaderInternalManager* m_shaderInternalManager;
 	ShaderManager* m_shaderManager;
+	MaterialManager* m_materialManager;
+
 	AssociativeArray<Entity, Mesh> m_meshes;
 
 	/////////////////////

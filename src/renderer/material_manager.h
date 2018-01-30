@@ -9,6 +9,7 @@
 namespace Veng
 {
 
+
 enum materialHandle : u64 {};
 
 
@@ -24,7 +25,7 @@ struct Material : public Resource
 class MaterialManager final : public ResourceManager
 {
 public:
-	MaterialManager(IAllocator& allocator, FileSystem& fileSystem);
+	MaterialManager(IAllocator& allocator, FileSystem& fileSystem, ShaderManager* shaderManager);
 	~MaterialManager() override;
 
 
@@ -42,10 +43,10 @@ private:
 	bool ResourceLoaded(Resource* resource, InputBlob& data) override;
 	void ChildResourceLoaded(resourceHandle childResource) override;
 
-	void FinalizeMaterial(Material* shader);
+	void FinalizeMaterial(Material* material);
 
 private:
-	//ShaderInternalManager m_internalShaders;
+	ShaderManager* m_shaderManager;
 };
 
 

@@ -21,7 +21,7 @@ struct Mesh
 	bgfx::VertexDecl m_vertex_decl;
 	bgfx::VertexBufferHandle vertexBufferHandle;
 	bgfx::IndexBufferHandle indexBufferHandle;
-	Material* material;
+	materialHandle material;
 
 	bool Load(/*FileBlob*/);
 	void Clear();

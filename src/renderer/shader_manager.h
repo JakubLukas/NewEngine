@@ -72,7 +72,7 @@ private:
 class ShaderManager final : public ResourceManager
 {
 public:
-	ShaderManager(IAllocator& allocator, FileSystem& fileSystem);
+	ShaderManager(IAllocator& allocator, FileSystem& fileSystem, ShaderInternalManager* shaderInternalManager);
 	~ShaderManager() override;
 
 
@@ -93,7 +93,7 @@ private:
 	void FinalizeShader(Shader* shader);
 
 private:
-	ShaderInternalManager m_internalShaders;
+	ShaderInternalManager* m_shaderInternalManager;
 };
 
 
