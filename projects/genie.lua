@@ -2,7 +2,7 @@ local ide_dir = iif(_ACTION == nil, "vs2015", _ACTION)
 local LOCATION = ide_dir
 local OBJ_DIR = LOCATION .. "/obj/"
 local BINARY_DIR = LOCATION .. "/bin/"
-local WORKING_DIR = "."
+local WORKING_DIR = "../../NewEngineData"
 local SRC_DIR = "../src/"
 
 newoption {
