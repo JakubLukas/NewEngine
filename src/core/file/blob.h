@@ -15,34 +15,21 @@ public:
 
 	bool Read(void* data, size_t size);
 	bool ReadString(char* data, size_t maxSize);
-	template<class Type> bool Read(Type& value);
-	template<class Type> Type Read();
+	bool ReadLine(char* data, size_t maxSize);
+	bool Read(int& value);
+	bool Read(float& value);
 	void Skip(size_t size);
-	void Trim();
+	void SkipWhiteSpaces();
 	size_t GetSize() const;
 	void SetPosition(size_t position);
 	size_t GetPosition() const;
-	const void* GetData() const;
+	const char* GetData() const;
 
 private:
-	const void* m_data;
+	const char* m_data;
 	size_t m_size;
 	size_t m_position;
 };
-
-
-template<class Type> bool InputBlob::Read(Type& value)
-{
-	return Read(&value, sizeof(Type));
-}
-
-
-template<class Type> Type InputBlob::Read()
-{
-	Type value;
-	Read(value);
-	return value;
-}
 
 
 }

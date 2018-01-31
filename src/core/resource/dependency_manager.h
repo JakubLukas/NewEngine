@@ -9,10 +9,38 @@ namespace Veng
 {
 
 
-struct DependencyPair
+class DependencyManager;
+
+struct DependencyHandler
 {
-	resourceHandle parent;
-	resourceHandle child;
+	DependencyHandler(IAllocator& allocator, ResourceManager* parentManager, ResourceManager* childManager)
+		: m_parentManager(parentManager), m_childManager(childManager), m_pairs(allocator)
+	{}
+
+	void AddDependency(resourceHandle parent, resourceHandle child)
+	{
+		m_pairs.Push(Pair{ parent, child });
+
+	}
+
+private:
+	struct Pair
+	{
+		resourceHandle parent;
+		resourceHandle child;
+	};
+
+private:
+	ResourceManager* m_parentManager;
+	ResourceManager* m_childManager;
+	Array<Pair> m_pairs;
+};
+
+
+struct DepResMng
+{
+
+	ResourceManager* manager;
 };
 
 
@@ -29,7 +57,7 @@ public:
 
 private:
 	IAllocator& m_allocator;
-	Array<DependencyPair> m_dependencies;
+	Array<DependencyHandler*> m_dependencies;
 	Array<ResourceManager*> m_managers;
 };
 

@@ -155,14 +155,12 @@ bool ShaderManager::ResourceLoaded(Resource* resource, InputBlob& data)
 	Shader* shader = static_cast<Shader*>(resource);
 
 	char vsPath[Path::MAX_LENGTH + 1] = { '\0' };
-	ASSERT(data.ReadString(vsPath, Path::MAX_LENGTH));
+	ASSERT(data.ReadLine(vsPath, Path::MAX_LENGTH));
 	shader->vsHandle = m_shaderInternalManager->Load(Path(vsPath));
 	m_shaderInternalManager->AddDependency(resource, static_cast<resourceHandle>(shader->vsHandle));
 
-	data.Trim();
-
 	char fsPath[Path::MAX_LENGTH + 1] = { '\0' };
-	ASSERT(data.ReadString(fsPath, Path::MAX_LENGTH));
+	ASSERT(data.ReadLine(fsPath, Path::MAX_LENGTH));
 	shader->fsHandle = m_shaderInternalManager->Load(Path(fsPath));
 	m_shaderInternalManager->AddDependency(resource, static_cast<resourceHandle>(shader->fsHandle));
 

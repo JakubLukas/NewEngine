@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/array.h"
+#include "core/resource/resource.h"
 #include "material_manager.h"
 
 #include <bgfx/bgfx.h>
@@ -28,7 +29,7 @@ struct Mesh
 };
 
 
-struct Model
+struct Model : public Resource
 {
 	Model(IAllocator& allocator);
 	~Model();

@@ -264,7 +264,7 @@ public:
 		Mesh* mesh;
 		m_meshes.Find(e, mesh);
 		mesh->Load();
-		mesh->material = m_materialManager->Load("materials/cubes.emt");
+		mesh->material = m_materialManager->Load("materials/cubes.material");
 		///////////////
 	}
 
