@@ -2,6 +2,7 @@
 
 #include "core/allocators.h"
 #include "asserts.h"
+#include "utility.h"
 
 
 namespace Veng
@@ -66,6 +67,17 @@ public:
 		return m_data[m_size++];
 	}
 
+	template< class... Args >
+	Type& EmplaceBack(Args&&... args)
+	{
+		if(m_size == m_capacity)
+			Enlarge();
+
+		NEW_PLACEMENT(m_data + m_size, Type)(Utils::Forward<Args>(args)...);
+
+		return m_data[m_size++];
+	}
+
 	void Pop()
 	{
 		ASSERT(m_size > 0);
@@ -78,12 +90,10 @@ public:
 		ASSERT(idx < m_size);
 		DELETE_PLACEMENT(m_data + idx);
 
-		for(unsigned i = idx; i < m_size - 1; ++i)
-		{
-			NEW_PLACEMENT(m_data + i, Type)(m_data[i + 1]);
-			DELETE_PLACEMENT(m_data + i + 1);
-		}
 		--m_size;
+
+		NEW_PLACEMENT(m_data + idx, Type)(m_data[m_size]);
+		DELETE_PLACEMENT(m_data + m_size);
 	}
 
 	const Type& operator[](size_t index) const

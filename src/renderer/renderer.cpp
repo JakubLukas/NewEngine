@@ -6,6 +6,8 @@
 #include "core/logs.h"
 
 #include "shader_manager.h"
+#include "material_manager.h"
+#include "model_manager.h"
 #include "model.h"
 
 #include <bgfx/bgfx.h>///////////////
@@ -234,7 +236,7 @@ public:
 		: m_engine(engine)
 		, m_allocator(engine.GetAllocator())
 		, m_bgfxAllocator(m_allocator)
-		, m_meshes(m_allocator)
+		//, m_meshes(m_allocator)
 	{
 		///////////////
 		bgfx::PlatformData d { 0 };
@@ -257,25 +259,31 @@ public:
 		m_shaderInternalManager->SetOwner(m_shaderManager);
 		m_materialManager = NEW_OBJECT(m_allocator, MaterialManager)(m_allocator, *m_engine.GetFileSystem(), m_shaderManager);
 		m_shaderManager->SetOwner(m_materialManager);
+		m_modelManager = NEW_OBJECT(m_allocator, ModelManager)(m_allocator, *m_engine.GetFileSystem(), m_materialManager);
+		m_materialManager->SetOwner(m_modelManager);
+
+
+		m_model = m_modelManager->Load("models/cubes.model");
 
 		// DUMMY test
-		Entity e = (Entity)0;
-		AddMeshComponent(e, 0);
-		Mesh* mesh;
-		m_meshes.Find(e, mesh);
-		mesh->Load();
-		mesh->material = m_materialManager->Load("materials/cubes.material");
+		//Entity e = (Entity)0;
+		//AddMeshComponent(e, 0);
+		//Mesh* mesh;
+		//m_meshes.Find(e, mesh);
+		//mesh->Load();
+		//mesh->material = m_materialManager->Load("materials/cubes.material");
 		///////////////
 	}
 
 
 	~RenderSystemImpl() override
 	{
-		for(Mesh& mesh : m_meshes)
+		m_modelManager->Unload(m_model);
+		/*for(Mesh& mesh : m_meshes)
 		{
 			mesh.Clear();
 			m_materialManager->Unload(mesh.material);
-		}
+		}*/
 
 		DELETE_OBJECT(m_allocator, m_materialManager);
 		DELETE_OBJECT(m_allocator, m_shaderManager);
@@ -340,7 +348,7 @@ public:
 				// Set vertex and index buffer.
 				// DUMMY test
 
-				for(Mesh& mesh : m_meshes)
+				/*for(Mesh& mesh : m_meshes)
 				{
 					const Material* material = m_materialManager->GetResource(mesh.material);
 					if(material->GetState() == Resource::State::Ready)
@@ -354,6 +362,26 @@ public:
 						// Submit primitive for rendering to view 0.
 						const Shader* shader = m_shaderManager->GetResource(material->shader);
 						bgfx::submit(0, shader->program.handle);
+					}
+				}*/
+				const Model* model = m_modelManager->GetResource(m_model);
+				if(model->GetState() == Resource::State::Ready)
+				{
+					for(const Mesh& mesh : model->meshes)
+					{
+						const Material* material = m_materialManager->GetResource(mesh.material);
+						if(material->GetState() == Resource::State::Ready)
+						{
+							bgfx::setVertexBuffer(0, mesh.vertexBufferHandle);
+							bgfx::setIndexBuffer(mesh.indexBufferHandle);
+
+							// Set render states.
+							bgfx::setState(0 | BGFX_STATE_DEFAULT | BGFX_STATE_PT_TRISTRIP);
+
+							// Submit primitive for rendering to view 0.
+							const Shader* shader = m_shaderManager->GetResource(material->shader);
+							bgfx::submit(0, shader->program.handle);
+						}
 					}
 				}
 			}
@@ -378,18 +406,19 @@ public:
 
 	void AddMeshComponent(Entity entity, worldId world) override
 	{
-		m_meshes.Insert(entity, Mesh());
+		//m_meshes.Insert(entity, Mesh());
 	}
 
 	void RemoveMeshComponent(Entity entity, worldId world) override
 	{
-		m_meshes.Erase(entity);
+		//m_meshes.Erase(entity);
 	}
 
 	bool HasMeshComponent(Entity entity, worldId world) override
 	{
-		Mesh* mesh;
-		return m_meshes.Find(entity, mesh);
+		//Mesh* mesh;
+		//return m_meshes.Find(entity, mesh);
+		return false;
 	}
 
 
@@ -402,8 +431,10 @@ private:
 	ShaderInternalManager* m_shaderInternalManager;
 	ShaderManager* m_shaderManager;
 	MaterialManager* m_materialManager;
+	ModelManager* m_modelManager;
 
-	AssociativeArray<Entity, Mesh> m_meshes;
+	modelHandle m_model;
+	//AssociativeArray<Entity, Mesh> m_meshes;
 
 	/////////////////////
 	u32 m_width = 0;

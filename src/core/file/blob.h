@@ -18,6 +18,7 @@ public:
 	bool ReadLine(char* data, size_t maxSize);
 	bool Read(int& value);
 	bool Read(float& value);
+	bool ReadHex(u32& value);
 	void Skip(size_t size);
 	void SkipWhiteSpaces();
 	size_t GetSize() const;

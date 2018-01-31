@@ -52,6 +52,30 @@ size_t StrToInt(const char* str, int& num)
 }
 
 
+size_t StrToUIntHex(const char* str, u32& num)
+{
+	num = 0;
+	size_t idx = 0;
+	ASSERT(str[idx++] == '0');
+	ASSERT(str[idx++] == 'x');
+
+	while(true)
+	{
+		if(str[idx] >= '0' && str[idx] <= '9')
+			num = num * 16 + (str[idx] - '0');
+		else if(str[idx] >= 'A' && str[idx] <= 'F')
+			num = num * 16 + (str[idx] - 'A' + 10);
+		else if(str[idx] >= 'a' && str[idx] <= 'f')
+			num = num * 16 + (str[idx] - 'a' + 10);
+		else
+			break;
+		idx++;
+	}
+
+	return idx;
+}
+
+
 size_t StrToFloat(const char* str, float& num)
 {
 	ASSERT(str[0] == '+' || str[0] == '-' || (str[0] >= '0' && str[0] <= '9'));
@@ -123,11 +147,12 @@ bool InputBlob::ReadString(char* data, size_t maxSize)
 {
 	SkipWhiteSpaces();
 	size_t maxRead = (m_position + maxSize < m_size) ? (m_position + maxSize) : m_size;
-	for(size_t i = m_position, j = 0; i < maxRead; ++i, ++j)
+	size_t charsReaded = 0;
+	for(size_t i = m_position; i < maxRead; ++i, ++charsReaded)
 	{
 		if (!IsWhiteSpace(m_data[m_position]))
 		{
-			data[j] = m_data[i];
+			data[charsReaded] = m_data[i];
 			m_position++;
 		}
 		else
@@ -136,7 +161,7 @@ bool InputBlob::ReadString(char* data, size_t maxSize)
 		}
 	}
 
-	return (maxRead <= maxSize);
+	return (charsReaded <= maxSize);
 }
 
 
@@ -144,11 +169,12 @@ bool InputBlob::ReadLine(char* data, size_t maxSize)
 {
 	SkipWhiteSpaces();
 	size_t maxRead = (m_position + maxSize < m_size) ? (m_position + maxSize) : m_size;
-	for (size_t i = m_position, j = 0; i < maxRead; ++i, ++j)
+	size_t charsReaded = 0;
+	for (size_t i = m_position; i < maxRead; ++i, ++charsReaded)
 	{
 		if (!IsEndOfLine(m_data[m_position]))
 		{
-			data[j] = m_data[i];
+			data[charsReaded] = m_data[i];
 			m_position++;
 		}
 		else
@@ -157,21 +183,28 @@ bool InputBlob::ReadLine(char* data, size_t maxSize)
 		}
 	}
 
-	return (maxRead <= maxSize);
+	return (charsReaded <= maxSize);
 }
 
 
 bool InputBlob::Read(int& value)
 {
 	SkipWhiteSpaces();
-	m_position += StrToInt(m_data, value);
+	m_position += StrToInt(m_data + m_position, value);
 	return true;
 }
 
 bool InputBlob::Read(float& value)
 {
 	SkipWhiteSpaces();
-	m_position += StrToFloat(m_data, value);
+	m_position += StrToFloat(m_data + m_position, value);
+	return true;
+}
+
+bool InputBlob::ReadHex(u32& value)
+{
+	SkipWhiteSpaces();
+	m_position += StrToUIntHex(m_data + m_position, value);
 	return true;
 }
 

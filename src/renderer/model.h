@@ -31,8 +31,11 @@ struct Mesh
 
 struct Model : public Resource
 {
-	Model(IAllocator& allocator);
-	~Model();
+	Model(IAllocator& allocator)
+		: meshes(allocator)
+	{}
+	~Model()
+	{}
 
 	Array<Mesh> meshes;
 	//LODs
