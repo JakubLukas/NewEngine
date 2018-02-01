@@ -95,7 +95,7 @@ bool ModelManager::ResourceLoaded(Resource* resource, InputBlob& data)
 	int verticesCount;
 	ASSERT(data.Read(verticesCount));
 
-	size_t verticesBufferSize = verticesCount * sizeof(PosColorVertex);
+	u32 verticesBufferSize = verticesCount * sizeof(PosColorVertex);
 	PosColorVertex* vertices = (PosColorVertex*)m_allocator.Allocate(verticesBufferSize, ALIGN_OF(PosColorVertex));
 	for(int i = 0; i < verticesCount; ++i)
 	{
@@ -111,7 +111,7 @@ bool ModelManager::ResourceLoaded(Resource* resource, InputBlob& data)
 	int indicesCount;
 	ASSERT(data.Read(indicesCount));
 
-	size_t indicesBufferSize = indicesCount * sizeof(u16);
+	u32 indicesBufferSize = indicesCount * sizeof(u16);
 	u16* triStrip = (u16*)m_allocator.Allocate(indicesBufferSize, ALIGN_OF(u16));
 	for(int i = 0; i < indicesCount; ++i)
 	{
@@ -120,8 +120,8 @@ bool ModelManager::ResourceLoaded(Resource* resource, InputBlob& data)
 		triStrip[i] = (u16)num;
 	}
 
-	mesh.vertexBufferHandle = bgfx::createVertexBuffer(bgfx::copy(vertices, sizeof(verticesBufferSize)), mesh.m_vertex_decl);
-	mesh.indexBufferHandle = bgfx::createIndexBuffer(bgfx::copy(triStrip, sizeof(indicesBufferSize)));
+	mesh.vertexBufferHandle = bgfx::createVertexBuffer(bgfx::copy(vertices, verticesBufferSize), mesh.m_vertex_decl);
+	mesh.indexBufferHandle = bgfx::createIndexBuffer(bgfx::copy(triStrip, indicesBufferSize));
 
 	m_allocator.Deallocate(vertices);
 	m_allocator.Deallocate(triStrip);
@@ -138,7 +138,7 @@ bool ModelManager::ResourceLoaded(Resource* resource, InputBlob& data)
 
 void ModelManager::ChildResourceLoaded(resourceHandle childResource)
 {
-	shaderHandle childHandle = static_cast<shaderHandle>(childResource);
+	materialHandle childHandle = static_cast<materialHandle>(childResource);
 
 	for (auto& res : m_resources)
 	{

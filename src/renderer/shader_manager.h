@@ -11,9 +11,9 @@
 namespace Veng
 {
 
-enum shaderHandle : u64 {};
+enum class shaderHandle : u64 {};
 
-enum shaderInternalHandle : u64 {};
+enum class shaderInternalHandle : u64 {};
 
 //=============================================================================
 

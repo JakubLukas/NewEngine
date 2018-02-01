@@ -5,8 +5,29 @@
 #include "core/array.h"
 
 
+
+//#include "renderer/shader_manager.h"
+
+
+
 namespace Veng
 {
+
+
+/*struct Base
+{
+	template<class HandleType>
+	bool IsThisYours(HandleType handle) { return false; }
+};
+
+struct ShaderType : public Base
+{
+	template<class HandleType>
+	bool IsThisYours(HandleType handle) { return false; }
+
+	template<>
+	bool IsThisYours<shaderHandle>(shaderHandle handle) { return false; }
+};*/
 
 
 struct DependencyHandler
@@ -14,6 +35,13 @@ struct DependencyHandler
 	DependencyHandler(IAllocator& allocator, ResourceManager* parentManager, ResourceManager* childManager)
 		: m_parentManager(parentManager), m_childManager(childManager), m_pairs(allocator)
 	{}
+
+
+	void RegisterResourceManager(ResourceManager* manager)
+	{
+
+	}
+
 
 	resourceHandle LoadDependency(resourceHandle parent, const Path& child)
 	{

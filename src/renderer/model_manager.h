@@ -11,7 +11,7 @@ namespace Veng
 {
 
 
-enum modelHandle : u64 {};
+enum class modelHandle : u64 {};
 
 
 class ModelManager final : public ResourceManager

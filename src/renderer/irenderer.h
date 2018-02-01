@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/iplugin.h"
+#include "core/file/path.h"
 
 
 namespace Veng
@@ -26,9 +27,9 @@ public:
 	virtual void Resize(u32 width, u32 height) = 0;
 
 
-	virtual void AddMeshComponent(Entity entity, worldId world) = 0;
-	virtual void RemoveMeshComponent(Entity entity, worldId world) = 0;
-	virtual bool HasMeshComponent(Entity entity, worldId world) = 0;
+	virtual void AddModelComponent(Entity entity, worldId world, const Path& path) = 0;
+	virtual void RemoveModelComponent(Entity entity, worldId world) = 0;
+	virtual bool HasModelComponent(Entity entity, worldId world) = 0;
 
 	virtual Engine& GetEngine() const = 0;
 };

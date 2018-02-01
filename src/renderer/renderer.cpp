@@ -223,11 +223,6 @@ struct BgfxCallback : public bgfx::CallbackI
 };
 
 
-static bool asd()
-{
-	return false;
-}
-
 
 class RenderSystemImpl : public RenderSystem
 {
@@ -236,7 +231,7 @@ public:
 		: m_engine(engine)
 		, m_allocator(engine.GetAllocator())
 		, m_bgfxAllocator(m_allocator)
-		//, m_meshes(m_allocator)
+		, m_models(m_allocator)
 	{
 		///////////////
 		bgfx::PlatformData d { 0 };
@@ -261,30 +256,17 @@ public:
 		m_shaderManager->SetOwner(m_materialManager);
 		m_modelManager = NEW_OBJECT(m_allocator, ModelManager)(m_allocator, *m_engine.GetFileSystem(), m_materialManager);
 		m_materialManager->SetOwner(m_modelManager);
-
-
-		m_model = m_modelManager->Load("models/cubes.model");
-
-		// DUMMY test
-		//Entity e = (Entity)0;
-		//AddMeshComponent(e, 0);
-		//Mesh* mesh;
-		//m_meshes.Find(e, mesh);
-		//mesh->Load();
-		//mesh->material = m_materialManager->Load("materials/cubes.material");
-		///////////////
 	}
 
 
 	~RenderSystemImpl() override
 	{
-		m_modelManager->Unload(m_model);
-		/*for(Mesh& mesh : m_meshes)
+		for(auto& modelHandle : m_models)
 		{
-			mesh.Clear();
-			m_materialManager->Unload(mesh.material);
-		}*/
+			m_modelManager->Unload(modelHandle);
+		}
 
+		DELETE_OBJECT(m_allocator, m_modelManager);
 		DELETE_OBJECT(m_allocator, m_materialManager);
 		DELETE_OBJECT(m_allocator, m_shaderManager);
 		DELETE_OBJECT(m_allocator, m_shaderInternalManager);
@@ -327,9 +309,7 @@ public:
 			bgfx::setViewRect(0, 0, 0, uint16_t(m_width), uint16_t(m_height));
 		}
 
-		// This dummy draw call is here to make sure that view 0 is cleared
-		// if no other draw calls are submitted to view 0.
-		bgfx::touch(0);
+		bgfx::touch(0);//dummy draw call (clear view 0)
 
 		// Submit 11x11 cubes.
 		for (uint32_t yy = 0; yy < 11; ++yy)
@@ -345,51 +325,38 @@ public:
 				// Set model matrix for rendering.
 				bgfx::setTransform(mtx);
 
+
 				// Set vertex and index buffer.
 				// DUMMY test
-
-				/*for(Mesh& mesh : m_meshes)
+				for(auto& modelHandle : m_models)
 				{
-					const Material* material = m_materialManager->GetResource(mesh.material);
-					if(material->GetState() == Resource::State::Ready)
+					const Model* model = m_modelManager->GetResource(modelHandle);
+					if(model->GetState() == Resource::State::Ready)
 					{
-						bgfx::setVertexBuffer(0, mesh.vertexBufferHandle);
-						bgfx::setIndexBuffer(mesh.indexBufferHandle);
-
-						// Set render states.
-						bgfx::setState(0 | BGFX_STATE_DEFAULT | BGFX_STATE_PT_TRISTRIP);
-
-						// Submit primitive for rendering to view 0.
-						const Shader* shader = m_shaderManager->GetResource(material->shader);
-						bgfx::submit(0, shader->program.handle);
-					}
-				}*/
-				const Model* model = m_modelManager->GetResource(m_model);
-				if(model->GetState() == Resource::State::Ready)
-				{
-					for(const Mesh& mesh : model->meshes)
-					{
-						const Material* material = m_materialManager->GetResource(mesh.material);
-						if(material->GetState() == Resource::State::Ready)
+						for(const Mesh& mesh : model->meshes)
 						{
-							bgfx::setVertexBuffer(0, mesh.vertexBufferHandle);
-							bgfx::setIndexBuffer(mesh.indexBufferHandle);
+							const Material* material = m_materialManager->GetResource(mesh.material);
+							if(material->GetState() == Resource::State::Ready)
+							{
+								bgfx::setVertexBuffer(0, mesh.vertexBufferHandle);
+								bgfx::setIndexBuffer(mesh.indexBufferHandle);
 
-							// Set render states.
-							bgfx::setState(0 | BGFX_STATE_DEFAULT | BGFX_STATE_PT_TRISTRIP);
+								// Set render states.
+								bgfx::setState(0 | BGFX_STATE_DEFAULT | BGFX_STATE_PT_TRISTRIP);
 
-							// Submit primitive for rendering to view 0.
-							const Shader* shader = m_shaderManager->GetResource(material->shader);
-							bgfx::submit(0, shader->program.handle);
+								// Submit primitive for rendering to view 0.
+								const Shader* shader = m_shaderManager->GetResource(material->shader);
+								bgfx::submit(0, shader->program.handle);
+							}
 						}
 					}
 				}
+
+
 			}
 		}
 
-		// Advance to next frame. Rendering thread will be kicked to
-		// process submitted rendering primitives.
-		bgfx::frame();
+		bgfx::frame();//flip buffers
 	};
 
 
@@ -404,21 +371,21 @@ public:
 	}
 
 
-	void AddMeshComponent(Entity entity, worldId world) override
+	void AddModelComponent(Entity entity, worldId world, const Path& path) override
 	{
-		//m_meshes.Insert(entity, Mesh());
+		modelHandle h = m_modelManager->Load(path);
+		m_models.Insert(entity, h);
 	}
 
-	void RemoveMeshComponent(Entity entity, worldId world) override
+	void RemoveModelComponent(Entity entity, worldId world) override
 	{
-		//m_meshes.Erase(entity);
+		m_models.Erase(entity);
 	}
 
-	bool HasMeshComponent(Entity entity, worldId world) override
+	bool HasModelComponent(Entity entity, worldId world) override
 	{
-		//Mesh* mesh;
-		//return m_meshes.Find(entity, mesh);
-		return false;
+		modelHandle* model;
+		return m_models.Find(entity, model);
 	}
 
 
@@ -433,8 +400,8 @@ private:
 	MaterialManager* m_materialManager;
 	ModelManager* m_modelManager;
 
-	modelHandle m_model;
-	//AssociativeArray<Entity, Mesh> m_meshes;
+
+	AssociativeArray<Entity, modelHandle> m_models;
 
 	/////////////////////
 	u32 m_width = 0;

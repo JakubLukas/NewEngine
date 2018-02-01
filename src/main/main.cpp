@@ -48,6 +48,8 @@ public:
 		InitPlugins();
 
 		RegisterRawInput();
+
+		m_tmpPlugRender->AddModelComponent(Entity(0), 0, "models/cubes.model");
 	}
 
 	void InitPlugins()

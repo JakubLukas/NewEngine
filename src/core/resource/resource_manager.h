@@ -12,7 +12,7 @@ namespace Veng
 {
 
 
-enum resourceHandle : u64 {};
+enum class resourceHandle : u64 {};
 
 
 template<>

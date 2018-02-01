@@ -10,7 +10,7 @@ namespace Veng
 {
 
 
-enum materialHandle : u64 {};
+enum class materialHandle : u64 {};
 
 
 struct Material : public Resource
