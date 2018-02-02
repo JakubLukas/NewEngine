@@ -7,79 +7,87 @@
 #include "core/file/blob.h"
 #include "resource.h"
 
+#include "dependency_manager.h"
+
 
 namespace Veng
 {
 
 
-enum class resourceHandle : u64 {};
-
-
-template<>
-struct HashCalculator<fileHandle>
-{
-	static u64 Get(const fileHandle& key)
-	{
-		return static_cast<u64>(key);
-	}
-};
-
-
 class ResourceManager
 {
-private:
-	struct ResourceLoadingTemp
-	{
-		void* buffer;
-		size_t bufferSize;
-		Resource* resource;
-	};
-
-	struct DependencyPair
-	{
-		resourceHandle parent;
-		resourceHandle child;
-	};
+	friend class DependencyManager;
 
 public:
-	ResourceManager(IAllocator& allocator, FileSystem& fileSystem);
+	ResourceManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
 	virtual ~ResourceManager();
 
 protected:
-	resourceHandle LoadInternal(const Path& path);
-	void UnloadInternal(resourceHandle handle);
-	void ReloadInternal(resourceHandle handle);
+	template<class HandleType>
+	HandleType Load(const Path& path)
+	{
+		return static_cast<HandleType>(LoadInternal(path));
+	}
+
+	template<class HandleType>
+	void Unload(HandleType handle)
+	{
+		UnloadInternal(static_cast<resourceHandle>(handle));
+	}
+
+	template<class HandleType>
+	void Reload(HandleType handle)
+	{
+		ReloadInternal(static_cast<resourceHandle>(handle));
+	}
 
 protected:
-	Resource* GetResource(resourceHandle handle) const;
+	template<class ResType, class HandleType>
+	ResType* GetResource(HandleType handle) const
+	{
+		return static_cast<ResType*>(GetResourceInternal(static_cast<resourceHandle>(handle)));
+	}
+
+	template<class HandleType>
+	HandleType GetResourceHandle(Resource* resource) const
+	{
+		return static_cast<resourceHandle>(reinterpret_cast<u64>(resource));
+	}
 
 	virtual Resource* CreateResource() = 0;
 	virtual void DestroyResource(Resource* resource) = 0;
 	virtual void ReloadResource(Resource* resource) = 0;
 
-	virtual bool ResourceLoaded(Resource* resource, InputBlob& data) = 0;
+	virtual void ResourceLoaded(resourceHandle handle, InputBlob& data) = 0;
 	virtual void ChildResourceLoaded(resourceHandle childResource) { }
 
-public:///////////////////////////////////////////////////////////////////////////////////
-	void SetOwner(ResourceManager* parent) { m_owner = parent; }
-	void AddDependency(Resource* parent, resourceHandle child);
-	void RemoveDependency(resourceHandle parent, resourceHandle child);
-	void RemoveAllDependencies(resourceHandle parent);
-
 private:
+	resourceHandle LoadInternal(const Path& path);
+	void UnloadInternal(resourceHandle handle);
+	void ReloadInternal(resourceHandle handle);
+
+	Resource* GetResourceInternal(resourceHandle handle) const;
+
 	void LoadResource(const Path& path, Resource* resource);
 	void FileSystemCallback(fileHandle handle);
 
 protected:
 	IAllocator& m_allocator;
+	HashMap<u32, Resource*> m_resources;
+	DependencyManager* m_depManager;
+
+
+private:
+	struct ResourceLoadingTemp
+	{
+		void* buffer;
+		size_t bufferSize;
+		resourceHandle handle;
+	};
+
 private:
 	FileSystem& m_fileSystem;
 	HashMap<fileHandle, ResourceLoadingTemp> m_loadingTemps;
-protected:
-	HashMap<u32, Resource*> m_resources;
-private:
-	ResourceManager* m_owner = nullptr;
-	Array<DependencyPair> m_dependencies;
 };
 
 

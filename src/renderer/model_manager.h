@@ -17,7 +17,7 @@ enum class modelHandle : u64 {};
 class ModelManager final : public ResourceManager
 {
 public:
-	ModelManager(IAllocator& allocator, FileSystem& fileSystem, MaterialManager* materialManager);
+	ModelManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
 	~ModelManager() override;
 
 
@@ -32,13 +32,10 @@ private:
 	Resource* CreateResource() override;
 	void DestroyResource(Resource* resource) override;
 	void ReloadResource(Resource* resource) override;
-	bool ResourceLoaded(Resource* resource, InputBlob& data) override;
+	void ResourceLoaded(resourceHandle handle, InputBlob& data) override;
 	void ChildResourceLoaded(resourceHandle childResource) override;
 
-	void FinalizeModel(Model* material);
-
-private:
-	MaterialManager* m_materialManager;
+	void FinalizeModel(Model* model);
 };
 
 

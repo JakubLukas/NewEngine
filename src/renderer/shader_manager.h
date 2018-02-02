@@ -47,11 +47,12 @@ struct Shader : public Resource
 class ShaderInternalManager final : public ResourceManager
 {
 public:
-	ShaderInternalManager(IAllocator& allocator, FileSystem& fileSystem);
+	ShaderInternalManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
 	~ShaderInternalManager() override;
 
 
 	shaderInternalHandle Load(const Path& path);
+
 	void Unload(shaderInternalHandle handle);
 	void Reload(shaderInternalHandle handle);
 
@@ -62,7 +63,7 @@ private:
 	Resource* CreateResource() override;
 	void DestroyResource(Resource* resource) override;
 	void ReloadResource(Resource* resource) override;
-	bool ResourceLoaded(Resource* resource, InputBlob& data) override;
+	void ResourceLoaded(resourceHandle handle, InputBlob& data) override;
 };
 
 
@@ -72,7 +73,7 @@ private:
 class ShaderManager final : public ResourceManager
 {
 public:
-	ShaderManager(IAllocator& allocator, FileSystem& fileSystem, ShaderInternalManager* shaderInternalManager);
+	ShaderManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
 	~ShaderManager() override;
 
 
@@ -87,13 +88,10 @@ private:
 	Resource* CreateResource() override;
 	void DestroyResource(Resource* resource) override;
 	void ReloadResource(Resource* resource) override;
-	bool ResourceLoaded(Resource* resource, InputBlob& data) override;
+	void ResourceLoaded(resourceHandle handle, InputBlob& data) override;
 	void ChildResourceLoaded(resourceHandle childResource) override;
 
 	void FinalizeShader(Shader* shader);
-
-private:
-	ShaderInternalManager* m_shaderInternalManager;
 };
 
 

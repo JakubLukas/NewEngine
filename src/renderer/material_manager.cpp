@@ -5,9 +5,8 @@ namespace Veng
 {
 
 
-MaterialManager::MaterialManager(IAllocator& allocator, FileSystem& fileSystem, ShaderManager* shaderManager)
-	: ResourceManager(allocator, fileSystem)
-	, m_shaderManager(shaderManager)
+MaterialManager::MaterialManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
+	: ResourceManager(allocator, fileSystem, depManager)
 {
 
 }
@@ -21,25 +20,25 @@ MaterialManager::~MaterialManager()
 
 materialHandle MaterialManager::Load(const Path& path)
 {
-	return static_cast<materialHandle>(LoadInternal(path));
+	return ResourceManager::Load<materialHandle>(path);
 }
 
 
 void MaterialManager::Unload(materialHandle handle)
 {
-	UnloadInternal(static_cast<resourceHandle>(handle));
+	ResourceManager::Unload(handle);
 }
 
 
 void MaterialManager::Reload(materialHandle handle)
 {
-	ReloadInternal(static_cast<resourceHandle>(handle));
+	ResourceManager::Reload(handle);
 }
 
 
 const Material* MaterialManager::GetResource(materialHandle handle) const
 {
-	return static_cast<Material*>(ResourceManager::GetResource(static_cast<resourceHandle>(handle)));
+	return ResourceManager::GetResource<Material>(handle);
 }
 
 
@@ -53,7 +52,7 @@ void MaterialManager::DestroyResource(Resource* resource)
 {
 	Material* material = static_cast<Material*>(resource);
 
-	m_shaderManager->Unload(material->shader);
+	m_depManager->UnloadResource(ResourceType::Shader, material->shader);
 
 	DELETE_OBJECT(m_allocator, material);
 }
@@ -65,16 +64,13 @@ void MaterialManager::ReloadResource(Resource* resource)
 }
 
 
-bool MaterialManager::ResourceLoaded(Resource* resource, InputBlob& data)
+void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
-	Material* material = static_cast<Material*>(resource);
+	Material* material = ResourceManager::GetResource<Material>(handle);
 
 	char shaderPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(data.ReadString(shaderPath, Path::MAX_LENGTH));
-	material->shader = m_shaderManager->Load(Path(shaderPath));
-	m_shaderManager->AddDependency(resource, static_cast<resourceHandle>(material->shader));
-
-	return true;
+	material->shader = m_depManager->LoadResource<shaderHandle>(ResourceType::Material, ResourceType::Shader, Path(shaderPath));
 }
 
 
@@ -96,6 +92,7 @@ void MaterialManager::ChildResourceLoaded(resourceHandle childResource)
 void MaterialManager::FinalizeMaterial(Material* material)
 {
 	material->SetState(Resource::State::Ready);
+	m_depManager->ResourceLoaded(ResourceType::Material, GetResourceHandle<resourceHandle>(material));
 }
 
 

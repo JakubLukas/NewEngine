@@ -200,7 +200,7 @@ private:
 				return i;
 		}
 
-		return (low == 0) ? low : low - 1;
+		return low;// (low == 0) ? low : low - 1;
 	}
 
 private:

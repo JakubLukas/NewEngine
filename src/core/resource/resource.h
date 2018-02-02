@@ -4,10 +4,34 @@
 #include "core/file/path.h"
 
 #include "core/file/file.h"///////////////////////////////////////////////////////////Resource depends on file system :-/
+#include "core/hash_map.h"///////////////////////////////////////////////////////////
 
 
 namespace Veng
 {
+
+
+enum class ResourceType
+{
+	ShaderInternal,
+	Shader,
+	Material,
+	Model
+};
+
+
+enum class resourceHandle : u64 {};
+const resourceHandle INVALID_HANDLE = static_cast<resourceHandle>(0);
+
+
+template<>
+struct HashCalculator<fileHandle>
+{
+	static u64 Get(const fileHandle& key)
+	{
+		return static_cast<u64>(key);
+	}
+};
 
 
 class Resource

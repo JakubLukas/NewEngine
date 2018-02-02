@@ -25,7 +25,7 @@ struct Material : public Resource
 class MaterialManager final : public ResourceManager
 {
 public:
-	MaterialManager(IAllocator& allocator, FileSystem& fileSystem, ShaderManager* shaderManager);
+	MaterialManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
 	~MaterialManager() override;
 
 
@@ -40,13 +40,10 @@ private:
 	Resource* CreateResource() override;
 	void DestroyResource(Resource* resource) override;
 	void ReloadResource(Resource* resource) override;
-	bool ResourceLoaded(Resource* resource, InputBlob& data) override;
+	void ResourceLoaded(resourceHandle handle, InputBlob& data) override;
 	void ChildResourceLoaded(resourceHandle childResource) override;
 
 	void FinalizeMaterial(Material* material);
-
-private:
-	ShaderManager* m_shaderManager;
 };
 
 

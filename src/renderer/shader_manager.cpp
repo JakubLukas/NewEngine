@@ -9,8 +9,8 @@ namespace Veng
 {
 
 
-ShaderInternalManager::ShaderInternalManager(IAllocator& allocator, FileSystem& fileSystem)
-	: ResourceManager(allocator, fileSystem)
+ShaderInternalManager::ShaderInternalManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
+	: ResourceManager(allocator, fileSystem, depManager)
 {}
 
 
@@ -21,25 +21,25 @@ ShaderInternalManager::~ShaderInternalManager()
 
 shaderInternalHandle ShaderInternalManager::Load(const Path& path)
 {
-	return static_cast<shaderInternalHandle>(LoadInternal(path));
+	return ResourceManager::Load<shaderInternalHandle>(path);
 }
 
 
 void ShaderInternalManager::Unload(shaderInternalHandle handle)
 {
-	UnloadInternal(static_cast<resourceHandle>(handle));
+	ResourceManager::Unload(handle);
 }
 
 
 void ShaderInternalManager::Reload(shaderInternalHandle handle)
 {
-	ReloadInternal(static_cast<resourceHandle>(handle));
+	ResourceManager::Reload(handle);
 }
 
 
 const ShaderInternal* ShaderInternalManager::GetResource(shaderInternalHandle handle) const
 {
-	return static_cast<const ShaderInternal*>(ResourceManager::GetResource(static_cast<resourceHandle>(handle)));
+	return ResourceManager::GetResource<ShaderInternal>(handle);
 }
 
 
@@ -64,9 +64,9 @@ void ShaderInternalManager::ReloadResource(Resource* resource)
 }
 
 
-bool ShaderInternalManager::ResourceLoaded(Resource* resource, InputBlob& data)
+void ShaderInternalManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
-	ShaderInternal* shaderInt = static_cast<ShaderInternal*>(resource);
+	ShaderInternal* shaderInt = ResourceManager::GetResource<ShaderInternal>(handle);
 
 	const bgfx::Memory* mem = bgfx::alloc((u32)data.GetSize() + 1);
 	memory::Copy(mem->data, data.GetData(), data.GetSize());
@@ -75,23 +75,22 @@ bool ShaderInternalManager::ResourceLoaded(Resource* resource, InputBlob& data)
 	shaderInt->handle = bgfx::createShader(mem);
 	if (bgfx::isValid(shaderInt->handle))
 	{
-		bgfx::setName(shaderInt->handle, resource->GetPath().path);
-		return true;
+		bgfx::setName(shaderInt->handle, shaderInt->GetPath().path);
+		shaderInt->SetState(Resource::State::Ready);
 	}
 	else
 	{
-		ASSERT(false);
-		return false;
+		ASSERT(false);/////failed load of resource
 	}
+	m_depManager->ResourceLoaded(ResourceType::ShaderInternal, handle);
 }
 
 
 //=============================================================================
 
 
-ShaderManager::ShaderManager(IAllocator& allocator, FileSystem& fileSystem, ShaderInternalManager* shaderIntManager)
-	: ResourceManager(allocator, fileSystem)
-	, m_shaderInternalManager(shaderIntManager)
+ShaderManager::ShaderManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
+	: ResourceManager(allocator, fileSystem, depManager)
 {
 
 }
@@ -104,25 +103,25 @@ ShaderManager::~ShaderManager()
 
 shaderHandle ShaderManager::Load(const Path& path)
 {
-	return static_cast<shaderHandle>(LoadInternal(path));
+	return ResourceManager::Load<shaderHandle>(path);
 }
 
 
 void ShaderManager::Unload(shaderHandle handle)
 {
-	UnloadInternal(static_cast<resourceHandle>(handle));
+	ResourceManager::Unload(handle);
 }
 
 
 void ShaderManager::Reload(shaderHandle handle)
 {
-	ReloadInternal(static_cast<resourceHandle>(handle));
+	ResourceManager::Reload(handle);
 }
 
 
 const Shader* ShaderManager::GetResource(shaderHandle handle) const
 {
-	return static_cast<Shader*>(ResourceManager::GetResource(static_cast<resourceHandle>(handle)));
+	return ResourceManager::GetResource<Shader>(handle);
 }
 
 
@@ -136,8 +135,8 @@ void ShaderManager::DestroyResource(Resource* resource)
 {
 	Shader* shader = static_cast<Shader*>(resource);
 	
-	m_shaderInternalManager->Unload(shader->vsHandle);
-	m_shaderInternalManager->Unload(shader->fsHandle);
+	m_depManager->UnloadResource(ResourceType::ShaderInternal, shader->vsHandle);
+	m_depManager->UnloadResource(ResourceType::ShaderInternal, shader->fsHandle);
 
 	bgfx::destroy(shader->program.handle);
 
@@ -150,21 +149,17 @@ void ShaderManager::ReloadResource(Resource* resource)
 }
 
 
-bool ShaderManager::ResourceLoaded(Resource* resource, InputBlob& data)
+void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
-	Shader* shader = static_cast<Shader*>(resource);
+	Shader* shader = ResourceManager::GetResource<Shader>(handle);
 
 	char vsPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(data.ReadLine(vsPath, Path::MAX_LENGTH));
-	shader->vsHandle = m_shaderInternalManager->Load(Path(vsPath));
-	m_shaderInternalManager->AddDependency(resource, static_cast<resourceHandle>(shader->vsHandle));
+	shader->vsHandle = m_depManager->LoadResource<shaderInternalHandle>(ResourceType::Shader, ResourceType::ShaderInternal, Path(vsPath));
 
 	char fsPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(data.ReadLine(fsPath, Path::MAX_LENGTH));
-	shader->fsHandle = m_shaderInternalManager->Load(Path(fsPath));
-	m_shaderInternalManager->AddDependency(resource, static_cast<resourceHandle>(shader->fsHandle));
-
-	return true;
+	shader->fsHandle = m_depManager->LoadResource<shaderInternalHandle>(ResourceType::Shader, ResourceType::ShaderInternal, Path(fsPath));
 }
 
 
@@ -195,8 +190,8 @@ void ShaderManager::ChildResourceLoaded(resourceHandle childResource)
 
 void ShaderManager::FinalizeShader(Shader* shader)
 {
-	const ShaderInternal* vs = m_shaderInternalManager->GetResource(shader->vsHandle);
-	const ShaderInternal* fs = m_shaderInternalManager->GetResource(shader->fsHandle);
+	const ShaderInternal* vs = m_depManager->GetResource<ShaderInternal>(ResourceType::ShaderInternal, shader->vsHandle);
+	const ShaderInternal* fs = m_depManager->GetResource<ShaderInternal>(ResourceType::ShaderInternal, shader->fsHandle);
 	shader->program.handle = bgfx::createProgram(vs->handle, fs->handle, false);
 
 	if (bgfx::isValid(shader->program.handle))
@@ -205,8 +200,9 @@ void ShaderManager::FinalizeShader(Shader* shader)
 	}
 	else
 	{
-		ASSERT(false);
+		ASSERT(false);/////failed to load resource
 	}
+	m_depManager->ResourceLoaded(ResourceType::Shader, GetResourceHandle<resourceHandle>(shader));
 }
 
 

@@ -1,115 +1,107 @@
 #pragma once
 
 #include "core/allocators.h"
+#include "resource.h"
 #include "resource_manager.h"
-#include "core/array.h"
-
-
-
-//#include "renderer/shader_manager.h"
-
+#include "core/associative_array.h"
 
 
 namespace Veng
 {
 
 
-/*struct Base
-{
-	template<class HandleType>
-	bool IsThisYours(HandleType handle) { return false; }
-};
-
-struct ShaderType : public Base
-{
-	template<class HandleType>
-	bool IsThisYours(HandleType handle) { return false; }
-
-	template<>
-	bool IsThisYours<shaderHandle>(shaderHandle handle) { return false; }
-};*/
-
-
-struct DependencyHandler
-{
-	DependencyHandler(IAllocator& allocator, ResourceManager* parentManager, ResourceManager* childManager)
-		: m_parentManager(parentManager), m_childManager(childManager), m_pairs(allocator)
-	{}
-
-
-	void RegisterResourceManager(ResourceManager* manager)
-	{
-
-	}
-
-
-	resourceHandle LoadDependency(resourceHandle parent, const Path& child)
-	{
-		//resourceHandle child = m_childManager->L
-		//m_pairs.Push(Pair{ parent, child });
-	}
-
-	void ChildResourceLoaded(resourceHandle child)
-	{
-		/*for(size_t i = 0; i < m_pairs.GetSize(); ++i)
-		{
-			if(m_pairs[i].child == child)
-			{
-				m_parentManager->ChildResourceLoaded(m_pairs[i].parent, m_pairs[i].child);
-				m_pairs.Erase(i);
-				i--;
-			}
-		}*/
-	}
-
-private:
-	struct Pair
-	{
-		resourceHandle parent;
-		resourceHandle child;
-	};
-
-private:
-	ResourceManager* m_parentManager;
-	ResourceManager* m_childManager;
-	Array<Pair> m_pairs;
-};
-
-
-struct DepResMng
-{
-
-	ResourceManager* manager;
-};
-
-
 class DependencyManager
 {
+private:
+	struct DependencyTmp
+	{
+		ResourceManager* parent;
+		ResourceType childType;
+		resourceHandle childHandle;
+	};
+
 public:
 	DependencyManager(IAllocator& allocator)
 		: m_allocator(allocator)
-		, m_dependencies(m_allocator)
+		, m_managers(m_allocator)
+		, m_dependenciesTmp(allocator)
 	{
-
 	}
 
 	~DependencyManager()
 	{
-
 	}
 
-	void AddDependency(ResourceManager* parent, ResourceManager* child)
+
+	bool RegisterManager(ResourceType type, ResourceManager* manager)
 	{
-		/*DependencyHandler* handler = NEW_OBJECT(m_allocator, DependencyHandler)(m_allocator, parent, child);
-		m_dependencies.Push(handler);
-		parent->SetDependencyHandler(handler);
-		child->SetDependencyHandlerParent(handler);*/
+		ResourceManager** registeredMng;
+		if (m_managers.Find(type, registeredMng))
+			return false;
+		
+		m_managers.Insert(type, manager);
+		return true;
+	}
+
+
+	bool UnregisterManager(ResourceType type)
+	{
+		return m_managers.Erase(type);
+	}
+
+
+	template<class HandleType>
+	HandleType LoadResource(ResourceType requestedType, ResourceType resourceType, const Path& path)
+	{
+		ResourceManager** manager;
+		if (m_managers.Find(resourceType, manager))
+		{
+			DependencyTmp& tmp = m_dependenciesTmp.Push();
+			ResourceManager** reqMng;
+			ASSERT(m_managers.Find(requestedType, reqMng));
+			tmp.parent = *reqMng;
+			tmp.childType = resourceType;
+			tmp.childHandle = (*manager)->LoadInternal(path);
+			return static_cast<HandleType>(tmp.childHandle);
+		}
+		else
+		{
+			ASSERT2(false, "Resource manager of given type isn't registered");
+			return static_cast<HandleType>(INVALID_HANDLE);
+		}
+	}
+
+	template<class HandleType>
+	void UnloadResource(ResourceType resourceType, HandleType handle)
+	{
+		ResourceManager** manager;
+		if (m_managers.Find(resourceType, manager))
+		{
+			(*manager)->Unload(handle);
+		}
+	}
+
+	void ResourceLoaded(ResourceType resourceType, resourceHandle handle);
+
+	template<class ResType, class HandleType>
+	const ResType* GetResource(ResourceType resourceType, HandleType handle)
+	{
+		ResourceManager** manager;
+		if (m_managers.Find(resourceType, manager))
+		{
+			return (*manager)->GetResource<ResType>(handle);
+		}
+		else
+		{
+			ASSERT2(false, "Resource manager of given type isn't registered");
+			return nullptr;
+		}
 	}
 
 private:
 	IAllocator& m_allocator;
-	Array<DependencyHandler*> m_dependencies;
-	//Array<ResourceManager*> m_managers;
+	AssociativeArray<ResourceType, ResourceManager*> m_managers;
+	Array<DependencyTmp> m_dependenciesTmp;
 };
 
 

@@ -16,9 +16,8 @@ struct PosColorVertex
 };
 
 
-ModelManager::ModelManager(IAllocator& allocator, FileSystem& fileSystem, MaterialManager* materialManager)
-	: ResourceManager(allocator, fileSystem)
-	, m_materialManager(materialManager)
+ModelManager::ModelManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
+	: ResourceManager(allocator, fileSystem, depManager)
 {
 
 }
@@ -32,25 +31,25 @@ ModelManager::~ModelManager()
 
 modelHandle ModelManager::Load(const Path& path)
 {
-	return static_cast<modelHandle>(LoadInternal(path));
+	return ResourceManager::Load<modelHandle>(path);
 }
 
 
 void ModelManager::Unload(modelHandle handle)
 {
-	UnloadInternal(static_cast<resourceHandle>(handle));
+	ResourceManager::Unload(handle);
 }
 
 
 void ModelManager::Reload(modelHandle handle)
 {
-	ReloadInternal(static_cast<resourceHandle>(handle));
+	ResourceManager::Reload(handle);
 }
 
 
 const Model* ModelManager::GetResource(modelHandle handle) const
 {
-	return static_cast<Model*>(ResourceManager::GetResource(static_cast<resourceHandle>(handle)));
+	return ResourceManager::GetResource<Model>(handle);
 }
 
 
@@ -66,8 +65,9 @@ void ModelManager::DestroyResource(Resource* resource)
 
 	for (Mesh& mesh : model->meshes)
 	{
-		mesh.Clear();
-		m_materialManager->Unload(mesh.material);
+		bgfx::destroy(mesh.vertexBufferHandle);
+		bgfx::destroy(mesh.indexBufferHandle);
+		m_depManager->UnloadResource(ResourceType::Material, mesh.material);
 	}
 
 	DELETE_OBJECT(m_allocator, model);
@@ -80,9 +80,9 @@ void ModelManager::ReloadResource(Resource* resource)
 }
 
 
-bool ModelManager::ResourceLoaded(Resource* resource, InputBlob& data)
+void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
-	Model* model = static_cast<Model*>(resource);
+	Model* model = ResourceManager::GetResource<Model>(handle);
 
 	Mesh mesh;
 
@@ -128,11 +128,9 @@ bool ModelManager::ResourceLoaded(Resource* resource, InputBlob& data)
 
 	char materialPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(data.ReadLine(materialPath, Path::MAX_LENGTH));
-	mesh.material = m_materialManager->Load(Path(materialPath));
+	mesh.material = m_depManager->LoadResource<materialHandle>(ResourceType::Model, ResourceType::Material, Path(materialPath));
 
 	model->meshes.Push(mesh);
-
-	return true;
 }
 
 
@@ -151,9 +149,10 @@ void ModelManager::ChildResourceLoaded(resourceHandle childResource)
 }
 
 
-void ModelManager::FinalizeModel(Model* material)
+void ModelManager::FinalizeModel(Model* model)
 {
-	material->SetState(Resource::State::Ready);
+	model->SetState(Resource::State::Ready);
+	m_depManager->ResourceLoaded(ResourceType::Model, GetResourceHandle<resourceHandle>(model));
 }
 
 

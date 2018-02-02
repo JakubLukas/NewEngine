@@ -5,6 +5,7 @@
 #include "core/associative_array.h"
 #include "core/logs.h"
 
+#include "core/resource/dependency_manager.h"
 #include "shader_manager.h"
 #include "material_manager.h"
 #include "model_manager.h"
@@ -230,6 +231,7 @@ public:
 	RenderSystemImpl(Engine& engine)
 		: m_engine(engine)
 		, m_allocator(engine.GetAllocator())
+		, m_dependencyManager(m_allocator)
 		, m_bgfxAllocator(m_allocator)
 		, m_models(m_allocator)
 	{
@@ -249,13 +251,15 @@ public:
 			, 0
 		);
 
-		m_shaderInternalManager = NEW_OBJECT(m_allocator, ShaderInternalManager)(m_allocator, *m_engine.GetFileSystem());
-		m_shaderManager = NEW_OBJECT(m_allocator, ShaderManager)(m_allocator, *m_engine.GetFileSystem(), m_shaderInternalManager);
-		m_shaderInternalManager->SetOwner(m_shaderManager);
-		m_materialManager = NEW_OBJECT(m_allocator, MaterialManager)(m_allocator, *m_engine.GetFileSystem(), m_shaderManager);
-		m_shaderManager->SetOwner(m_materialManager);
-		m_modelManager = NEW_OBJECT(m_allocator, ModelManager)(m_allocator, *m_engine.GetFileSystem(), m_materialManager);
-		m_materialManager->SetOwner(m_modelManager);
+		m_shaderInternalManager = NEW_OBJECT(m_allocator, ShaderInternalManager)(m_allocator, *m_engine.GetFileSystem(), &m_dependencyManager);
+		m_shaderManager = NEW_OBJECT(m_allocator, ShaderManager)(m_allocator, *m_engine.GetFileSystem(), &m_dependencyManager);
+		m_materialManager = NEW_OBJECT(m_allocator, MaterialManager)(m_allocator, *m_engine.GetFileSystem(), &m_dependencyManager);
+		m_modelManager = NEW_OBJECT(m_allocator, ModelManager)(m_allocator, *m_engine.GetFileSystem(), &m_dependencyManager);
+
+		m_dependencyManager.RegisterManager(ResourceType::ShaderInternal, m_shaderInternalManager);
+		m_dependencyManager.RegisterManager(ResourceType::Shader, m_shaderManager);
+		m_dependencyManager.RegisterManager(ResourceType::Material, m_materialManager);
+		m_dependencyManager.RegisterManager(ResourceType::Model, m_modelManager);
 	}
 
 
@@ -395,6 +399,7 @@ private:
 	HeapAllocator m_allocator;//must be first
 	Engine& m_engine;
 
+	DependencyManager m_dependencyManager;
 	ShaderInternalManager* m_shaderInternalManager;
 	ShaderManager* m_shaderManager;
 	MaterialManager* m_materialManager;
