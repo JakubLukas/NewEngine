@@ -57,7 +57,17 @@ constexpr u32 crc32_string(const u8* data)
 	return ~crc32_detail::crc32_impl_string(data, ~0);
 }
 
-//constexpr u32 crc32(const u8* data, size_t length);
+
+#undef A
+#undef B
+#undef C
+#undef D
+#undef E
+#undef F
+#undef G
+#undef H
+#undef I
+
 
 constexpr u32 Murmur3_32(const char* key, u32 seed);
 

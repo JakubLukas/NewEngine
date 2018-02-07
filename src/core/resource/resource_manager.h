@@ -14,6 +14,16 @@ namespace Veng
 {
 
 
+template<>
+struct HashCalculator<fileHandle>
+{
+	static u64 Get(const fileHandle& key)
+	{
+		return static_cast<u64>(key);
+	}
+};
+
+
 class ResourceManager
 {
 	friend class DependencyManager;

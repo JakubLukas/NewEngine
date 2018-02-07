@@ -45,6 +45,7 @@ public:
 		if(m_size == 0) return false;
 
 		unsigned idx = GetIndex(key);
+		//idx = (idx == 0) ? idx : idx - 1;
 		if (m_keys[idx] == key)
 		{
 			value = &m_values[idx];

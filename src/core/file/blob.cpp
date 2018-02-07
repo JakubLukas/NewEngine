@@ -12,7 +12,8 @@ bool IsWhiteSpace(const char& c)
 	return (c == '\t'
 		|| c == '\r'
 		|| c == '\n'
-		|| c == '\0');
+		|| c == '\0'
+		|| c == ' ');
 }
 
 

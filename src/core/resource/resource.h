@@ -24,16 +24,6 @@ enum class resourceHandle : u64 {};
 const resourceHandle INVALID_HANDLE = static_cast<resourceHandle>(0);
 
 
-template<>
-struct HashCalculator<fileHandle>
-{
-	static u64 Get(const fileHandle& key)
-	{
-		return static_cast<u64>(key);
-	}
-};
-
-
 class Resource
 {
 	friend class ResourceManager;

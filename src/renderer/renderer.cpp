@@ -346,7 +346,7 @@ public:
 								bgfx::setIndexBuffer(mesh.indexBufferHandle);
 
 								// Set render states.
-								bgfx::setState(0 | BGFX_STATE_DEFAULT | BGFX_STATE_PT_TRISTRIP);
+								bgfx::setState(BGFX_STATE_DEFAULT);
 
 								// Submit primitive for rendering to view 0.
 								const Shader* shader = m_shaderManager->GetResource(material->shader);

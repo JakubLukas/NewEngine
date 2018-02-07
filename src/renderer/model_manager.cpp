@@ -110,21 +110,22 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 
 	int indicesCount;
 	ASSERT(data.Read(indicesCount));
+	indicesCount *= 3;
 
 	u32 indicesBufferSize = indicesCount * sizeof(u16);
-	u16* triStrip = (u16*)m_allocator.Allocate(indicesBufferSize, ALIGN_OF(u16));
+	u16* indices = (u16*)m_allocator.Allocate(indicesBufferSize, ALIGN_OF(u16));
 	for(int i = 0; i < indicesCount; ++i)
 	{
 		int num;
 		ASSERT(data.Read(num));
-		triStrip[i] = (u16)num;
+		indices[i] = (u16)num;
 	}
 
 	mesh.vertexBufferHandle = bgfx::createVertexBuffer(bgfx::copy(vertices, verticesBufferSize), mesh.m_vertex_decl);
-	mesh.indexBufferHandle = bgfx::createIndexBuffer(bgfx::copy(triStrip, indicesBufferSize));
+	mesh.indexBufferHandle = bgfx::createIndexBuffer(bgfx::copy(indices, indicesBufferSize));
 
 	m_allocator.Deallocate(vertices);
-	m_allocator.Deallocate(triStrip);
+	m_allocator.Deallocate(indices);
 
 	char materialPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(data.ReadLine(materialPath, Path::MAX_LENGTH));
