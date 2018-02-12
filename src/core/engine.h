@@ -9,6 +9,7 @@ namespace Veng
 
 class FileSystem;
 class InputSystem;
+class ResourceManagement;
 
 typedef void* windowHandle;
 
@@ -38,6 +39,7 @@ public:
 
 	virtual FileSystem* GetFileSystem() const = 0;
 	virtual InputSystem* GetInputSystem() const = 0;
+	virtual ResourceManagement* GetResourceManager() const = 0;
 };
 
 

@@ -1,17 +1,20 @@
 #pragma once
 
 #include "core/allocators.h"
-#include "core/array.h"
 #include "core/hash_map.h"
 #include "core/file/file_system.h"
 #include "core/file/blob.h"
-#include "resource.h"
 
+
+#include "resource.h"
 #include "dependency_manager.h"
 
 
 namespace Veng
 {
+
+
+class DependencyManager;
 
 
 template<>
@@ -26,7 +29,7 @@ struct HashCalculator<fileHandle>
 
 class ResourceManager
 {
-	friend class DependencyManager;
+	friend class ResourceManagement;
 
 public:
 	ResourceManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
@@ -59,7 +62,7 @@ protected:
 
 
 private:
-	struct ResourceLoadingTemp
+	struct ResourceAsyncOp
 	{
 		void* buffer;
 		size_t bufferSize;
@@ -68,7 +71,7 @@ private:
 
 private:
 	FileSystem& m_fileSystem;
-	HashMap<fileHandle, ResourceLoadingTemp> m_loadingTemps;
+	HashMap<fileHandle, ResourceAsyncOp> m_asyncOps;
 };
 
 

@@ -2,6 +2,7 @@
 
 #include "file/file_system.h"
 #include "input/input_system.h"
+#include "resource/resource_manager_manager.h"
 #include "string.h"
 
 
@@ -18,12 +19,14 @@ public:
 	{
 		m_fileSystem = FileSystem::Create(m_allocator);
 		m_inputSystem = InputSystem::Create(m_allocator);
+		m_resourceManager = NEW_OBJECT(m_allocator, ResourceManagement)(m_allocator);
 	}
 
 	~EngineImpl()
 	{
 		InputSystem::Destroy(m_inputSystem, m_allocator);
 		FileSystem::Destroy(m_fileSystem, m_allocator);
+		DELETE_OBJECT(m_allocator, m_resourceManager);
 	}
 
 
@@ -86,11 +89,18 @@ public:
 		return m_inputSystem;
 	}
 
+
+	ResourceManagement* GetResourceManager() const override
+	{
+		return m_resourceManager;
+	}
+
 private:
 	PlatformData m_platformData;
 	IAllocator& m_allocator;
 	FileSystem* m_fileSystem;
 	InputSystem* m_inputSystem;
+	ResourceManagement* m_resourceManager;
 	Array<IPlugin*> m_plugins;
 };
 

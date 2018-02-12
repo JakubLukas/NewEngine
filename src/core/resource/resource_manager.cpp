@@ -8,7 +8,7 @@ namespace Veng
 ResourceManager::ResourceManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
 	: m_allocator(allocator)
 	, m_fileSystem(fileSystem)
-	, m_loadingTemps(m_allocator)
+	, m_asyncOps(m_allocator)
 	, m_resources(m_allocator)
 	, m_depManager(depManager)
 {
@@ -17,8 +17,8 @@ ResourceManager::ResourceManager(IAllocator& allocator, FileSystem& fileSystem, 
 
 ResourceManager::~ResourceManager()
 {
-	for (auto& tmp : m_loadingTemps)
-		ASSERT2(false, "Loading of file in process");
+	for (auto& tmp : m_asyncOps)
+		ASSERT2(false, "Async operation on file in process");
 	for (auto& node : m_resources)
 		ASSERT2(false, "Resource not released");
 }
@@ -100,7 +100,7 @@ void ResourceManager::LoadResource(const Path& path, Resource* resource)
 		FileMode::FlagNone
 	};
 
-	ResourceLoadingTemp tmp;
+	ResourceAsyncOp tmp;
 	ASSERT(m_fileSystem.OpenFile(resource->m_fileHandle, path, mode));
 	tmp.bufferSize = m_fileSystem.GetSize(resource->m_fileHandle);
 	tmp.buffer = m_allocator.Allocate(tmp.bufferSize, ALIGN_OF(char));
@@ -112,21 +112,21 @@ void ResourceManager::LoadResource(const Path& path, Resource* resource)
 	resource->m_path = path;
 	resource->m_state = Resource::State::Loading;
 
-	m_loadingTemps.Insert(resource->m_fileHandle, tmp);
+	m_asyncOps.Insert(resource->m_fileHandle, tmp);
 }
 
 
 void ResourceManager::FileSystemCallback(fileHandle handle)
 {
-	ResourceLoadingTemp* tmp;
-	if (m_loadingTemps.Find(handle, tmp))
+	ResourceAsyncOp* tmp;
+	if (m_asyncOps.Find(handle, tmp))
 	{
 		InputBlob blob(tmp->buffer, tmp->bufferSize);
 
 		ResourceLoaded(tmp->handle, blob);
 
 		m_allocator.Deallocate(tmp->buffer);
-		ASSERT(m_loadingTemps.Erase(handle));
+		ASSERT(m_asyncOps.Erase(handle));
 	}
 	else
 	{

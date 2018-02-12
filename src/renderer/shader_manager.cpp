@@ -177,11 +177,13 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 
 	char vsPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(data.ReadLine(vsPath, Path::MAX_LENGTH));
-	shader->vsHandle = static_cast<shaderInternalHandle>(m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, Path(vsPath)));
+	resourceHandle vsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, Path(vsPath));
+	shader->vsHandle = static_cast<shaderInternalHandle>(vsHandle);
 
 	char fsPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(data.ReadLine(fsPath, Path::MAX_LENGTH));
-	shader->fsHandle = static_cast<shaderInternalHandle>(m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, Path(fsPath)));
+	resourceHandle fsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, Path(fsPath));
+	shader->fsHandle = static_cast<shaderInternalHandle>(fsHandle);
 }
 
 
@@ -212,8 +214,10 @@ void ShaderManager::ChildResourceLoaded(resourceHandle childResource)
 
 void ShaderManager::FinalizeShader(Shader* shader)
 {
-	const ShaderInternal* vs = static_cast<const ShaderInternal*>(m_depManager->GetResource(ResourceType::ShaderInternal, static_cast<resourceHandle>(shader->vsHandle)));
-	const ShaderInternal* fs = static_cast<const ShaderInternal*>(m_depManager->GetResource(ResourceType::ShaderInternal, static_cast<resourceHandle>(shader->fsHandle)));
+	const Resource* vsRes = m_depManager->GetResource(ResourceType::ShaderInternal, static_cast<resourceHandle>(shader->vsHandle));
+	const Resource* fsRes = m_depManager->GetResource(ResourceType::ShaderInternal, static_cast<resourceHandle>(shader->fsHandle));
+	const ShaderInternal* vs = static_cast<const ShaderInternal*>(vsRes);
+	const ShaderInternal* fs = static_cast<const ShaderInternal*>(fsRes);
 	shader->program.handle = bgfx::createProgram(vs->handle, fs->handle, false);
 
 	if (bgfx::isValid(shader->program.handle))
