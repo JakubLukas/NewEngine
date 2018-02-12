@@ -24,7 +24,7 @@ ResourceManager::~ResourceManager()
 }
 
 
-resourceHandle ResourceManager::LoadInternal(const Path& path)
+resourceHandle ResourceManager::Load(const Path& path)
 {
 	Resource** item;
 	if (!m_resources.Find(path.hash, item))
@@ -36,13 +36,13 @@ resourceHandle ResourceManager::LoadInternal(const Path& path)
 
 	(*item)->m_refCount++;
 
-	return GetResourceHandle<resourceHandle>(*item);
+	return GetResourceHandle(*item);
 }
 
 
-void ResourceManager::UnloadInternal(resourceHandle handle)
+void ResourceManager::Unload(resourceHandle handle)
 {
-	Resource* resource = GetResourceInternal(handle);
+	Resource* resource = GetResource(handle);
 	u32 hash = resource->m_path.hash;
 	Resource** item;
 	if (m_resources.Find(hash, item))
@@ -62,9 +62,9 @@ void ResourceManager::UnloadInternal(resourceHandle handle)
 }
 
 
-void ResourceManager::ReloadInternal(resourceHandle handle)
+void ResourceManager::Reload(resourceHandle handle)
 {
-	Resource* resource = GetResourceInternal(handle);
+	Resource* resource = GetResource(handle);
 	u32 hash = resource->m_path.hash;
 	Resource** item;
 	if (m_resources.Find(hash, item))
@@ -79,9 +79,15 @@ void ResourceManager::ReloadInternal(resourceHandle handle)
 }
 
 
-Resource* ResourceManager::GetResourceInternal(resourceHandle handle) const
+Resource* ResourceManager::GetResource(resourceHandle handle) const
 {
 	return reinterpret_cast<Resource*>(handle);
+}
+
+
+resourceHandle ResourceManager::GetResourceHandle(Resource* resource) const
+{
+	return static_cast<resourceHandle>(reinterpret_cast<u64>(resource));
 }
 
 
@@ -98,7 +104,7 @@ void ResourceManager::LoadResource(const Path& path, Resource* resource)
 	ASSERT(m_fileSystem.OpenFile(resource->m_fileHandle, path, mode));
 	tmp.bufferSize = m_fileSystem.GetSize(resource->m_fileHandle);
 	tmp.buffer = m_allocator.Allocate(tmp.bufferSize, ALIGN_OF(char));
-	tmp.handle = GetResourceHandle<resourceHandle>(resource);
+	tmp.handle = GetResourceHandle(resource);
 	Function<void(fileHandle)> f;
 	f.Bind<ResourceManager, &ResourceManager::FileSystemCallback>(this);
 	ASSERT(m_fileSystem.Read(resource->m_fileHandle, tmp.buffer, tmp.bufferSize, f));

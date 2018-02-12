@@ -7,6 +7,17 @@ namespace Veng
 {
 
 
+inline static modelHandle GenericToModelHandle(resourceHandle handle)
+{
+	return static_cast<modelHandle>(handle);
+}
+
+inline static resourceHandle ModelToGenericHandle(modelHandle handle)
+{
+	return static_cast<resourceHandle>(handle);
+}
+
+
 struct PosColorVertex
 {
 	float m_x;
@@ -31,25 +42,25 @@ ModelManager::~ModelManager()
 
 modelHandle ModelManager::Load(const Path& path)
 {
-	return ResourceManager::Load<modelHandle>(path);
+	return GenericToModelHandle(ResourceManager::Load(path));
 }
 
 
 void ModelManager::Unload(modelHandle handle)
 {
-	ResourceManager::Unload(handle);
+	ResourceManager::Unload(ModelToGenericHandle(handle));
 }
 
 
 void ModelManager::Reload(modelHandle handle)
 {
-	ResourceManager::Reload(handle);
+	ResourceManager::Reload(ModelToGenericHandle(handle));
 }
 
 
 const Model* ModelManager::GetResource(modelHandle handle) const
 {
-	return ResourceManager::GetResource<Model>(handle);
+	return static_cast<const Model*>(ResourceManager::GetResource(ModelToGenericHandle(handle)));
 }
 
 
@@ -67,7 +78,7 @@ void ModelManager::DestroyResource(Resource* resource)
 	{
 		bgfx::destroy(mesh.vertexBufferHandle);
 		bgfx::destroy(mesh.indexBufferHandle);
-		m_depManager->UnloadResource(ResourceType::Material, mesh.material);
+		m_depManager->UnloadResource(ResourceType::Material, static_cast<resourceHandle>(mesh.material));
 	}
 
 	DELETE_OBJECT(m_allocator, model);
@@ -82,7 +93,7 @@ void ModelManager::ReloadResource(Resource* resource)
 
 void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
-	Model* model = ResourceManager::GetResource<Model>(handle);
+	Model* model = static_cast<Model*>(ResourceManager::GetResource(handle));
 
 	Mesh mesh;
 
@@ -129,7 +140,7 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 
 	char materialPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(data.ReadLine(materialPath, Path::MAX_LENGTH));
-	mesh.material = m_depManager->LoadResource<materialHandle>(ResourceType::Model, ResourceType::Material, Path(materialPath));
+	mesh.material = static_cast<materialHandle>(m_depManager->LoadResource(ResourceType::Model, ResourceType::Material, Path(materialPath)));
 
 	model->meshes.Push(mesh);
 }
@@ -153,7 +164,7 @@ void ModelManager::ChildResourceLoaded(resourceHandle childResource)
 void ModelManager::FinalizeModel(Model* model)
 {
 	model->SetState(Resource::State::Ready);
-	m_depManager->ResourceLoaded(ResourceType::Model, GetResourceHandle<resourceHandle>(model));
+	m_depManager->ResourceLoaded(ResourceType::Model, GetResourceHandle(model));
 }
 
 

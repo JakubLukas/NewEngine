@@ -33,37 +33,14 @@ public:
 	virtual ~ResourceManager();
 
 protected:
-	template<class HandleType>
-	HandleType Load(const Path& path)
-	{
-		return static_cast<HandleType>(LoadInternal(path));
-	}
+	resourceHandle Load(const Path& path);
+	void Unload(resourceHandle handle);
+	void Reload(resourceHandle handle);
 
-	template<class HandleType>
-	void Unload(HandleType handle)
-	{
-		UnloadInternal(static_cast<resourceHandle>(handle));
-	}
-
-	template<class HandleType>
-	void Reload(HandleType handle)
-	{
-		ReloadInternal(static_cast<resourceHandle>(handle));
-	}
+	inline Resource* GetResource(resourceHandle handle) const;
+	inline resourceHandle GetResourceHandle(Resource* resource) const;
 
 protected:
-	template<class ResType, class HandleType>
-	ResType* GetResource(HandleType handle) const
-	{
-		return static_cast<ResType*>(GetResourceInternal(static_cast<resourceHandle>(handle)));
-	}
-
-	template<class HandleType>
-	HandleType GetResourceHandle(Resource* resource) const
-	{
-		return static_cast<resourceHandle>(reinterpret_cast<u64>(resource));
-	}
-
 	virtual Resource* CreateResource() = 0;
 	virtual void DestroyResource(Resource* resource) = 0;
 	virtual void ReloadResource(Resource* resource) = 0;
@@ -72,12 +49,6 @@ protected:
 	virtual void ChildResourceLoaded(resourceHandle childResource) { }
 
 private:
-	resourceHandle LoadInternal(const Path& path);
-	void UnloadInternal(resourceHandle handle);
-	void ReloadInternal(resourceHandle handle);
-
-	Resource* GetResourceInternal(resourceHandle handle) const;
-
 	void LoadResource(const Path& path, Resource* resource);
 	void FileSystemCallback(fileHandle handle);
 

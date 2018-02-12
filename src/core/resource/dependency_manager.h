@@ -50,8 +50,7 @@ public:
 	}
 
 
-	template<class HandleType>
-	HandleType LoadResource(ResourceType requestedType, ResourceType resourceType, const Path& path)
+	resourceHandle LoadResource(ResourceType requestedType, ResourceType resourceType, const Path& path)
 	{
 		ResourceManager** manager;
 		if (m_managers.Find(resourceType, manager))
@@ -61,18 +60,17 @@ public:
 			ASSERT(m_managers.Find(requestedType, reqMng));
 			tmp.parent = *reqMng;
 			tmp.childType = resourceType;
-			tmp.childHandle = (*manager)->LoadInternal(path);
-			return static_cast<HandleType>(tmp.childHandle);
+			tmp.childHandle = (*manager)->Load(path);
+			return tmp.childHandle;
 		}
 		else
 		{
 			ASSERT2(false, "Resource manager of given type isn't registered");
-			return static_cast<HandleType>(INVALID_HANDLE);
+			return INVALID_HANDLE;
 		}
 	}
 
-	template<class HandleType>
-	void UnloadResource(ResourceType resourceType, HandleType handle)
+	void UnloadResource(ResourceType resourceType, resourceHandle handle)
 	{
 		ResourceManager** manager;
 		if (m_managers.Find(resourceType, manager))
@@ -83,13 +81,12 @@ public:
 
 	void ResourceLoaded(ResourceType resourceType, resourceHandle handle);
 
-	template<class ResType, class HandleType>
-	const ResType* GetResource(ResourceType resourceType, HandleType handle)
+	const Resource* GetResource(ResourceType resourceType, resourceHandle handle)
 	{
 		ResourceManager** manager;
 		if (m_managers.Find(resourceType, manager))
 		{
-			return (*manager)->GetResource<ResType>(handle);
+			return (*manager)->GetResource(handle);
 		}
 		else
 		{
