@@ -2,6 +2,7 @@
 
 #include "int.h"
 #include "memory.h"
+#include "asserts.h"
 
 
 namespace Veng
@@ -55,6 +56,35 @@ public:
 private:
 	IAllocator& m_source;
 	i32 m_allocCount;
+};
+
+
+template<int Size>
+class StackAllocator : public IAllocator
+{
+public:
+	~StackAllocator() override {}
+
+	void* Allocate(size_t size, size_t alignment) override
+	{
+		u8* ptr = (u8*)AlignPointer(m_ptr, alignment);
+		m_ptr = ptr + size;
+		return ptr;
+	}
+
+	void* Reallocate(void* ptr, size_t size, size_t alignment) override
+	{
+		ASSERT2(false, "Can't use reallocate");
+		return ptr;
+	}
+
+	void Deallocate(void* p) override { }
+
+	size_t AllocatedSize(void* p) override { return 0; }
+
+private:
+	u8 m_memory[Size];
+	u8* m_ptr = m_memory;
 };
 
 

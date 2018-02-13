@@ -1,5 +1,4 @@
 #include "allocators.h"
-#include "asserts.h"
 #include <cstdlib>
 
 
@@ -38,6 +37,7 @@ void* AlignPointer(void* ptr, size_t alignment)
 
 // ---------------- MAIN ALLOCATOR ----------------
 
+
 MainAllocator::MainAllocator()
 	: m_allocCount(0)
 {
@@ -73,6 +73,7 @@ size_t MainAllocator::AllocatedSize(void* p)
 
 
 // ---------------- HEAP ALLOCATOR ----------------
+
 
 HeapAllocator::HeapAllocator(IAllocator& allocator)
 	: m_source(allocator)

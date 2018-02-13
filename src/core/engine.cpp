@@ -19,14 +19,14 @@ public:
 	{
 		m_fileSystem = FileSystem::Create(m_allocator);
 		m_inputSystem = InputSystem::Create(m_allocator);
-		m_resourceManager = NEW_OBJECT(m_allocator, ResourceManagement)(m_allocator);
+		m_resourceManager = ResourceManagement::Create(m_allocator);
 	}
 
 	~EngineImpl()
 	{
+		ResourceManagement::Destroy(m_resourceManager, m_allocator);
 		InputSystem::Destroy(m_inputSystem, m_allocator);
 		FileSystem::Destroy(m_fileSystem, m_allocator);
-		DELETE_OBJECT(m_allocator, m_resourceManager);
 	}
 
 

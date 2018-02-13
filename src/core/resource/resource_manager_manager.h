@@ -18,31 +18,17 @@ public:
 	static void Destroy(ResourceManagement* system, IAllocator& allocator);
 
 public:
-	ResourceManagement(IAllocator& allocator);
-	~ResourceManagement();
+	virtual ~ResourceManagement() {}
 
 
-	bool RegisterManager(ResourceType type, ResourceManager* manager);
-	bool UnregisterManager(ResourceType type);
+	virtual bool RegisterManager(ResourceType type, ResourceManager* manager) = 0;
+	virtual bool UnregisterManager(ResourceType type) = 0;
 
 
-	resourceHandle LoadResource(ResourceType requestedType, ResourceType resourceType, const Path& path) override;
-	void UnloadResource(ResourceType resourceType, resourceHandle handle) override;
-	void ResourceLoaded(ResourceType resourceType, resourceHandle handle) override;
-	const Resource* GetResource(ResourceType resourceType, resourceHandle handle) override;
-
-private:
-	struct DependencyAsyncOp
-	{
-		ResourceManager* parent;
-		ResourceType childType;
-		resourceHandle childHandle;
-	};
-
-private:
-	IAllocator& m_allocator;
-	AssociativeArray<ResourceType, ResourceManager*> m_managers;
-	Array<DependencyAsyncOp> m_dependencyAsyncOps;
+	virtual resourceHandle LoadResource(ResourceType requestedType, ResourceType resourceType, const Path& path) override = 0;
+	virtual void UnloadResource(ResourceType resourceType, resourceHandle handle) override = 0;
+	virtual void ResourceLoaded(ResourceType resourceType, resourceHandle handle) override = 0;
+	virtual const Resource* GetResource(ResourceType resourceType, resourceHandle handle) override = 0;
 };
 
 

@@ -29,7 +29,7 @@ struct HashCalculator<fileHandle>
 
 class ResourceManager
 {
-	friend class ResourceManagement;
+	friend class ResourceManagementImpl;
 
 public:
 	ResourceManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
