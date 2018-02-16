@@ -2,7 +2,7 @@
 
 #include "file/file_system.h"
 #include "input/input_system.h"
-#include "resource/resource_manager_manager.h"
+#include "resource/resource_management.h"
 #include "string.h"
 
 

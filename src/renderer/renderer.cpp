@@ -4,8 +4,9 @@
 #include "core/engine.h"
 #include "core/associative_array.h"
 #include "core/logs.h"
+#include "core/file/path.h"
 
-#include "core/resource/resource_manager_manager.h"
+#include "core/resource/resource_management.h"
 #include "shader_manager.h"
 #include "material_manager.h"
 #include "model_manager.h"
@@ -15,6 +16,7 @@
 
 #include "core/math.h"
 #include "core/memory.h"
+
 namespace bx
 {
 
@@ -97,16 +99,6 @@ inline void mtxQuatTranslation(float* _result, const float* _quat, const float* 
 	_result[14] = -(_result[2] * _translation[0] + _result[6] * _translation[1] + _result[10] * _translation[2]);
 }
 
-inline void mtxQuatTranslationHMD(float* _result, const float* _quat, const float* _translation)
-{
-	float quat[4];
-	quat[0] = -_quat[0];
-	quat[1] = -_quat[1];
-	quat[2] = _quat[2];
-	quat[3] = _quat[3];
-	mtxQuatTranslation(_result, quat, _translation);
-}
-
 
 
 
@@ -185,10 +177,8 @@ struct BGFXAllocator : public bx::AllocatorI
 };
 
 
-struct BgfxCallback : public bgfx::CallbackI
+struct BGFXCallback : public bgfx::CallbackI
 {
-	BgfxCallback() {}
-	~BgfxCallback() {}
 	void fatal(bgfx::Fatal::Enum _code, const char* _str) override
 	{
 		switch (_code)
@@ -225,14 +215,85 @@ struct BgfxCallback : public bgfx::CallbackI
 
 
 
+class RenderSceneImpl : public RenderScene
+{
+public:
+	RenderSceneImpl(IAllocator& allocator, RenderSystem& renderSystem)
+		: m_allocator(allocator)
+		, m_renderSystem(renderSystem)
+		, m_models(m_allocator)
+	{
+
+	}
+
+	~RenderSceneImpl() override
+	{
+		for (auto& modelHandle : m_models)
+		{
+			m_renderSystem.GetModelManager().Unload(modelHandle);
+		}
+	}
+
+	void Update(float deltaTime) override
+	{
+
+	}
+
+	void AddModelComponent(Entity entity, worldId world, const Path& path) override
+	{
+		modelHandle h = m_renderSystem.GetModelManager().Load(path);
+		m_models.Insert(entity, h);
+	}
+
+	void RemoveModelComponent(Entity entity, worldId world) override
+	{
+		m_models.Erase(entity);
+	}
+
+	bool HasModelComponent(Entity entity, worldId world) const override
+	{
+		modelHandle* model;
+		return m_models.Find(entity, model);
+	}
+
+	size_t GetModelsCount() const override
+	{
+		return m_models.GetSize();
+	}
+
+	modelHandle* GetModels() const override
+	{
+		return m_models.getValues();
+	}
+
+private:
+	IAllocator& m_allocator;
+	RenderSystem& m_renderSystem;
+	AssociativeArray<Entity, modelHandle> m_models;
+};
+
+
+RenderScene* createInstance(IAllocator& allocator, RenderSystem& renderSystem)
+{
+	return NEW_OBJECT(allocator, RenderSceneImpl)(allocator, renderSystem);
+}
+
+void destroyInstance(IAllocator& allocator, RenderScene* scene)
+{
+	DELETE_OBJECT(allocator, scene);
+}
+
+
+//----------------------------------------------------------------------------------
+
+
 class RenderSystemImpl : public RenderSystem
 {
 public:
 	RenderSystemImpl(Engine& engine)
-		: m_engine(engine)
-		, m_allocator(engine.GetAllocator())
+		: m_allocator(engine.GetAllocator())
+		, m_engine(engine)
 		, m_bgfxAllocator(m_allocator)
-		, m_models(m_allocator)
 	{
 		///////////////
 		bgfx::PlatformData d { 0 };
@@ -241,7 +302,7 @@ public:
 
 		bgfx::init(bgfx::RendererType::Count, BGFX_PCI_ID_NONE, 0, &m_bgfxCallback, &m_bgfxAllocator);
 
-		bgfx::setDebug(BGFX_DEBUG_NONE);
+		bgfx::setDebug(BGFX_DEBUG_NONE);//TODO
 
 		bgfx::setViewClear(0
 			, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
@@ -266,10 +327,7 @@ public:
 
 	~RenderSystemImpl() override
 	{
-		for(auto& modelHandle : m_models)
-		{
-			m_modelManager->Unload(modelHandle);
-		}
+		DELETE_OBJECT(m_allocator, m_scene);
 
 		DELETE_OBJECT(m_allocator, m_modelManager);
 		DELETE_OBJECT(m_allocator, m_materialManager);
@@ -281,6 +339,12 @@ public:
 	}
 
 
+	void Init() override
+	{
+		m_scene = NEW_OBJECT(m_allocator, RenderSceneImpl)(m_allocator, *this);
+	}
+
+
 	void Update(float deltaTime) override
 	{
 		static float time = 0;
@@ -288,31 +352,15 @@ public:
 		float at[3] =  { 0.0f, 0.0f,   0.0f };
 		float eye[3] = { 0.0f, 0.0f, -35.0f };
 
-		const bgfx::HMD* hmd = bgfx::getHMD();
-		if (NULL != hmd && 0 != (hmd->flags & BGFX_HMD_RENDERING))
-		{
-			float view[16];
-			bx::mtxQuatTranslationHMD(view, hmd->eye[0].rotation, eye);
-			bgfx::setViewTransform(0, view, hmd->eye[0].projection, BGFX_VIEW_STEREO, hmd->eye[1].projection);
+		float view[16];
+		bx::mtxLookAt(view, eye, at);
 
-			// Set view 0 default viewport.
-			//
-			// Use HMD's width/height since HMD's internal frame buffer size
-			// might be much larger than window size.
-			bgfx::setViewRect(0, 0, 0, hmd->width, hmd->height);
-		}
-		else
-		{
-			float view[16];
-			bx::mtxLookAt(view, eye, at);
+		float proj[16];
+		bx::mtxProj(proj, 60.0f, float(m_width) / float(m_height), 0.1f, 100.0f, bgfx::getCaps()->homogeneousDepth);
+		bgfx::setViewTransform(0, view, proj);
 
-			float proj[16];
-			bx::mtxProj(proj, 60.0f, float(m_width) / float(m_height), 0.1f, 100.0f, bgfx::getCaps()->homogeneousDepth);
-			bgfx::setViewTransform(0, view, proj);
-
-			// Set view 0 default viewport.
-			bgfx::setViewRect(0, 0, 0, uint16_t(m_width), uint16_t(m_height));
-		}
+		// Set view 0 default viewport.
+		bgfx::setViewRect(0, 0, 0, uint16_t(m_width), uint16_t(m_height));
 
 		bgfx::touch(0);//dummy draw call (clear view 0)
 
@@ -333,9 +381,10 @@ public:
 
 				// Set vertex and index buffer.
 				// DUMMY test
-				for(auto& modelHandle : m_models)
+				modelHandle* handles = m_scene->GetModels();
+				for(size_t i = 0; i < m_scene->GetModelsCount(); ++i)
 				{
-					const Model* model = m_modelManager->GetResource(modelHandle);
+					const Model* model = m_modelManager->GetResource(handles[i]);
 					if(model->GetState() == Resource::State::Ready)
 					{
 						for(const Mesh& mesh : model->meshes)
@@ -368,6 +417,17 @@ public:
 	const char* GetName() const override { return "renderer"; }
 
 
+	IScene* GetScene() const override
+	{
+		return m_scene;
+	}
+
+
+	MaterialManager& GetMaterialManager() const override { return *m_materialManager; }
+	ShaderManager& GetShaderManager() const override { return *m_shaderManager; }
+	ModelManager& GetModelManager() const override { return *m_modelManager; }
+
+
 	void Resize(u32 width, u32 height) override
 	{
 		m_width = width;
@@ -376,43 +436,23 @@ public:
 	}
 
 
-	void AddModelComponent(Entity entity, worldId world, const Path& path) override
-	{
-		modelHandle h = m_modelManager->Load(path);
-		m_models.Insert(entity, h);
-	}
-
-	void RemoveModelComponent(Entity entity, worldId world) override
-	{
-		m_models.Erase(entity);
-	}
-
-	bool HasModelComponent(Entity entity, worldId world) override
-	{
-		modelHandle* model;
-		return m_models.Find(entity, model);
-	}
-
-
 	Engine& GetEngine() const override { return m_engine; }
 
 private:
 	HeapAllocator m_allocator;//must be first
 	Engine& m_engine;
+	RenderSceneImpl* m_scene;
 
 	ShaderInternalManager* m_shaderInternalManager;
 	ShaderManager* m_shaderManager;
 	MaterialManager* m_materialManager;
 	ModelManager* m_modelManager;
 
-
-	AssociativeArray<Entity, modelHandle> m_models;
-
 	/////////////////////
 	u32 m_width = 0;
 	u32 m_height = 0;
 	BGFXAllocator m_bgfxAllocator;
-	BgfxCallback m_bgfxCallback;
+	BGFXCallback m_bgfxCallback;
 	u32 m_bgfxResetFlags = BGFX_RESET_NONE;
 	/////////////////////
 };

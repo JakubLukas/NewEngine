@@ -49,13 +49,14 @@ public:
 
 		RegisterRawInput();
 
-		m_tmpPlugRender->AddModelComponent(Entity(0), 0, "models/cubes.model");
+		static_cast<RenderScene*>(m_tmpPlugRender->GetScene())->AddModelComponent(Entity(0), 0, "models/cubes.model");
 	}
 
 	void InitPlugins()
 	{
 		ASSERT(m_engine != nullptr);
 		m_tmpPlugRender = RenderSystem::Create(*m_engine);
+		m_tmpPlugRender->Init();
 		RECT rect;
 		if (GetClientRect(m_hwnd, &rect))
 		{
@@ -68,6 +69,7 @@ public:
 
 	void Deinit()
 	{
+		//TODO: shut down engine gracefully
 		RenderSystem::Destroy(m_tmpPlugRender);
 		Engine::Destroy(m_engine, m_allocator);
 	}

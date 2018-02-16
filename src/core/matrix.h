@@ -9,6 +9,8 @@ namespace Veng
 
 struct Matrix44
 {
+	static const Matrix44 IDENTITY;
+
 	Matrix44();
 	Matrix44(
 		float r11, float r12, float r13, float r14,
@@ -23,6 +25,9 @@ struct Matrix44
 	static Vector4 Multiply(const Matrix44& mat, const Vector4& vec);
 
 	static Vector4 Multiply(const Vector4& vec, const Matrix44& mat);
+
+	//(float* _result, float _fovy, float _aspect, float _near, float _far, bool _oglNdc)
+	void SetPerspective(float fovY, float ratio, float near, float far, bool homogenDepth);
 
 
 	float m11, m12, m13, m14;

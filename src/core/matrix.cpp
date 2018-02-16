@@ -1,8 +1,13 @@
 #include "matrix.h"
 
+#include <cmath>
+
 
 namespace Veng
 {
+
+
+const Matrix44 Matrix44::IDENTITY(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 
 
 Matrix44::Matrix44()
@@ -75,6 +80,20 @@ Vector4 Matrix44::Multiply(const Vector4& vec, const Matrix44& mat)
 		vec.x * mat.m13 + vec.y * mat.m23 + vec.z * mat.m33 + vec.w * mat.m43,
 		vec.x * mat.m14 + vec.y * mat.m24 + vec.z * mat.m34 + vec.w * mat.m44
 	);
+}
+
+
+void Matrix44::SetPerspective(float fovY, float ratio, float near, float far, bool homogenDepth)
+{
+	*this = Matrix44::IDENTITY;
+	float f = 1.0f / tanf(fovY * 0.5f);
+	float zDiffInv = 1.0f / (near - far);
+	m11 = f / ratio;
+	m22 = f;
+	m33 = ((homogenDepth) ? (far + near) : (far)) * zDiffInv;
+	m44 = 0;
+	m43 = (homogenDepth) ? (2.0f * far * near * zDiffInv) : (near * far * zDiffInv);
+	m34 = -1.0f;
 }
 
 

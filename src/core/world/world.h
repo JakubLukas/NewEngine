@@ -4,15 +4,15 @@
 #include "core/array.h"
 #include "core/int.h"
 
+#include "core/entity.h"
+
 
 namespace Veng
 {
 
 
-enum class Entity : u32;
-class Scene;
-
 typedef u32 worldId;
+
 
 class World
 {

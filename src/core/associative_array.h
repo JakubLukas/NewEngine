@@ -19,7 +19,7 @@ public:
 
 	~AssociativeArray()
 	{
-		for (unsigned i = 0; i < m_size; ++i)
+		for (size_t i = 0; i < m_size; ++i)
 		{
 			DELETE_PLACEMENT(m_keys + i);
 			DELETE_PLACEMENT(m_values + i);
@@ -31,7 +31,7 @@ public:
 
 	void Clear()
 	{
-		for(unsigned i = 0; i < m_size; ++i)
+		for(size_t i = 0; i < m_size; ++i)
 		{
 			DELETE_PLACEMENT(m_keys + i);
 			DELETE_PLACEMENT(m_values + i);
@@ -40,11 +40,11 @@ public:
 	}
 
 
-	bool Find(const KeyType& key, ValueType*& value)
+	bool Find(const KeyType& key, ValueType*& value) const
 	{
 		if(m_size == 0) return false;
 
-		unsigned idx = GetIndex(key);
+		size_t idx = GetIndex(key);
 		//idx = (idx == 0) ? idx : idx - 1;
 		if (m_keys[idx] == key)
 		{
@@ -65,12 +65,12 @@ public:
 
 	ValueType* Insert(const KeyType& key, const ValueType& value)
 	{
-		unsigned idx = GetIndex(key);
+		size_t idx = GetIndex(key);
 		if (m_size == 0 || m_keys[idx] != key)
 		{
 			if (m_size == m_capacity) Enlarge();
 
-			for(unsigned i = m_size; i > idx; --i)
+			for(size_t i = m_size; i > idx; --i)
 			{
 				auto& t = m_keys[i - 1];
 				NEW_PLACEMENT(m_keys + i, KeyType)(t);
@@ -92,13 +92,13 @@ public:
 	{
 		if(m_size == 0) return false;
 
-		unsigned idx = GetIndex(key);
+		size_t idx = GetIndex(key);
 		if(m_keys[idx] == key)
 		{
 			DELETE_PLACEMENT(m_keys + idx);
 			DELETE_PLACEMENT(m_values + idx);
 
-			for(unsigned i = idx; i < m_size - 1; ++i)
+			for(size_t i = idx; i < m_size - 1; ++i)
 			{
 				NEW_PLACEMENT(m_keys + i, KeyType)(m_keys[i + 1]);
 				DELETE_PLACEMENT(m_keys + i + 1);
@@ -143,7 +143,7 @@ public:
 	}
 
 
-	void Reserve(unsigned capacity)
+	void Reserve(size_t capacity)
 	{
 		if(capacity <= m_capacity) return;
 
@@ -154,7 +154,7 @@ public:
 
 
 		
-		for(unsigned i = 0; i < m_size; ++i)
+		for(size_t i = 0; i < m_size; ++i)
 		{
 			NEW_PLACEMENT(newKeys + i, KeyType)(m_keys[i]);
 			DELETE_PLACEMENT(m_keys + i);
@@ -169,23 +169,26 @@ public:
 	}
 
 
-	unsigned GetSize() const { return m_size; }
+	size_t GetSize() const { return m_size; }
 
-	unsigned GetCapacity() const { return m_capacity; }
+	size_t GetCapacity() const { return m_capacity; }
+
+	KeyType* GetKeys() const { return m_keys; }
+	ValueType* getValues() const { return m_values; }
 
 private:
 	void Enlarge()
 	{
-		unsigned newCapacity = (m_capacity == 0) ? 4 : m_capacity * 2;
+		size_t newCapacity = (m_capacity == 0) ? 4 : m_capacity * 2;
 		Reserve(newCapacity);
 	}
 
-	unsigned GetIndex(const KeyType& key)
+	size_t GetIndex(const KeyType& key) const
 	{
 		//binary search: O(log n)
-		int low = 0;
-		int high = m_size;
-		int i;
+		size_t low = 0;
+		size_t high = m_size;
+		size_t i;
 		const KeyType* mkey;
 
 		while (low < high)
@@ -206,8 +209,8 @@ private:
 
 private:
 	IAllocator& m_allocator;
-	unsigned m_capacity = 0;
-	unsigned m_size = 0;
+	size_t m_capacity = 0;
+	size_t m_size = 0;
 	KeyType* m_keys = nullptr;
 	ValueType* m_values = nullptr;
 };
