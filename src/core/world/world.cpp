@@ -11,6 +11,7 @@ World::World(IAllocator& allocator, u32 id)
 	: m_allocator(allocator)
 	, m_entities(m_allocator)
 	, m_id(id)
+	, m_entitiesTransform(m_allocator)
 {
 
 }
