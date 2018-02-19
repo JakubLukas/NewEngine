@@ -22,9 +22,6 @@ enum class modelHandle : u64;
 class RenderScene : public IScene
 {
 public:
-	static RenderScene* createInstance(IAllocator& allocator, RenderSystem& renderSystem);
-	static void destroyInstance(IAllocator& allocator, RenderScene* scene);
-
 	virtual ~RenderScene() override {}
 
 	virtual void Update(float deltaTime) override = 0;

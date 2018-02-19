@@ -39,7 +39,7 @@ public:
 
 	virtual FileSystem* GetFileSystem() const = 0;
 	virtual InputSystem* GetInputSystem() const = 0;
-	virtual ResourceManagement* GetResourceManager() const = 0;
+	virtual ResourceManagement* GetResourceManagement() const = 0;
 };
 
 

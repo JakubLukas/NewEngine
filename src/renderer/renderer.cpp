@@ -273,17 +273,6 @@ private:
 };
 
 
-RenderScene* createInstance(IAllocator& allocator, RenderSystem& renderSystem)
-{
-	return NEW_OBJECT(allocator, RenderSceneImpl)(allocator, renderSystem);
-}
-
-void destroyInstance(IAllocator& allocator, RenderScene* scene)
-{
-	DELETE_OBJECT(allocator, scene);
-}
-
-
 //----------------------------------------------------------------------------------
 
 
@@ -311,17 +300,17 @@ public:
 			, 0
 		);
 
-		ResourceManagement* resourceManager = m_engine.GetResourceManager();
+		ResourceManagement* resourceManagement = m_engine.GetResourceManagement();
 
-		m_shaderInternalManager = NEW_OBJECT(m_allocator, ShaderInternalManager)(m_allocator, *m_engine.GetFileSystem(), resourceManager);
-		m_shaderManager = NEW_OBJECT(m_allocator, ShaderManager)(m_allocator, *m_engine.GetFileSystem(), resourceManager);
-		m_materialManager = NEW_OBJECT(m_allocator, MaterialManager)(m_allocator, *m_engine.GetFileSystem(), resourceManager);
-		m_modelManager = NEW_OBJECT(m_allocator, ModelManager)(m_allocator, *m_engine.GetFileSystem(), resourceManager);
+		m_shaderInternalManager = NEW_OBJECT(m_allocator, ShaderInternalManager)(m_allocator, *m_engine.GetFileSystem(), resourceManagement);
+		m_shaderManager = NEW_OBJECT(m_allocator, ShaderManager)(m_allocator, *m_engine.GetFileSystem(), resourceManagement);
+		m_materialManager = NEW_OBJECT(m_allocator, MaterialManager)(m_allocator, *m_engine.GetFileSystem(), resourceManagement);
+		m_modelManager = NEW_OBJECT(m_allocator, ModelManager)(m_allocator, *m_engine.GetFileSystem(), resourceManagement);
 
-		resourceManager->RegisterManager(ResourceType::ShaderInternal, m_shaderInternalManager);
-		resourceManager->RegisterManager(ResourceType::Shader, m_shaderManager);
-		resourceManager->RegisterManager(ResourceType::Material, m_materialManager);
-		resourceManager->RegisterManager(ResourceType::Model, m_modelManager);
+		resourceManagement->RegisterManager(ResourceType::ShaderInternal, m_shaderInternalManager);
+		resourceManagement->RegisterManager(ResourceType::Shader, m_shaderManager);
+		resourceManagement->RegisterManager(ResourceType::Material, m_materialManager);
+		resourceManagement->RegisterManager(ResourceType::Model, m_modelManager);
 	}
 
 

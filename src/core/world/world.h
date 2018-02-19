@@ -5,6 +5,7 @@
 #include "core/int.h"
 
 #include "core/entity.h"
+#include "core/matrix.h"
 
 
 namespace Veng
@@ -31,7 +32,7 @@ private:
 	unsigned m_currentEntityId = 0;
 	unsigned m_aliveEntitiesCount = 0;
 	Array<Entity> m_entities;
-	//Array<Transform> m_entitiesTransform;
+	Array<Transform> m_entitiesTransform;//TODO separate
 };
 
 

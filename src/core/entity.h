@@ -4,7 +4,7 @@
 namespace Veng
 {
 
-enum class Entity : u32 {};
+enum class Entity : u64 {};
 
 
 }

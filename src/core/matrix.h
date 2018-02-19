@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vector.h"
+#include "quaternion.h"
 
 
 namespace Veng
@@ -34,6 +35,19 @@ struct Matrix44
 	float m21, m22, m23, m24;
 	float m31, m32, m33, m34;
 	float m41, m42, m43, m44;
+};
+
+
+struct Transform
+{
+	Transform() {}
+	Transform(const Quaternion& rot, const Vector3& pos)
+	: rotation(rot), position(pos) {}
+	Transform(const Transform& other)
+		: rotation(other.rotation), position(other.position){}
+
+	Quaternion rotation;
+	Vector3 position;
 };
 
 

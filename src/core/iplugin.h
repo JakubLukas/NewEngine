@@ -5,6 +5,9 @@ namespace Veng
 {
 
 
+enum class componentHandle : u64 {};
+
+
 class IScene
 {
 public:

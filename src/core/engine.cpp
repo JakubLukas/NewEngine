@@ -90,7 +90,7 @@ public:
 	}
 
 
-	ResourceManagement* GetResourceManager() const override
+	ResourceManagement* GetResourceManagement() const override
 	{
 		return m_resourceManager;
 	}
