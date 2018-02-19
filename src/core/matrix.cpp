@@ -97,4 +97,73 @@ void Matrix44::SetPerspective(float fovY, float ratio, float near, float far, bo
 }
 
 
+void Matrix44::SetRotateX(float angle)
+{
+	*this = IDENTITY;
+
+	m22 = cosf(angle);
+	m23 = -sinf(angle);
+	m32 = sinf(angle);
+	m33 = cosf(angle);
+}
+
+void Matrix44::SetRotateY(float angle)
+{
+	*this = IDENTITY;
+
+	m11 = cosf(angle);
+	m13 = sinf(angle);
+	m31 = -sinf(angle);
+	m33 = cosf(angle);
+}
+
+void Matrix44::SetRotateZ(float angle)
+{
+	*this = IDENTITY;
+
+	m11 = cosf(angle);
+	m12 = -sinf(angle);
+	m21 = sinf(angle);
+	m22 = cosf(angle);
+}
+
+
+void Matrix44::RotateX(float angle)
+{
+	Matrix44 rot;
+	rot.SetRotateX(angle);
+	*this = *this * rot;
+}
+
+void Matrix44::RotateY(float angle)
+{
+	Matrix44 rot;
+	rot.SetRotateY(angle);
+	*this = *this * rot;
+}
+
+void Matrix44::RotateZ(float angle)
+{
+	Matrix44 rot;
+	rot.SetRotateZ(angle);
+	*this = *this * rot;
+}
+
+
+Matrix44 operator*(const Matrix44& mat1, const Matrix44& mat2)
+{
+	return Matrix44::Multiply(mat1, mat2);
+}
+
+Vector4 operator*(const Matrix44& mat, const Vector4& vec)
+{
+	return Matrix44::Multiply(mat, vec);
+}
+
+Vector4 operator*(const Vector4& vec, const Matrix44& mat)
+{
+	return Matrix44::Multiply(vec, mat);
+}
+
+
 }

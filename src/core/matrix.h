@@ -6,6 +6,7 @@
 namespace Veng
 {
 
+//right hand coordinate system (z from display (DirectX style))
 
 struct Matrix44
 {
@@ -20,14 +21,24 @@ struct Matrix44
 	);
 
 
+	//lines * columns
 	static Matrix44 Multiply(const Matrix44& mat1, const Matrix44& mat2);
 
+	//lines * vector
 	static Vector4 Multiply(const Matrix44& mat, const Vector4& vec);
 
+	// vector * columns
 	static Vector4 Multiply(const Vector4& vec, const Matrix44& mat);
 
-	//(float* _result, float _fovy, float _aspect, float _near, float _far, bool _oglNdc)
 	void SetPerspective(float fovY, float ratio, float near, float far, bool homogenDepth);
+
+	void SetRotateX(float angle);
+	void SetRotateY(float angle);
+	void SetRotateZ(float angle);
+
+	void RotateX(float angle);
+	void RotateY(float angle);
+	void RotateZ(float angle);
 
 
 	float m11, m12, m13, m14;
@@ -35,6 +46,11 @@ struct Matrix44
 	float m31, m32, m33, m34;
 	float m41, m42, m43, m44;
 };
+
+
+Matrix44 operator*(const Matrix44& mat1, const Matrix44& mat2);
+Vector4 operator*(const Matrix44& mat, const Vector4& vec);
+Vector4 operator*(const Vector4& vec, const Matrix44& mat);
 
 
 }
