@@ -1,6 +1,7 @@
 #include "vector.h"
 
 #include "math.h"
+#include "asserts.h"
 
 
 namespace Veng
@@ -127,6 +128,61 @@ Vector4& Vector4::operator=(const Vector4& vec)
 	z = vec.z;
 	w = vec.w;
 	return *this;
+}
+
+
+Vector4 Vector4::operator+(const Vector4& other) const
+{
+	return Vector4(
+		x + other.x,
+		y + other.y,
+		z + other.z,
+		w + other.w
+	);
+}
+
+Vector4 Vector4::operator-(const Vector4& other) const
+{
+	return Vector4(
+		x - other.x,
+		y - other.y,
+		z - other.z,
+		w - other.w
+	);
+}
+
+
+float Vector4::Length() const
+{
+	return sqrtf(Dot(*this, *this));
+}
+
+
+void Vector4::Normalize()
+{
+	float invLength = 1.0f / Length();
+	x *= invLength;
+	y *= invLength;
+	z *= invLength;
+}
+
+
+Vector3 Vector4::GetXYZ() const
+{
+	return Vector3(x, y, z);
+}
+
+Vector3 Vector4::GetVector3() const
+{
+	ASSERT(-0.0001f < w && w < 0.0001f);
+	float wInv = 1.0f / w;
+	return Vector3(x * wInv, y * wInv, z * wInv);
+}
+
+
+float Vector4::Dot(const Vector4& vec1, const Vector4& vec2)
+{
+	return vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z + vec1.w * vec2.w;
 }
 
 

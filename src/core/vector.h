@@ -38,6 +38,17 @@ struct Vector4
 
 	Vector4& operator=(const Vector4& vec);
 
+	Vector4 operator+(const Vector4& other) const;
+	Vector4 operator-(const Vector4& other) const;
+
+	float Length() const;
+	void Normalize();
+
+	Vector3 GetXYZ() const;
+	Vector3 GetVector3() const;
+
+	static float Dot(const Vector4& vec1, const Vector4& vec2);
+
 
 	float x;
 	float y;

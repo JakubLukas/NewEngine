@@ -5,7 +5,7 @@ namespace Veng
 {
 
 
-const float PI = 3.1415926535897932384626433832795f;
+constexpr float PI = 3.1415926535897932384626433832795f;
 
 
 float sinf(float num);
@@ -20,14 +20,24 @@ float atanf(float num);
 float pow(float num, float exp);
 float sqrtf(float num);
 
-inline float toRad(float deg)
+constexpr float toRad(float deg)
 {
 	return deg * PI / 180.0f;
 }
 
-inline float toDeg(float rad)
+constexpr float toDeg(float rad)
 {
 	return rad * 180.0f / PI;
+}
+
+constexpr float operator "" _rad(long double rad)
+{
+	return (float)rad;
+}
+
+constexpr float operator "" _deg(long double deg)
+{
+	return (float)(deg * PI / 180);
 }
 
 

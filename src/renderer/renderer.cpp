@@ -36,81 +36,6 @@ struct AllocatorI
 };
 
 
-
-void mtxRotateXY(float* _result, float _ax, float _ay);
-struct Handness
-{
-	enum Enum
-	{
-		Left,
-		Right,
-	};
-};
-void mtxProj(float* _result, float _fovy, float _aspect, float _near, float _far, bool _oglNdc);
-
-void mtxLookAt(float* _result, const float* _eye, const float* _at, const float* _up = NULL);
-
-inline void mtxQuat(float* _result, const float* _quat)
-{
-	const float x = _quat[0];
-	const float y = _quat[1];
-	const float z = _quat[2];
-	const float w = _quat[3];
-
-	const float x2 = x + x;
-	const float y2 = y + y;
-	const float z2 = z + z;
-	const float x2x = x2 * x;
-	const float x2y = x2 * y;
-	const float x2z = x2 * z;
-	const float x2w = x2 * w;
-	const float y2y = y2 * y;
-	const float y2z = y2 * z;
-	const float y2w = y2 * w;
-	const float z2z = z2 * z;
-	const float z2w = z2 * w;
-
-	_result[0] = 1.0f - (y2y + z2z);
-	_result[1] = x2y - z2w;
-	_result[2] = x2z + y2w;
-	_result[3] = 0.0f;
-
-	_result[4] = x2y + z2w;
-	_result[5] = 1.0f - (x2x + z2z);
-	_result[6] = y2z - x2w;
-	_result[7] = 0.0f;
-
-	_result[8] = x2z - y2w;
-	_result[9] = y2z + x2w;
-	_result[10] = 1.0f - (x2x + y2y);
-	_result[11] = 0.0f;
-
-	_result[12] = 0.0f;
-	_result[13] = 0.0f;
-	_result[14] = 0.0f;
-	_result[15] = 1.0f;
-}
-
-inline void mtxQuatTranslation(float* _result, const float* _quat, const float* _translation)
-{
-	mtxQuat(_result, _quat);
-	_result[12] = -(_result[0] * _translation[0] + _result[4] * _translation[1] + _result[8] * _translation[2]);
-	_result[13] = -(_result[1] * _translation[0] + _result[5] * _translation[1] + _result[9] * _translation[2]);
-	_result[14] = -(_result[2] * _translation[0] + _result[6] * _translation[1] + _result[10] * _translation[2]);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
 
 
@@ -338,18 +263,19 @@ public:
 	{
 		static float time = 0;
 		time += deltaTime * 0.001f;
-		float at[3] =  { 0.0f, 0.0f,   0.0f };
-		float eye[3] = { 0.0f, 0.0f, -35.0f };
+		static const Vector4 at = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+		static const Vector4 eye = Vector4(0.0f, 0.0f, 35.0f, 1.0f);
+		static const Vector4 up = Vector4(0.0f, 1.0f, 0.0f, 0.0f);
 
-		float view[16];
-		bx::mtxLookAt(view, eye, at);
+		static Matrix44 view;
+		view.SetLookAt(eye, at, up);
 
-		float proj[16];
-		bx::mtxProj(proj, 60.0f, float(m_width) / float(m_height), 0.1f, 100.0f, bgfx::getCaps()->homogeneousDepth);
-		bgfx::setViewTransform(0, view, proj);
+		static Matrix44 proj;
+		proj.SetPerspective(60.0_deg, float(m_width) / float(m_height), 0.1f, 100.0f, bgfx::getCaps()->homogeneousDepth);
+		bgfx::setViewTransform(0, &view.m11, &proj.m11);
 
 		// Set view 0 default viewport.
-		bgfx::setViewRect(0, 0, 0, uint16_t(m_width), uint16_t(m_height));
+		//bgfx::setViewRect(0, 0, 0, uint16_t(m_width), uint16_t(m_height));
 
 		bgfx::touch(0);//dummy draw call (clear view 0)
 
@@ -358,14 +284,15 @@ public:
 		{
 			for (uint32_t xx = 0; xx < 11; ++xx)
 			{
-				float mtx[16];
-				bx::mtxRotateXY(mtx, time + xx*0.21f, time + yy*0.37f);
-				mtx[12] = -15.0f + float(xx)*3.0f;
-				mtx[13] = -15.0f + float(yy)*3.0f;
-				mtx[14] = 0.0f;
-
+				Matrix44 mtx = Matrix44::IDENTITY;
+				mtx.RotateX(time + xx*0.21f);
+				mtx.RotateY(time + yy*0.37f);
+				mtx.m14 = -15.0f + float(xx)*3.0f;
+				mtx.m24 = -15.0f + float(yy)*3.0f;
+				mtx.m34 = 0.0f;
+				mtx.Transpose();
 				// Set model matrix for rendering.
-				bgfx::setTransform(mtx);
+				bgfx::setTransform(&mtx.m11);
 
 
 				// Set vertex and index buffer.
@@ -422,6 +349,7 @@ public:
 		m_width = width;
 		m_height = height;
 		bgfx::reset(m_width, m_height, BGFX_RESET_VSYNC);
+		bgfx::setViewRect(0, 0, 0, uint16_t(m_width), uint16_t(m_height)); // Set view 0 default viewport.
 	}
 
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core.h"
 #include "vector.h"
 #include "quaternion.h"
 
@@ -9,7 +10,7 @@ namespace Veng
 
 //right hand coordinate system (z from display (DirectX style))
 
-struct Matrix44
+struct FORCE_ALIGNMENT(16) Matrix44
 {
 	static const Matrix44 IDENTITY;
 
@@ -20,6 +21,9 @@ struct Matrix44
 		float r31, float r32, float r33, float r34,
 		float r41, float r42, float r43, float r44
 	);
+	Matrix44(const Matrix44& other);
+
+	Matrix44& operator=(const Matrix44& other);
 
 
 	//lines * columns
@@ -33,6 +37,8 @@ struct Matrix44
 
 	void SetPerspective(float fovY, float ratio, float near, float far, bool homogenDepth);
 
+	void SetLookAt(const Vector4& eye, const Vector4& at, const Vector4& up);
+
 	void SetRotateX(float angle);
 	void SetRotateY(float angle);
 	void SetRotateZ(float angle);
@@ -40,6 +46,8 @@ struct Matrix44
 	void RotateX(float angle);
 	void RotateY(float angle);
 	void RotateZ(float angle);
+
+	void Transpose();
 
 
 	float m11, m12, m13, m14;

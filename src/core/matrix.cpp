@@ -1,6 +1,7 @@
 #include "matrix.h"
 
-#include <cmath>
+#include "memory.h"
+#include "math.h"
 
 
 namespace Veng
@@ -19,7 +20,6 @@ Matrix44::Matrix44()
 
 }
 
-
 Matrix44::Matrix44(
 	float m11, float m12, float m13, float m14,
 	float m21, float m22, float m23, float m24,
@@ -31,6 +31,17 @@ Matrix44::Matrix44(
 	, m31(m31), m32(m32), m33(m33), m34(m34)
 	, m41(m41), m42(m42), m43(m43), m44(m44)
 {
+}
+
+Matrix44::Matrix44(const Matrix44& other)
+{
+	memory::Copy(this, &other, sizeof(float) * 16);
+}
+
+Matrix44& Matrix44::operator=(const Matrix44& other)
+{
+	memory::Copy(this, &other, sizeof(float) * 16);
+	return *this;
 }
 
 
@@ -90,10 +101,44 @@ void Matrix44::SetPerspective(float fovY, float ratio, float near, float far, bo
 	float zDiffInv = 1.0f / (near - far);
 	m11 = f / ratio;
 	m22 = f;
-	m33 = ((homogenDepth) ? (far + near) : (far)) * zDiffInv;
+	m33 = -/*+*/((homogenDepth) ? (far + near) : (far)) * zDiffInv;
 	m44 = 0;
 	m43 = (homogenDepth) ? (2.0f * far * near * zDiffInv) : (near * far * zDiffInv);
-	m34 = -1.0f;
+	m34 = /*-*/1.0f;
+}
+
+
+void Matrix44::SetLookAt(const Vector4& eye, const Vector4& at, const Vector4& up)
+{
+	Vector3 eyeV3 = eye.GetXYZ();
+
+	Vector3 dir = at.GetXYZ() - eyeV3;
+	dir.Normalize();
+
+	Vector3 right = Vector3::Cross(dir, up.GetXYZ());
+	right.Normalize();
+
+	Vector3 upNew = Vector3::Cross(right, dir);
+	right.Normalize();
+
+	memory::Set(this, 0, sizeof(float) * 16);
+
+	m11 = right.x;
+	m12 = upNew.x;
+	m13 = dir.x;
+
+	m21 = right.y;
+	m22 = upNew.y;
+	m23 = dir.y;
+
+	m31 = right.z;
+	m32 = upNew.z;
+	m33 = dir.z;
+
+	m41 = -Vector3::Dot(right, eyeV3);
+	m42 = -Vector3::Dot(upNew, eyeV3);
+	m43 = -Vector3::Dot(dir, eyeV3);
+	m44 = 1.0f;
 }
 
 
@@ -147,6 +192,20 @@ void Matrix44::RotateZ(float angle)
 	Matrix44 rot;
 	rot.SetRotateZ(angle);
 	*this = *this * rot;
+}
+
+
+void Matrix44::Transpose()
+{
+	float tmp;
+	tmp = m12; m12 = m21; m21 = tmp;
+	tmp = m13; m13 = m31; m31 = tmp;
+	tmp = m14; m14 = m41; m41 = tmp;
+
+	tmp = m23; m23 = m32; m32 = tmp;
+	tmp = m24; m24 = m42; m42 = tmp;
+
+	tmp = m34; m34 = m43; m43 = tmp;
 }
 
 
