@@ -17,6 +17,7 @@ class MaterialManager;
 class ShaderManager;
 class ModelManager;
 enum class modelHandle : u64;
+struct Camera;
 
 
 class RenderScene : public IScene
@@ -29,9 +30,15 @@ public:
 	virtual void AddModelComponent(Entity entity, worldId world, const Path& path) = 0;
 	virtual void RemoveModelComponent(Entity entity, worldId world) = 0;
 	virtual bool HasModelComponent(Entity entity, worldId world) const = 0;
+	virtual size_t GetModelsCount(worldId world) const = 0;
+	virtual modelHandle* GetModels(worldId world) const = 0;
 
-	virtual size_t GetModelsCount() const = 0;
-	virtual modelHandle* GetModels() const = 0;
+	virtual void AddCameraComponent(Entity entity, worldId world, float fovY, float near, float far) = 0;
+	virtual void RemoveCameraComponent(Entity entity, worldId world) = 0;
+	virtual bool HasCameraComponent(Entity entity, worldId world) const = 0;
+	virtual size_t GetCamerasCount(worldId world) const = 0;
+	virtual Camera* GetCameras(worldId world) const = 0;
+	virtual Camera* GetDefaultCamera(worldId world) = 0;
 };
 
 
@@ -56,6 +63,8 @@ public:
 	virtual ModelManager& GetModelManager() const = 0;
 
 	virtual void Resize(u32 width, u32 height) = 0;
+	virtual u32 GetScreenWidth() const = 0;
+	virtual u32 GetScreenHeight() const = 0;
 
 	virtual Engine& GetEngine() const = 0;
 };

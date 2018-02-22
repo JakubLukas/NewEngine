@@ -16,6 +16,7 @@ public:
 	EngineImpl(IAllocator& allocator)
 		: m_allocator(allocator)
 		, m_plugins(m_allocator)
+		, m_worlds(m_allocator)
 	{
 		m_fileSystem = FileSystem::Create(m_allocator);
 		m_inputSystem = InputSystem::Create(m_allocator);
@@ -38,6 +39,38 @@ public:
 	const PlatformData& GetPlatformData() const override
 	{
 		return m_platformData;
+	}
+
+
+	worldId AddWorld() override
+	{
+		World& world = m_worlds.EmplaceBack(m_allocator, (worldId)m_worlds.GetSize());
+		return world.GetId();
+	}
+
+	void RemoveWorld(worldId id) override
+	{
+		size_t idx = m_worlds.GetSize();
+		for (size_t i = 0; i < m_worlds.GetSize(); ++i)
+		{
+			if (m_worlds[i].GetId() == id)
+				idx = i;
+		}
+
+		if (idx != m_worlds.GetSize())
+			m_worlds.Erase(idx);
+		else
+			ASSERT2(false, "World with given id doesn't exist");
+	}
+
+	World* GetWorld(worldId id) override
+	{
+		for (World& world : m_worlds)
+		{
+			if (world.GetId() == id)
+				return &world;
+		}
+		return nullptr;
 	}
 
 
@@ -102,6 +135,7 @@ private:
 	InputSystem* m_inputSystem;
 	ResourceManagement* m_resourceManager;
 	Array<IPlugin*> m_plugins;
+	Array<World> m_worlds;
 };
 
 

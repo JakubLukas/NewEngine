@@ -47,6 +47,8 @@ struct FORCE_ALIGNMENT(16) Matrix44
 	void RotateY(float angle);
 	void RotateZ(float angle);
 
+	void SetTranslation(const Vector3& trans);
+
 	void Transpose();
 
 
@@ -68,6 +70,14 @@ struct Transform
 	: rotation(rot), position(pos) {}
 	Transform(const Transform& other)
 		: rotation(other.rotation), position(other.position){}
+
+	Matrix44 ToMatrix44() const
+	{
+		Matrix44 mtx = rotation.ToMatrix44();
+		mtx.SetTranslation(position);
+		return mtx;
+	}
+
 
 	Quaternion rotation;
 	Vector3 position;

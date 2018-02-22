@@ -17,6 +17,17 @@ typedef u32 worldId;
 
 class World
 {
+private:
+	struct EntityItem
+	{
+		union
+		{
+			Entity entity;
+			i64 next;
+		};
+		bool alive;
+	};
+
 public:
 	explicit World(IAllocator& allocator, u32 id);
 	~World();
@@ -25,13 +36,13 @@ public:
 
 	Entity CreateEntity();
 	void DestroyEntity(Entity entity);
+	Transform& GetEntityTransform(Entity entity);
 
 private:
 	IAllocator& m_allocator;
 	worldId m_id;
-	unsigned m_currentEntityId = 0;
-	unsigned m_aliveEntitiesCount = 0;
-	Array<Entity> m_entities;
+	i64 m_unusedEntity = -1;
+	Array<EntityItem> m_entities;
 	Array<Transform> m_entitiesTransform;//TODO separate
 };
 

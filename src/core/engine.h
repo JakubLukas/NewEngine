@@ -3,6 +3,8 @@
 #include "allocators.h"
 #include "iplugin.h"
 
+#include "world/world.h"
+
 
 namespace Veng
 {
@@ -29,6 +31,10 @@ public:
 public:
 	virtual void SetPlatformData(const PlatformData& data) = 0;
 	virtual const PlatformData& GetPlatformData() const = 0;
+
+	virtual worldId AddWorld() = 0;
+	virtual void RemoveWorld(worldId id) = 0;
+	virtual World* GetWorld(worldId id) = 0;
 
 	virtual bool AddPlugin(IPlugin* plugin) = 0;
 	virtual void RemovePlugin(const char* name) = 0;

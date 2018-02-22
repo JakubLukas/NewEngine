@@ -8,6 +8,11 @@ namespace Veng
 {
 
 
+const Vector3 Vector3::AXIS_X(1.0f, 0.0f, 0.0f);
+const Vector3 Vector3::AXIS_Y(0.0f, 1.0f, 0.0f);
+const Vector3 Vector3::AXIS_Z(0.0f, 0.0f, 1.0f);
+
+
 Vector3::Vector3()
 	: x(0.0f)
 	, y(0.0f)

@@ -7,6 +7,10 @@ namespace Veng
 
 struct Vector3
 {
+	static const Vector3 AXIS_X;
+	static const Vector3 AXIS_Y;
+	static const Vector3 AXIS_Z;
+
 	Vector3();
 	Vector3(float x, float y, float z);
 	Vector3(const Vector3& vec);

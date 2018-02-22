@@ -16,6 +16,7 @@
 
 #include "core/math.h"
 #include "core/memory.h"
+#include "camera.h"
 
 namespace bx
 {
@@ -147,6 +148,7 @@ public:
 		: m_allocator(allocator)
 		, m_renderSystem(renderSystem)
 		, m_models(m_allocator)
+		, m_cameras(m_allocator)
 	{
 
 	}
@@ -159,10 +161,12 @@ public:
 		}
 	}
 
+
 	void Update(float deltaTime) override
 	{
 
 	}
+
 
 	void AddModelComponent(Entity entity, worldId world, const Path& path) override
 	{
@@ -181,20 +185,63 @@ public:
 		return m_models.Find(entity, model);
 	}
 
-	size_t GetModelsCount() const override
+	size_t GetModelsCount(worldId world) const override
 	{
 		return m_models.GetSize();
 	}
 
-	modelHandle* GetModels() const override
+	modelHandle* GetModels(worldId world) const override
 	{
 		return m_models.getValues();
+	}
+
+
+	void AddCameraComponent(Entity entity, worldId world, float fovY, float near, float far) override
+	{
+		Camera cam;
+		cam.fov = fovY;
+		cam.near = near;
+		cam.far = far;
+		cam.screen_width = (float)m_renderSystem.GetScreenWidth();
+		cam.screen_height = (float)m_renderSystem.GetScreenHeight();
+		cam.aspect = cam.screen_width / cam.screen_height;
+		m_cameras.Insert(entity, cam);
+	}
+
+	void RemoveCameraComponent(Entity entity, worldId world) override
+	{
+		m_cameras.Erase(entity);
+	}
+
+	bool HasCameraComponent(Entity entity, worldId world) const override
+	{
+		Camera* cam;
+		return m_cameras.Find(entity, cam);
+	}
+
+	size_t GetCamerasCount(worldId world) const override
+	{
+		return m_cameras.GetSize();
+	}
+
+	Camera* GetCameras(worldId world) const override
+	{
+		return m_cameras.getValues();
+	}
+
+	Camera* GetDefaultCamera(worldId world) override
+	{
+		if (m_cameras.GetSize() == 0)
+			return nullptr;
+		else
+			return &m_cameras.getValues()[0];
 	}
 
 private:
 	IAllocator& m_allocator;
 	RenderSystem& m_renderSystem;
 	AssociativeArray<Entity, modelHandle> m_models;
+	AssociativeArray<Entity, Camera> m_cameras;
 };
 
 
@@ -271,7 +318,10 @@ public:
 		view.SetLookAt(eye, at, up);
 
 		static Matrix44 proj;
-		proj.SetPerspective(60.0_deg, float(m_width) / float(m_height), 0.1f, 100.0f, bgfx::getCaps()->homogeneousDepth);
+		Camera* cam = m_scene->GetDefaultCamera(0);
+		if(cam != nullptr)
+			proj.SetPerspective(cam->fov, cam->aspect, cam->near, cam->far, bgfx::getCaps()->homogeneousDepth);
+
 		bgfx::setViewTransform(0, &view.m11, &proj.m11);
 
 		// Set view 0 default viewport.
@@ -284,21 +334,24 @@ public:
 		{
 			for (uint32_t xx = 0; xx < 11; ++xx)
 			{
-				Matrix44 mtx = Matrix44::IDENTITY;
+				/*Matrix44 mtx = Matrix44::IDENTITY;
 				mtx.RotateX(time + xx*0.21f);
 				mtx.RotateY(time + yy*0.37f);
 				mtx.m14 = -15.0f + float(xx)*3.0f;
 				mtx.m24 = -15.0f + float(yy)*3.0f;
 				mtx.m34 = 0.0f;
-				mtx.Transpose();
+				mtx.Transpose();*/
+				World* world = m_engine.GetWorld(0);
+				Transform& trans = world->GetEntityTransform((Entity)1);
+				Matrix44 mtx = trans.ToMatrix44();
 				// Set model matrix for rendering.
 				bgfx::setTransform(&mtx.m11);
 
 
 				// Set vertex and index buffer.
 				// DUMMY test
-				modelHandle* handles = m_scene->GetModels();
-				for(size_t i = 0; i < m_scene->GetModelsCount(); ++i)
+				modelHandle* handles = m_scene->GetModels(0);
+				for(size_t i = 0; i < m_scene->GetModelsCount(0); ++i)
 				{
 					const Model* model = m_modelManager->GetResource(handles[i]);
 					if(model->GetState() == Resource::State::Ready)
@@ -348,9 +401,12 @@ public:
 	{
 		m_width = width;
 		m_height = height;
-		bgfx::reset(m_width, m_height, BGFX_RESET_VSYNC);
+		bgfx::reset(m_width, m_height, m_bgfxResetFlags);
 		bgfx::setViewRect(0, 0, 0, uint16_t(m_width), uint16_t(m_height)); // Set view 0 default viewport.
 	}
+
+	u32 GetScreenWidth() const override { return m_width; }
+	u32 GetScreenHeight() const override { return m_height; }
 
 
 	Engine& GetEngine() const override { return m_engine; }
@@ -370,7 +426,7 @@ private:
 	u32 m_height = 0;
 	BGFXAllocator m_bgfxAllocator;
 	BGFXCallback m_bgfxCallback;
-	u32 m_bgfxResetFlags = BGFX_RESET_NONE;
+	u32 m_bgfxResetFlags = BGFX_RESET_VSYNC;
 	/////////////////////
 };
 

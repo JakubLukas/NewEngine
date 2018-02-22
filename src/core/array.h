@@ -85,7 +85,7 @@ public:
 		DELETE_PLACEMENT(m_data + m_size);
 	}
 
-	void Erase(unsigned idx)
+	void Erase(size_t idx)
 	{
 		ASSERT(idx < m_size);
 		DELETE_PLACEMENT(m_data + idx);

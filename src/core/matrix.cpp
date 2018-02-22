@@ -195,6 +195,14 @@ void Matrix44::RotateZ(float angle)
 }
 
 
+void Matrix44::SetTranslation(const Vector3& trans)
+{
+	m14 = trans.x;
+	m24 = trans.y;
+	m34 = trans.z;
+}
+
+
 void Matrix44::Transpose()
 {
 	float tmp;

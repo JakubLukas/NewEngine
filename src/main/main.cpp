@@ -12,6 +12,7 @@
 
 
 #include "renderer/irenderer.h"
+#include "core/math.h"
 
 
 namespace Veng
@@ -49,7 +50,33 @@ public:
 
 		RegisterRawInput();
 
-		static_cast<RenderScene*>(m_tmpPlugRender->GetScene())->AddModelComponent(Entity(0), 0, "models/cubes.model");
+		//DUMMY GAMEPLAY CODE
+		worldId worldHandle = m_engine->AddWorld();
+		World* world = m_engine->GetWorld(worldHandle);
+		RenderScene* renderScene = static_cast<RenderScene*>(m_tmpPlugRender->GetScene());
+		Entity camEnt = world->CreateEntity();
+		renderScene->AddCameraComponent(camEnt, worldHandle, 60.0_deg, 0.001f, 100.0f);
+
+		for (unsigned yy = 0; yy < 11; ++yy)
+		{
+			for (unsigned xx = 0; xx < 11; ++xx)
+			{
+				Entity entity = world->CreateEntity();
+				Transform& trans = world->GetEntityTransform(entity);
+				renderScene->AddModelComponent(entity, worldHandle, "models/cubes.model");
+
+				Quaternion rot = Quaternion::IDENTITY;
+				rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
+				rot = rot * Quaternion(Vector3::AXIS_Y, yy*0.37f);
+				Vector3 pos = {
+					-15.0f + float(xx)*3.0f,
+					-15.0f + float(yy)*3.0f,
+					0.0f
+				};
+				trans = Transform(rot, pos);
+			}
+		}
+
 	}
 
 	void InitPlugins()
