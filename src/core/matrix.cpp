@@ -173,6 +173,36 @@ void Matrix44::SetRotateZ(float angle)
 }
 
 
+void Matrix44::SetRotation(const Quaternion& quat)
+{
+	float fx = quat.x + quat.x;
+	float fy = quat.y + quat.y;
+	float fz = quat.z + quat.z;
+	float fwx = fx * quat.w;
+	float fwy = fy * quat.w;
+	float fwz = fz * quat.w;
+	float fxx = fx * quat.x;
+	float fxy = fy * quat.x;
+	float fxz = fz * quat.x;
+	float fyy = fy * quat.y;
+	float fyz = fz * quat.y;
+	float fzz = fz * quat.z;
+
+	m11 = 1.0f - (fyy + fzz);
+	m21 = fxy - fwz;
+	m31 = fxz + fwy;
+	m12 = fxy + fwz;
+	m22 = 1.0f - (fxx + fzz);
+	m32 = fyz - fwx;
+	m13 = fxz - fwy;
+	m23 = fyz + fwx;
+	m33 = 1.0f - (fxx + fyy);
+
+	m41 = m42 = m43 = m14 = m24 = m34 = 0.0f;
+	m44 = 1.0f;
+}
+
+
 void Matrix44::RotateX(float angle)
 {
 	Matrix44 rot;
@@ -230,6 +260,33 @@ Vector4 operator*(const Matrix44& mat, const Vector4& vec)
 Vector4 operator*(const Vector4& vec, const Matrix44& mat)
 {
 	return Matrix44::Multiply(vec, mat);
+}
+
+
+
+Transform::Transform()
+{
+
+}
+
+Transform::Transform(const Quaternion& rot, const Vector3& pos)
+	: rotation(rot), position(pos)
+{
+
+}
+
+Transform::Transform(const Transform& other)
+	: rotation(other.rotation), position(other.position)
+{
+
+}
+
+Matrix44 Transform::ToMatrix44() const
+{
+	Matrix44 mtx;
+	mtx.SetRotation(rotation);
+	mtx.SetTranslation(position);
+	return mtx;
 }
 
 

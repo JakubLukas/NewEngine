@@ -3,7 +3,7 @@
 #include "core/int.h"
 #include "core/iplugin.h"
 #include "core/world/world.h"
-#include "core/file/path.h"
+#include "camera.h"////////////////////////////////
 
 
 namespace Veng
@@ -11,6 +11,7 @@ namespace Veng
 
 class IAllocator;
 class Engine;
+struct Path;
 
 class RenderSystem;
 class MaterialManager;
@@ -23,6 +24,19 @@ struct Camera;
 class RenderScene : public IScene
 {
 public:
+	struct ModelItem
+	{
+		Entity entity;
+		modelHandle handle;
+	};
+
+	struct CameraItem
+	{
+		Entity entity;
+		Camera camera;
+	};
+
+public:
 	virtual ~RenderScene() override {}
 
 	virtual void Update(float deltaTime) override = 0;
@@ -31,14 +45,14 @@ public:
 	virtual void RemoveModelComponent(Entity entity, worldId world) = 0;
 	virtual bool HasModelComponent(Entity entity, worldId world) const = 0;
 	virtual size_t GetModelsCount(worldId world) const = 0;
-	virtual modelHandle* GetModels(worldId world) const = 0;
+	virtual const ModelItem* GetModels(worldId world) const = 0;
 
 	virtual void AddCameraComponent(Entity entity, worldId world, float fovY, float near, float far) = 0;
 	virtual void RemoveCameraComponent(Entity entity, worldId world) = 0;
 	virtual bool HasCameraComponent(Entity entity, worldId world) const = 0;
 	virtual size_t GetCamerasCount(worldId world) const = 0;
-	virtual Camera* GetCameras(worldId world) const = 0;
-	virtual Camera* GetDefaultCamera(worldId world) = 0;
+	virtual const CameraItem* GetCameras(worldId world) const = 0;
+	virtual const CameraItem* GetDefaultCamera(worldId world) = 0;
 };
 
 

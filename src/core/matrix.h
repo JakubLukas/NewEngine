@@ -43,6 +43,8 @@ struct FORCE_ALIGNMENT(16) Matrix44
 	void SetRotateY(float angle);
 	void SetRotateZ(float angle);
 
+	void SetRotation(const Quaternion& quat);
+
 	void RotateX(float angle);
 	void RotateY(float angle);
 	void RotateZ(float angle);
@@ -65,18 +67,11 @@ Vector4 operator*(const Vector4& vec, const Matrix44& mat);
 
 struct Transform
 {
-	Transform() {}
-	Transform(const Quaternion& rot, const Vector3& pos)
-	: rotation(rot), position(pos) {}
-	Transform(const Transform& other)
-		: rotation(other.rotation), position(other.position){}
+	Transform();
+	Transform(const Quaternion& rot, const Vector3& pos);
+	Transform(const Transform& other);
 
-	Matrix44 ToMatrix44() const
-	{
-		Matrix44 mtx = rotation.ToMatrix44();
-		mtx.SetTranslation(position);
-		return mtx;
-	}
+	Matrix44 ToMatrix44() const;
 
 
 	Quaternion rotation;

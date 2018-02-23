@@ -36,7 +36,7 @@ Entity World::CreateEntity()
 	else
 	{
 		EntityItem item = m_entities.Push();
-		item.entity = (Entity)m_entities.GetSize();
+		item.entity = (Entity)(m_entities.GetSize() - 1);
 		item.alive = true;
 		m_entitiesTransform.Push();
 		return item.entity;

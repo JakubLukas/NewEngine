@@ -7,11 +7,11 @@ namespace Veng
 struct Camera
 {
 	float fov;
-	float near;
-	float far;
+	float nearPlane;
+	float farPlane;
 	float aspect;
-	float screen_width;
-	float screen_height;
+	float screenWidth;
+	float screenHeight;
 };
 
 

@@ -12,7 +12,8 @@
 
 
 #include "renderer/irenderer.h"
-#include "core/math.h"
+#include "core/file/path.h"////////////////////////////////
+#include "core/math.h"////////////////////////////////
 
 
 namespace Veng
@@ -55,6 +56,7 @@ public:
 		World* world = m_engine->GetWorld(worldHandle);
 		RenderScene* renderScene = static_cast<RenderScene*>(m_tmpPlugRender->GetScene());
 		Entity camEnt = world->CreateEntity();
+		Transform& camTrans = world->GetEntityTransform(camEnt);
 		renderScene->AddCameraComponent(camEnt, worldHandle, 60.0_deg, 0.001f, 100.0f);
 
 		for (unsigned yy = 0; yy < 11; ++yy)
@@ -66,8 +68,8 @@ public:
 				renderScene->AddModelComponent(entity, worldHandle, "models/cubes.model");
 
 				Quaternion rot = Quaternion::IDENTITY;
-				rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
-				rot = rot * Quaternion(Vector3::AXIS_Y, yy*0.37f);
+				//rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
+				//rot = rot * Quaternion(Vector3::AXIS_Y, yy*0.37f);
 				Vector3 pos = {
 					-15.0f + float(xx)*3.0f,
 					-15.0f + float(yy)*3.0f,

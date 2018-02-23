@@ -155,9 +155,9 @@ public:
 
 	~RenderSceneImpl() override
 	{
-		for (auto& modelHandle : m_models)
+		for (auto& modelItem : m_models)
 		{
-			m_renderSystem.GetModelManager().Unload(modelHandle);
+			m_renderSystem.GetModelManager().Unload(modelItem.handle);
 		}
 	}
 
@@ -170,8 +170,8 @@ public:
 
 	void AddModelComponent(Entity entity, worldId world, const Path& path) override
 	{
-		modelHandle h = m_renderSystem.GetModelManager().Load(path);
-		m_models.Insert(entity, h);
+		modelHandle handle = m_renderSystem.GetModelManager().Load(path);
+		m_models.Insert(entity, { entity, handle });
 	}
 
 	void RemoveModelComponent(Entity entity, worldId world) override
@@ -181,7 +181,7 @@ public:
 
 	bool HasModelComponent(Entity entity, worldId world) const override
 	{
-		modelHandle* model;
+		ModelItem* model;
 		return m_models.Find(entity, model);
 	}
 
@@ -190,7 +190,7 @@ public:
 		return m_models.GetSize();
 	}
 
-	modelHandle* GetModels(worldId world) const override
+	const ModelItem* GetModels(worldId world) const override
 	{
 		return m_models.getValues();
 	}
@@ -200,12 +200,12 @@ public:
 	{
 		Camera cam;
 		cam.fov = fovY;
-		cam.near = near;
-		cam.far = far;
-		cam.screen_width = (float)m_renderSystem.GetScreenWidth();
-		cam.screen_height = (float)m_renderSystem.GetScreenHeight();
-		cam.aspect = cam.screen_width / cam.screen_height;
-		m_cameras.Insert(entity, cam);
+		cam.nearPlane = near;
+		cam.farPlane = far;
+		cam.screenWidth = (float)m_renderSystem.GetScreenWidth();
+		cam.screenHeight = (float)m_renderSystem.GetScreenHeight();
+		cam.aspect = cam.screenWidth / cam.screenHeight;
+		m_cameras.Insert(entity, { entity, cam });
 	}
 
 	void RemoveCameraComponent(Entity entity, worldId world) override
@@ -215,7 +215,7 @@ public:
 
 	bool HasCameraComponent(Entity entity, worldId world) const override
 	{
-		Camera* cam;
+		CameraItem* cam;
 		return m_cameras.Find(entity, cam);
 	}
 
@@ -224,24 +224,25 @@ public:
 		return m_cameras.GetSize();
 	}
 
-	Camera* GetCameras(worldId world) const override
+	const CameraItem* GetCameras(worldId world) const override
 	{
 		return m_cameras.getValues();
 	}
 
-	Camera* GetDefaultCamera(worldId world) override
+	const CameraItem* GetDefaultCamera(worldId world) override
 	{
 		if (m_cameras.GetSize() == 0)
 			return nullptr;
 		else
-			return &m_cameras.getValues()[0];
+			return m_cameras.getValues();
 	}
 
 private:
 	IAllocator& m_allocator;
 	RenderSystem& m_renderSystem;
-	AssociativeArray<Entity, modelHandle> m_models;
-	AssociativeArray<Entity, Camera> m_cameras;
+
+	AssociativeArray<Entity, ModelItem> m_models;
+	AssociativeArray<Entity, CameraItem> m_cameras;
 };
 
 
@@ -318,66 +319,55 @@ public:
 		view.SetLookAt(eye, at, up);
 
 		static Matrix44 proj;
-		Camera* cam = m_scene->GetDefaultCamera(0);
-		if(cam != nullptr)
-			proj.SetPerspective(cam->fov, cam->aspect, cam->near, cam->far, bgfx::getCaps()->homogeneousDepth);
+		const RenderScene::CameraItem* cameraItem = m_scene->GetDefaultCamera(0);
+		if(cameraItem != nullptr)
+		{
+			const Camera& cam = cameraItem->camera;
+			proj.SetPerspective(cam.fov, cam.aspect, cam.nearPlane, cam.farPlane, bgfx::getCaps()->homogeneousDepth);
+		}
 
 		bgfx::setViewTransform(0, &view.m11, &proj.m11);
 
-		// Set view 0 default viewport.
-		//bgfx::setViewRect(0, 0, 0, uint16_t(m_width), uint16_t(m_height));
-
 		bgfx::touch(0);//dummy draw call (clear view 0)
 
-		// Submit 11x11 cubes.
-		for (uint32_t yy = 0; yy < 11; ++yy)
+		World* world = m_engine.GetWorld(0);
+
+
+		// Set vertex and index buffer.
+		// DUMMY test
+		const RenderScene::ModelItem* modelItems = m_scene->GetModels(0);
+		for(size_t i = 0; i < m_scene->GetModelsCount(0); ++i)
 		{
-			for (uint32_t xx = 0; xx < 11; ++xx)
+
+			Transform& trans = world->GetEntityTransform(modelItems[i].entity);
+			Matrix44 mtx = trans.ToMatrix44();
+			mtx.Transpose();
+			// Set model matrix for rendering.
+			bgfx::setTransform(&mtx.m11);
+
+
+			const Model* model = m_modelManager->GetResource(modelItems[i].handle);
+			if(model->GetState() == Resource::State::Ready)
 			{
-				/*Matrix44 mtx = Matrix44::IDENTITY;
-				mtx.RotateX(time + xx*0.21f);
-				mtx.RotateY(time + yy*0.37f);
-				mtx.m14 = -15.0f + float(xx)*3.0f;
-				mtx.m24 = -15.0f + float(yy)*3.0f;
-				mtx.m34 = 0.0f;
-				mtx.Transpose();*/
-				World* world = m_engine.GetWorld(0);
-				Transform& trans = world->GetEntityTransform((Entity)1);
-				Matrix44 mtx = trans.ToMatrix44();
-				// Set model matrix for rendering.
-				bgfx::setTransform(&mtx.m11);
-
-
-				// Set vertex and index buffer.
-				// DUMMY test
-				modelHandle* handles = m_scene->GetModels(0);
-				for(size_t i = 0; i < m_scene->GetModelsCount(0); ++i)
+				for(const Mesh& mesh : model->meshes)
 				{
-					const Model* model = m_modelManager->GetResource(handles[i]);
-					if(model->GetState() == Resource::State::Ready)
+					const Material* material = m_materialManager->GetResource(mesh.material);
+					if(material->GetState() == Resource::State::Ready)
 					{
-						for(const Mesh& mesh : model->meshes)
-						{
-							const Material* material = m_materialManager->GetResource(mesh.material);
-							if(material->GetState() == Resource::State::Ready)
-							{
-								bgfx::setVertexBuffer(0, mesh.vertexBufferHandle);
-								bgfx::setIndexBuffer(mesh.indexBufferHandle);
+						bgfx::setVertexBuffer(0, mesh.vertexBufferHandle);
+						bgfx::setIndexBuffer(mesh.indexBufferHandle);
 
-								// Set render states.
-								bgfx::setState(BGFX_STATE_DEFAULT);
+						// Set render states.
+						bgfx::setState(BGFX_STATE_DEFAULT);
 
-								// Submit primitive for rendering to view 0.
-								const Shader* shader = m_shaderManager->GetResource(material->shader);
-								bgfx::submit(0, shader->program.handle);
-							}
-						}
+						// Submit primitive for rendering to view 0.
+						const Shader* shader = m_shaderManager->GetResource(material->shader);
+						bgfx::submit(0, shader->program.handle);
 					}
 				}
-
-
 			}
 		}
+
 
 		bgfx::frame();//flip buffers
 	};

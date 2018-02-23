@@ -30,38 +30,6 @@ Quaternion::Quaternion(float x, float y, float z, float w)
 }
 
 
-Matrix44 Quaternion::ToMatrix44() const
-{
-	float fx = x + x;
-	float fy = y + y;
-	float fz = z + z;
-	float fwx = fx * w;
-	float fwy = fy * w;
-	float fwz = fz * w;
-	float fxx = fx * x;
-	float fxy = fy * x;
-	float fxz = fz * x;
-	float fyy = fy * y;
-	float fyz = fz * y;
-	float fzz = fz * z;
-
-	Matrix44 mtx;
-	mtx.m11 = 1.0f - (fyy + fzz);
-	mtx.m21 = fxy - fwz;
-	mtx.m31 = fxz + fwy;
-	mtx.m12 = fxy + fwz;
-	mtx.m22 = 1.0f - (fxx + fzz);
-	mtx.m32 = fyz - fwx;
-	mtx.m13 = fxz - fwy;
-	mtx.m23 = fyz + fwx;
-	mtx.m33 = 1.0f - (fxx + fyy);
-
-	mtx.m41 = mtx.m42 = mtx.m43 = mtx.m14 = mtx.m24 = mtx.m34 = 0.0f;
-	mtx.m44 = 1.0f;
-	return mtx;
-}
-
-
 Quaternion operator*(const Quaternion& q1, const Quaternion& q2)
 {
 	return Quaternion(
