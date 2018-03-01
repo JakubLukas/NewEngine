@@ -36,7 +36,7 @@ struct AllocatorI
 	virtual void* realloc(void* _ptr, size_t _size, size_t _align, const char* _file, uint32_t _line) = 0;
 };
 
-
+//void mtxProj(float* _result, float _fovy, float _aspect, float _near, float _far, bool _oglNdc);
 }
 
 
@@ -326,7 +326,10 @@ public:
 			proj.SetPerspective(cam.fov, cam.aspect, cam.nearPlane, cam.farPlane, bgfx::getCaps()->homogeneousDepth);
 		}
 
-		bgfx::setViewTransform(0, &view.m11, &proj.m11);
+		//float projj[16];
+		//bx::mtxProj(projj, 60.0f, float(m_width) / float(m_height), 0.1f, 100.0f, bgfx::getCaps()->homogeneousDepth);
+
+		bgfx::setViewTransform(0, &view.m11, &proj.m11/*projj*/);
 
 		bgfx::touch(0);//dummy draw call (clear view 0)
 

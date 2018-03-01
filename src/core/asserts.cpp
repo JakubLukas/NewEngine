@@ -1,4 +1,10 @@
-#include <windows.h>
+#include "asserts.h"
+
+#include "os/os_utils.h"
+
+
+namespace Veng
+{
 
 
 void MyDebugBreak()
@@ -8,5 +14,8 @@ void MyDebugBreak()
 
 void MyOutputDebugString(const char* text)
 {
-	OutputDebugString(text);
+	os::LogDebugString(text);
+}
+
+
 }

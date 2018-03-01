@@ -1,9 +1,8 @@
 #include "logs.h"
 
-#include <stdio.h>
-#include <stdarg.h>
-#define VC_EXTRALEAN
-#include <windows.h>
+#include <cstdio>
+#include <cstdarg>
+#include "os/os_utils.h"
 
 
 namespace Veng
@@ -21,7 +20,7 @@ void LogInfo(const char* format, ...)
 	vsnprintf(buffer, BUFFER_SIZE, format, args);
 	va_end(args);
 
-	OutputDebugString(buffer);
+	os::LogDebugString(buffer);
 }
 
 
@@ -32,7 +31,7 @@ void LogWarning(const char* format, ...)
 	vsnprintf(buffer, BUFFER_SIZE, format, args);
 	va_end(args);
 
-	OutputDebugString(buffer);
+	os::LogDebugString(buffer);
 }
 
 
@@ -43,7 +42,7 @@ void LogError(const char* format, ...)
 	vsnprintf(buffer, BUFFER_SIZE, format, args);
 	va_end(args);
 
-	OutputDebugString(buffer);
+	os::LogDebugString(buffer);
 }
 
 

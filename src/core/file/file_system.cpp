@@ -2,6 +2,7 @@
 
 #include "file.h"
 #include "core/array.h"
+#include "core/os/os_utils.h"
 
 
 namespace Veng
@@ -33,6 +34,8 @@ public:
 		ASSERT(FS::CreateAsyncHandle(m_asyncHandle));
 
 		m_callback.Bind<FileSystemImpl, &FileSystemImpl::Callback>(this);
+
+		os::GetCurrentDir(m_currentDir.path, Path::MAX_LENGTH);
 	}
 
 
@@ -155,6 +158,13 @@ public:
 		FS::QueryChanges(m_asyncHandle, m_callback);
 	}
 
+
+	const Path& GetCurrentDir() const override
+	{
+		return m_currentDir;
+	}
+
+
 private:
 	void Callback(nativeFileHandle handle, size_t bytesTransfered)
 	{
@@ -180,6 +190,7 @@ private:
 	Array<File> m_files;
 	Function<void(nativeFileHandle, size_t)> m_callback;
 	i64 m_freeIndex;
+	Path m_currentDir;
 };
 
 

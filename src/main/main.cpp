@@ -71,8 +71,8 @@ public:
 				//rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
 				//rot = rot * Quaternion(Vector3::AXIS_Y, yy*0.37f);
 				Vector3 pos = {
-					-15.0f + float(xx)*3.0f,
-					-15.0f + float(yy)*3.0f,
+					-15.0f + float(xx) * 3.0f,
+					-15.0f + float(yy) * 3.0f,
 					0.0f
 				};
 				trans = Transform(rot, pos);

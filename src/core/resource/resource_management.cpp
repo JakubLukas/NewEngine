@@ -70,7 +70,7 @@ public:
 
 	void ResourceLoaded(ResourceType resourceType, resourceHandle handle) override
 	{
-		StackAllocator<512> allocator;
+		StackAllocator<4096> allocator;
 		Array<DependencyAsyncOp> loaded(allocator);//TODO: use temp allocator (stack)
 
 		for (size_t i = 0; i < m_dependencyAsyncOps.GetSize();)

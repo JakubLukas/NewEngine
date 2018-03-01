@@ -59,7 +59,7 @@ private:
 };
 
 
-template<int Size>
+template<int maxSize>
 class StackAllocator : public IAllocator
 {
 public:
@@ -68,6 +68,7 @@ public:
 	void* Allocate(size_t size, size_t alignment) override
 	{
 		u8* ptr = (u8*)AlignPointer(m_ptr, alignment);
+		ASSERT2(ptr + size <= m_memory + maxSize, "Not enough memory");
 		m_ptr = ptr + size;
 		return ptr;
 	}
@@ -83,7 +84,7 @@ public:
 	size_t AllocatedSize(void* p) override { return 0; }
 
 private:
-	u8 m_memory[Size];
+	u8 m_memory[maxSize];
 	u8* m_ptr = m_memory;
 };
 

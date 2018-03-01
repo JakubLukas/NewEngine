@@ -96,15 +96,19 @@ Vector4 Matrix44::Multiply(const Vector4& vec, const Matrix44& mat)
 
 void Matrix44::SetPerspective(float fovY, float ratio, float near, float far, bool homogenDepth)
 {
-	*this = Matrix44::IDENTITY;
+	memory::Set(this, 0, sizeof(float) * 16);
+
 	float f = 1.0f / tanf(fovY * 0.5f);
-	float zDiffInv = 1.0f / (near - far);
+	float zDiffInv = 1.0f / (far - near);
+
 	m11 = f / ratio;
 	m22 = f;
-	m33 = -/*+*/((homogenDepth) ? (far + near) : (far)) * zDiffInv;
+	m33 = ((homogenDepth) ? (far + near) : (far)) * zDiffInv;
 	m44 = 0;
-	m43 = (homogenDepth) ? (2.0f * far * near * zDiffInv) : (near * far * zDiffInv);
-	m34 = /*-*/1.0f;
+	//m43 = (homogenDepth) ? (2.0f * far * near * zDiffInv) : (near * far * zDiffInv);
+	//m34 = /*-*/1.0f;
+	m34 = 1.0f;
+	m43 = -((homogenDepth) ? 2.0f : 1.0f) * near * far * zDiffInv;
 }
 
 

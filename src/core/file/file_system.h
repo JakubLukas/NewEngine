@@ -83,6 +83,8 @@ public:
 
 	virtual void Update(float deltaTime) = 0;
 
+	virtual const Path& GetCurrentDir() const = 0;
+
 	/*
 	remove file
 	create folder

@@ -51,6 +51,8 @@ protected:
 	virtual void ResourceLoaded(resourceHandle handle, InputBlob& data) = 0;
 	virtual void ChildResourceLoaded(resourceHandle childResource) { }
 
+	const FileSystem& GetFileSystem() const { return m_fileSystem; }
+
 private:
 	void LoadResource(const Path& path, Resource* resource);
 	void FileSystemCallback(fileHandle handle);

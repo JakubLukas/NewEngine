@@ -19,15 +19,92 @@ size_t Length(const char* str)
 }
 
 
+void Copy(char* destination, const char* source)
+{
+	while (source[0] != '\0')
+	{
+		destination[0] = source[0];
+		destination++;
+		source++;
+	}
+}
+
+
 void Copy(char* destination, const char* source, size_t length)
 {
 	memory::Copy(destination, source, length);
 }
 
 
+inline int Compare(const char* str1, const char* str2)
+{
+	return strcmp(str1, str2);
+}
+
+inline int Compare(const char* str1, const char* str2, size_t num)
+{
+	return strncmp(str1, str2, num);
+}
+
+
 bool Equal(const char* str1, const char* str2)
 {
-	return strcmp(str1, str2) == 0;
+	return Compare(str1, str2) == 0;
+}
+
+
+char* FindChar(char* str, char character)
+{
+	return strchr(str, character);
+}
+
+const char* FindChar(const char* str, char character)
+{
+	return strchr(str, character);
+}
+
+
+char* FindCharR(char* str, char character)
+{
+	return strrchr(str, character);
+}
+
+const char* FindCharR(const char* str, char character)
+{
+	return strrchr(str, character);
+}
+
+
+char* FindStr(char* haystack, const char* needle)
+{
+	return strstr(haystack, needle);
+}
+
+const char* FindStr(const char* haystack, const char* needle)
+{
+	return strstr(haystack, needle);
+}
+
+
+char* FindStrR(char* haystack, const char* needle)
+{
+	size_t  haystackLen = Length(haystack);
+	size_t  needleLen = Length(needle);
+	char* s;
+
+	if (needleLen > haystackLen)
+		return nullptr;
+	for (s = haystack + haystackLen - needleLen; s >= haystack; --s)
+	{
+		if (Compare(s, needle, needleLen) == 0)
+			return s;
+	}
+	return nullptr;
+}
+
+const char* FindStrR(const char* haystack, const char* needle)
+{
+	return static_cast<const char*>(FindStrR(const_cast<char*>(haystack), needle));
 }
 
 
@@ -68,14 +145,14 @@ String::~String()
 }
 
 
-char String::operator[](unsigned index)
+char& String::operator[](unsigned index)
 {
 	ASSERT(index >= 0 && index <= m_size);
 	return m_data[index];
 }
 
 
-const char String::operator[](unsigned index) const
+const char& String::operator[](unsigned index) const
 {
 	ASSERT(index >= 0 && index <= m_size);
 	return m_data[index];
