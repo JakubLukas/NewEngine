@@ -105,9 +105,9 @@ project "main"
 	libdirs { "../external/bgfx/lib/win64" }
 	
 	configuration { "Debug", "x64" }
-		links { "bgfxDebug", "bimgDebug", "bxDebug" }
+		links { "bgfxDebug", "bimgDebug", "bxDebug", "fcppDebug", "glslangDebug", "glsl-optimizerDebug", "shadercDebug" }
 	configuration { "Release", "x64" }
-		links { "bgfxRelease", "bimgRelease", "bxRelease" }
+		links { "bgfxRelease", "bimgRelease", "bxRelease", "fcppRelease", "glslangRelease", "glsl-optimizerRelease", "shadercRelease"  }
 	configuration {}
 	
 	

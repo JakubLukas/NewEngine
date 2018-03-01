@@ -51,21 +51,6 @@ static_assert(sizeof(OVERLAPPED::Offset) + sizeof(OVERLAPPED::OffsetHigh) == siz
 static_assert(sizeof(OVERLAPPED::hEvent) == sizeof(Operation::hEvent), "Must be the same");
 
 
-/*struct Operation : public OVERLAPPED
-{
-	static Operation* Create(IAllocator& allocator, size_t filePosition)
-	{
-		Operation foo;
-		foo.hEvent = NULL;
-		foo.Internal = 0;
-		foo.InternalHigh = 0;
-		foo.Offset = (DWORD)(filePosition & 0xFFFFffff);
-		foo.OffsetHigh = (DWORD)(filePosition >> 32);
-		foo.Pointer = NULL;
-		return &foo;//bullshit, just saved code;
-	}
-};*/
-
 
 bool CreateAsyncHandle(nativeAsyncHandle& asyncHandle)
 {
@@ -249,14 +234,55 @@ void QueryChanges(nativeAsyncHandle asyncHandle, Function<void(nativeFileHandle,
 					ASSERT2(false, "CompletionPort handle was closed or is invalid");
 					return;
 				default:
-					return;
 					return; //no more finished file requests
 			}
 		}
 	}
-
-
 }
+
+
+bool CreateDir(const Path& path)
+{
+	//SECURITY_ATTRIBUTES attr;
+	BOOL result = CreateDirectory(
+		path.path,
+		NULL
+	);
+
+	if(result == FALSE)
+	{
+		DWORD err = GetLastError();
+
+		switch(err)
+		{
+			case ERROR_PATH_NOT_FOUND:
+				ASSERT2(false, "Invalid path");
+				return false;
+			case ERROR_ALREADY_EXISTS:
+				return true;
+			default:
+				return true; //no more finished file requests
+		}
+	}
+	return true;
+}
+
+
+bool RemoveDir(const Path& path)
+{
+	BOOL result = RemoveDirectory(
+		path.path
+	);
+
+	if(result == FALSE)
+	{
+		DWORD err = GetLastError();
+		ASSERT2(false, "Unexpected error");
+		return false;
+	}
+	return true;
+}
+
 
 
 }

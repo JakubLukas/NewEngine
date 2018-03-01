@@ -85,6 +85,9 @@ public:
 
 	virtual const Path& GetCurrentDir() const = 0;
 
+	virtual bool CreateDirectory(const Path& path) const = 0;
+	virtual bool RemoveDirectory(const Path& path) const = 0;
+
 	/*
 	remove file
 	create folder

@@ -22,7 +22,7 @@ struct Path
 	bool operator==(const Path& other);
 	bool operator!=(const Path& other);
 
-	char path[MAX_LENGTH + 1];
+	char path[MAX_LENGTH + 1] = { '\0' };
 	u32 hash;
 };
 

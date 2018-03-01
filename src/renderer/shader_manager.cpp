@@ -34,40 +34,47 @@ int LogCompileError(void* stream, char const* format, Args... args)
 }*/
 
 
-static bool CompileShader(const Path& currentDir, const Path& path)
+static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& outPath)
 {
 	StaticInputBuffer<512> inPath;
-	inPath << currentDir.path << "/";
 	inPath << path.path;
 
-	StaticInputBuffer<512> outPath;
-	outPath << currentDir.path << "/";
-	outPath << "shaders/compiled/";
-	const char* rawPtr = string::FindStr(path.path, "raw");
-	ASSERT2(rawPtr != nullptr, "Wrong shader path");
-	rawPtr += 4;
+	StaticInputBuffer<512> outPathBuffer;
+	outPathBuffer << "shaders/compiled/";
+	fileSystem.CreateDirectory(Path(outPathBuffer.Cstr()));
+	const char* namePtr = string::FindStr(path.path, "raw");
+	ASSERT2(namePtr != nullptr, "Wrong shader path");
+	namePtr += 4;//move by raw/
+	const char* ptr = string::FindChar(namePtr, '/');
+	while(ptr != nullptr)
+	{
+		ptr += 1;//move by slash char
+		outPathBuffer.Add(namePtr, ptr - namePtr);
+		fileSystem.CreateDirectory(Path(outPathBuffer.Cstr()));
+		namePtr = ptr;
+		ptr = string::FindChar(ptr, '/');
+	}
 	const char* extPtr = string::FindCharR(path.path, '.');
 	ASSERT2(extPtr != nullptr, "Wrong shader path");
-	outPath.Add(rawPtr, extPtr - rawPtr);
+	outPathBuffer.Add(namePtr, extPtr - namePtr);
 	extPtr++;
 
 	bool vertexShader;
 	if (string::Equal(extPtr, "vsr"))
 	{
 		vertexShader = true;
-		outPath << ".vs";
+		outPathBuffer << ".vs";
 	}
 	else if (string::Equal(extPtr, "fsr"))
 	{
 		vertexShader = false;
-		outPath << ".fs";
+		outPathBuffer << ".fs";
 	}
 
 	StaticInputBuffer<512> includeDir;
-	includeDir << currentDir.path << "/shaders/";
+	includeDir << "shaders/";
 
 	StaticInputBuffer<512> varyingPath;
-	varyingPath << currentDir.path << "/";
 	const char* lastSlash = string::FindCharR(path.path, '/');
 	ASSERT2(lastSlash != nullptr, "Wrong shader path");
 	varyingPath.Add(path.path, lastSlash - path.path + 1);
@@ -77,7 +84,7 @@ static bool CompileShader(const Path& currentDir, const Path& path)
 		"-f",
 		inPath.Cstr(),
 		"-o",
-		outPath.Cstr(),
+		outPathBuffer.Cstr(),
 		"-i",
 		includeDir.Cstr(),
 		"--platform",
@@ -91,11 +98,13 @@ static bool CompileShader(const Path& currentDir, const Path& path)
 	};
 
 	//bgfx::setShaderCErrorFunction(CompileErrorCallback, nullptr);
-	if (bgfx::compileShader(14, args) == EXIT_FAILURE)
+	if (bgfx::compileShader(sizeof(args) / sizeof(args[0]), args) == EXIT_FAILURE)
 	{
-		LogError("Failed to compile %s -> %s", path.path, outPath.Cstr());
+		LogError("Failed to compile %s -> %s", path.path, outPathBuffer.Cstr());
 		return false;
 	}
+
+	outPath = Path(outPathBuffer.Cstr());
 	return true;
 }
 
@@ -270,33 +279,17 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	char vsPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(data.ReadLine(vsPath, Path::MAX_LENGTH));
 
-	CompileShader(GetFileSystem().GetCurrentDir(), Path(vsPath));
-	StaticInputBuffer<512> vOutPath;//////////////////////////////////////////////////////////////////////
-	vOutPath << "shaders/compiled/";
-	const char* rawPtr = string::FindStr(vsPath, "raw");
-	ASSERT2(rawPtr != nullptr, "Wrong shader path");
-	rawPtr += 4;
-	const char* extPtr = string::FindCharR(vsPath, '.');
-	ASSERT2(extPtr != nullptr, "Wrong shader path");
-	vOutPath.Add(rawPtr, extPtr - rawPtr);
-	vOutPath << ".vs";//".vbin";
-	resourceHandle vsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, Path(vOutPath.Cstr()));
+	Path vOutPath;
+	CompileShader(GetFileSystem(), Path(vsPath), vOutPath);
+	resourceHandle vsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, vOutPath);
 	shader->vsHandle = static_cast<shaderInternalHandle>(vsHandle);
 
 	char fsPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(data.ReadLine(fsPath, Path::MAX_LENGTH));
 
-	CompileShader(GetFileSystem().GetCurrentDir(), Path(fsPath));
-	StaticInputBuffer<512> fOutPath;//////////////////////////////////////////////////////////////////////
-	fOutPath << "shaders/compiled/";
-	rawPtr = string::FindStr(fsPath, "raw");
-	ASSERT2(rawPtr != nullptr, "Wrong shader path");
-	rawPtr += 4;
-	extPtr = string::FindCharR(fsPath, '.');
-	ASSERT2(extPtr != nullptr, "Wrong shader path");
-	fOutPath.Add(rawPtr, extPtr - rawPtr);
-	fOutPath << ".fs";//".fbin";
-	resourceHandle fsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, Path(fOutPath.Cstr()));
+	Path fOutPath;
+	CompileShader(GetFileSystem(), Path(fsPath), fOutPath);
+	resourceHandle fsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, fOutPath);
 	shader->fsHandle = static_cast<shaderInternalHandle>(fsHandle);
 }
 

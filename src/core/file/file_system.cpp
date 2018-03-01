@@ -165,6 +165,17 @@ public:
 	}
 
 
+	virtual bool CreateDirectory(const Path& path) const override
+	{
+		return FS::CreateDir(path);
+	}
+
+	virtual bool RemoveDirectory(const Path& path) const override
+	{
+		return FS::RemoveDir(path);
+	}
+
+
 private:
 	void Callback(nativeFileHandle handle, size_t bytesTransfered)
 	{

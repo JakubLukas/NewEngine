@@ -30,14 +30,14 @@ Path::Path(const char* str, size_t length)
 Path::Path(const Path& other)
 {
 	string::Copy(path, other.path, MAX_LENGTH + 1);
-	hash = crc32_string((u8*)path);
+	hash = other.hash;
 }
 
 
 Path& Path::operator=(const Path& other)
 {
 	string::Copy(path, other.path, MAX_LENGTH + 1);
-	hash = crc32_string((u8*)path);
+	hash = other.hash;
 	return *this;
 }
 

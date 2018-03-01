@@ -41,6 +41,9 @@ size_t GetFileSize(nativeFileHandle fileHandle);
 
 void QueryChanges(nativeAsyncHandle asyncHandle, Function<void(nativeFileHandle, size_t)> callback);
 
+bool CreateDir(const Path& path);
+bool RemoveDir(const Path& path);
+
 }
 
 
