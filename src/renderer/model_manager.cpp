@@ -87,7 +87,7 @@ void ModelManager::DestroyResource(Resource* resource)
 
 void ModelManager::ReloadResource(Resource* resource)
 {
-
+	ASSERT2(false, "Not implemented yet");
 }
 
 

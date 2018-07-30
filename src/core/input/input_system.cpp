@@ -80,6 +80,12 @@ public:
 	{}
 
 
+	void Enable(bool enable) override
+	{
+		active = enable;
+	}
+
+
 	inputDeviceID RegisterDevice(inputDeviceHandle handle, InputDeviceCategory category, const String& name) override
 	{
 		inputDeviceID dID = static_cast<inputDeviceID>(handle);
@@ -95,14 +101,6 @@ public:
 
 	void UnregisterDevice(inputDeviceHandle handle) override
 	{
-		/*for (unsigned i = 0; i < m_devices.Size(); ++i)
-		{
-			if (m_devices[i].GetDeviceId() == id)
-			{
-				m_devices.Erase(i);
-				return;
-			}
-		}*/
 		InputDevice* device;
 		if (m_devices.Find(handle, device))
 		{
@@ -117,6 +115,9 @@ public:
 
 	bool RegisterButtonEvent(inputDeviceHandle handle, KeyboardDevice::Button buttonId, bool pressed) override
 	{
+		if (!active)
+			return false;
+
 		InputDevice* device;
 		if (m_devices.Find(handle, device))
 		{
@@ -135,6 +136,9 @@ public:
 
 	bool RegisterButtonEvent(inputDeviceHandle handle, MouseDevice::Button buttonId, bool pressed) override
 	{
+		if (!active)
+			return false;
+
 		InputDevice* device;
 		if (m_devices.Find(handle, device))
 		{
@@ -153,6 +157,9 @@ public:
 
 	bool RegisterButtonEvent(inputDeviceHandle handle, GamepadDevice::Button buttonId, bool pressed) override
 	{
+		if (!active)
+			return false;
+
 		InputDevice* device;
 		if (m_devices.Find(handle, device))
 		{
@@ -171,6 +178,9 @@ public:
 
 	bool RegisterAxisEvent(inputDeviceHandle handle, MouseDevice::Axis axisId, const Vector3& delta) override
 	{
+		if (!active)
+			return false;
+
 		InputDevice* device;
 		if (m_devices.Find(handle, device))
 		{
@@ -189,6 +199,9 @@ public:
 
 	bool RegisterAxisEvent(inputDeviceHandle handle, GamepadDevice::Axis axisId, const Vector3& delta) override
 	{
+		if (!active)
+			return false;
+
 		InputDevice* device;
 		if (m_devices.Find(handle, device))
 		{
@@ -233,6 +246,7 @@ private:
 	IAllocator& m_allocator;
 	AssociativeArray<inputDeviceHandle, InputDevice> m_devices;
 	Array<InputEvent> m_events;
+	bool active = true;
 };
 
 

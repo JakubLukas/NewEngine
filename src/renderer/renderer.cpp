@@ -337,7 +337,7 @@ public:
 
 
 		// Set vertex and index buffer.
-		// DUMMY test
+		// TODO: DUMMY test
 		const RenderScene::ModelItem* modelItems = m_scene->GetModels(0);
 		for(size_t i = 0; i < m_scene->GetModelsCount(0); ++i)
 		{

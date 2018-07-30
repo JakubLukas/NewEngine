@@ -71,7 +71,7 @@ void MaterialManager::DestroyResource(Resource* resource)
 
 void MaterialManager::ReloadResource(Resource* resource)
 {
-	
+	ASSERT2(false, "Not implemented yet");
 }
 
 

@@ -173,6 +173,7 @@ void ShaderInternalManager::DestroyResource(Resource* resource)
 
 void ShaderInternalManager::ReloadResource(Resource* resource)
 {
+	ASSERT2(false, "Not implemented yet");
 }
 
 
@@ -269,6 +270,7 @@ void ShaderManager::DestroyResource(Resource* resource)
 
 void ShaderManager::ReloadResource(Resource* resource)
 {
+	ASSERT2(false, "Not implemented yet");
 }
 
 

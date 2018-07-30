@@ -39,13 +39,14 @@ public:
 	void Init()
 	{
 		CreateMainWindow();
+		CreateWindowSub();
 
 		if(!m_windowMode)
 			SetFullscreenBorderless();
 
 		m_engine = Engine::Create(m_allocator);
 		Engine::PlatformData platformData;
-		platformData.windowHndl = m_hwnd;
+		platformData.windowHndl = m_hwndSub;
 		m_engine->SetPlatformData(platformData);
 		InitPlugins();
 
@@ -130,9 +131,10 @@ public:
 private:
 	void CreateMainWindow()
 	{
-		static const char* WINDOW_CLASS_NAME = "App";
+		static const char* WINDOW_CLASS_NAME = "NewEngineEditor";
 
 		HINSTANCE hInst = GetModuleHandle(NULL); //handle to current exe module
+
 		WNDCLASSEX wnd = {};
 		wnd.cbSize = sizeof(wnd);
 		wnd.style = CS_HREDRAW | CS_VREDRAW; //redraw on horizontal or vertical resize
@@ -160,6 +162,38 @@ private:
 			hInst,
 			NULL);
 		ASSERT(m_hwnd != 0);
+	}
+
+	void CreateWindowSub()
+	{
+		static const char* WINDOW_CLASS_SUB_NAME = "NewEngine";
+
+		HINSTANCE hInst = GetModuleHandle(NULL); //handle to current exe module
+
+		WNDCLASSEX wndSub = {};
+		wndSub.cbSize = sizeof(wndSub);
+		wndSub.style = CS_HREDRAW | CS_VREDRAW; //redraw on horizontal or vertical resize
+		wndSub.lpfnWndProc = MsgProcSub; // message process callback function
+		wndSub.hInstance = hInst; // handle to module
+		wndSub.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+		wndSub.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wndSub.lpszClassName = WINDOW_CLASS_SUB_NAME;
+		wndSub.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+		ASSERT(RegisterClassEx(&wndSub));
+
+		m_hwndSub = CreateWindow(
+			WINDOW_CLASS_SUB_NAME,
+			WINDOW_CLASS_SUB_NAME,
+			WS_CHILD | WS_OVERLAPPED | WS_THICKFRAME | WS_CAPTION | WS_VISIBLE,
+			20,
+			20,
+			200,
+			200,
+			m_hwnd,
+			NULL,
+			hInst,
+			NULL);
+		ASSERT(m_hwndSub != 0);
 	}
 
 	void SetFullscreenBorderless()
@@ -572,10 +606,12 @@ private:
 		switch(msg)
 		{
 			case WM_KILLFOCUS:
-				//m_engine->getInputSystem().enable(false);
+				if(m_engine)
+					m_engine->GetInputSystem()->Enable(false);
 				break;
 			case WM_SETFOCUS:
-				//m_engine->getInputSystem().enable(true);
+				if (m_engine)
+					m_engine->GetInputSystem()->Enable(true);
 				break;
 			case WM_CLOSE:
 				PostQuitMessage(0);
@@ -608,8 +644,15 @@ private:
 		return s_instance->OnMessage(hwnd, msg, wparam, lparam);
 	}
 
+	static LRESULT CALLBACK MsgProcSub(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+	{
+		//TODO
+		return DefWindowProc(hwnd, msg, wparam, lparam);
+	}
+
 private:
 	HWND m_hwnd = nullptr;
+	HWND m_hwndSub = nullptr;//handle for engine window
 
 	int m_exitCode = 0;
 	bool m_finished = false;

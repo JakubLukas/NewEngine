@@ -73,6 +73,8 @@ public:
 public:
 	virtual ~InputSystem() {}
 
+	virtual void Enable(bool enable) = 0;
+
 	virtual inputDeviceID RegisterDevice(inputDeviceHandle handle, InputDeviceCategory category, const String& name) = 0;
 	virtual void UnregisterDevice(inputDeviceHandle handle) = 0;
 
