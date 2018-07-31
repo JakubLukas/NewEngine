@@ -10,7 +10,7 @@ namespace bgfx
 {
 
 
-int compileShader(int _argc, const char* _argv[]);
+//int compileShader(int _argc, const char* _argv[]);
 //typedef void(*UserErrorFn)(void*, const char*, va_list);
 //void setShaderCErrorFunction(UserErrorFn fn, void* user_ptr);
 //connect error logging of shaderc to my own //////////////////////////////////////////////////////////////////////
@@ -98,11 +98,11 @@ static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& 
 	};
 
 	//bgfx::setShaderCErrorFunction(CompileErrorCallback, nullptr);
-	if (bgfx::compileShader(sizeof(args) / sizeof(args[0]), args) == EXIT_FAILURE)
+	/*if (bgfx::compileShader(sizeof(args) / sizeof(args[0]), args) == EXIT_FAILURE)
 	{
 		LogError("Failed to compile %s -> %s", path.path, outPathBuffer.Cstr());
 		return false;
-	}
+	}*/
 
 	outPath = Path(outPathBuffer.Cstr());
 	return true;

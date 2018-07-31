@@ -40,6 +40,10 @@ solution "NewEngine"
 		SRC_DIR
 	}
 	
+	defines {
+		"_ITERATOR_DEBUG_LEVEL=0",
+	}
+	
 	configuration "Debug"
 		objdir(OBJ_DIR .. "Debug")
 		targetdir(BINARY_DIR .. "Debug")
@@ -105,9 +109,9 @@ project "main"
 	libdirs { "../external/bgfx/lib/win64" }
 	
 	configuration { "Debug", "x64" }
-		links { "bgfxDebug", "bimgDebug", "bxDebug", "fcppDebug", "glslangDebug", "glsl-optimizerDebug", "shadercDebug" }
+		links { "bgfxDebug", "bimgDebug", "bxDebug" }
 	configuration { "Release", "x64" }
-		links { "bgfxRelease", "bimgRelease", "bxRelease", "fcppRelease", "glslangRelease", "glsl-optimizerRelease", "shadercRelease"  }
+		links { "bgfxRelease", "bimgRelease", "bxRelease" }
 	configuration {}
 	
 	

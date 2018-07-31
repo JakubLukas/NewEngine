@@ -262,7 +262,18 @@ public:
 		d.nwh = m_engine.GetPlatformData().windowHndl;
 		bgfx::setPlatformData(d);
 
-		bgfx::init(bgfx::RendererType::Count, BGFX_PCI_ID_NONE, 0, &m_bgfxCallback, &m_bgfxAllocator);
+		bgfx::Init bgfxInit;
+		bgfxInit.type = bgfx::RendererType::Count;
+		bgfxInit.vendorId = BGFX_PCI_ID_NONE;
+		bgfxInit.deviceId = 0;
+		bgfxInit.debug = false;
+		bgfxInit.profile = false;
+		//bgfxInit.resolution;
+		//bgfxInit.limits;
+		bgfxInit.callback = &m_bgfxCallback;
+		bgfxInit.allocator = &m_bgfxAllocator;
+
+		bgfx::init(bgfxInit);
 
 		bgfx::setDebug(BGFX_DEBUG_NONE);//TODO
 
