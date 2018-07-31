@@ -15,6 +15,55 @@
 #include "core/file/path.h"////////////////////////////////
 #include "core/math.h"////////////////////////////////
 
+#include <bgfx/bgfx.h>///////////////
+
+
+
+
+namespace bx
+{
+
+/// Abstract allocator interface.
+struct AllocatorI
+{
+	virtual ~AllocatorI() {}
+
+	/// Allocates, resizes memory block, or frees memory.
+	///
+	/// @param[in] _ptr If _ptr is NULL new block will be allocated.
+	/// @param[in] _size If _ptr is set, and _size is 0, memory will be freed.
+	/// @param[in] _align Alignment.
+	/// @param[in] _file Debug file path info.
+	/// @param[in] _line Debug file line info.
+	virtual void* realloc(void* _ptr, size_t _size, size_t _align, const char* _file, uint32_t _line) = 0;
+};
+
+//void mtxProj(float* _result, float _fovy, float _aspect, float _near, float _far, bool _oglNdc);
+}
+
+
+namespace bgfx
+{
+
+struct PlatformData
+{
+	void* ndt;          //!< Native display type.
+	void* nwh;          //!< Native window handle.
+	void* context;      //!< GL context, or D3D device.
+	void* backBuffer;   //!< GL backbuffer, or D3D render target view.
+	void* backBufferDS; //!< Backbuffer depth/stencil.
+	void* session;      //!< ovrSession, for Oculus SDK
+};
+
+void setPlatformData(const PlatformData& _data);
+
+bgfx::ProgramHandle loadProgram(const char* _vsName, const char* _fsName);
+
+}
+
+
+
+
 
 namespace Veng
 {
@@ -22,11 +71,113 @@ namespace Veng
 RenderSystem* m_tmpPlugRender = nullptr;////////////////////////////////
 
 
+
+
+
+
+
+
+
+
+
+
+
+struct BGFXAllocator : public bx::AllocatorI
+{
+	static const size_t NATURAL_ALIGNEMENT = 8;
+
+	explicit BGFXAllocator(IAllocator& source)
+		: m_source(source)
+	{}
+
+	void* realloc(void* _ptr, size_t _size, size_t _alignment, const char* _file, u32 _line) override
+	{
+		if(_size == 0)
+		{
+			if(_ptr != nullptr)
+			{
+				m_source.Deallocate(_ptr);
+			}
+			return nullptr;
+		}
+		else
+		{
+			_alignment = (_alignment < NATURAL_ALIGNEMENT) ? NATURAL_ALIGNEMENT : _alignment;
+
+			if(_ptr == nullptr)
+			{
+				return m_source.Allocate(_size, _alignment);
+			}
+			else
+			{
+				return m_source.Reallocate(_ptr, _size, _alignment);
+			}
+		}
+	}
+
+
+	IAllocator& m_source;
+};
+
+
+struct BGFXCallback : public bgfx::CallbackI
+{
+	void fatal(bgfx::Fatal::Enum _code, const char* _str) override
+	{
+		switch(_code)
+		{
+			case bgfx::Fatal::DebugCheck:
+				LogError("Error: bgfx: DebugCheck: %s\n", _str);
+				break;
+			case bgfx::Fatal::InvalidShader:
+				LogError("Error: bgfx: InvalidShader: %s\n", _str);
+				break;
+			case bgfx::Fatal::UnableToInitialize:
+				LogError("Error: bgfx: UnableToInitialize: %s\n", _str);
+				break;
+			case bgfx::Fatal::UnableToCreateTexture:
+				LogError("Error: bgfx: UnableToCreateTexture: %s\n", _str);
+				break;
+			case bgfx::Fatal::DeviceLost:
+				LogError("Error: bgfx: DeviceLost: %s\n", _str);
+				break;
+		}
+	}
+	void traceVargs(const char* _filePath, uint16_t _line, const char* _format, va_list _argList) override {}
+	void profilerBegin(const char* _name, uint32_t _abgr, const char* _filePath, uint16_t _line) override {}
+	void profilerBeginLiteral(const char* _name, uint32_t _abgr, const char* _filePath, uint16_t _line) override {}
+	void profilerEnd() override {}
+	uint32_t cacheReadSize(uint64_t _id) override { return 0; }
+	bool cacheRead(uint64_t _id, void* _data, uint32_t _size) override { return false; }
+	void cacheWrite(uint64_t _id, const void* _data, uint32_t _size) override {}
+	void screenShot(const char* _filePath, uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _data, uint32_t _size, bool _yflip) override {}
+	void captureBegin(uint32_t _width, uint32_t _height, uint32_t _pitch, bgfx::TextureFormat::Enum _format, bool _yflip) override {}
+	void captureEnd() override {}
+	void captureFrame(const void* _data, uint32_t _size) override {}
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class App
 {
 public:
 	App()
 		: m_allocator(m_mainAllocator)
+		, m_bgfxAllocator(m_allocator)
 	{
 		s_instance = this;
 	}
@@ -43,6 +194,49 @@ public:
 
 		if(!m_windowMode)
 			SetFullscreenBorderless();
+
+
+
+
+		bgfx::PlatformData d{ 0 };
+		d.nwh = m_hwnd;
+		bgfx::setPlatformData(d);
+
+		bgfx::Init bgfxInit;
+		bgfxInit.type = bgfx::RendererType::Count;
+		bgfxInit.vendorId = BGFX_PCI_ID_NONE;
+		bgfxInit.deviceId = 0;
+		bgfxInit.debug = false;
+		bgfxInit.profile = false;
+		//bgfxInit.resolution;
+		//bgfxInit.limits;
+		bgfxInit.callback = &m_bgfxCallback;
+		bgfxInit.allocator = &m_bgfxAllocator;
+
+		bgfx::init(bgfxInit);
+
+		bgfx::setDebug(BGFX_DEBUG_NONE);//TODO
+
+		//m_fbh = bgfx::createFrameBuffer(m_hwnd, uint16_t(800), uint16_t(600));
+		m_fbhSub = bgfx::createFrameBuffer(m_hwndSub, uint16_t(100), uint16_t(100));
+
+		bgfx::setViewRect(0, 0, 0, uint16_t(800), uint16_t(600));
+		bgfx::setViewClear(0
+			, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
+			, 0x30ff30ff
+			, 1.0f
+			, 0
+		);
+
+		bgfx::setViewRect(1, 0, 0, uint16_t(100), uint16_t(100));
+		bgfx::setViewClear(1
+			, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
+			, 0x303030ff
+			, 1.0f
+			, 0
+		);
+
+
 
 		m_engine = Engine::Create(m_allocator);
 		Engine::PlatformData platformData;
@@ -102,6 +296,8 @@ public:
 		//TODO: shut down engine gracefully
 		RenderSystem::Destroy(m_tmpPlugRender);
 		Engine::Destroy(m_engine, m_allocator);
+
+		bgfx::shutdown();
 	}
 
 	void Run()
@@ -109,8 +305,18 @@ public:
 		while(!m_finished)
 		{
 			Sleep(1000 / 60);//TODO
+
+			bgfx::setViewFrameBuffer(0, BGFX_INVALID_HANDLE);
+			//bgfx::touch(0);
+			bgfx::setViewFrameBuffer(1, m_fbhSub);
+			bgfx::touch(1);
+
 			m_engine->Update(1000 / 60);
 			HandleEvents();
+
+
+
+			bgfx::frame();//flip buffers
 		}
 	}
 
@@ -661,6 +867,16 @@ private:
 	MainAllocator m_mainAllocator;
 	HeapAllocator m_allocator;
 	Engine* m_engine = nullptr;
+	
+
+
+	bgfx::FrameBufferHandle m_fbh;
+	bgfx::FrameBufferHandle m_fbhSub;
+	BGFXAllocator m_bgfxAllocator;
+	BGFXCallback m_bgfxCallback;
+
+
+
 
 	static App* s_instance;
 };

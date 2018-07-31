@@ -258,31 +258,31 @@ public:
 		, m_bgfxAllocator(m_allocator)
 	{
 		///////////////
-		bgfx::PlatformData d { 0 };
-		d.nwh = m_engine.GetPlatformData().windowHndl;
-		bgfx::setPlatformData(d);
-
-		bgfx::Init bgfxInit;
-		bgfxInit.type = bgfx::RendererType::Count;
-		bgfxInit.vendorId = BGFX_PCI_ID_NONE;
-		bgfxInit.deviceId = 0;
-		bgfxInit.debug = false;
-		bgfxInit.profile = false;
-		//bgfxInit.resolution;
-		//bgfxInit.limits;
-		bgfxInit.callback = &m_bgfxCallback;
-		bgfxInit.allocator = &m_bgfxAllocator;
-
-		bgfx::init(bgfxInit);
-
-		bgfx::setDebug(BGFX_DEBUG_NONE);//TODO
-
-		bgfx::setViewClear(0
-			, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
-			, 0x303030ff
-			, 1.0f
-			, 0
-		);
+		//bgfx::PlatformData d { 0 };
+		//d.nwh = m_engine.GetPlatformData().windowHndl;
+		//bgfx::setPlatformData(d);
+		//
+		//bgfx::Init bgfxInit;
+		//bgfxInit.type = bgfx::RendererType::Count;
+		//bgfxInit.vendorId = BGFX_PCI_ID_NONE;
+		//bgfxInit.deviceId = 0;
+		//bgfxInit.debug = false;
+		//bgfxInit.profile = false;
+		////bgfxInit.resolution;
+		////bgfxInit.limits;
+		//bgfxInit.callback = &m_bgfxCallback;
+		//bgfxInit.allocator = &m_bgfxAllocator;
+		//
+		//bgfx::init(bgfxInit);
+		//
+		//bgfx::setDebug(BGFX_DEBUG_NONE);//TODO
+		//
+		//bgfx::setViewClear(0
+		//	, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
+		//	, 0x303030ff
+		//	, 1.0f
+		//	, 0
+		//);
 
 		ResourceManagement* resourceManagement = m_engine.GetResourceManagement();
 
@@ -308,7 +308,7 @@ public:
 		DELETE_OBJECT(m_allocator, m_shaderInternalManager);
 
 		// Shutdown bgfx.
-		bgfx::shutdown();
+		//bgfx::shutdown();
 	}
 
 
@@ -340,9 +340,9 @@ public:
 		//float projj[16];
 		//bx::mtxProj(projj, 60.0f, float(m_width) / float(m_height), 0.1f, 100.0f, bgfx::getCaps()->homogeneousDepth);
 
-		bgfx::setViewTransform(0, &view.m11, &proj.m11/*projj*/);
+		bgfx::setViewTransform(1, &view.m11, &proj.m11/*projj*/);
 
-		bgfx::touch(0);//dummy draw call (clear view 0)
+		bgfx::touch(1);//dummy draw call (clear view 0)
 
 		World* world = m_engine.GetWorld(0);
 
@@ -376,14 +376,14 @@ public:
 
 						// Submit primitive for rendering to view 0.
 						const Shader* shader = m_shaderManager->GetResource(material->shader);
-						bgfx::submit(0, shader->program.handle);
+						bgfx::submit(1, shader->program.handle);
 					}
 				}
 			}
 		}
 
 
-		bgfx::frame();//flip buffers
+		//bgfx::frame();//flip buffers
 	};
 
 
