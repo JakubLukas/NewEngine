@@ -10,10 +10,10 @@ namespace Veng
 
 
 static const int BUFFER_SIZE = 4096;
-char buffer[BUFFER_SIZE];
+static char buffer[BUFFER_SIZE];
 
 
-void LogInfo(const char* format, ...)
+void Log(LogType type, const char* format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -24,23 +24,9 @@ void LogInfo(const char* format, ...)
 }
 
 
-void LogWarning(const char* format, ...)
+void Log(LogType type, const char* format, char* args)
 {
-	va_list args;
-	va_start(args, format);
 	vsnprintf(buffer, BUFFER_SIZE, format, args);
-	va_end(args);
-
-	os::LogDebugString(buffer);
-}
-
-
-void LogError(const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-	vsnprintf(buffer, BUFFER_SIZE, format, args);
-	va_end(args);
 
 	os::LogDebugString(buffer);
 }

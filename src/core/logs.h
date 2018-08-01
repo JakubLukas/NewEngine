@@ -4,12 +4,16 @@
 namespace Veng
 {
 
+enum class LogType : char
+{
+	Info,
+	Warning,
+	Error,
+};
 
-void LogInfo(const char* format, ...);
+void Log(LogType type, const char* format, ...);
 
-void LogWarning(const char* format, ...);
-
-void LogError(const char* format, ...);
+void Log(LogType type, const char* format, char* args);
 
 
 }

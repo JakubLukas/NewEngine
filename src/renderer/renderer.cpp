@@ -110,19 +110,19 @@ struct BGFXCallback : public bgfx::CallbackI
 		switch (_code)
 		{
 		case bgfx::Fatal::DebugCheck:
-			LogError("Error: bgfx: DebugCheck: %s\n", _str);
+			Log(LogType::Error, "Error: bgfx: DebugCheck: %s\n", _str);
 			break;
 		case bgfx::Fatal::InvalidShader:
-			LogError("Error: bgfx: InvalidShader: %s\n", _str);
+			Log(LogType::Error, "Error: bgfx: InvalidShader: %s\n", _str);
 			break;
 		case bgfx::Fatal::UnableToInitialize:
-			LogError("Error: bgfx: UnableToInitialize: %s\n", _str);
+			Log(LogType::Error, "Error: bgfx: UnableToInitialize: %s\n", _str);
 			break;
 		case bgfx::Fatal::UnableToCreateTexture:
-			LogError("Error: bgfx: UnableToCreateTexture: %s\n", _str);
+			Log(LogType::Error, "Error: bgfx: UnableToCreateTexture: %s\n", _str);
 			break;
 		case bgfx::Fatal::DeviceLost:
-			LogError("Error: bgfx: DeviceLost: %s\n", _str);
+			Log(LogType::Error, "Error: bgfx: DeviceLost: %s\n", _str);
 			break;
 		}
 	}

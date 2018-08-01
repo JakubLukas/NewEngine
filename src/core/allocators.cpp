@@ -2,7 +2,7 @@
 #include <cstdlib>
 
 
-void* operator new(size_t)
+/*void* operator new(size_t)
 {
 	ASSERT2(false, "Usage of new is forbidden, use placement new instead");
 	return nullptr;
@@ -23,7 +23,7 @@ void* operator new[](size_t)
 void operator delete[](void*)
 {
 	ASSERT2(false, "Usage of new is forbidden, use placement new instead");
-}
+}*/
 
 
 namespace Veng

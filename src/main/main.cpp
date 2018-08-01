@@ -1,3 +1,5 @@
+#include "app.h"
+
 #define VC_EXTRALEAN
 #include <windows.h>
 #include "core/allocators.h"
@@ -11,312 +13,132 @@
 #include <hidsdi.h>
 
 
-#include "renderer/irenderer.h"
-#include "core/file/path.h"////////////////////////////////
-#include "core/math.h"////////////////////////////////
-
-#include <bgfx/bgfx.h>///////////////
-
-
-
-
-namespace bx
-{
-
-/// Abstract allocator interface.
-struct AllocatorI
-{
-	virtual ~AllocatorI() {}
-
-	/// Allocates, resizes memory block, or frees memory.
-	///
-	/// @param[in] _ptr If _ptr is NULL new block will be allocated.
-	/// @param[in] _size If _ptr is set, and _size is 0, memory will be freed.
-	/// @param[in] _align Alignment.
-	/// @param[in] _file Debug file path info.
-	/// @param[in] _line Debug file line info.
-	virtual void* realloc(void* _ptr, size_t _size, size_t _align, const char* _file, uint32_t _line) = 0;
-};
-
-//void mtxProj(float* _result, float _fovy, float _aspect, float _near, float _far, bool _oglNdc);
-}
-
-
-namespace bgfx
-{
-
-struct PlatformData
-{
-	void* ndt;          //!< Native display type.
-	void* nwh;          //!< Native window handle.
-	void* context;      //!< GL context, or D3D device.
-	void* backBuffer;   //!< GL backbuffer, or D3D render target view.
-	void* backBufferDS; //!< Backbuffer depth/stencil.
-	void* session;      //!< ovrSession, for Oculus SDK
-};
-
-void setPlatformData(const PlatformData& _data);
-
-bgfx::ProgramHandle loadProgram(const char* _vsName, const char* _fsName);
-
-}
-
-
-
+#include "editor.h"////////////////////////
+#include "renderer/irenderer.h"////////////////////////
 
 
 namespace Veng
 {
 
-RenderSystem* m_tmpPlugRender = nullptr;////////////////////////////////
 
-
-
-
-
-
-
-
-
-
-
-
-
-struct BGFXAllocator : public bx::AllocatorI
-{
-	static const size_t NATURAL_ALIGNEMENT = 8;
-
-	explicit BGFXAllocator(IAllocator& source)
-		: m_source(source)
-	{}
-
-	void* realloc(void* _ptr, size_t _size, size_t _alignment, const char* _file, u32 _line) override
-	{
-		if(_size == 0)
-		{
-			if(_ptr != nullptr)
-			{
-				m_source.Deallocate(_ptr);
-			}
-			return nullptr;
-		}
-		else
-		{
-			_alignment = (_alignment < NATURAL_ALIGNEMENT) ? NATURAL_ALIGNEMENT : _alignment;
-
-			if(_ptr == nullptr)
-			{
-				return m_source.Allocate(_size, _alignment);
-			}
-			else
-			{
-				return m_source.Reallocate(_ptr, _size, _alignment);
-			}
-		}
-	}
-
-
-	IAllocator& m_source;
-};
-
-
-struct BGFXCallback : public bgfx::CallbackI
-{
-	void fatal(bgfx::Fatal::Enum _code, const char* _str) override
-	{
-		switch(_code)
-		{
-			case bgfx::Fatal::DebugCheck:
-				LogError("Error: bgfx: DebugCheck: %s\n", _str);
-				break;
-			case bgfx::Fatal::InvalidShader:
-				LogError("Error: bgfx: InvalidShader: %s\n", _str);
-				break;
-			case bgfx::Fatal::UnableToInitialize:
-				LogError("Error: bgfx: UnableToInitialize: %s\n", _str);
-				break;
-			case bgfx::Fatal::UnableToCreateTexture:
-				LogError("Error: bgfx: UnableToCreateTexture: %s\n", _str);
-				break;
-			case bgfx::Fatal::DeviceLost:
-				LogError("Error: bgfx: DeviceLost: %s\n", _str);
-				break;
-		}
-	}
-	void traceVargs(const char* _filePath, uint16_t _line, const char* _format, va_list _argList) override {}
-	void profilerBegin(const char* _name, uint32_t _abgr, const char* _filePath, uint16_t _line) override {}
-	void profilerBeginLiteral(const char* _name, uint32_t _abgr, const char* _filePath, uint16_t _line) override {}
-	void profilerEnd() override {}
-	uint32_t cacheReadSize(uint64_t _id) override { return 0; }
-	bool cacheRead(uint64_t _id, void* _data, uint32_t _size) override { return false; }
-	void cacheWrite(uint64_t _id, const void* _data, uint32_t _size) override {}
-	void screenShot(const char* _filePath, uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _data, uint32_t _size, bool _yflip) override {}
-	void captureBegin(uint32_t _width, uint32_t _height, uint32_t _pitch, bgfx::TextureFormat::Enum _format, bool _yflip) override {}
-	void captureEnd() override {}
-	void captureFrame(const void* _data, uint32_t _size) override {}
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class App
+class AppImpl : public App
 {
 public:
-	App()
+	AppImpl()
 		: m_allocator(m_mainAllocator)
-		, m_bgfxAllocator(m_allocator)
 	{
 		s_instance = this;
 	}
 
-	~App()
+	~AppImpl() override
 	{
 		s_instance = nullptr;
 	}
 
+
+	void* CreateSubWindow() override
+	{
+		if (m_subHwndSize == MAX_SUB_WINDOWS)
+			return nullptr;
+
+		HINSTANCE hInst = GetModuleHandle(NULL); //handle to current exe module
+
+		HWND hwnd = CreateWindow(
+			WINDOW_CLASS_NAME,
+			"",
+			WS_CHILD | WS_OVERLAPPED | WS_THICKFRAME | WS_CAPTION | WS_VISIBLE,
+			20,
+			20,
+			200,
+			200,
+			m_hwnd,
+			NULL,
+			hInst,
+			NULL);
+
+		if (hwnd != NULL)
+		{
+			m_subHwnd[m_subHwndSize++] = hwnd;
+			return hwnd;
+		}
+		else
+		{
+			DWORD err = GetLastError();
+			return nullptr;
+		}
+	}
+
+	bool DestroySubWindow(void* hwnd) override
+	{
+		BOOL result = DestroyWindow((HWND)hwnd);
+		if(result != 0)
+		{
+			int i = 0;
+			for(; i < m_subHwndSize; ++i)
+			{
+				if(m_subHwnd[i] == hwnd)
+					break;
+			}
+			for(; i < m_subHwndSize - 1; ++i)
+			{
+				m_subHwnd[i] = m_subHwnd[i + 1];
+			}
+
+			m_subHwnd[--m_subHwndSize] = nullptr;
+			return true;
+		}
+		else
+		{
+			DWORD err = GetLastError();
+			return false;
+		}
+	}
+
+	void* GetMainWindowHandle() const override
+	{
+		return m_hwnd;
+	}
+
+	WindowSize GetWindowSize(void* hwnd) const override
+	{
+		RECT rect;
+		ASSERT(GetClientRect((HWND)hwnd, &rect));
+		return{
+			rect.right - rect.left,
+			rect.bottom - rect.top
+		};
+	}
+
+
 	void Init()
 	{
+		m_editor = Editor::Create(m_allocator, *this);
+
 		CreateMainWindow();
-		CreateWindowSub();
 
 		if(!m_windowMode)
 			SetFullscreenBorderless();
 
-
-
-
-		bgfx::PlatformData d{ 0 };
-		d.nwh = m_hwnd;
-		bgfx::setPlatformData(d);
-
-		bgfx::Init bgfxInit;
-		bgfxInit.type = bgfx::RendererType::Count;
-		bgfxInit.vendorId = BGFX_PCI_ID_NONE;
-		bgfxInit.deviceId = 0;
-		bgfxInit.debug = false;
-		bgfxInit.profile = false;
-		//bgfxInit.resolution;
-		//bgfxInit.limits;
-		bgfxInit.callback = &m_bgfxCallback;
-		bgfxInit.allocator = &m_bgfxAllocator;
-
-		bgfx::init(bgfxInit);
-
-		bgfx::setDebug(BGFX_DEBUG_NONE);//TODO
-
-		//m_fbh = bgfx::createFrameBuffer(m_hwnd, uint16_t(800), uint16_t(600));
-		m_fbhSub = bgfx::createFrameBuffer(m_hwndSub, uint16_t(100), uint16_t(100));
-
-		bgfx::setViewRect(0, 0, 0, uint16_t(800), uint16_t(600));
-		bgfx::setViewClear(0
-			, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
-			, 0x30ff30ff
-			, 1.0f
-			, 0
-		);
-
-		bgfx::setViewRect(1, 0, 0, uint16_t(100), uint16_t(100));
-		bgfx::setViewClear(1
-			, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
-			, 0x303030ff
-			, 1.0f
-			, 0
-		);
-
-
-
-		m_engine = Engine::Create(m_allocator);
-		Engine::PlatformData platformData;
-		platformData.windowHndl = m_hwndSub;
-		m_engine->SetPlatformData(platformData);
-		InitPlugins();
+		m_editor->Init();
 
 		RegisterRawInput();
 
-		//DUMMY GAMEPLAY CODE
-		worldId worldHandle = m_engine->AddWorld();
-		World* world = m_engine->GetWorld(worldHandle);
-		RenderScene* renderScene = static_cast<RenderScene*>(m_tmpPlugRender->GetScene());
-		Entity camEnt = world->CreateEntity();
-		Transform& camTrans = world->GetEntityTransform(camEnt);
-		renderScene->AddCameraComponent(camEnt, worldHandle, 60.0_deg, 0.001f, 100.0f);
-
-		for (unsigned yy = 0; yy < 11; ++yy)
-		{
-			for (unsigned xx = 0; xx < 11; ++xx)
-			{
-				Entity entity = world->CreateEntity();
-				Transform& trans = world->GetEntityTransform(entity);
-				renderScene->AddModelComponent(entity, worldHandle, "models/cubes.model");
-
-				Quaternion rot = Quaternion::IDENTITY;
-				//rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
-				//rot = rot * Quaternion(Vector3::AXIS_Y, yy*0.37f);
-				Vector3 pos = {
-					-15.0f + float(xx) * 3.0f,
-					-15.0f + float(yy) * 3.0f,
-					0.0f
-				};
-				trans = Transform(rot, pos);
-			}
-		}
-
-	}
-
-	void InitPlugins()
-	{
-		ASSERT(m_engine != nullptr);
-		m_tmpPlugRender = RenderSystem::Create(*m_engine);
-		m_tmpPlugRender->Init();
-		RECT rect;
-		if (GetClientRect(m_hwnd, &rect))
-		{
-			u32 width = rect.right - rect.left;
-			u32 height = rect.bottom - rect.top;
-			m_tmpPlugRender->Resize(width, height);
-		}
-		m_engine->AddPlugin(m_tmpPlugRender);
 	}
 
 	void Deinit()
 	{
-		//TODO: shut down engine gracefully
-		RenderSystem::Destroy(m_tmpPlugRender);
-		Engine::Destroy(m_engine, m_allocator);
-
-		bgfx::shutdown();
+		m_editor->Deinit();
+		Editor::Destroy(m_editor, m_allocator);
 	}
 
 	void Run()
 	{
 		while(!m_finished)
 		{
-			Sleep(1000 / 60);//TODO
+			Sleep(1000 / 60);//TODO ////////////////////////////////////////////
 
-			bgfx::setViewFrameBuffer(0, BGFX_INVALID_HANDLE);
-			//bgfx::touch(0);
-			bgfx::setViewFrameBuffer(1, m_fbhSub);
-			bgfx::touch(1);
-
-			m_engine->Update(1000 / 60);
+			m_editor->Update();
 			HandleEvents();
-
-
-
-			bgfx::frame();//flip buffers
 		}
 	}
 
@@ -337,8 +159,6 @@ public:
 private:
 	void CreateMainWindow()
 	{
-		static const char* WINDOW_CLASS_NAME = "NewEngineEditor";
-
 		HINSTANCE hInst = GetModuleHandle(NULL); //handle to current exe module
 
 		WNDCLASSEX wnd = {};
@@ -358,7 +178,7 @@ private:
 		m_hwnd = CreateWindow(
 			WINDOW_CLASS_NAME,
 			WINDOW_CLASS_NAME,
-			WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+			WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_CLIPCHILDREN,
 			CW_USEDEFAULT,
 			CW_USEDEFAULT,
 			rect.right - rect.left,
@@ -368,38 +188,6 @@ private:
 			hInst,
 			NULL);
 		ASSERT(m_hwnd != 0);
-	}
-
-	void CreateWindowSub()
-	{
-		static const char* WINDOW_CLASS_SUB_NAME = "NewEngine";
-
-		HINSTANCE hInst = GetModuleHandle(NULL); //handle to current exe module
-
-		WNDCLASSEX wndSub = {};
-		wndSub.cbSize = sizeof(wndSub);
-		wndSub.style = CS_HREDRAW | CS_VREDRAW; //redraw on horizontal or vertical resize
-		wndSub.lpfnWndProc = MsgProcSub; // message process callback function
-		wndSub.hInstance = hInst; // handle to module
-		wndSub.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-		wndSub.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wndSub.lpszClassName = WINDOW_CLASS_SUB_NAME;
-		wndSub.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-		ASSERT(RegisterClassEx(&wndSub));
-
-		m_hwndSub = CreateWindow(
-			WINDOW_CLASS_SUB_NAME,
-			WINDOW_CLASS_SUB_NAME,
-			WS_CHILD | WS_OVERLAPPED | WS_THICKFRAME | WS_CAPTION | WS_VISIBLE,
-			20,
-			20,
-			200,
-			200,
-			m_hwnd,
-			NULL,
-			hInst,
-			NULL);
-		ASSERT(m_hwndSub != 0);
 	}
 
 	void SetFullscreenBorderless()
@@ -428,7 +216,7 @@ private:
 		UINT numDevices;
 		if (GetRawInputDeviceList(NULL, &numDevices, sizeof(RAWINPUTDEVICELIST)) != 0)
 		{
-			LogError("RegisterRawInputDevices failed\n");
+			Log(LogType::Error, "RegisterRawInputDevices failed\n");
 			return;
 		}
 		if (numDevices == 0) return;
@@ -437,7 +225,7 @@ private:
 		deviceList.Resize(numDevices);
 		if (GetRawInputDeviceList(&deviceList[0], &numDevices, sizeof(RAWINPUTDEVICELIST)) == -1)
 		{
-			LogError("RegisterRawInputDevices failed\n");
+			Log(LogType::Error, "RegisterRawInputDevices failed\n");
 			return;
 		}
 
@@ -452,10 +240,10 @@ private:
 			switch (device.dwType)
 			{
 			case RIM_TYPEMOUSE:
-				m_engine->GetInputSystem()->RegisterDevice(deviceHandle, InputDeviceCategory::Mouse, deviceName);
+				m_editor->GetEngine()->GetInputSystem()->RegisterDevice(deviceHandle, InputDeviceCategory::Mouse, deviceName);
 				break;
 			case RIM_TYPEKEYBOARD:
-				m_engine->GetInputSystem()->RegisterDevice(deviceHandle, InputDeviceCategory::Keyboard, deviceName);
+				m_editor->GetEngine()->GetInputSystem()->RegisterDevice(deviceHandle, InputDeviceCategory::Keyboard, deviceName);
 				break;
 			case RIM_TYPEHID:
 			{
@@ -463,13 +251,13 @@ private:
 				switch (usage)
 				{
 				case HID_USAGE_GENERIC_GAMEPAD:
-					m_engine->GetInputSystem()->RegisterDevice(deviceHandle, InputDeviceCategory::Gamepad, deviceName);
+					m_editor->GetEngine()->GetInputSystem()->RegisterDevice(deviceHandle, InputDeviceCategory::Gamepad, deviceName);
 					break;
 				}
 			}
 			break;
 			default:
-				LogInfo("Unregistered HID device. handle: 0x%08X, type: 0x%04X\n", device.hDevice, device.dwType);
+				Log(LogType::Info, "Unregistered HID device. handle: 0x%08X, type: 0x%04X\n", device.hDevice, device.dwType);
 				break;
 			}
 		}
@@ -499,7 +287,7 @@ private:
 
 		if(RegisterRawInputDevices(rid, DEVICE_COUNT, sizeof(RAWINPUTDEVICE)) == FALSE)
 		{
-			LogError("RegisterRawInputDevices failed\n");
+			Log(LogType::Error, "RegisterRawInputDevices failed\n");
 		}
 	}
 
@@ -512,12 +300,12 @@ private:
 
 		u8 scUSB = Keyboard::Scancode_USBHID::FromPS2(scancodePS2);
 		KeyboardDevice::Button keyCode = (KeyboardDevice::Button)scUSB;
-		m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, keyCode, pressed);
+		m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, keyCode, pressed);
 
 		u32 scPS2 = Keyboard::Scancode_PS2::FromUSBHID(scUSB);
 		char buffer[512] = {};
 		Keyboard::getScancodeName(scPS2, buffer, 512); // getting a human-readable string
-		LogInfo("%s : %s\n", buffer, (pressed) ? "down" : "up");
+		Log(LogType::Info, "%s : %s\n", buffer, (pressed) ? "down" : "up");
 
 		/*const i32 BUFFER_SIZE = 4;
 		wchar_t utf16_buffer[BUFFER_SIZE] = { 0 };
@@ -550,7 +338,7 @@ private:
 				(float)mouse.lLastY,
 				0.0f
 			};
-			m_engine->GetInputSystem()->RegisterAxisEvent(deviceHandle, MouseDevice::Axis::Movement, axisMov);
+			m_editor->GetEngine()->GetInputSystem()->RegisterAxisEvent(deviceHandle, MouseDevice::Axis::Movement, axisMov);
 			return;
 		}
 		else if (mouse.usFlags & MOUSE_MOVE_ABSOLUTE)
@@ -566,7 +354,7 @@ private:
 				0.0f,
 				0.0f
 			};
-			m_engine->GetInputSystem()->RegisterAxisEvent(deviceHandle, MouseDevice::Axis::Wheel, axisWheel);
+			m_editor->GetEngine()->GetInputSystem()->RegisterAxisEvent(deviceHandle, MouseDevice::Axis::Wheel, axisWheel);
 			return;
 		}
 		else
@@ -574,29 +362,29 @@ private:
 			if (mouse.usButtonFlags != Mouse::BUTTON_NONE)
 			{
 				if((mouse.usButtonFlags & RI_MOUSE_BUTTON_1_DOWN) != 0)
-					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Left, true);
+					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Left, true);
 				if((mouse.usButtonFlags & RI_MOUSE_BUTTON_1_UP) != 0)
-					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Left, false);
+					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Left, false);
 
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_2_DOWN) != 0)
-					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Right, true);
+					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Right, true);
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_2_UP) != 0)
-					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Right, false);
+					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Right, false);
 
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_3_DOWN) != 0)
-					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Middle, true);
+					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Middle, true);
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_3_UP) != 0)
-					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Middle, false);
+					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Middle, false);
 
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_4_DOWN) != 0)
-					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra4, true);
+					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra4, true);
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_4_UP) != 0)
-					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra4, false);
+					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra4, false);
 
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_5_DOWN) != 0)
-					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra5, true);
+					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra5, true);
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_5_UP) != 0)
-					m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra5, false);
+					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra5, false);
 			}
 		}
 	}
@@ -667,7 +455,7 @@ private:
 
 		if(GetRawInputData((HRAWINPUT)lParam, RID_INPUT, &raw, &size, sizeof(RAWINPUTHEADER)) == (UINT)-1)
 		{
-			LogError("HandleRawInput(): error happened in GetRawInputData()");
+			Log(LogType::Error, "HandleRawInput(): error happened in GetRawInputData()");
 			return;
 		}
 
@@ -726,14 +514,14 @@ private:
 				String deviceName(m_allocator);
 				GetNameOfDevice(deviceHandle, deviceName);
 
-				m_engine->GetInputSystem()->RegisterDevice(lParam, category, deviceName);
+				m_editor->GetEngine()->GetInputSystem()->RegisterDevice(lParam, category, deviceName);
 			}
 			else
-				m_engine->GetInputSystem()->UnregisterDevice(lParam);
+				m_editor->GetEngine()->GetInputSystem()->UnregisterDevice(lParam);
 		}
 		else
 		{
-			LogError("HandleRawInputDeviceChange: failed\n");
+			Log(LogType::Error, "HandleRawInputDeviceChange: failed\n");
 		}
 	}
 
@@ -747,7 +535,7 @@ private:
 		RID_DEVICE_INFO info;
 		if (GetRawInputDeviceInfo(deviceHandle, RIDI_DEVICEINFO, &info, &infoSize) <= 0)
 		{
-			LogError("GetHIDType: failed to get device type\n");
+			Log(LogType::Error, "GetHIDType: failed to get device type\n");
 			return 0;
 		}
 		ASSERT(info.dwType == RIM_TYPEHID);
@@ -765,7 +553,7 @@ private:
 		rawRegistrypath.Resize(registryPathSize);
 		if (GetRawInputDeviceInfo(deviceHandle, RIDI_DEVICENAME, &rawRegistrypath[0], &registryPathSize) <= 0)
 		{
-			LogError("RegisterRawInputDevices: failed to get device name\n");
+			Log(LogType::Error, "RegisterRawInputDevices: failed to get device name\n");
 			return;
 		}
 
@@ -803,8 +591,7 @@ private:
 	{
 		WORD width = LOWORD(lparam);
 		WORD height = HIWORD(lparam);
-		if(m_tmpPlugRender != nullptr)
-			m_tmpPlugRender->Resize(width, height);
+		m_editor->Resize(width, height);
 	}
 
 	LRESULT OnMessage(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -812,19 +599,19 @@ private:
 		switch(msg)
 		{
 			case WM_KILLFOCUS:
-				if(m_engine)
-					m_engine->GetInputSystem()->Enable(false);
+				if(m_editor->GetEngine())
+					m_editor->GetEngine()->GetInputSystem()->Enable(false);
 				break;
 			case WM_SETFOCUS:
-				if (m_engine)
-					m_engine->GetInputSystem()->Enable(true);
+				if (m_editor->GetEngine())
+					m_editor->GetEngine()->GetInputSystem()->Enable(true);
 				break;
 			case WM_CLOSE:
 				PostQuitMessage(0);
 				break;
 			case WM_MOVE:
 			case WM_SIZE:
-				HandleResize(lparam);
+				//HandleResize(lparam);
 				break;
 			case WM_QUIT:
 				m_finished = true;
@@ -850,39 +637,29 @@ private:
 		return s_instance->OnMessage(hwnd, msg, wparam, lparam);
 	}
 
-	static LRESULT CALLBACK MsgProcSub(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
-	{
-		//TODO
-		return DefWindowProc(hwnd, msg, wparam, lparam);
-	}
 
 private:
+	MainAllocator m_mainAllocator;
+	HeapAllocator m_allocator;
 	HWND m_hwnd = nullptr;
-	HWND m_hwndSub = nullptr;//handle for engine window
+
+	Editor* m_editor = nullptr;
+
+	static const int MAX_SUB_WINDOWS = 8;
+	int m_subHwndSize = 0;
+	HWND m_subHwnd[MAX_SUB_WINDOWS] = { nullptr };
 
 	int m_exitCode = 0;
 	bool m_finished = false;
 	bool m_windowMode = true;
 
-	MainAllocator m_mainAllocator;
-	HeapAllocator m_allocator;
-	Engine* m_engine = nullptr;
-	
-
-
-	bgfx::FrameBufferHandle m_fbh;
-	bgfx::FrameBufferHandle m_fbhSub;
-	BGFXAllocator m_bgfxAllocator;
-	BGFXCallback m_bgfxCallback;
-
-
-
-
-	static App* s_instance;
+	static const char* WINDOW_CLASS_NAME;
+	static AppImpl* s_instance;
 };
 
 
-App* App::s_instance = nullptr;
+const char* AppImpl::WINDOW_CLASS_NAME = "NewEngine";
+AppImpl* AppImpl::s_instance = nullptr;
 
 
 }
@@ -890,7 +667,7 @@ App* App::s_instance = nullptr;
 
 INT WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, INT)
 {
-	Veng::App app;
+	Veng::AppImpl app;
 	app.Init();
 	app.Run();
 	app.Deinit();

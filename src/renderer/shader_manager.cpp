@@ -6,32 +6,27 @@
 #include "core/string.h"
 
 
-namespace bgfx
+namespace shaderc
 {
 
 
-//int compileShader(int _argc, const char* _argv[]);
-//typedef void(*UserErrorFn)(void*, const char*, va_list);
-//void setShaderCErrorFunction(UserErrorFn fn, void* user_ptr);
-//connect error logging of shaderc to my own //////////////////////////////////////////////////////////////////////
+int compileShader(int _argc, const char* _argv[]);
 
+}
+
+extern "C"
+int fprintf_hook(void* stream, char const* const format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	Veng::Log(Veng::LogType::Error, format, args);
+	va_end(args);
+	return 0;
 }
 
 
 namespace Veng
 {
-
-
-template<typename ...Args>
-int LogCompileError(void* stream, char const* format, Args... args)
-{
-	LogError(format, args...);
-}
-
-/*static void CompileErrorCallback(void*, const char* format, va_list args)
-{
-	LogError(format, args);
-}*/
 
 
 static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& outPath)
@@ -98,11 +93,11 @@ static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& 
 	};
 
 	//bgfx::setShaderCErrorFunction(CompileErrorCallback, nullptr);
-	/*if (bgfx::compileShader(sizeof(args) / sizeof(args[0]), args) == EXIT_FAILURE)
+	if (shaderc::compileShader(sizeof(args) / sizeof(args[0]), args) == EXIT_FAILURE)
 	{
-		LogError("Failed to compile %s -> %s", path.path, outPathBuffer.Cstr());
+		Log(LogType::Error, "Failed to compile %s -> %s", path.path, outPathBuffer.Cstr());
 		return false;
-	}*/
+	}
 
 	outPath = Path(outPathBuffer.Cstr());
 	return true;
@@ -282,7 +277,7 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	ASSERT(data.ReadLine(vsPath, Path::MAX_LENGTH));
 
 	Path vOutPath;
-	CompileShader(GetFileSystem(), Path(vsPath), vOutPath);
+	ASSERT(CompileShader(GetFileSystem(), Path(vsPath), vOutPath));
 	resourceHandle vsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, vOutPath);
 	shader->vsHandle = static_cast<shaderInternalHandle>(vsHandle);
 
@@ -290,7 +285,7 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	ASSERT(data.ReadLine(fsPath, Path::MAX_LENGTH));
 
 	Path fOutPath;
-	CompileShader(GetFileSystem(), Path(fsPath), fOutPath);
+	ASSERT(CompileShader(GetFileSystem(), Path(fsPath), fOutPath));
 	resourceHandle fsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, fOutPath);
 	shader->fsHandle = static_cast<shaderInternalHandle>(fsHandle);
 }
