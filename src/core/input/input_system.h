@@ -78,11 +78,11 @@ public:
 	virtual inputDeviceID RegisterDevice(inputDeviceHandle handle, InputDeviceCategory category, const String& name) = 0;
 	virtual void UnregisterDevice(inputDeviceHandle handle) = 0;
 
-	virtual bool RegisterButtonEvent(inputDeviceHandle handle, KeyboardDevice::Button buttonId, bool pressed) = 0;
-	virtual bool RegisterButtonEvent(inputDeviceHandle handle, MouseDevice::Button buttonId, bool pressed) = 0;
-	virtual bool RegisterButtonEvent(inputDeviceHandle handle, GamepadDevice::Button buttonId, bool pressed) = 0;
-	virtual bool RegisterAxisEvent(inputDeviceHandle handle, MouseDevice::Axis axisId, const Vector3& delta) = 0;
-	virtual bool RegisterAxisEvent(inputDeviceHandle handle, GamepadDevice::Axis axisId, const Vector3& delta) = 0;
+	virtual void RegisterButtonEvent(inputDeviceHandle handle, KeyboardDevice::Button buttonId, bool pressed) = 0;
+	virtual void RegisterButtonEvent(inputDeviceHandle handle, MouseDevice::Button buttonId, bool pressed) = 0;
+	virtual void RegisterButtonEvent(inputDeviceHandle handle, GamepadDevice::Button buttonId, bool pressed) = 0;
+	virtual void RegisterAxisEvent(inputDeviceHandle handle, MouseDevice::Axis axisId, const Vector3& delta) = 0;
+	virtual void RegisterAxisEvent(inputDeviceHandle handle, GamepadDevice::Axis axisId, const Vector3& delta) = 0;
 
 	virtual void Update(float deltaTime) = 0;
 

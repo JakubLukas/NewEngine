@@ -3,16 +3,19 @@
 #include <bgfx/bgfx.h>
 
 #include "core/allocators.h"
-#include "core/asserts.h"
 #include "core/engine.h"
 #include "core/logs.h"
+#include "core/asserts.h"
 
 
 #include "renderer/irenderer.h"////////////////////////
 #include "core/file/path.h"////////////////////////////////
 #include "core/math.h"////////////////////////////////
+#include "core/file/file.h"////////////////////
+#include "core/memory.h"/////////////////////
 
 #include <bgfx/bgfx.h>///////////////
+#include "../external/imgui/imgui.h"
 
 
 namespace bx
@@ -31,8 +34,10 @@ struct AllocatorI
 	/// @param[in] _file Debug file path info.
 	/// @param[in] _line Debug file line info.
 	virtual void* realloc(void* _ptr, size_t _size, size_t _align, const char* _file, uint32_t _line) = 0;
+
 };
 
+	void mtxOrtho(float* _result, float _left, float _right, float _bottom, float _top, float _near, float _far, float _offset, bool _oglNdc);
 }
 
 
@@ -53,7 +58,16 @@ void setPlatformData(const PlatformData& _data);
 
 bgfx::ProgramHandle loadProgram(const char* _vsName, const char* _fsName);
 
+inline bool checkAvailTransientBuffers(uint32_t _numVertices, const bgfx::VertexDecl& _decl, uint32_t _numIndices)
+{
+	return _numVertices == bgfx::getAvailTransientVertexBuffer(_numVertices, _decl)
+		&& (0 == _numIndices || _numIndices == bgfx::getAvailTransientIndexBuffer(_numIndices))
+		;
 }
+
+}
+
+#define IMGUI_FLAGS_ALPHA_BLEND UINT8_C(0x01)
 
 
 namespace Veng
@@ -155,6 +169,7 @@ public:
 	void Init() override
 	{
 		InitRender();
+		InitImgui();
 
 		m_engine = Engine::Create(m_allocator);
 		Engine::PlatformData platformData;
@@ -163,31 +178,32 @@ public:
 		InitPlugins();
 
 
-		//DUMMY GAMEPLAY CODE //////////////////////////////////////////////////////////////////////////////////////////
-		worldId worldHandle = m_engine->AddWorld();
-		World* world = m_engine->GetWorld(worldHandle);
-		RenderScene* renderScene = static_cast<RenderScene*>(m_tmpPlugRender->GetScene());
-		Entity camEnt = world->CreateEntity();
-		Transform& camTrans = world->GetEntityTransform(camEnt);
-		renderScene->AddCameraComponent(camEnt, worldHandle, 60.0_deg, 0.001f, 100.0f);
+		{//DUMMY GAMEPLAY CODE //////////////////////////////////////////////////////////////////////////////////////////
+			worldId worldHandle = m_engine->AddWorld();
+			World* world = m_engine->GetWorld(worldHandle);
+			RenderScene* renderScene = static_cast<RenderScene*>(m_tmpPlugRender->GetScene());
+			Entity camEnt = world->CreateEntity();
+			Transform& camTrans = world->GetEntityTransform(camEnt);
+			renderScene->AddCameraComponent(camEnt, worldHandle, 60.0_deg, 0.001f, 100.0f);
 
-		for (unsigned yy = 0; yy < 11; ++yy)
-		{
-			for (unsigned xx = 0; xx < 11; ++xx)
+			for (unsigned yy = 0; yy < 11; ++yy)
 			{
-				Entity entity = world->CreateEntity();
-				Transform& trans = world->GetEntityTransform(entity);
-				renderScene->AddModelComponent(entity, worldHandle, "models/cubes.model");
+				for (unsigned xx = 0; xx < 11; ++xx)
+				{
+					Entity entity = world->CreateEntity();
+					Transform& trans = world->GetEntityTransform(entity);
+					renderScene->AddModelComponent(entity, worldHandle, "models/cubes.model");
 
-				Quaternion rot = Quaternion::IDENTITY;
-				//rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
-				//rot = rot * Quaternion(Vector3::AXIS_Y, yy*0.37f);
-				Vector3 pos = {
-					-15.0f + float(xx) * 3.0f,
-					-15.0f + float(yy) * 3.0f,
-					0.0f
-				};
-				trans = Transform(rot, pos);
+					Quaternion rot = Quaternion::IDENTITY;
+					//rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
+					//rot = rot * Quaternion(Vector3::AXIS_Y, yy*0.37f);
+					Vector3 pos = {
+						-15.0f + float(xx) * 3.0f,
+						-15.0f + float(yy) * 3.0f,
+						0.0f
+					};
+					trans = Transform(rot, pos);
+				}
 			}
 		}
 	}
@@ -198,27 +214,217 @@ public:
 		RenderSystem::Destroy(m_tmpPlugRender);
 		Engine::Destroy(m_engine, m_allocator);
 
+		DeinitImgui();
 		DeinitRender();
 	}
 
 	void Update() override
 	{
+
+		
+
+
+
+
+
+
+
+
+		ImGui::NewFrame();
+
+		ImGui::Begin("test");
+		ImGui::Text("Hello, world!");
+		ImGui::Text("Hello, world!");
+		ImGui::Text("Hello, world!");
+		ImGui::Button("Button");
+		ImGui::End();
+		ImGui::Render();
+
+
 		UpdateRender();
+
+
+		//ImGuizmo::BeginFrame();
+		ImDrawData* drawData = ImGui::GetDrawData();
+
+		const ImGuiIO& io = ImGui::GetIO();
+		const float width = io.DisplaySize.x;
+		const float height = io.DisplaySize.y;
+
+		bgfx::setViewName(m_viewId, "ImGui");
+		bgfx::setViewMode(m_viewId, bgfx::ViewMode::Sequential);
+
+		const bgfx::Caps* caps = bgfx::getCaps();
+		{
+			float ortho[16];
+			bx::mtxOrtho(ortho, 0.0f, width, height, 0.0f, 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
+			bgfx::setViewTransform(m_viewId, NULL, ortho);
+			bgfx::setViewRect(m_viewId, 0, 0, uint16_t(width), uint16_t(height));/////////////////////
+		}
+
+		// Render command lists
+		for (int32_t ii = 0, num = drawData->CmdListsCount; ii < num; ++ii)
+		{
+			bgfx::TransientVertexBuffer tvb;
+			bgfx::TransientIndexBuffer tib;
+
+			const ImDrawList* drawList = drawData->CmdLists[ii];
+			uint32_t numVertices = (uint32_t)drawList->VtxBuffer.size();
+			uint32_t numIndices = (uint32_t)drawList->IdxBuffer.size();
+
+			if (!bgfx::checkAvailTransientBuffers(numVertices, m_decl, numIndices))
+			{
+				// not enough space in transient buffer just quit drawing the rest...
+				break;
+			}
+
+			bgfx::allocTransientVertexBuffer(&tvb, numVertices, m_decl);
+			bgfx::allocTransientIndexBuffer(&tib, numIndices);
+
+			ImDrawVert* verts = (ImDrawVert*)tvb.data;
+			memory::Copy(verts, drawList->VtxBuffer.begin(), numVertices * sizeof(ImDrawVert));
+
+			ImDrawIdx* indices = (ImDrawIdx*)tib.data;
+			memory::Copy(indices, drawList->IdxBuffer.begin(), numIndices * sizeof(ImDrawIdx));
+
+			uint32_t offset = 0;
+			for (const ImDrawCmd* cmd = drawList->CmdBuffer.begin(), *cmdEnd = drawList->CmdBuffer.end(); cmd != cmdEnd; ++cmd)
+			{
+				if (cmd->UserCallback)
+				{
+					cmd->UserCallback(drawList, cmd);
+				}
+				else if (0 != cmd->ElemCount)
+				{
+					uint64_t state = 0
+						| BGFX_STATE_WRITE_RGB
+						| BGFX_STATE_WRITE_A
+						| BGFX_STATE_MSAA
+						;
+
+					bgfx::TextureHandle th = m_texture;
+					bgfx::ProgramHandle program = m_program;
+
+					if (NULL != cmd->TextureId)
+					{
+						ASSERT(false);
+						/*union { ImTextureID ptr; struct { bgfx::TextureHandle handle; uint8_t flags; uint8_t mip; } s; } texture = { cmd->TextureId };
+						state |= 0 != (IMGUI_FLAGS_ALPHA_BLEND & texture.s.flags)
+							? BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
+							: BGFX_STATE_NONE
+							;
+						th = texture.s.handle;
+						if (0 != texture.s.mip)
+						{
+							const float lodEnabled[4] = { float(texture.s.mip), 1.0f, 0.0f, 0.0f };
+							bgfx::setUniform(u_imageLodEnabled, lodEnabled);
+							program = m_imageProgram;
+						}*/
+					}
+					else
+					{
+						state |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA);
+					}
+
+					const uint16_t xx = uint16_t(max(cmd->ClipRect.x, 0.0f));
+					const uint16_t yy = uint16_t(max(cmd->ClipRect.y, 0.0f));
+					bgfx::setScissor(xx, yy
+						, uint16_t(min(cmd->ClipRect.z, 65535.0f) - xx)
+						, uint16_t(min(cmd->ClipRect.w, 65535.0f) - yy)
+					);
+
+					bgfx::setState(state);
+					bgfx::setTexture(0, s_tex, th);
+					bgfx::setVertexBuffer(0, &tvb, 0, numVertices);
+					bgfx::setIndexBuffer(&tib, offset, cmd->ElemCount);
+					bgfx::submit(m_viewId, program);
+				}
+
+				offset += cmd->ElemCount;
+			}
+		}
+
+
+
+
+
+
+
 
 		bgfx::setViewFrameBuffer(1, m_fbh);
 		bgfx::touch(1);
+
 		m_engine->Update(1000 / 60);
 
 		bgfx::frame();//flip buffers
 	}
 
-	void Resize(u32 width, u32 height) override
+	void Resize(windowHandle handle, u32 width, u32 height) override
 	{
-		if(m_tmpPlugRender)
+		if (m_tmpPlugRender && handle == m_subHwnd)
+		{
+			bgfx::destroy(m_fbh);
+			m_fbh = bgfx::createFrameBuffer(m_subHwnd, uint16_t(width), uint16_t(height));
+			bgfx::setViewRect(1, 0, 0, uint16_t(width), uint16_t(height));
 			m_tmpPlugRender->Resize(width, height);
+		}
+		else if (handle == m_app.GetMainWindowHandle())
+		{
+			m_windowSize = { width, height };
+			bgfx::reset(width, height, BGFX_RESET_VSYNC);
+			bgfx::setViewRect(m_viewId, 0, 0, uint16_t(width), uint16_t(height));
+			ImGuiIO& io = ImGui::GetIO();
+			io.DisplaySize = ImVec2((float)width, (float)height);
+		}
 	}
 
-	Engine* GetEngine() override { return m_engine; }
+	void SetFocus(bool hasFocus) override
+	{
+		if (hasFocus)
+			m_inputEnabled = true;
+		else
+			m_inputEnabled = false;
+	}
+
+	inputDeviceID RegisterDevice(inputDeviceHandle handle, InputDeviceCategory category, const String& name) override
+	{
+		return m_engine->GetInputSystem()->RegisterDevice(handle, category, name);
+	}
+
+	void UnregisterDevice(inputDeviceHandle handle) override
+	{
+		m_engine->GetInputSystem()->UnregisterDevice(handle);
+	}
+
+	void RegisterButtonEvent(inputDeviceHandle handle, KeyboardDevice::Button buttonId, bool pressed) override
+	{
+		if(m_inputEnabled)
+			m_engine->GetInputSystem()->RegisterButtonEvent(handle, buttonId, pressed);
+	}
+
+	void RegisterButtonEvent(inputDeviceHandle handle, MouseDevice::Button buttonId, bool pressed) override
+	{
+		if (m_inputEnabled)
+			m_engine->GetInputSystem()->RegisterButtonEvent(handle, buttonId, pressed);
+	}
+
+	void RegisterButtonEvent(inputDeviceHandle handle, GamepadDevice::Button buttonId, bool pressed) override
+	{
+		if (m_inputEnabled)
+			m_engine->GetInputSystem()->RegisterButtonEvent(handle, buttonId, pressed);
+	}
+
+	void RegisterAxisEvent(inputDeviceHandle handle, MouseDevice::Axis axisId, const Vector3& delta) override
+	{
+		if (m_inputEnabled)
+			m_engine->GetInputSystem()->RegisterAxisEvent(handle, axisId, delta);
+	}
+
+	void RegisterAxisEvent(inputDeviceHandle handle, GamepadDevice::Axis axisId, const Vector3& delta) override
+	{
+		if (m_inputEnabled)
+			m_engine->GetInputSystem()->RegisterAxisEvent(handle, axisId, delta);
+	}
 
 
 	void InitPlugins()
@@ -233,7 +439,7 @@ public:
 
 	void InitRender()
 	{
-		void* hwnd = m_app.GetMainWindowHandle();
+		windowHandle hwnd = m_app.GetMainWindowHandle();
 		m_subHwnd = m_app.CreateSubWindow();
 		ASSERT(m_subHwnd != nullptr);
 
@@ -258,15 +464,13 @@ public:
 
 		m_fbh = bgfx::createFrameBuffer(m_subHwnd, uint16_t(100), uint16_t(100));
 
-		bgfx::setViewRect(0, 0, 0, uint16_t(800), uint16_t(600));
 		bgfx::setViewClear(0
 			, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
-			, 0x30ff30ff
+			, 0x404040ff
 			, 1.0f
 			, 0
 		);
 
-		bgfx::setViewRect(1, 0, 0, uint16_t(100), uint16_t(100));
 		bgfx::setViewClear(1
 			, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
 			, 0x303030ff
@@ -277,14 +481,116 @@ public:
 
 	void UpdateRender()
 	{
-		bgfx::setViewFrameBuffer(0, BGFX_INVALID_HANDLE);
-		bgfx::touch(0);
+		bgfx::setViewFrameBuffer(m_viewId, BGFX_INVALID_HANDLE);
+		bgfx::touch(m_viewId);
 	}
 
 	void DeinitRender()
 	{
+		bgfx::destroy(m_fbh);
+		bgfx::destroy(m_program);
 		bgfx::shutdown();
-		m_app.DestroySubWindow(m_subHwnd);
+		//m_app.DestroySubWindow(m_subHwnd);
+	}
+
+
+	void InitImgui()
+	{
+		//ImGui::SetAllocatorFunctions(memAlloc, memFree, NULL);
+		m_imgui = ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO();
+		io.DisplaySize = ImVec2(1280.0f, 720.0f);
+		io.DeltaTime = 1.0f / 60.0f;
+		io.IniFilename = NULL;
+
+		ImGuiStyle& style = ImGui::GetStyle();
+		ImGui::StyleColorsDark(&style);
+		style.FrameRounding = 4.0f;
+		style.WindowBorderSize = 0.0f;
+
+		bgfx::RendererType::Enum type = bgfx::getRendererType();
+
+
+		Path vsPath("shaders/compiled/imgui/imgui.vs");
+		Path fsPath("shaders/compiled/imgui/imgui.fs");
+		FileMode fileMode{
+			FileMode::Access::Read,
+			FileMode::ShareMode::ShareRead,
+			FileMode::CreationDisposition::OpenExisting,
+			FileMode::FlagNone
+		};
+
+		//vertex shader
+		nativeFileHandle vsHandle;
+		ASSERT(FS::OpenFileSync(vsHandle, vsPath, fileMode));
+		size_t vsFileSize = FS::GetFileSize(vsHandle);
+		u8* vsData = (u8*)m_allocator.Allocate(vsFileSize, ALIGN_OF(u8));
+		size_t vsFileSizeRead = 0;
+		FS::ReadFileSync(vsHandle, 0, vsData, vsFileSize, vsFileSizeRead);
+		ASSERT(vsFileSize == vsFileSizeRead);
+		ASSERT(FS::CloseFileSync(vsHandle));
+
+		const bgfx::Memory* vsMem = bgfx::alloc((u32)vsFileSize + 1);
+		memory::Copy(vsMem->data, vsData, vsFileSize);
+		vsMem->data[vsMem->size - 1] = '\0';
+		bgfx::ShaderHandle vsHandleBgfx = bgfx::createShader(vsMem);
+		ASSERT(bgfx::isValid(vsHandleBgfx));
+		m_allocator.Deallocate(vsData);
+
+		//fragment shader
+		nativeFileHandle fsHandle;
+		ASSERT(FS::OpenFileSync(fsHandle, fsPath, fileMode));
+		size_t fsFileSize = FS::GetFileSize(fsHandle);
+		u8* fsData = (u8*)m_allocator.Allocate(fsFileSize, ALIGN_OF(u8));
+		size_t fsFileSizeRead = 0;
+		FS::ReadFileSync(fsHandle, 0, fsData, fsFileSize, fsFileSizeRead);
+		ASSERT(fsFileSize == fsFileSizeRead);
+		ASSERT(FS::CloseFileSync(fsHandle));
+
+		const bgfx::Memory* fsMem = bgfx::alloc((u32)fsFileSize + 1);
+		memory::Copy(fsMem->data, fsData, fsFileSize);
+		fsMem->data[fsMem->size - 1] = '\0';
+		bgfx::ShaderHandle fsHandleBgfx = bgfx::createShader(fsMem);
+		ASSERT(bgfx::isValid(fsHandleBgfx));
+		m_allocator.Deallocate(fsData);
+
+
+		m_program = bgfx::createProgram(vsHandleBgfx, fsHandleBgfx, true);
+
+		m_decl
+			.begin()
+			.add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
+			.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
+			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
+			.end();
+
+		s_tex = bgfx::createUniform("s_tex", bgfx::UniformType::Int1);
+
+		//ImGui::InitDockContext();
+
+		io.Fonts->AddFontDefault();
+		unsigned char* fontTextureData = nullptr;
+		int fontTextureWidth;
+		int fontTextureHeight;
+		io.Fonts->GetTexDataAsRGBA32(&fontTextureData, &fontTextureWidth, &fontTextureHeight);
+
+		m_texture = bgfx::createTexture2D(
+			(uint16_t)fontTextureWidth
+			, (uint16_t)fontTextureHeight
+			, false
+			, 1
+			, bgfx::TextureFormat::BGRA8
+			, 0
+			, bgfx::copy(fontTextureData, fontTextureWidth * fontTextureHeight * 4)
+		);
+	}
+
+	void DeinitImgui()
+	{
+		bgfx::destroy(s_tex);
+		bgfx::destroy(m_texture);
+		//ImGui::ShutdownDockContext();
+		ImGui::DestroyContext(m_imgui);
 	}
 
 
@@ -292,13 +598,24 @@ private:
 	IAllocator& m_allocator;
 	App& m_app;
 	Engine* m_engine = nullptr;
+	bool m_inputEnabled = false;
 
 	BGFXAllocator m_bgfxAllocator;
 	BGFXCallback m_bgfxCallback;
 
 	bgfx::FrameBufferHandle m_fbh;
 
-	void* m_subHwnd = nullptr;///////////////////////////////////
+	ImGuiContext* m_imgui;
+	bgfx::VertexDecl m_decl;
+	bgfx::ProgramHandle m_program;
+	bgfx::TextureHandle m_texture;
+	bgfx::UniformHandle s_tex;
+	bgfx::UniformHandle u_imageLodEnabled;
+	bgfx::ViewId m_viewId = 0;
+
+	WindowSize m_windowSize = { 0, 0 };
+
+	windowHandle m_subHwnd = nullptr;///////////////////////////////////
 };
 
 

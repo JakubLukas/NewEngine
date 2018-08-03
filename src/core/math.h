@@ -20,6 +20,10 @@ float atanf(float num);
 float pow(float num, float exp);
 float sqrtf(float num);
 
+
+float min(float v1, float v2);
+float max(float v1, float v2);
+
 constexpr float toRad(float deg)
 {
 	return deg * PI / 180.0f;

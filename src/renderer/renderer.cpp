@@ -15,131 +15,13 @@
 #include <bgfx/bgfx.h>///////////////
 
 #include "core/math.h"
-#include "core/memory.h"
 #include "camera.h"
-
-namespace bx
-{
-
-/// Abstract allocator interface.
-struct AllocatorI
-{
-	virtual ~AllocatorI() { }
-
-	/// Allocates, resizes memory block, or frees memory.
-	///
-	/// @param[in] _ptr If _ptr is NULL new block will be allocated.
-	/// @param[in] _size If _ptr is set, and _size is 0, memory will be freed.
-	/// @param[in] _align Alignment.
-	/// @param[in] _file Debug file path info.
-	/// @param[in] _line Debug file line info.
-	virtual void* realloc(void* _ptr, size_t _size, size_t _align, const char* _file, uint32_t _line) = 0;
-};
-
-//void mtxProj(float* _result, float _fovy, float _aspect, float _near, float _far, bool _oglNdc);
-}
-
-
-namespace bgfx
-{
-
-struct PlatformData
-{
-	void* ndt;          //!< Native display type.
-	void* nwh;          //!< Native window handle.
-	void* context;      //!< GL context, or D3D device.
-	void* backBuffer;   //!< GL backbuffer, or D3D render target view.
-	void* backBufferDS; //!< Backbuffer depth/stencil.
-	void* session;      //!< ovrSession, for Oculus SDK
-};
-
-void setPlatformData(const PlatformData& _data);
-
-bgfx::ProgramHandle loadProgram(const char* _vsName, const char* _fsName);
-
-}
 
 
 namespace Veng
 {
 
-
-struct BGFXAllocator : public bx::AllocatorI
-{
-	static const size_t NATURAL_ALIGNEMENT = 8;
-
-	explicit BGFXAllocator(IAllocator& source)
-		: m_source(source)
-	{
-	}
-
-	void* realloc(void* _ptr, size_t _size, size_t _alignment, const char* _file, u32 _line) override
-	{
-		if (_size == 0)
-		{
-			if (_ptr != nullptr)
-			{
-				m_source.Deallocate(_ptr);
-			}
-			return nullptr;
-		}
-		else
-		{
-			_alignment = (_alignment < NATURAL_ALIGNEMENT) ? NATURAL_ALIGNEMENT : _alignment;
-
-			if (_ptr == nullptr)
-			{
-				return m_source.Allocate(_size, _alignment);
-			}
-			else
-			{
-				return m_source.Reallocate(_ptr, _size, _alignment);
-			}
-		}
-	}
-
-
-	IAllocator& m_source;
-};
-
-
-struct BGFXCallback : public bgfx::CallbackI
-{
-	void fatal(bgfx::Fatal::Enum _code, const char* _str) override
-	{
-		switch (_code)
-		{
-		case bgfx::Fatal::DebugCheck:
-			Log(LogType::Error, "Error: bgfx: DebugCheck: %s\n", _str);
-			break;
-		case bgfx::Fatal::InvalidShader:
-			Log(LogType::Error, "Error: bgfx: InvalidShader: %s\n", _str);
-			break;
-		case bgfx::Fatal::UnableToInitialize:
-			Log(LogType::Error, "Error: bgfx: UnableToInitialize: %s\n", _str);
-			break;
-		case bgfx::Fatal::UnableToCreateTexture:
-			Log(LogType::Error, "Error: bgfx: UnableToCreateTexture: %s\n", _str);
-			break;
-		case bgfx::Fatal::DeviceLost:
-			Log(LogType::Error, "Error: bgfx: DeviceLost: %s\n", _str);
-			break;
-		}
-	}
-	void traceVargs(const char* _filePath, uint16_t _line, const char* _format, va_list _argList) override {}
-	void profilerBegin(const char* _name, uint32_t _abgr, const char* _filePath, uint16_t _line) override {}
-	void profilerBeginLiteral(const char* _name, uint32_t _abgr, const char* _filePath, uint16_t _line) override {}
-	void profilerEnd() override {}
-	uint32_t cacheReadSize(uint64_t _id) override { return 0; }
-	bool cacheRead(uint64_t _id, void* _data, uint32_t _size) override { return false; }
-	void cacheWrite(uint64_t _id, const void* _data, uint32_t _size) override {}
-	void screenShot(const char* _filePath, uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _data, uint32_t _size, bool _yflip) override {}
-	void captureBegin(uint32_t _width, uint32_t _height, uint32_t _pitch, bgfx::TextureFormat::Enum _format, bool _yflip) override {}
-	void captureEnd() override {}
-	void captureFrame(const void* _data, uint32_t _size) override {}
-};
-
-
+static const unsigned short VIEW_ID = 1;
 
 class RenderSceneImpl : public RenderScene
 {
@@ -255,35 +137,7 @@ public:
 	RenderSystemImpl(Engine& engine)
 		: m_allocator(engine.GetAllocator())
 		, m_engine(engine)
-		, m_bgfxAllocator(m_allocator)
 	{
-		///////////////
-		//bgfx::PlatformData d { 0 };
-		//d.nwh = m_engine.GetPlatformData().windowHndl;
-		//bgfx::setPlatformData(d);
-		//
-		//bgfx::Init bgfxInit;
-		//bgfxInit.type = bgfx::RendererType::Count;
-		//bgfxInit.vendorId = BGFX_PCI_ID_NONE;
-		//bgfxInit.deviceId = 0;
-		//bgfxInit.debug = false;
-		//bgfxInit.profile = false;
-		////bgfxInit.resolution;
-		////bgfxInit.limits;
-		//bgfxInit.callback = &m_bgfxCallback;
-		//bgfxInit.allocator = &m_bgfxAllocator;
-		//
-		//bgfx::init(bgfxInit);
-		//
-		//bgfx::setDebug(BGFX_DEBUG_NONE);//TODO
-		//
-		//bgfx::setViewClear(0
-		//	, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
-		//	, 0x303030ff
-		//	, 1.0f
-		//	, 0
-		//);
-
 		ResourceManagement* resourceManagement = m_engine.GetResourceManagement();
 
 		m_shaderInternalManager = NEW_OBJECT(m_allocator, ShaderInternalManager)(m_allocator, *m_engine.GetFileSystem(), resourceManagement);
@@ -306,9 +160,6 @@ public:
 		DELETE_OBJECT(m_allocator, m_materialManager);
 		DELETE_OBJECT(m_allocator, m_shaderManager);
 		DELETE_OBJECT(m_allocator, m_shaderInternalManager);
-
-		// Shutdown bgfx.
-		//bgfx::shutdown();
 	}
 
 
@@ -340,9 +191,9 @@ public:
 		//float projj[16];
 		//bx::mtxProj(projj, 60.0f, float(m_width) / float(m_height), 0.1f, 100.0f, bgfx::getCaps()->homogeneousDepth);
 
-		bgfx::setViewTransform(1, &view.m11, &proj.m11/*projj*/);
+		bgfx::setViewTransform(VIEW_ID, &view.m11, &proj.m11/*projj*/);
 
-		bgfx::touch(1);//dummy draw call (clear view 0)
+		bgfx::touch(VIEW_ID);//dummy draw call
 
 		World* world = m_engine.GetWorld(0);
 
@@ -376,14 +227,12 @@ public:
 
 						// Submit primitive for rendering to view 0.
 						const Shader* shader = m_shaderManager->GetResource(material->shader);
-						bgfx::submit(1, shader->program.handle);
+						bgfx::submit(VIEW_ID, shader->program.handle);
 					}
 				}
 			}
 		}
 
-
-		//bgfx::frame();//flip buffers
 	};
 
 
@@ -405,8 +254,6 @@ public:
 	{
 		m_width = width;
 		m_height = height;
-		bgfx::reset(m_width, m_height, m_bgfxResetFlags);
-		bgfx::setViewRect(0, 0, 0, uint16_t(m_width), uint16_t(m_height)); // Set view 0 default viewport.
 	}
 
 	u32 GetScreenWidth() const override { return m_width; }
@@ -428,9 +275,6 @@ private:
 	/////////////////////
 	u32 m_width = 0;
 	u32 m_height = 0;
-	BGFXAllocator m_bgfxAllocator;
-	BGFXCallback m_bgfxCallback;
-	u32 m_bgfxResetFlags = BGFX_RESET_VSYNC;
 	/////////////////////
 };
 

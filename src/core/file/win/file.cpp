@@ -285,6 +285,66 @@ bool RemoveDir(const Path& path)
 
 
 
+//synchronous helper functions
+bool OpenFileSync(nativeFileHandle& fileHandle, const Path& path, const FileMode& mode)
+{
+	DWORD flags = FILE_ATTRIBUTE_NORMAL;
+	if (mode.flags & FileMode::FlagDeleteOnClose)
+		flags |= FILE_FLAG_DELETE_ON_CLOSE;
+	if (mode.flags & FileMode::FlagWriteThrough)
+		flags |= FILE_FLAG_WRITE_THROUGH;
+
+	HANDLE hFile = CreateFile(
+		path.path,
+		(mode.access == FileMode::Access::Read) ? GENERIC_READ : GENERIC_WRITE,
+		shareModeTable[(unsigned)mode.shareMode],
+		NULL,
+		creationDispositionTable[(unsigned)mode.creationDisposition],
+		flags,
+		NULL);
+
+	if (hFile == INVALID_HANDLE_VALUE)
+		return false;
+
+	fileHandle = hFile;
+	return true;
+}
+
+
+bool CloseFileSync(nativeFileHandle fileHandle)
+{
+	ASSERT(fileHandle != INVALID_HANDLE_VALUE);
+	return (CloseHandle(fileHandle) == TRUE);
+}
+
+
+bool ReadFileSync(nativeFileHandle fileHandle, size_t filePosition, void* buffer, size_t size, size_t& bytesRead)
+{
+	ASSERT(fileHandle != INVALID_HANDLE_VALUE);
+
+	OVERLAPPED overlapped;
+	overlapped.Internal = 0;
+	overlapped.InternalHigh = 0;
+	overlapped.Offset = (DWORD)(filePosition & 0xFFFFffff);
+	overlapped.OffsetHigh = (DWORD)(filePosition >> 32);
+	overlapped.hEvent = NULL;
+
+	DWORD sizeRead;
+	BOOL result = ::ReadFile(
+		fileHandle,
+		buffer,
+		(DWORD)size,
+		&sizeRead,
+		&overlapped
+	);
+	
+	if(result != FALSE)
+		bytesRead = sizeRead;
+
+	return (result == FALSE);//async ReadFile returns FALSE
+}
+
+
 }
 
 

@@ -113,10 +113,10 @@ public:
 	}
 
 
-	bool RegisterButtonEvent(inputDeviceHandle handle, KeyboardDevice::Button buttonId, bool pressed) override
+	void RegisterButtonEvent(inputDeviceHandle handle, KeyboardDevice::Button buttonId, bool pressed) override
 	{
 		if (!active)
-			return false;
+			return;
 
 		InputDevice* device;
 		if (m_devices.Find(handle, device))
@@ -129,15 +129,13 @@ public:
 			newEvent.kbCode = buttonId;
 			newEvent.pressed = pressed;
 			m_events.Push(newEvent);
-			return true;
 		}
-		return false;
 	}
 
-	bool RegisterButtonEvent(inputDeviceHandle handle, MouseDevice::Button buttonId, bool pressed) override
+	void RegisterButtonEvent(inputDeviceHandle handle, MouseDevice::Button buttonId, bool pressed) override
 	{
 		if (!active)
-			return false;
+			return;
 
 		InputDevice* device;
 		if (m_devices.Find(handle, device))
@@ -150,15 +148,13 @@ public:
 			newEvent.mbCode = buttonId;
 			newEvent.pressed = pressed;
 			m_events.Push(newEvent);
-			return true;
 		}
-		return false;
 	}
 
-	bool RegisterButtonEvent(inputDeviceHandle handle, GamepadDevice::Button buttonId, bool pressed) override
+	void RegisterButtonEvent(inputDeviceHandle handle, GamepadDevice::Button buttonId, bool pressed) override
 	{
 		if (!active)
-			return false;
+			return;
 
 		InputDevice* device;
 		if (m_devices.Find(handle, device))
@@ -171,15 +167,13 @@ public:
 			newEvent.gbCode = buttonId;
 			newEvent.pressed = pressed;
 			m_events.Push(newEvent);
-			return true;
 		}
-		return false;
 	}
 
-	bool RegisterAxisEvent(inputDeviceHandle handle, MouseDevice::Axis axisId, const Vector3& delta) override
+	void RegisterAxisEvent(inputDeviceHandle handle, MouseDevice::Axis axisId, const Vector3& delta) override
 	{
 		if (!active)
-			return false;
+			return;
 
 		InputDevice* device;
 		if (m_devices.Find(handle, device))
@@ -192,15 +186,13 @@ public:
 			newEvent.maCode = axisId;
 			newEvent.axis = delta;
 			m_events.Push(newEvent);
-			return true;
 		}
-		return false;
 	}
 
-	bool RegisterAxisEvent(inputDeviceHandle handle, GamepadDevice::Axis axisId, const Vector3& delta) override
+	void RegisterAxisEvent(inputDeviceHandle handle, GamepadDevice::Axis axisId, const Vector3& delta) override
 	{
 		if (!active)
-			return false;
+			return;
 
 		InputDevice* device;
 		if (m_devices.Find(handle, device))
@@ -213,9 +205,7 @@ public:
 			newEvent.gaCode = axisId;
 			newEvent.axis = delta;
 			m_events.Push(newEvent);
-			return true;
 		}
-		return false;
 	}
 
 

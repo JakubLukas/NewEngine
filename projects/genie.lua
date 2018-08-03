@@ -104,7 +104,9 @@ project "main"
 	files {
 		SRC_DIR .. "main/**.h",
 		SRC_DIR .. "main/**.inl",
-		SRC_DIR .. "main/**.cpp"
+		SRC_DIR .. "main/**.cpp",
+		SRC_DIR .. "../external/imgui/*.h",
+		SRC_DIR .. "../external/imgui/*.cpp",
 	}
 
 	libdirs { "../external/bgfx/lib/win64" }

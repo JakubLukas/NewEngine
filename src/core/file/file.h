@@ -44,6 +44,11 @@ void QueryChanges(nativeAsyncHandle asyncHandle, Function<void(nativeFileHandle,
 bool CreateDir(const Path& path);
 bool RemoveDir(const Path& path);
 
+
+//synchronous helper functions
+bool OpenFileSync(nativeFileHandle& fileHandle, const Path& path, const FileMode& mode);
+bool CloseFileSync(nativeFileHandle fileHandle);
+bool ReadFileSync(nativeFileHandle fileHandle, size_t filePosition, void* buffer, size_t size, size_t& bytesRead);
 }
 
 

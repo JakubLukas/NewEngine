@@ -14,7 +14,6 @@
 
 
 #include "editor.h"////////////////////////
-#include "renderer/irenderer.h"////////////////////////
 
 
 namespace Veng
@@ -36,10 +35,15 @@ public:
 	}
 
 
-	void* CreateSubWindow() override
+	windowHandle CreateSubWindow() override
+	{
+		return CreateSubWindow({ 200, 200 });
+	}
+
+	windowHandle CreateSubWindow(WindowSize size) override
 	{
 		if (m_subHwndSize == MAX_SUB_WINDOWS)
-			return nullptr;
+			return INVALID_WINDOW_HANDLE;
 
 		HINSTANCE hInst = GetModuleHandle(NULL); //handle to current exe module
 
@@ -49,8 +53,8 @@ public:
 			WS_CHILD | WS_OVERLAPPED | WS_THICKFRAME | WS_CAPTION | WS_VISIBLE,
 			20,
 			20,
-			200,
-			200,
+			size.width,
+			size.height,
 			m_hwnd,
 			NULL,
 			hInst,
@@ -59,16 +63,16 @@ public:
 		if (hwnd != NULL)
 		{
 			m_subHwnd[m_subHwndSize++] = hwnd;
-			return hwnd;
+			return (windowHandle)hwnd;
 		}
 		else
 		{
 			DWORD err = GetLastError();
-			return nullptr;
+			return INVALID_WINDOW_HANDLE;
 		}
 	}
 
-	bool DestroySubWindow(void* hwnd) override
+	bool DestroySubWindow(windowHandle hwnd) override
 	{
 		BOOL result = DestroyWindow((HWND)hwnd);
 		if(result != 0)
@@ -84,7 +88,7 @@ public:
 				m_subHwnd[i] = m_subHwnd[i + 1];
 			}
 
-			m_subHwnd[--m_subHwndSize] = nullptr;
+			m_subHwnd[--m_subHwndSize] = NULL;
 			return true;
 		}
 		else
@@ -94,18 +98,31 @@ public:
 		}
 	}
 
-	void* GetMainWindowHandle() const override
+	void DockSubWindow(windowHandle hwnd) override
+	{
+		SetWindowLong((HWND)hwnd, WS_CHILD | GWL_STYLE, WS_OVERLAPPED | WS_THICKFRAME | WS_CAPTION | WS_VISIBLE);
+		SetParent((HWND)hwnd, m_hwnd);
+	}
+
+	void UndockSubWindow(windowHandle hwnd) override
+	{
+		SetWindowLong((HWND)hwnd, GWL_STYLE, WS_OVERLAPPED | WS_THICKFRAME | WS_CAPTION | WS_VISIBLE);
+		SetParent((HWND)hwnd, NULL);
+	}
+
+
+	windowHandle GetMainWindowHandle() const override
 	{
 		return m_hwnd;
 	}
 
-	WindowSize GetWindowSize(void* hwnd) const override
+	WindowSize GetWindowSize(windowHandle hwnd) const override
 	{
 		RECT rect;
 		ASSERT(GetClientRect((HWND)hwnd, &rect));
 		return{
-			rect.right - rect.left,
-			rect.bottom - rect.top
+			(u32)(rect.right - rect.left),
+			(u32)(rect.bottom - rect.top)
 		};
 	}
 
@@ -240,10 +257,10 @@ private:
 			switch (device.dwType)
 			{
 			case RIM_TYPEMOUSE:
-				m_editor->GetEngine()->GetInputSystem()->RegisterDevice(deviceHandle, InputDeviceCategory::Mouse, deviceName);
+				m_editor->RegisterDevice(deviceHandle, InputDeviceCategory::Mouse, deviceName);
 				break;
 			case RIM_TYPEKEYBOARD:
-				m_editor->GetEngine()->GetInputSystem()->RegisterDevice(deviceHandle, InputDeviceCategory::Keyboard, deviceName);
+				m_editor->RegisterDevice(deviceHandle, InputDeviceCategory::Keyboard, deviceName);
 				break;
 			case RIM_TYPEHID:
 			{
@@ -251,7 +268,7 @@ private:
 				switch (usage)
 				{
 				case HID_USAGE_GENERIC_GAMEPAD:
-					m_editor->GetEngine()->GetInputSystem()->RegisterDevice(deviceHandle, InputDeviceCategory::Gamepad, deviceName);
+					m_editor->RegisterDevice(deviceHandle, InputDeviceCategory::Gamepad, deviceName);
 					break;
 				}
 			}
@@ -300,7 +317,7 @@ private:
 
 		u8 scUSB = Keyboard::Scancode_USBHID::FromPS2(scancodePS2);
 		KeyboardDevice::Button keyCode = (KeyboardDevice::Button)scUSB;
-		m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, keyCode, pressed);
+		m_editor->RegisterButtonEvent(deviceHandle, keyCode, pressed);
 
 		u32 scPS2 = Keyboard::Scancode_PS2::FromUSBHID(scUSB);
 		char buffer[512] = {};
@@ -338,7 +355,7 @@ private:
 				(float)mouse.lLastY,
 				0.0f
 			};
-			m_editor->GetEngine()->GetInputSystem()->RegisterAxisEvent(deviceHandle, MouseDevice::Axis::Movement, axisMov);
+			m_editor->RegisterAxisEvent(deviceHandle, MouseDevice::Axis::Movement, axisMov);
 			return;
 		}
 		else if (mouse.usFlags & MOUSE_MOVE_ABSOLUTE)
@@ -354,7 +371,7 @@ private:
 				0.0f,
 				0.0f
 			};
-			m_editor->GetEngine()->GetInputSystem()->RegisterAxisEvent(deviceHandle, MouseDevice::Axis::Wheel, axisWheel);
+			m_editor->RegisterAxisEvent(deviceHandle, MouseDevice::Axis::Wheel, axisWheel);
 			return;
 		}
 		else
@@ -362,29 +379,29 @@ private:
 			if (mouse.usButtonFlags != Mouse::BUTTON_NONE)
 			{
 				if((mouse.usButtonFlags & RI_MOUSE_BUTTON_1_DOWN) != 0)
-					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Left, true);
+					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Left, true);
 				if((mouse.usButtonFlags & RI_MOUSE_BUTTON_1_UP) != 0)
-					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Left, false);
+					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Left, false);
 
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_2_DOWN) != 0)
-					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Right, true);
+					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Right, true);
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_2_UP) != 0)
-					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Right, false);
+					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Right, false);
 
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_3_DOWN) != 0)
-					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Middle, true);
+					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Middle, true);
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_3_UP) != 0)
-					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Middle, false);
+					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Middle, false);
 
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_4_DOWN) != 0)
-					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra4, true);
+					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra4, true);
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_4_UP) != 0)
-					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra4, false);
+					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra4, false);
 
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_5_DOWN) != 0)
-					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra5, true);
+					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra5, true);
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_5_UP) != 0)
-					m_editor->GetEngine()->GetInputSystem()->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra5, false);
+					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra5, false);
 			}
 		}
 	}
@@ -514,10 +531,10 @@ private:
 				String deviceName(m_allocator);
 				GetNameOfDevice(deviceHandle, deviceName);
 
-				m_editor->GetEngine()->GetInputSystem()->RegisterDevice(lParam, category, deviceName);
+				m_editor->RegisterDevice(lParam, category, deviceName);
 			}
 			else
-				m_editor->GetEngine()->GetInputSystem()->UnregisterDevice(lParam);
+				m_editor->UnregisterDevice(lParam);
 		}
 		else
 		{
@@ -587,11 +604,11 @@ private:
 		deviceName.Set(&entry[startIdx], entryLength - startIdx);
 	}
 
-	void HandleResize(LPARAM lparam)
+	void HandleResize(HWND hwnd, LPARAM lparam)
 	{
 		WORD width = LOWORD(lparam);
 		WORD height = HIWORD(lparam);
-		m_editor->Resize(width, height);
+		m_editor->Resize((windowHandle)hwnd, width, height);
 	}
 
 	LRESULT OnMessage(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -599,19 +616,18 @@ private:
 		switch(msg)
 		{
 			case WM_KILLFOCUS:
-				if(m_editor->GetEngine())
-					m_editor->GetEngine()->GetInputSystem()->Enable(false);
+				m_editor->SetFocus(false);
 				break;
 			case WM_SETFOCUS:
-				if (m_editor->GetEngine())
-					m_editor->GetEngine()->GetInputSystem()->Enable(true);
+				m_editor->SetFocus(true);
 				break;
 			case WM_CLOSE:
 				PostQuitMessage(0);
 				break;
 			case WM_MOVE:
+				break;
 			case WM_SIZE:
-				//HandleResize(lparam);
+				HandleResize(hwnd, lparam);
 				break;
 			case WM_QUIT:
 				m_finished = true;
