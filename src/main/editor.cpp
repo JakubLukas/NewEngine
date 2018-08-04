@@ -70,6 +70,18 @@ inline bool checkAvailTransientBuffers(uint32_t _numVertices, const bgfx::Vertex
 #define IMGUI_FLAGS_ALPHA_BLEND UINT8_C(0x01)
 
 
+typedef Veng::i32 ImMouseButtonFlags;
+enum ImMouseButtonBits : ImMouseButtonFlags
+{
+	IMGUI_MB_NONE       = 0,
+	IMGUI_MB_LEFT_BIT   = 1 << 0,
+	IMGUI_MB_RIGHT_BIT  = 1 << 1,
+	IMGUI_MB_MIDDLE_BIT = 1 << 2,
+	IMGUI_MB_EXTRA4_BIT = 1 << 3,
+	IMGUI_MB_EXTRA5_BIT = 1 << 4,
+};
+
+
 namespace Veng
 {
 
@@ -218,14 +230,26 @@ public:
 		DeinitRender();
 	}
 
-	void Update() override
+	void Update(float deltaTime) override
 	{
 
 		
 
 
+		ImGuiIO& io = ImGui::GetIO();
+		/*if(_inputChar < 0x7f)
+		{
+			io.AddInputCharacter(_inputChar); // ASCII or GTFO! :(
+		}*/
 
+		io.DeltaTime = deltaTime * 0.001f; //msec to sec
 
+		io.MousePos = m_mousePos;
+		io.MouseDown[0] = 0 != (m_mouseButtons & IMGUI_MB_LEFT_BIT);
+		io.MouseDown[1] = 0 != (m_mouseButtons & IMGUI_MB_RIGHT_BIT);
+		io.MouseDown[2] = 0 != (m_mouseButtons & IMGUI_MB_MIDDLE_BIT);
+		io.MouseWheel = m_scroll;
+		Log(LogType::Info, "Mouse: pos: %4.1f,%4.1f buttons: %i\n", m_mousePos.x, m_mousePos.y, m_mouseButtons);
 
 
 
@@ -247,19 +271,15 @@ public:
 		//ImGuizmo::BeginFrame();
 		ImDrawData* drawData = ImGui::GetDrawData();
 
-		const ImGuiIO& io = ImGui::GetIO();
-		const float width = io.DisplaySize.x;
-		const float height = io.DisplaySize.y;
-
 		bgfx::setViewName(m_viewId, "ImGui");
 		bgfx::setViewMode(m_viewId, bgfx::ViewMode::Sequential);
 
 		const bgfx::Caps* caps = bgfx::getCaps();
 		{
 			float ortho[16];
-			bx::mtxOrtho(ortho, 0.0f, width, height, 0.0f, 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
+			bx::mtxOrtho(ortho, 0.0f, (float)m_windowSize.width, (float)m_windowSize.height, 0.0f, 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
 			bgfx::setViewTransform(m_viewId, NULL, ortho);
-			bgfx::setViewRect(m_viewId, 0, 0, uint16_t(width), uint16_t(height));/////////////////////
+			bgfx::setViewRect(m_viewId, 0, 0, uint16_t(m_windowSize.width), uint16_t(m_windowSize.height));/////////////////////
 		}
 
 		// Render command lists
@@ -354,7 +374,9 @@ public:
 		bgfx::setViewFrameBuffer(1, m_fbh);
 		bgfx::touch(1);
 
-		m_engine->Update(1000 / 60);
+		m_engine->Update(deltaTime);
+
+		m_scroll = 0;
 
 		bgfx::frame();//flip buffers
 	}
@@ -404,8 +426,23 @@ public:
 
 	void RegisterButtonEvent(inputDeviceHandle handle, MouseDevice::Button buttonId, bool pressed) override
 	{
-		if (m_inputEnabled)
+		if(m_inputEnabled)
+		{
+			switch(buttonId)
+			{
+				case MouseDevice::Button::Left:
+					m_mouseButtons = (m_mouseButtons & ~IMGUI_MB_LEFT_BIT) | (pressed << 0); break;
+				case MouseDevice::Button::Right:
+					m_mouseButtons = (m_mouseButtons & ~IMGUI_MB_RIGHT_BIT) | (pressed << 1); break;
+				case MouseDevice::Button::Middle:
+					m_mouseButtons = (m_mouseButtons & ~IMGUI_MB_MIDDLE_BIT) | (pressed << 2); break;
+				case MouseDevice::Button::Extra4:
+					m_mouseButtons = (m_mouseButtons & ~IMGUI_MB_EXTRA4_BIT) | (pressed << 3); break;
+				case MouseDevice::Button::Extra5:
+					m_mouseButtons = (m_mouseButtons & ~IMGUI_MB_EXTRA5_BIT) | (pressed << 4); break;
+			}
 			m_engine->GetInputSystem()->RegisterButtonEvent(handle, buttonId, pressed);
+		}
 	}
 
 	void RegisterButtonEvent(inputDeviceHandle handle, GamepadDevice::Button buttonId, bool pressed) override
@@ -417,13 +454,30 @@ public:
 	void RegisterAxisEvent(inputDeviceHandle handle, MouseDevice::Axis axisId, const Vector3& delta) override
 	{
 		if (m_inputEnabled)
+		{
+			/*if(axisId == MouseDevice::Axis::Movement)
+			{
+				m_mousePos.x += delta.x;
+				m_mousePos.y += delta.y;
+			}
+			else */if(axisId == MouseDevice::Axis::Wheel)
+			{
+				m_scroll += delta.x;
+			}
 			m_engine->GetInputSystem()->RegisterAxisEvent(handle, axisId, delta);
+		}
 	}
 
 	void RegisterAxisEvent(inputDeviceHandle handle, GamepadDevice::Axis axisId, const Vector3& delta) override
 	{
 		if (m_inputEnabled)
 			m_engine->GetInputSystem()->RegisterAxisEvent(handle, axisId, delta);
+	}
+
+	virtual void MouseMove(u32 xPos, u32 yPos)
+	{
+		m_mousePos.x = (float)xPos;
+		m_mousePos.y = (float)yPos;
 	}
 
 
@@ -442,6 +496,8 @@ public:
 		windowHandle hwnd = m_app.GetMainWindowHandle();
 		m_subHwnd = m_app.CreateSubWindow();
 		ASSERT(m_subHwnd != nullptr);
+
+		WindowSize subWindowSize = m_app.GetWindowSize(m_subHwnd);
 
 		bgfx::PlatformData d{ 0 };
 		d.nwh = hwnd;
@@ -462,7 +518,8 @@ public:
 
 		bgfx::setDebug(BGFX_DEBUG_NONE);//TODO
 
-		m_fbh = bgfx::createFrameBuffer(m_subHwnd, uint16_t(100), uint16_t(100));
+		bgfx::setViewRect(1, 0, 0, subWindowSize.width, subWindowSize.height);
+		m_fbh = bgfx::createFrameBuffer(m_subHwnd, subWindowSize.width, subWindowSize.height);
 
 		bgfx::setViewClear(0
 			, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
@@ -499,9 +556,9 @@ public:
 		//ImGui::SetAllocatorFunctions(memAlloc, memFree, NULL);
 		m_imgui = ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO();
-		io.DisplaySize = ImVec2(1280.0f, 720.0f);
+		io.DisplaySize = ImVec2((float)m_windowSize.width, (float)m_windowSize.height);
 		io.DeltaTime = 1.0f / 60.0f;
-		io.IniFilename = NULL;
+		io.IniFilename = nullptr;
 
 		ImGuiStyle& style = ImGui::GetStyle();
 		ImGui::StyleColorsDark(&style);
@@ -599,23 +656,32 @@ private:
 	App& m_app;
 	Engine* m_engine = nullptr;
 	bool m_inputEnabled = false;
-
-	BGFXAllocator m_bgfxAllocator;
-	BGFXCallback m_bgfxCallback;
-
-	bgfx::FrameBufferHandle m_fbh;
-
+	
+	//imgui
 	ImGuiContext* m_imgui;
+	//imgui input ///////////////////////////////////////////////////////
+	ImVec2 m_mousePos = { 0.0f, 0.0f };
+	ImMouseButtonFlags m_mouseButtons = IMGUI_MB_NONE;
+	static const size_t KEYBOARD_BUFFER_SIZE = 256;
+	u8 m_keyboardBuffer[KEYBOARD_BUFFER_SIZE];
+	float m_scroll = 0.0f;
+
+	//bgfx for imgui
 	bgfx::VertexDecl m_decl;
 	bgfx::ProgramHandle m_program;
 	bgfx::TextureHandle m_texture;
 	bgfx::UniformHandle s_tex;
-	bgfx::UniformHandle u_imageLodEnabled;
 	bgfx::ViewId m_viewId = 0;
 
-	WindowSize m_windowSize = { 0, 0 };
-
+	//bgfx stuff ////////////////////////////////////////////////
+	BGFXAllocator m_bgfxAllocator;
+	BGFXCallback m_bgfxCallback;
+	//bgfx stuff for engine
 	windowHandle m_subHwnd = nullptr;///////////////////////////////////
+	bgfx::FrameBufferHandle m_fbh;
+
+	WindowSize m_windowSize = { 0, 0 };//doesn't need yet, should remove ?
+
 };
 
 

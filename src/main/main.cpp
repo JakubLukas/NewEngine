@@ -13,7 +13,7 @@
 #include <hidsdi.h>
 
 
-#include "editor.h"////////////////////////
+#include "editor.h"
 
 
 namespace Veng
@@ -137,6 +137,8 @@ public:
 			SetFullscreenBorderless();
 
 		m_editor->Init();
+		WindowSize size = GetWindowSize(m_hwnd);////////////////////////////
+		m_editor->Resize(m_hwnd, size.width, size.height);
 
 		RegisterRawInput();
 
@@ -152,9 +154,10 @@ public:
 	{
 		while(!m_finished)
 		{
-			Sleep(1000 / 60);//TODO ////////////////////////////////////////////
+			static const float frameRate = 1000.0f / 60.0f;
+			Sleep((DWORD)frameRate);//TODO ////////////////////////////////////////////
 
-			m_editor->Update();
+			m_editor->Update(frameRate);
 			HandleEvents();
 		}
 	}
@@ -258,6 +261,9 @@ private:
 			{
 			case RIM_TYPEMOUSE:
 				m_editor->RegisterDevice(deviceHandle, InputDeviceCategory::Mouse, deviceName);
+				POINT mousePos;
+				GetCursorPos(&mousePos);////////////////////////////////////////////////////////////////////////
+				m_editor->RegisterAxisEvent(deviceHandle, MouseDevice::Axis::Movement, { (float)mousePos.x, (float)mousePos.y, 0.0f });
 				break;
 			case RIM_TYPEKEYBOARD:
 				m_editor->RegisterDevice(deviceHandle, InputDeviceCategory::Keyboard, deviceName);
@@ -281,26 +287,26 @@ private:
 
 
 		//REGISTER TO WINAPI
-		const int DEVICE_COUNT = 3;
+		const int DEVICE_COUNT = 2;
 		RAWINPUTDEVICE rid[DEVICE_COUNT];
 
 		//mouse
-		rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
-		rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
-		rid[0].dwFlags = RIDEV_DEVNOTIFY; //if RIDEV_NOLEGACY is used, window will be unresponsive
-		rid[0].hwndTarget = NULL;
+		//rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
+		//rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
+		//rid[0].dwFlags = RIDEV_DEVNOTIFY; //if RIDEV_NOLEGACY is used, window will be unresponsive
+		//rid[0].hwndTarget = m_hwnd;
 
 		//keyboard
-		rid[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
-		rid[1].usUsage = HID_USAGE_GENERIC_KEYBOARD;
-		rid[1].dwFlags = RIDEV_DEVNOTIFY | RIDEV_NOLEGACY;
-		rid[1].hwndTarget = NULL;
+		rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
+		rid[0].usUsage = HID_USAGE_GENERIC_KEYBOARD;
+		rid[0].dwFlags = RIDEV_DEVNOTIFY | RIDEV_NOLEGACY;
+		rid[0].hwndTarget = m_hwnd;
 
 		//gamepad
-		rid[2].usUsagePage = HID_USAGE_PAGE_GENERIC;
-		rid[2].usUsage = HID_USAGE_GENERIC_GAMEPAD;
-		rid[2].dwFlags = RIDEV_DEVNOTIFY;
-		rid[2].hwndTarget = NULL;
+		rid[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
+		rid[1].usUsage = HID_USAGE_GENERIC_GAMEPAD;
+		rid[1].dwFlags = RIDEV_DEVNOTIFY;
+		rid[1].hwndTarget = m_hwnd;
 
 		if(RegisterRawInputDevices(rid, DEVICE_COUNT, sizeof(RAWINPUTDEVICE)) == FALSE)
 		{
@@ -479,6 +485,7 @@ private:
 		switch (raw.header.dwType)
 		{
 		case RIM_TYPEMOUSE:
+			ASSERT((raw.data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) == 0);
 			HandleRawInputMouse(raw.header.hDevice, raw.data.mouse);
 			break;
 		case RIM_TYPEKEYBOARD:
@@ -493,9 +500,9 @@ private:
 		}
 	}
 
-	void HandleRawInputDeviceChange(WPARAM wparam, LPARAM lParam)
+	void HandleRawInputDeviceChange(WPARAM wparam, LPARAM lparam)
 	{
-		HANDLE deviceHandle = (void*)lParam;
+		HANDLE deviceHandle = (void*)lparam;
 
 		RID_DEVICE_INFO deviceInfo;
 		UINT size = sizeof(RID_DEVICE_INFO);
@@ -531,10 +538,10 @@ private:
 				String deviceName(m_allocator);
 				GetNameOfDevice(deviceHandle, deviceName);
 
-				m_editor->RegisterDevice(lParam, category, deviceName);
+				m_editor->RegisterDevice(lparam, category, deviceName);
 			}
 			else
-				m_editor->UnregisterDevice(lParam);
+				m_editor->UnregisterDevice(lparam);
 		}
 		else
 		{
@@ -604,6 +611,13 @@ private:
 		deviceName.Set(&entry[startIdx], entryLength - startIdx);
 	}
 
+	void HandleMouseMove(LPARAM lparam)
+	{
+		WORD xPos = LOWORD(lparam);
+		WORD yPos = HIWORD(lparam);
+		m_editor->MouseMove(xPos, yPos);
+	}
+
 	void HandleResize(HWND hwnd, LPARAM lparam)
 	{
 		WORD width = LOWORD(lparam);
@@ -634,6 +648,9 @@ private:
 				break;
 			case WM_INPUT:
 				HandleRawInput(lparam);
+				break;
+			case WM_MOUSEMOVE:
+				HandleMouseMove(lparam);
 				break;
 			case WM_INPUT_DEVICE_CHANGE:
 				HandleRawInputDeviceChange(wparam, lparam);

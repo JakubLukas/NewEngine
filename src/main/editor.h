@@ -23,7 +23,7 @@ public:
 
 
 	virtual void Init() = 0;
-	virtual void Update() = 0;
+	virtual void Update(float deltaTime) = 0;
 	virtual void Deinit() = 0;
 
 	virtual void Resize(windowHandle handle, u32 width, u32 height) = 0;
@@ -38,6 +38,8 @@ public:
 	virtual void RegisterButtonEvent(inputDeviceHandle handle, GamepadDevice::Button buttonId, bool pressed) = 0;
 	virtual void RegisterAxisEvent(inputDeviceHandle handle, MouseDevice::Axis axisId, const Vector3& delta) = 0;
 	virtual void RegisterAxisEvent(inputDeviceHandle handle, GamepadDevice::Axis axisId, const Vector3& delta) = 0;
+
+	virtual void MouseMove(u32 xPos, u32 yPos) = 0;
 
 	//virtual Engine* GetEngine() = 0;//////////// tmp function
 
