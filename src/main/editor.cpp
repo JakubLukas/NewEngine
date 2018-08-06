@@ -161,6 +161,26 @@ struct BGFXCallback : public bgfx::CallbackI
 
 }
 
+namespace ImGui
+{
+
+void* Allocate(size_t sz, void* userData)
+{
+	Veng::IAllocator* allocator = static_cast<Veng::IAllocator*>(userData);
+	return allocator->Allocate(sz, ALIGN_OF(char));
+}
+
+void Deallocate(void* ptr, void* userData)
+{
+	if (ptr != nullptr)
+	{
+		Veng::IAllocator* allocator = static_cast<Veng::IAllocator*>(userData);
+		allocator->Deallocate(ptr);
+	}
+}
+
+}
+
 
 namespace Veng
 {
@@ -174,6 +194,7 @@ public:
 		: m_allocator(allocator)
 		, m_app(app)
 		, m_bgfxAllocator(m_allocator)
+		, m_imguiAllocator(m_allocator)
 	{
 
 	}
@@ -249,7 +270,14 @@ public:
 		io.MouseDown[1] = 0 != (m_mouseButtons & IMGUI_MB_RIGHT_BIT);
 		io.MouseDown[2] = 0 != (m_mouseButtons & IMGUI_MB_MIDDLE_BIT);
 		io.MouseWheel = m_scroll;
-		Log(LogType::Info, "Mouse: pos: %4.1f,%4.1f buttons: %i\n", m_mousePos.x, m_mousePos.y, m_mouseButtons);
+
+		/* bool    */io.KeyCtrl;                        // Keyboard modifier pressed: Control
+		/* bool    */io.KeyShift;                       // Keyboard modifier pressed: Shift
+		/* bool    */io.KeyAlt;                         // Keyboard modifier pressed: Alt
+		/* bool    */io.KeySuper;                       // Keyboard modifier pressed: Cmd/Super/Windows
+		/* bool    */io.KeysDown[512];                  // Keyboard keys that are pressed (ideally left in the "native" order your engine has access to keyboard keys, so you can use your own defines/enums for keys).
+		/* ImWchar */io.InputCharacters[16 + 1];          // List of characters input (translated by user from keypress+keyboard state). Fill using AddInputCharacter() helper.
+		/* float   */io.NavInputs[ImGuiNavInput_COUNT]; // Gamepad inputs (keyboard keys will be auto-mapped and be written here by ImGui::NewFrame, all values will be cleared back to zero in ImGui::EndFrame)
 
 
 
@@ -260,7 +288,8 @@ public:
 		ImGui::Text("Hello, world!");
 		ImGui::Text("Hello, world!");
 		ImGui::Text("Hello, world!");
-		ImGui::Button("Button");
+		if(ImGui::Button("Button"))
+			ImGui::Text("Hello, world!!!!!!!!!");
 		ImGui::End();
 		ImGui::Render();
 
@@ -455,12 +484,7 @@ public:
 	{
 		if (m_inputEnabled)
 		{
-			/*if(axisId == MouseDevice::Axis::Movement)
-			{
-				m_mousePos.x += delta.x;
-				m_mousePos.y += delta.y;
-			}
-			else */if(axisId == MouseDevice::Axis::Wheel)
+			if(axisId == MouseDevice::Axis::Wheel)
 			{
 				m_scroll += delta.x;
 			}
@@ -553,7 +577,7 @@ public:
 
 	void InitImgui()
 	{
-		//ImGui::SetAllocatorFunctions(memAlloc, memFree, NULL);
+		ImGui::SetAllocatorFunctions(&ImGui::Allocate, &ImGui::Deallocate, &m_imguiAllocator);
 		m_imgui = ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO();
 		io.DisplaySize = ImVec2((float)m_windowSize.width, (float)m_windowSize.height);
@@ -623,7 +647,7 @@ public:
 
 		s_tex = bgfx::createUniform("s_tex", bgfx::UniformType::Int1);
 
-		//ImGui::InitDockContext();
+		ImGui::InitDockContext();
 
 		io.Fonts->AddFontDefault();
 		unsigned char* fontTextureData = nullptr;
@@ -646,7 +670,7 @@ public:
 	{
 		bgfx::destroy(s_tex);
 		bgfx::destroy(m_texture);
-		//ImGui::ShutdownDockContext();
+		ImGui::ShutdownDockContext();
 		ImGui::DestroyContext(m_imgui);
 	}
 
@@ -659,6 +683,7 @@ private:
 	
 	//imgui
 	ImGuiContext* m_imgui;
+	HeapAllocator m_imguiAllocator;
 	//imgui input ///////////////////////////////////////////////////////
 	ImVec2 m_mousePos = { 0.0f, 0.0f };
 	ImMouseButtonFlags m_mouseButtons = IMGUI_MB_NONE;

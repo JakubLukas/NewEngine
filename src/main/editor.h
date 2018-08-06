@@ -41,8 +41,6 @@ public:
 
 	virtual void MouseMove(u32 xPos, u32 yPos) = 0;
 
-	//virtual Engine* GetEngine() = 0;//////////// tmp function
-
 };
 
 }

@@ -287,26 +287,26 @@ private:
 
 
 		//REGISTER TO WINAPI
-		const int DEVICE_COUNT = 2;
+		const int DEVICE_COUNT = 3;
 		RAWINPUTDEVICE rid[DEVICE_COUNT];
 
 		//mouse
-		//rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
-		//rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
-		//rid[0].dwFlags = RIDEV_DEVNOTIFY; //if RIDEV_NOLEGACY is used, window will be unresponsive
-		//rid[0].hwndTarget = m_hwnd;
-
-		//keyboard
 		rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
-		rid[0].usUsage = HID_USAGE_GENERIC_KEYBOARD;
-		rid[0].dwFlags = RIDEV_DEVNOTIFY | RIDEV_NOLEGACY;
+		rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
+		rid[0].dwFlags = RIDEV_DEVNOTIFY; //if RIDEV_NOLEGACY is used, window will be unresponsive
 		rid[0].hwndTarget = m_hwnd;
 
-		//gamepad
+		//keyboard
 		rid[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
-		rid[1].usUsage = HID_USAGE_GENERIC_GAMEPAD;
-		rid[1].dwFlags = RIDEV_DEVNOTIFY;
+		rid[1].usUsage = HID_USAGE_GENERIC_KEYBOARD;
+		rid[1].dwFlags = RIDEV_DEVNOTIFY | RIDEV_NOLEGACY;
 		rid[1].hwndTarget = m_hwnd;
+
+		//gamepad
+		rid[2].usUsagePage = HID_USAGE_PAGE_GENERIC;
+		rid[2].usUsage = HID_USAGE_GENERIC_GAMEPAD;
+		rid[2].dwFlags = RIDEV_DEVNOTIFY;
+		rid[2].hwndTarget = m_hwnd;
 
 		if(RegisterRawInputDevices(rid, DEVICE_COUNT, sizeof(RAWINPUTDEVICE)) == FALSE)
 		{
