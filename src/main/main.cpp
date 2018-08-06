@@ -37,10 +37,10 @@ public:
 
 	windowHandle CreateSubWindow() override
 	{
-		return CreateSubWindow({ 200, 200 });
+		return CreateSubWindow({ 20, 20 }, { 200, 200 });
 	}
 
-	windowHandle CreateSubWindow(WindowSize size) override
+	windowHandle CreateSubWindow(WindowMetrics position, WindowMetrics size) override
 	{
 		if (m_subHwndSize == MAX_SUB_WINDOWS)
 			return INVALID_WINDOW_HANDLE;
@@ -51,10 +51,10 @@ public:
 			WINDOW_CLASS_NAME,
 			"",
 			WS_CHILD | WS_OVERLAPPED | WS_THICKFRAME | WS_CAPTION | WS_VISIBLE,
-			20,
-			20,
-			size.width,
-			size.height,
+			position.x,
+			position.y,
+			size.x,
+			size.y,
 			m_hwnd,
 			NULL,
 			hInst,
@@ -100,13 +100,11 @@ public:
 
 	void DockSubWindow(windowHandle hwnd) override
 	{
-		SetWindowLong((HWND)hwnd, WS_CHILD | GWL_STYLE, WS_OVERLAPPED | WS_THICKFRAME | WS_CAPTION | WS_VISIBLE);
 		SetParent((HWND)hwnd, m_hwnd);
 	}
 
 	void UndockSubWindow(windowHandle hwnd) override
 	{
-		SetWindowLong((HWND)hwnd, GWL_STYLE, WS_OVERLAPPED | WS_THICKFRAME | WS_CAPTION | WS_VISIBLE);
 		SetParent((HWND)hwnd, NULL);
 	}
 
@@ -116,7 +114,7 @@ public:
 		return m_hwnd;
 	}
 
-	WindowSize GetWindowSize(windowHandle hwnd) const override
+	WindowMetrics GetWindowSize(windowHandle hwnd) const override
 	{
 		RECT rect;
 		ASSERT(GetClientRect((HWND)hwnd, &rect));
@@ -137,8 +135,8 @@ public:
 			SetFullscreenBorderless();
 
 		m_editor->Init();
-		WindowSize size = GetWindowSize(m_hwnd);////////////////////////////
-		m_editor->Resize(m_hwnd, size.width, size.height);
+		WindowMetrics size = GetWindowSize(m_hwnd);////////////////////////////
+		m_editor->Resize(m_hwnd, size.x, size.y);
 
 		RegisterRawInput();
 
@@ -154,8 +152,8 @@ public:
 	{
 		while(!m_finished)
 		{
-			static const float frameRate = 1000.0f / 60.0f;
-			Sleep((DWORD)frameRate);//TODO ////////////////////////////////////////////
+			static const float frameRate = 1000.0f / 60.0f;//TODO ////////////////////////////////////////////
+			Sleep((DWORD)frameRate);
 
 			m_editor->Update(frameRate);
 			HandleEvents();
@@ -170,7 +168,7 @@ public:
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 
-			OnMessage(msg.hwnd, msg.message, msg.wParam, msg.lParam);
+			//OnMessage(msg.hwnd, msg.message, msg.wParam, msg.lParam);
 		}
 	}
 
@@ -682,9 +680,9 @@ private:
 	int m_subHwndSize = 0;
 	HWND m_subHwnd[MAX_SUB_WINDOWS] = { nullptr };
 
-	int m_exitCode = 0;
 	bool m_finished = false;
 	bool m_windowMode = true;
+	int m_exitCode = 0;
 
 	static const char* WINDOW_CLASS_NAME;
 	static AppImpl* s_instance;

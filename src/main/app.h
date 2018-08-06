@@ -9,10 +9,10 @@ namespace Veng
 typedef void* windowHandle;
 static const windowHandle INVALID_WINDOW_HANDLE = nullptr;
 
-struct WindowSize
+struct WindowMetrics
 {
-	u32 width;
-	u32 height;
+	u32 x;
+	u32 y;
 };
 
 
@@ -22,14 +22,14 @@ public:
 	virtual ~App() {}
 
 	virtual windowHandle CreateSubWindow() = 0;
-	virtual windowHandle CreateSubWindow(WindowSize size) = 0;
+	virtual windowHandle CreateSubWindow(WindowMetrics position, WindowMetrics size) = 0;
 	virtual bool DestroySubWindow(void* hwnd) = 0;
 
 	virtual void DockSubWindow(windowHandle hwnd) = 0;
 	virtual void UndockSubWindow(windowHandle hwnd) = 0;
 
 	virtual windowHandle GetMainWindowHandle() const = 0;
-	virtual WindowSize GetWindowSize(windowHandle hwnd) const = 0;
+	virtual WindowMetrics GetWindowSize(windowHandle hwnd) const = 0;
 
 };
 

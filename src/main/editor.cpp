@@ -56,8 +56,6 @@ struct PlatformData
 
 void setPlatformData(const PlatformData& _data);
 
-bgfx::ProgramHandle loadProgram(const char* _vsName, const char* _fsName);
-
 inline bool checkAvailTransientBuffers(uint32_t _numVertices, const bgfx::VertexDecl& _decl, uint32_t _numIndices)
 {
 	return _numVertices == bgfx::getAvailTransientVertexBuffer(_numVertices, _decl)
@@ -70,16 +68,31 @@ inline bool checkAvailTransientBuffers(uint32_t _numVertices, const bgfx::Vertex
 #define IMGUI_FLAGS_ALPHA_BLEND UINT8_C(0x01)
 
 
-typedef Veng::i32 ImMouseButtonFlags;
-enum ImMouseButtonBits : ImMouseButtonFlags
+namespace ImGui
 {
-	IMGUI_MB_NONE       = 0,
-	IMGUI_MB_LEFT_BIT   = 1 << 0,
-	IMGUI_MB_RIGHT_BIT  = 1 << 1,
-	IMGUI_MB_MIDDLE_BIT = 1 << 2,
-	IMGUI_MB_EXTRA4_BIT = 1 << 3,
-	IMGUI_MB_EXTRA5_BIT = 1 << 4,
+
+typedef Veng::u32 MouseButtonFlags;
+enum MouseButtonBits : MouseButtonFlags
+{
+	MB_NONE       = 0,
+	MB_LEFT_BIT   = 1 << 0,
+	MB_RIGHT_BIT  = 1 << 1,
+	MB_MIDDLE_BIT = 1 << 2,
+	MB_EXTRA4_BIT = 1 << 3,
+	MB_EXTRA5_BIT = 1 << 4,
 };
+
+typedef Veng::u32 ModifierKeyFlags;
+enum ModifierKeyBits : ModifierKeyFlags
+{
+	MK_NONE      = 0,
+	MK_CTRL_BIT  = 1 << 0,
+	MK_SHIFT_BIT = 1 << 1,
+	MK_ALT_BIT   = 1 << 2,
+	MK_SUPER_BIT = 1 << 3,
+};
+
+}
 
 
 namespace Veng
@@ -266,15 +279,15 @@ public:
 		io.DeltaTime = deltaTime * 0.001f; //msec to sec
 
 		io.MousePos = m_mousePos;
-		io.MouseDown[0] = 0 != (m_mouseButtons & IMGUI_MB_LEFT_BIT);
-		io.MouseDown[1] = 0 != (m_mouseButtons & IMGUI_MB_RIGHT_BIT);
-		io.MouseDown[2] = 0 != (m_mouseButtons & IMGUI_MB_MIDDLE_BIT);
+		io.MouseDown[0] = 0 != (m_mouseButtons & ImGui::MB_LEFT_BIT);
+		io.MouseDown[1] = 0 != (m_mouseButtons & ImGui::MB_RIGHT_BIT);
+		io.MouseDown[2] = 0 != (m_mouseButtons & ImGui::MB_MIDDLE_BIT);
 		io.MouseWheel = m_scroll;
 
-		/* bool    */io.KeyCtrl;                        // Keyboard modifier pressed: Control
-		/* bool    */io.KeyShift;                       // Keyboard modifier pressed: Shift
-		/* bool    */io.KeyAlt;                         // Keyboard modifier pressed: Alt
-		/* bool    */io.KeySuper;                       // Keyboard modifier pressed: Cmd/Super/Windows
+		io.KeyCtrl = 0 != (m_modifierKeys & ImGui::MK_CTRL_BIT);
+		io.KeyShift = 0 != (m_modifierKeys & ImGui::MK_SHIFT_BIT);
+		io.KeyAlt = 0 != (m_modifierKeys & ImGui::MK_ALT_BIT);
+		io.KeySuper = 0 != (m_modifierKeys & ImGui::MK_SUPER_BIT);
 		/* bool    */io.KeysDown[512];                  // Keyboard keys that are pressed (ideally left in the "native" order your engine has access to keyboard keys, so you can use your own defines/enums for keys).
 		/* ImWchar */io.InputCharacters[16 + 1];          // List of characters input (translated by user from keypress+keyboard state). Fill using AddInputCharacter() helper.
 		/* float   */io.NavInputs[ImGuiNavInput_COUNT]; // Gamepad inputs (keyboard keys will be auto-mapped and be written here by ImGui::NewFrame, all values will be cleared back to zero in ImGui::EndFrame)
@@ -285,11 +298,13 @@ public:
 		ImGui::NewFrame();
 
 		ImGui::Begin("test");
-		ImGui::Text("Hello, world!");
-		ImGui::Text("Hello, world!");
-		ImGui::Text("Hello, world!");
-		if(ImGui::Button("Button"))
-			ImGui::Text("Hello, world!!!!!!!!!");
+		ImGui::Text("Dock"); ImGui::SameLine();
+		if(ImGui::Button("Dock"))
+			m_app.DockSubWindow(m_subHwnd);
+
+		ImGui::Text("Undock"); ImGui::SameLine();
+		if(ImGui::Button("Undock"))
+			m_app.UndockSubWindow(m_subHwnd);
 		ImGui::End();
 		ImGui::Render();
 
@@ -306,9 +321,9 @@ public:
 		const bgfx::Caps* caps = bgfx::getCaps();
 		{
 			float ortho[16];
-			bx::mtxOrtho(ortho, 0.0f, (float)m_windowSize.width, (float)m_windowSize.height, 0.0f, 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
+			bx::mtxOrtho(ortho, 0.0f, (float)m_windowSize.x, (float)m_windowSize.y, 0.0f, 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
 			bgfx::setViewTransform(m_viewId, NULL, ortho);
-			bgfx::setViewRect(m_viewId, 0, 0, uint16_t(m_windowSize.width), uint16_t(m_windowSize.height));/////////////////////
+			bgfx::setViewRect(m_viewId, 0, 0, uint16_t(m_windowSize.x), uint16_t(m_windowSize.y));/////////////////////
 		}
 
 		// Render command lists
@@ -450,7 +465,25 @@ public:
 	void RegisterButtonEvent(inputDeviceHandle handle, KeyboardDevice::Button buttonId, bool pressed) override
 	{
 		if(m_inputEnabled)
+		{
+			switch(buttonId)
+			{
+				case KeyboardDevice::Button::ControlLeft:
+				case KeyboardDevice::Button::ControlRight:
+					m_modifierKeys = (m_modifierKeys & ~ImGui::MK_CTRL_BIT) | (pressed << 0); break;
+				case KeyboardDevice::Button::ShiftLeft:
+				case KeyboardDevice::Button::ShiftRight:
+					m_modifierKeys = (m_modifierKeys & ~ImGui::MK_SHIFT_BIT) | (pressed << 1); break;
+				case KeyboardDevice::Button::AltLeft:
+				case KeyboardDevice::Button::AltRight:
+					m_modifierKeys = (m_modifierKeys & ~ImGui::MK_ALT_BIT) | (pressed << 2); break;
+				case KeyboardDevice::Button::GUILeft:
+				case KeyboardDevice::Button::GUIRight:
+					m_modifierKeys = (m_modifierKeys & ~ImGui::MK_SHIFT_BIT) | (pressed << 3); break;
+			}
+
 			m_engine->GetInputSystem()->RegisterButtonEvent(handle, buttonId, pressed);
+		}
 	}
 
 	void RegisterButtonEvent(inputDeviceHandle handle, MouseDevice::Button buttonId, bool pressed) override
@@ -460,15 +493,15 @@ public:
 			switch(buttonId)
 			{
 				case MouseDevice::Button::Left:
-					m_mouseButtons = (m_mouseButtons & ~IMGUI_MB_LEFT_BIT) | (pressed << 0); break;
+					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_LEFT_BIT) | (pressed << 0); break;
 				case MouseDevice::Button::Right:
-					m_mouseButtons = (m_mouseButtons & ~IMGUI_MB_RIGHT_BIT) | (pressed << 1); break;
+					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_RIGHT_BIT) | (pressed << 1); break;
 				case MouseDevice::Button::Middle:
-					m_mouseButtons = (m_mouseButtons & ~IMGUI_MB_MIDDLE_BIT) | (pressed << 2); break;
+					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_MIDDLE_BIT) | (pressed << 2); break;
 				case MouseDevice::Button::Extra4:
-					m_mouseButtons = (m_mouseButtons & ~IMGUI_MB_EXTRA4_BIT) | (pressed << 3); break;
+					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_EXTRA4_BIT) | (pressed << 3); break;
 				case MouseDevice::Button::Extra5:
-					m_mouseButtons = (m_mouseButtons & ~IMGUI_MB_EXTRA5_BIT) | (pressed << 4); break;
+					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_EXTRA5_BIT) | (pressed << 4); break;
 			}
 			m_engine->GetInputSystem()->RegisterButtonEvent(handle, buttonId, pressed);
 		}
@@ -510,8 +543,8 @@ public:
 		ASSERT(m_engine != nullptr);
 		m_tmpPlugRender = RenderSystem::Create(*m_engine);
 		m_tmpPlugRender->Init();
-		WindowSize size = m_app.GetWindowSize(m_subHwnd);
-		m_tmpPlugRender->Resize(size.width, size.height);
+		WindowMetrics size = m_app.GetWindowSize(m_subHwnd);
+		m_tmpPlugRender->Resize(size.x, size.y);
 		m_engine->AddPlugin(m_tmpPlugRender);
 	}
 
@@ -521,7 +554,7 @@ public:
 		m_subHwnd = m_app.CreateSubWindow();
 		ASSERT(m_subHwnd != nullptr);
 
-		WindowSize subWindowSize = m_app.GetWindowSize(m_subHwnd);
+		WindowMetrics subWindowSize = m_app.GetWindowSize(m_subHwnd);
 
 		bgfx::PlatformData d{ 0 };
 		d.nwh = hwnd;
@@ -542,8 +575,8 @@ public:
 
 		bgfx::setDebug(BGFX_DEBUG_NONE);//TODO
 
-		bgfx::setViewRect(1, 0, 0, subWindowSize.width, subWindowSize.height);
-		m_fbh = bgfx::createFrameBuffer(m_subHwnd, subWindowSize.width, subWindowSize.height);
+		bgfx::setViewRect(1, 0, 0, subWindowSize.x, subWindowSize.y);
+		m_fbh = bgfx::createFrameBuffer(m_subHwnd, subWindowSize.x, subWindowSize.y);
 
 		bgfx::setViewClear(0
 			, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
@@ -580,7 +613,7 @@ public:
 		ImGui::SetAllocatorFunctions(&ImGui::Allocate, &ImGui::Deallocate, &m_imguiAllocator);
 		m_imgui = ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO();
-		io.DisplaySize = ImVec2((float)m_windowSize.width, (float)m_windowSize.height);
+		io.DisplaySize = ImVec2((float)m_windowSize.x, (float)m_windowSize.y);
 		io.DeltaTime = 1.0f / 60.0f;
 		io.IniFilename = nullptr;
 
@@ -647,7 +680,7 @@ public:
 
 		s_tex = bgfx::createUniform("s_tex", bgfx::UniformType::Int1);
 
-		ImGui::InitDockContext();
+		//ImGui::InitDockContext();
 
 		io.Fonts->AddFontDefault();
 		unsigned char* fontTextureData = nullptr;
@@ -670,7 +703,7 @@ public:
 	{
 		bgfx::destroy(s_tex);
 		bgfx::destroy(m_texture);
-		ImGui::ShutdownDockContext();
+		//ImGui::ShutdownDockContext();
 		ImGui::DestroyContext(m_imgui);
 	}
 
@@ -686,7 +719,8 @@ private:
 	HeapAllocator m_imguiAllocator;
 	//imgui input ///////////////////////////////////////////////////////
 	ImVec2 m_mousePos = { 0.0f, 0.0f };
-	ImMouseButtonFlags m_mouseButtons = IMGUI_MB_NONE;
+	ImGui::MouseButtonFlags m_mouseButtons = ImGui::MB_NONE;
+	ImGui::ModifierKeyFlags m_modifierKeys = ImGui::MK_NONE;
 	static const size_t KEYBOARD_BUFFER_SIZE = 256;
 	u8 m_keyboardBuffer[KEYBOARD_BUFFER_SIZE];
 	float m_scroll = 0.0f;
@@ -705,7 +739,7 @@ private:
 	windowHandle m_subHwnd = nullptr;///////////////////////////////////
 	bgfx::FrameBufferHandle m_fbh;
 
-	WindowSize m_windowSize = { 0, 0 };//doesn't need yet, should remove ?
+	WindowMetrics m_windowSize = { 0, 0 };//doesn't need yet, should remove ?
 
 };
 
