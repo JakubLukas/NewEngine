@@ -72,24 +72,39 @@ namespace ImGui
 {
 
 typedef Veng::u32 MouseButtonFlags;
+enum MouseButtonBitOffset : MouseButtonFlags
+{
+	MB_BO_LEFT = 0,
+	MB_BO_RIGHT,
+	MB_BO_MIDDLE,
+	MB_BO_EXTRA4,
+	MB_BO_EXTRA5,
+};
 enum MouseButtonBits : MouseButtonFlags
 {
 	MB_NONE       = 0,
-	MB_LEFT_BIT   = 1 << 0,
-	MB_RIGHT_BIT  = 1 << 1,
-	MB_MIDDLE_BIT = 1 << 2,
-	MB_EXTRA4_BIT = 1 << 3,
-	MB_EXTRA5_BIT = 1 << 4,
+	MB_LEFT_BIT   = 1 << MB_BO_LEFT,
+	MB_RIGHT_BIT  = 1 << MB_BO_RIGHT,
+	MB_MIDDLE_BIT = 1 << MB_BO_MIDDLE,
+	MB_EXTRA4_BIT = 1 << MB_BO_EXTRA4,
+	MB_EXTRA5_BIT = 1 << MB_BO_EXTRA5,
 };
 
 typedef Veng::u32 ModifierKeyFlags;
+enum ModifierKeyBitOffset : ModifierKeyFlags
+{
+	MK_BO_CTRL = 0,
+	MK_BO_SHIFT,
+	MK_BO_ALT,
+	MK_BO_SUPER,
+};
 enum ModifierKeyBits : ModifierKeyFlags
 {
 	MK_NONE      = 0,
-	MK_CTRL_BIT  = 1 << 0,
-	MK_SHIFT_BIT = 1 << 1,
-	MK_ALT_BIT   = 1 << 2,
-	MK_SUPER_BIT = 1 << 3,
+	MK_CTRL_BIT  = 1 << MK_BO_CTRL,
+	MK_SHIFT_BIT = 1 << MK_BO_SHIFT,
+	MK_ALT_BIT   = 1 << MK_BO_ALT,
+	MK_SUPER_BIT = 1 << MK_BO_SUPER,
 };
 
 }
@@ -305,6 +320,13 @@ public:
 		ImGui::Text("Undock"); ImGui::SameLine();
 		if(ImGui::Button("Undock"))
 			m_app.UndockSubWindow(m_subHwnd);
+
+		ImVec2 sizeWin = ImGui::GetWindowSize();
+		ImGui::Text("size: %f, %f", sizeWin.x, sizeWin.y);
+		/*if (ImGui::Button("size to 200x200"))
+		{
+			m_app.SetWindowSize(m_subHwnd, { 220, 220 });
+		}*/
 		ImGui::End();
 		ImGui::Render();
 
@@ -470,16 +492,16 @@ public:
 			{
 				case KeyboardDevice::Button::ControlLeft:
 				case KeyboardDevice::Button::ControlRight:
-					m_modifierKeys = (m_modifierKeys & ~ImGui::MK_CTRL_BIT) | (pressed << 0); break;
+					m_modifierKeys = (m_modifierKeys & ~ImGui::MK_CTRL_BIT) | (pressed << ImGui::MK_BO_CTRL); break;
 				case KeyboardDevice::Button::ShiftLeft:
 				case KeyboardDevice::Button::ShiftRight:
-					m_modifierKeys = (m_modifierKeys & ~ImGui::MK_SHIFT_BIT) | (pressed << 1); break;
+					m_modifierKeys = (m_modifierKeys & ~ImGui::MK_SHIFT_BIT) | (pressed << ImGui::MK_BO_SHIFT); break;
 				case KeyboardDevice::Button::AltLeft:
 				case KeyboardDevice::Button::AltRight:
-					m_modifierKeys = (m_modifierKeys & ~ImGui::MK_ALT_BIT) | (pressed << 2); break;
+					m_modifierKeys = (m_modifierKeys & ~ImGui::MK_ALT_BIT) | (pressed << ImGui::MK_BO_ALT); break;
 				case KeyboardDevice::Button::GUILeft:
 				case KeyboardDevice::Button::GUIRight:
-					m_modifierKeys = (m_modifierKeys & ~ImGui::MK_SHIFT_BIT) | (pressed << 3); break;
+					m_modifierKeys = (m_modifierKeys & ~ImGui::MK_SUPER_BIT) | (pressed << ImGui::MK_BO_SUPER); break;
 			}
 
 			m_engine->GetInputSystem()->RegisterButtonEvent(handle, buttonId, pressed);
@@ -493,15 +515,15 @@ public:
 			switch(buttonId)
 			{
 				case MouseDevice::Button::Left:
-					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_LEFT_BIT) | (pressed << 0); break;
+					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_LEFT_BIT) | (pressed << ImGui::MB_BO_LEFT); break;
 				case MouseDevice::Button::Right:
-					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_RIGHT_BIT) | (pressed << 1); break;
+					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_RIGHT_BIT) | (pressed << ImGui::MB_BO_RIGHT); break;
 				case MouseDevice::Button::Middle:
-					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_MIDDLE_BIT) | (pressed << 2); break;
+					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_MIDDLE_BIT) | (pressed << ImGui::MB_BO_MIDDLE); break;
 				case MouseDevice::Button::Extra4:
-					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_EXTRA4_BIT) | (pressed << 3); break;
+					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_EXTRA4_BIT) | (pressed << ImGui::MB_BO_EXTRA4); break;
 				case MouseDevice::Button::Extra5:
-					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_EXTRA5_BIT) | (pressed << 4); break;
+					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_EXTRA5_BIT) | (pressed << ImGui::MB_BO_EXTRA5); break;
 			}
 			m_engine->GetInputSystem()->RegisterButtonEvent(handle, buttonId, pressed);
 		}
@@ -543,7 +565,7 @@ public:
 		ASSERT(m_engine != nullptr);
 		m_tmpPlugRender = RenderSystem::Create(*m_engine);
 		m_tmpPlugRender->Init();
-		WindowMetrics size = m_app.GetWindowSize(m_subHwnd);
+		WindowSize size = m_app.GetWindowSize(m_subHwnd);
 		m_tmpPlugRender->Resize(size.x, size.y);
 		m_engine->AddPlugin(m_tmpPlugRender);
 	}
@@ -554,7 +576,7 @@ public:
 		m_subHwnd = m_app.CreateSubWindow();
 		ASSERT(m_subHwnd != nullptr);
 
-		WindowMetrics subWindowSize = m_app.GetWindowSize(m_subHwnd);
+		WindowSize subWindowSize = m_app.GetWindowSize(m_subHwnd);
 
 		bgfx::PlatformData d{ 0 };
 		d.nwh = hwnd;
@@ -739,7 +761,7 @@ private:
 	windowHandle m_subHwnd = nullptr;///////////////////////////////////
 	bgfx::FrameBufferHandle m_fbh;
 
-	WindowMetrics m_windowSize = { 0, 0 };//doesn't need yet, should remove ?
+	WindowSize m_windowSize = { 0, 0 };//doesn't need yet, should remove ?
 
 };
 

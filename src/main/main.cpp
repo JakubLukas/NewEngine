@@ -19,6 +19,7 @@
 namespace Veng
 {
 
+static const RECT DEFAULT_MAIN_WINDOW_RECT = { 0, 0, 600, 400 };
 
 class AppImpl : public App
 {
@@ -37,10 +38,10 @@ public:
 
 	windowHandle CreateSubWindow() override
 	{
-		return CreateSubWindow({ 20, 20 }, { 200, 200 });
+		return CreateSubWindow({ 20, 20, 200, 200 });
 	}
 
-	windowHandle CreateSubWindow(WindowMetrics position, WindowMetrics size) override
+	windowHandle CreateSubWindow(WindowRect rect) override
 	{
 		if (m_subHwndSize == MAX_SUB_WINDOWS)
 			return INVALID_WINDOW_HANDLE;
@@ -51,10 +52,10 @@ public:
 			WINDOW_CLASS_NAME,
 			"",
 			WS_CHILD | WS_OVERLAPPED | WS_THICKFRAME | WS_CAPTION | WS_VISIBLE,
-			position.x,
-			position.y,
-			size.x,
-			size.y,
+			rect.positionX,
+			rect.positionY,
+			rect.width,
+			rect.height,
 			m_hwnd,
 			NULL,
 			hInst,
@@ -98,6 +99,7 @@ public:
 		}
 	}
 
+
 	void DockSubWindow(windowHandle hwnd) override
 	{
 		SetParent((HWND)hwnd, m_hwnd);
@@ -109,12 +111,23 @@ public:
 	}
 
 
-	windowHandle GetMainWindowHandle() const override
+	WindowSize GetWindowPosition(windowHandle hwnd) const override
 	{
-		return m_hwnd;
+		RECT rect;
+		ASSERT(GetClientRect((HWND)hwnd, &rect));
+		return{
+			(u32)(rect.left),
+			(u32)(rect.top)
+		};
 	}
 
-	WindowMetrics GetWindowSize(windowHandle hwnd) const override
+	void SetWindowPosition(windowHandle hwnd, WindowSize pos) override
+	{
+		SetWindowPos((HWND)hwnd, NULL, pos.x, pos.y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+	}
+
+
+	WindowSize GetWindowSize(windowHandle hwnd) const override
 	{
 		RECT rect;
 		ASSERT(GetClientRect((HWND)hwnd, &rect));
@@ -122,6 +135,17 @@ public:
 			(u32)(rect.right - rect.left),
 			(u32)(rect.bottom - rect.top)
 		};
+	}
+
+	void SetWindowSize(windowHandle hwnd, WindowSize size) override
+	{
+		SetWindowPos((HWND)hwnd, NULL, 0, 0, size.x, size.y, SWP_NOMOVE | SWP_NOZORDER);
+	}
+
+
+	windowHandle GetMainWindowHandle() const override
+	{
+		return m_hwnd;
 	}
 
 
@@ -135,11 +159,10 @@ public:
 			SetFullscreenBorderless();
 
 		m_editor->Init();
-		WindowMetrics size = GetWindowSize(m_hwnd);////////////////////////////
+		WindowSize size = GetWindowSize(m_hwnd);
 		m_editor->Resize(m_hwnd, size.x, size.y);
 
 		RegisterRawInput();
-
 	}
 
 	void Deinit()
@@ -167,8 +190,6 @@ public:
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
-
-			//OnMessage(msg.hwnd, msg.message, msg.wParam, msg.lParam);
 		}
 	}
 
@@ -190,7 +211,7 @@ private:
 		wnd.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 		ASSERT(RegisterClassEx(&wnd));
 
-		RECT rect = { 0, 0, 600, 400 };
+		RECT rect = DEFAULT_MAIN_WINDOW_RECT;
 		ASSERT(AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW | WS_VISIBLE, FALSE));
 
 		m_hwnd = CreateWindow(
@@ -227,6 +248,7 @@ private:
 			mi.rcMonitor.bottom - mi.rcMonitor.top,
 			SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 	}
+
 
 	void RegisterRawInput()
 	{
@@ -609,6 +631,7 @@ private:
 		deviceName.Set(&entry[startIdx], entryLength - startIdx);
 	}
 
+
 	void HandleMouseMove(LPARAM lparam)
 	{
 		WORD xPos = LOWORD(lparam);
@@ -616,12 +639,14 @@ private:
 		m_editor->MouseMove(xPos, yPos);
 	}
 
+
 	void HandleResize(HWND hwnd, LPARAM lparam)
 	{
 		WORD width = LOWORD(lparam);
 		WORD height = HIWORD(lparam);
 		m_editor->Resize((windowHandle)hwnd, width, height);
 	}
+
 
 	LRESULT OnMessage(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	{
@@ -634,6 +659,7 @@ private:
 				m_editor->SetFocus(true);
 				break;
 			case WM_CLOSE:
+				m_finished = true;
 				PostQuitMessage(0);
 				break;
 			case WM_MOVE:
@@ -678,7 +704,7 @@ private:
 
 	static const int MAX_SUB_WINDOWS = 8;
 	int m_subHwndSize = 0;
-	HWND m_subHwnd[MAX_SUB_WINDOWS] = { nullptr };
+	HWND m_subHwnd[MAX_SUB_WINDOWS] = { NULL };
 
 	bool m_finished = false;
 	bool m_windowMode = true;
