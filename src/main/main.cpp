@@ -51,7 +51,7 @@ public:
 		HWND hwnd = CreateWindow(
 			WINDOW_CLASS_NAME,
 			"",
-			WS_CHILD | WS_OVERLAPPED | WS_THICKFRAME | WS_CAPTION | WS_VISIBLE,
+			WS_CHILD/* | WS_OVERLAPPED | WS_THICKFRAME | WS_CAPTION*/ | WS_DISABLED | WS_VISIBLE,
 			rect.positionX,
 			rect.positionY,
 			rect.width,
@@ -632,11 +632,14 @@ private:
 	}
 
 
-	void HandleMouseMove(LPARAM lparam)
+	void HandleMouseMove(HWND hwnd, LPARAM lparam)
 	{
-		WORD xPos = LOWORD(lparam);
-		WORD yPos = HIWORD(lparam);
-		m_editor->MouseMove(xPos, yPos);
+		if (hwnd == m_hwnd)
+		{
+			WORD xPos = LOWORD(lparam);
+			WORD yPos = HIWORD(lparam);
+			m_editor->MouseMove(xPos, yPos);
+		}
 	}
 
 
@@ -674,7 +677,7 @@ private:
 				HandleRawInput(lparam);
 				break;
 			case WM_MOUSEMOVE:
-				HandleMouseMove(lparam);
+				HandleMouseMove(hwnd, lparam);
 				break;
 			case WM_INPUT_DEVICE_CHANGE:
 				HandleRawInputDeviceChange(wparam, lparam);

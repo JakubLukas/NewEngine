@@ -16,6 +16,8 @@
 
 #include <bgfx/bgfx.h>///////////////
 #include "../external/imgui/imgui.h"
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "../external/imgui/imgui_internal.h"
 
 
 namespace bx
@@ -256,8 +258,8 @@ public:
 					renderScene->AddModelComponent(entity, worldHandle, "models/cubes.model");
 
 					Quaternion rot = Quaternion::IDENTITY;
-					//rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
-					//rot = rot * Quaternion(Vector3::AXIS_Y, yy*0.37f);
+					rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
+					rot = rot * Quaternion(Vector3::AXIS_Y, yy*0.37f);
 					Vector3 pos = {
 						-15.0f + float(xx) * 3.0f,
 						-15.0f + float(yy) * 3.0f,
@@ -312,24 +314,27 @@ public:
 
 		ImGui::NewFrame();
 
-		ImGui::Begin("test");
-		ImGui::Text("Dock"); ImGui::SameLine();
-		if(ImGui::Button("Dock"))
-			m_app.DockSubWindow(m_subHwnd);
+		ImGui::Begin("Engine");
 
-		ImGui::Text("Undock"); ImGui::SameLine();
-		if(ImGui::Button("Undock"))
-			m_app.UndockSubWindow(m_subHwnd);
-
-		ImVec2 sizeWin = ImGui::GetWindowSize();
-		ImGui::Text("size: %f, %f", sizeWin.x, sizeWin.y);
-		/*if (ImGui::Button("size to 200x200"))
+		ImVec2 windowPosition = ImGui::GetWindowPos();
+		if (windowPosition != m_subWindowPosition)
 		{
-			m_app.SetWindowSize(m_subHwnd, { 220, 220 });
-		}*/
-		ImGui::End();
-		ImGui::Render();
+			m_subWindowPosition = windowPosition;
+			windowPosition = windowPosition + ImGui::GetCursorPos();
+			m_app.SetWindowPosition(m_subHwnd, { (u32)(windowPosition.x), (u32)windowPosition.y });
+		}
 
+		ImVec2 windowSize = ImGui::GetContentRegionAvail();
+		if (windowSize != m_subWindowSize)
+		{
+			m_subWindowSize = windowSize;
+			m_app.SetWindowSize(m_subHwnd, { (u32)windowSize.x, (u32)windowSize.y });/////////////////windowSize can be negative (on window hide)
+		}
+
+		ImGui::End();
+
+
+		ImGui::Render();
 
 		UpdateRender();
 
@@ -746,6 +751,9 @@ private:
 	static const size_t KEYBOARD_BUFFER_SIZE = 256;
 	u8 m_keyboardBuffer[KEYBOARD_BUFFER_SIZE];
 	float m_scroll = 0.0f;
+	//imgui data
+	ImVec2 m_subWindowPosition = { 0.0f, 0.0f };
+	ImVec2 m_subWindowSize = { 0.0f, 0.0f };
 
 	//bgfx for imgui
 	bgfx::VertexDecl m_decl;
