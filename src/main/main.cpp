@@ -51,7 +51,7 @@ public:
 		HWND hwnd = CreateWindow(
 			WINDOW_CLASS_NAME,
 			"",
-			WS_CHILD/* | WS_OVERLAPPED | WS_THICKFRAME | WS_CAPTION*/ | WS_DISABLED | WS_VISIBLE,
+			WS_CHILD/* | WS_OVERLAPPED | WS_THICKFRAME | WS_CAPTION*/ | WS_VISIBLE,
 			rect.positionX,
 			rect.positionY,
 			rect.width,
@@ -281,9 +281,9 @@ private:
 			{
 			case RIM_TYPEMOUSE:
 				m_editor->RegisterDevice(deviceHandle, InputDeviceCategory::Mouse, deviceName);
-				POINT mousePos;
-				GetCursorPos(&mousePos);////////////////////////////////////////////////////////////////////////
-				m_editor->RegisterAxisEvent(deviceHandle, MouseDevice::Axis::Movement, { (float)mousePos.x, (float)mousePos.y, 0.0f });
+				//POINT mousePos;
+				//GetCursorPos(&mousePos);////////////////////////////////////////////////////////////////////////
+				//m_editor->RegisterAxisEvent(deviceHandle, MouseDevice::Axis::Movement, { (float)mousePos.x, (float)mousePos.y, 0.0f });
 				break;
 			case RIM_TYPEKEYBOARD:
 				m_editor->RegisterDevice(deviceHandle, InputDeviceCategory::Keyboard, deviceName);
@@ -334,7 +334,7 @@ private:
 		}
 	}
 
-	void HandleRawInputKeyboard(HANDLE hDevice, const RAWKEYBOARD& keyboard)
+	void HandleRawInputKeyboard(HWND hwnd, HANDLE hDevice, const RAWKEYBOARD& keyboard)
 	{
 		inputDeviceHandle deviceHandle = (inputDeviceHandle)(hDevice);
 
@@ -343,7 +343,7 @@ private:
 
 		u8 scUSB = Keyboard::Scancode_USBHID::FromPS2(scancodePS2);
 		KeyboardDevice::Button keyCode = (KeyboardDevice::Button)scUSB;
-		m_editor->RegisterButtonEvent(deviceHandle, keyCode, pressed);
+		m_editor->RegisterButtonEvent(hwnd, deviceHandle, keyCode, pressed);
 
 		u32 scPS2 = Keyboard::Scancode_PS2::FromUSBHID(scUSB);
 		char buffer[512] = {};
@@ -358,7 +358,7 @@ private:
 		OutputDebugStringW(utf16_buffer);*/
 	}
 
-	void HandleRawInputMouse(HANDLE hDevice, const RAWMOUSE& mouse)
+	void HandleRawInputMouse(HWND hwnd, HANDLE hDevice, const RAWMOUSE& mouse)
 	{
 		inputDeviceHandle deviceHandle = (inputDeviceHandle)(hDevice);
 
@@ -381,7 +381,7 @@ private:
 				(float)mouse.lLastY,
 				0.0f
 			};
-			m_editor->RegisterAxisEvent(deviceHandle, MouseDevice::Axis::Movement, axisMov);
+			m_editor->RegisterAxisEvent(hwnd, deviceHandle, MouseDevice::Axis::Movement, axisMov);
 			return;
 		}
 		else if (mouse.usFlags & MOUSE_MOVE_ABSOLUTE)
@@ -397,7 +397,7 @@ private:
 				0.0f,
 				0.0f
 			};
-			m_editor->RegisterAxisEvent(deviceHandle, MouseDevice::Axis::Wheel, axisWheel);
+			m_editor->RegisterAxisEvent(hwnd, deviceHandle, MouseDevice::Axis::Wheel, axisWheel);
 			return;
 		}
 		else
@@ -405,45 +405,45 @@ private:
 			if (mouse.usButtonFlags != Mouse::BUTTON_NONE)
 			{
 				if((mouse.usButtonFlags & RI_MOUSE_BUTTON_1_DOWN) != 0)
-					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Left, true);
+					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Left, true);
 				if((mouse.usButtonFlags & RI_MOUSE_BUTTON_1_UP) != 0)
-					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Left, false);
+					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Left, false);
 
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_2_DOWN) != 0)
-					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Right, true);
+					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Right, true);
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_2_UP) != 0)
-					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Right, false);
+					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Right, false);
 
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_3_DOWN) != 0)
-					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Middle, true);
+					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Middle, true);
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_3_UP) != 0)
-					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Middle, false);
+					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Middle, false);
 
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_4_DOWN) != 0)
-					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra4, true);
+					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Extra4, true);
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_4_UP) != 0)
-					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra4, false);
+					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Extra4, false);
 
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_5_DOWN) != 0)
-					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra5, true);
+					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Extra5, true);
 				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_5_UP) != 0)
-					m_editor->RegisterButtonEvent(deviceHandle, MouseDevice::Button::Extra5, false);
+					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Extra5, false);
 			}
 		}
 	}
 
-	void HandleRawInputHID(HANDLE hDevice, const RAWHID& hid)
+	void HandleRawInputHID(HWND hwnd, HANDLE hDevice, const RAWHID& hid)
 	{
 		USHORT usage = GetHIDType(hDevice);
 		switch (usage)
 		{
 		case HID_USAGE_GENERIC_GAMEPAD:
-			HandleRawInputGamepad(hDevice, hid);
+			HandleRawInputGamepad(hwnd, hDevice, hid);
 			break;
 		}
 	}
 
-	void HandleRawInputGamepad(HANDLE hDevice, const RAWHID& hid)
+	void HandleRawInputGamepad(HWND hwnd, HANDLE hDevice, const RAWHID& hid)
 	{
 		/*UINT preparseBufferSize;
 		GetRawInputDeviceInfo(hDevice, RIDI_PREPARSEDDATA, NULL, &preparseBufferSize);
@@ -491,7 +491,7 @@ private:
 		m_allocator.Deallocate(preparsedData);*/
 	}
 
-	void HandleRawInput(LPARAM lParam)
+	void HandleRawInput(HWND hwnd, LPARAM lParam)
 	{
 		RAWINPUT raw;
 		UINT size = sizeof(RAWINPUT);
@@ -506,13 +506,13 @@ private:
 		{
 		case RIM_TYPEMOUSE:
 			ASSERT((raw.data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) == 0);
-			HandleRawInputMouse(raw.header.hDevice, raw.data.mouse);
+			HandleRawInputMouse(hwnd, raw.header.hDevice, raw.data.mouse);
 			break;
 		case RIM_TYPEKEYBOARD:
-			HandleRawInputKeyboard(raw.header.hDevice, raw.data.keyboard);
+			HandleRawInputKeyboard(hwnd, raw.header.hDevice, raw.data.keyboard);
 			break;
 		case RIM_TYPEHID:
-			HandleRawInputHID(raw.header.hDevice, raw.data.hid);
+			HandleRawInputHID(hwnd, raw.header.hDevice, raw.data.hid);
 			break;
 		default:
 			ASSERT2(false, "Unknown type of raw input device");
@@ -656,10 +656,10 @@ private:
 		switch(msg)
 		{
 			case WM_KILLFOCUS:
-				m_editor->SetFocus(false);
+				m_editor->SetFocus(hwnd, false);
 				break;
 			case WM_SETFOCUS:
-				m_editor->SetFocus(true);
+				m_editor->SetFocus(hwnd, true);
 				break;
 			case WM_CLOSE:
 				m_finished = true;
@@ -674,7 +674,7 @@ private:
 				m_finished = true;
 				break;
 			case WM_INPUT:
-				HandleRawInput(lparam);
+				HandleRawInput(hwnd, lparam);
 				break;
 			case WM_MOUSEMOVE:
 				HandleMouseMove(hwnd, lparam);

@@ -471,91 +471,119 @@ public:
 		}
 	}
 
-	void SetFocus(bool hasFocus) override
+	void SetFocus(windowHandle handle, bool hasFocus) override
 	{
+		handle;///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		if (hasFocus)
 			m_inputEnabled = true;
 		else
 			m_inputEnabled = false;
 	}
 
-	inputDeviceID RegisterDevice(inputDeviceHandle handle, InputDeviceCategory category, const String& name) override
+	inputDeviceID RegisterDevice(inputDeviceHandle deviceHandle, InputDeviceCategory category, const String& name) override
 	{
-		return m_engine->GetInputSystem()->RegisterDevice(handle, category, name);
+		return m_engine->GetInputSystem()->RegisterDevice(deviceHandle, category, name);
 	}
 
-	void UnregisterDevice(inputDeviceHandle handle) override
+	void UnregisterDevice(inputDeviceHandle deviceHandle) override
 	{
-		m_engine->GetInputSystem()->UnregisterDevice(handle);
+		m_engine->GetInputSystem()->UnregisterDevice(deviceHandle);
 	}
 
-	void RegisterButtonEvent(inputDeviceHandle handle, KeyboardDevice::Button buttonId, bool pressed) override
+	void RegisterButtonEvent(windowHandle handle, inputDeviceHandle deviceHandle, KeyboardDevice::Button buttonId, bool pressed) override
 	{
 		if(m_inputEnabled)
 		{
-			switch(buttonId)
+			if(handle == m_app.GetMainWindowHandle())
 			{
-				case KeyboardDevice::Button::ControlLeft:
-				case KeyboardDevice::Button::ControlRight:
-					m_modifierKeys = (m_modifierKeys & ~ImGui::MK_CTRL_BIT) | (pressed << ImGui::MK_BO_CTRL); break;
-				case KeyboardDevice::Button::ShiftLeft:
-				case KeyboardDevice::Button::ShiftRight:
-					m_modifierKeys = (m_modifierKeys & ~ImGui::MK_SHIFT_BIT) | (pressed << ImGui::MK_BO_SHIFT); break;
-				case KeyboardDevice::Button::AltLeft:
-				case KeyboardDevice::Button::AltRight:
-					m_modifierKeys = (m_modifierKeys & ~ImGui::MK_ALT_BIT) | (pressed << ImGui::MK_BO_ALT); break;
-				case KeyboardDevice::Button::GUILeft:
-				case KeyboardDevice::Button::GUIRight:
-					m_modifierKeys = (m_modifierKeys & ~ImGui::MK_SUPER_BIT) | (pressed << ImGui::MK_BO_SUPER); break;
+				switch(buttonId)
+				{
+					case KeyboardDevice::Button::ControlLeft:
+					case KeyboardDevice::Button::ControlRight:
+						m_modifierKeys = (m_modifierKeys & ~ImGui::MK_CTRL_BIT) | (pressed << ImGui::MK_BO_CTRL); break;
+					case KeyboardDevice::Button::ShiftLeft:
+					case KeyboardDevice::Button::ShiftRight:
+						m_modifierKeys = (m_modifierKeys & ~ImGui::MK_SHIFT_BIT) | (pressed << ImGui::MK_BO_SHIFT); break;
+					case KeyboardDevice::Button::AltLeft:
+					case KeyboardDevice::Button::AltRight:
+						m_modifierKeys = (m_modifierKeys & ~ImGui::MK_ALT_BIT) | (pressed << ImGui::MK_BO_ALT); break;
+					case KeyboardDevice::Button::GUILeft:
+					case KeyboardDevice::Button::GUIRight:
+						m_modifierKeys = (m_modifierKeys & ~ImGui::MK_SUPER_BIT) | (pressed << ImGui::MK_BO_SUPER); break;
+				}
 			}
-
-			m_engine->GetInputSystem()->RegisterButtonEvent(handle, buttonId, pressed);
+			else
+			{
+				m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, buttonId, pressed);
+			}
 		}
 	}
 
-	void RegisterButtonEvent(inputDeviceHandle handle, MouseDevice::Button buttonId, bool pressed) override
+	void RegisterButtonEvent(windowHandle handle, inputDeviceHandle deviceHandle, MouseDevice::Button buttonId, bool pressed) override
 	{
 		if(m_inputEnabled)
 		{
-			switch(buttonId)
+			if(handle == m_app.GetMainWindowHandle())
 			{
-				case MouseDevice::Button::Left:
-					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_LEFT_BIT) | (pressed << ImGui::MB_BO_LEFT); break;
-				case MouseDevice::Button::Right:
-					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_RIGHT_BIT) | (pressed << ImGui::MB_BO_RIGHT); break;
-				case MouseDevice::Button::Middle:
-					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_MIDDLE_BIT) | (pressed << ImGui::MB_BO_MIDDLE); break;
-				case MouseDevice::Button::Extra4:
-					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_EXTRA4_BIT) | (pressed << ImGui::MB_BO_EXTRA4); break;
-				case MouseDevice::Button::Extra5:
-					m_mouseButtons = (m_mouseButtons & ~ImGui::MB_EXTRA5_BIT) | (pressed << ImGui::MB_BO_EXTRA5); break;
+				switch(buttonId)
+				{
+					case MouseDevice::Button::Left:
+						m_mouseButtons = (m_mouseButtons & ~ImGui::MB_LEFT_BIT) | (pressed << ImGui::MB_BO_LEFT); break;
+					case MouseDevice::Button::Right:
+						m_mouseButtons = (m_mouseButtons & ~ImGui::MB_RIGHT_BIT) | (pressed << ImGui::MB_BO_RIGHT); break;
+					case MouseDevice::Button::Middle:
+						m_mouseButtons = (m_mouseButtons & ~ImGui::MB_MIDDLE_BIT) | (pressed << ImGui::MB_BO_MIDDLE); break;
+					case MouseDevice::Button::Extra4:
+						m_mouseButtons = (m_mouseButtons & ~ImGui::MB_EXTRA4_BIT) | (pressed << ImGui::MB_BO_EXTRA4); break;
+					case MouseDevice::Button::Extra5:
+						m_mouseButtons = (m_mouseButtons & ~ImGui::MB_EXTRA5_BIT) | (pressed << ImGui::MB_BO_EXTRA5); break;
+				}
 			}
-			m_engine->GetInputSystem()->RegisterButtonEvent(handle, buttonId, pressed);
+			else
+			{
+				m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, buttonId, pressed);
+			}
 		}
 	}
 
-	void RegisterButtonEvent(inputDeviceHandle handle, GamepadDevice::Button buttonId, bool pressed) override
+	void RegisterButtonEvent(windowHandle handle, inputDeviceHandle deviceHandle, GamepadDevice::Button buttonId, bool pressed) override
 	{
-		if (m_inputEnabled)
-			m_engine->GetInputSystem()->RegisterButtonEvent(handle, buttonId, pressed);
+		if(m_inputEnabled)
+		{
+			if(handle != m_app.GetMainWindowHandle())
+			{
+				m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, buttonId, pressed);
+			}
+		}
 	}
 
-	void RegisterAxisEvent(inputDeviceHandle handle, MouseDevice::Axis axisId, const Vector3& delta) override
+	void RegisterAxisEvent(windowHandle handle, inputDeviceHandle deviceHandle, MouseDevice::Axis axisId, const Vector3& delta) override
 	{
 		if (m_inputEnabled)
 		{
-			if(axisId == MouseDevice::Axis::Wheel)
+			if(handle == m_app.GetMainWindowHandle())
 			{
-				m_scroll += delta.x;
+				if(axisId == MouseDevice::Axis::Wheel)
+				{
+					m_scroll += delta.x;
+				}
 			}
-			m_engine->GetInputSystem()->RegisterAxisEvent(handle, axisId, delta);
+			else
+			{
+				m_engine->GetInputSystem()->RegisterAxisEvent(deviceHandle, axisId, delta);
+			}
 		}
 	}
 
-	void RegisterAxisEvent(inputDeviceHandle handle, GamepadDevice::Axis axisId, const Vector3& delta) override
+	void RegisterAxisEvent(windowHandle handle, inputDeviceHandle deviceHandle, GamepadDevice::Axis axisId, const Vector3& delta) override
 	{
-		if (m_inputEnabled)
-			m_engine->GetInputSystem()->RegisterAxisEvent(handle, axisId, delta);
+		if(m_inputEnabled)
+		{
+			if(handle != m_app.GetMainWindowHandle())
+			{
+				m_engine->GetInputSystem()->RegisterAxisEvent(deviceHandle, axisId, delta);
+			}
+		}
 	}
 
 	virtual void MouseMove(u32 xPos, u32 yPos)

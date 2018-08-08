@@ -27,17 +27,17 @@ public:
 	virtual void Deinit() = 0;
 
 	virtual void Resize(windowHandle handle, u32 width, u32 height) = 0;
-	virtual void SetFocus(bool hasFocus) = 0;
+	virtual void SetFocus(windowHandle handle, bool hasFocus) = 0;
 
 
-	virtual inputDeviceID RegisterDevice(inputDeviceHandle handle, InputDeviceCategory category, const String& name) = 0;
-	virtual void UnregisterDevice(inputDeviceHandle handle) = 0;
+	virtual inputDeviceID RegisterDevice(inputDeviceHandle deviceHandle, InputDeviceCategory category, const String& name) = 0;
+	virtual void UnregisterDevice(inputDeviceHandle deviceHandle) = 0;
 
-	virtual void RegisterButtonEvent(inputDeviceHandle handle, KeyboardDevice::Button buttonId, bool pressed) = 0;
-	virtual void RegisterButtonEvent(inputDeviceHandle handle, MouseDevice::Button buttonId, bool pressed) = 0;
-	virtual void RegisterButtonEvent(inputDeviceHandle handle, GamepadDevice::Button buttonId, bool pressed) = 0;
-	virtual void RegisterAxisEvent(inputDeviceHandle handle, MouseDevice::Axis axisId, const Vector3& delta) = 0;
-	virtual void RegisterAxisEvent(inputDeviceHandle handle, GamepadDevice::Axis axisId, const Vector3& delta) = 0;
+	virtual void RegisterButtonEvent(windowHandle handle, inputDeviceHandle deviceHandle, KeyboardDevice::Button buttonId, bool pressed) = 0;
+	virtual void RegisterButtonEvent(windowHandle handle, inputDeviceHandle deviceHandle, MouseDevice::Button buttonId, bool pressed) = 0;
+	virtual void RegisterButtonEvent(windowHandle handle, inputDeviceHandle deviceHandle, GamepadDevice::Button buttonId, bool pressed) = 0;
+	virtual void RegisterAxisEvent(windowHandle handle, inputDeviceHandle deviceHandle, MouseDevice::Axis axisId, const Vector3& delta) = 0;
+	virtual void RegisterAxisEvent(windowHandle handle, inputDeviceHandle deviceHandle, GamepadDevice::Axis axisId, const Vector3& delta) = 0;
 
 	virtual void MouseMove(u32 xPos, u32 yPos) = 0;
 
