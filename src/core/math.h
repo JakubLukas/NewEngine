@@ -41,7 +41,7 @@ constexpr float operator "" _rad(long double rad)
 
 constexpr float operator "" _deg(long double deg)
 {
-	return (float)(deg * PI / 180);
+	return (float)(deg * PI / 180.0);
 }
 
 

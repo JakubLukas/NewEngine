@@ -13,6 +13,7 @@
 #include "core/math.h"////////////////////////////////
 #include "core/file/file.h"////////////////////
 #include "core/memory.h"/////////////////////
+#include "core/time.h"////////////////////////////
 
 #include <bgfx/bgfx.h>///////////////
 #include "../external/imgui/imgui.h"
@@ -293,7 +294,7 @@ public:
 			io.AddInputCharacter(_inputChar); // ASCII or GTFO! :(
 		}*/
 
-		io.DeltaTime = deltaTime * 0.001f; //msec to sec
+		io.DeltaTime = SecFromMSec(deltaTime); //msec to sec
 
 		io.MousePos = m_mousePos;
 		io.MouseDown[0] = 0 != (m_mouseButtons & ImGui::MB_LEFT_BIT);
@@ -451,6 +452,7 @@ public:
 
 		bgfx::frame();//flip buffers
 	}
+
 
 	void Resize(windowHandle handle, u32 width, u32 height) override
 	{

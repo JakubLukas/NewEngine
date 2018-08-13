@@ -2,6 +2,8 @@
 
 #define VC_EXTRALEAN
 #include <windows.h>
+#include <hidsdi.h>
+
 #include "core/allocators.h"
 #include "core/engine.h"
 #include "core/asserts.h"
@@ -10,7 +12,7 @@
 #include "core/input/input_system.h"
 #include "core/array.h"
 #include "core/string.h"
-#include <hidsdi.h>
+#include "core/time.h"
 
 
 #include "editor.h"
@@ -19,7 +21,9 @@
 namespace Veng
 {
 
-static const RECT DEFAULT_MAIN_WINDOW_RECT = { 0, 0, 600, 400 };
+static const RECT DEFAULT_MAIN_WINDOW_RECT = { 0, 0, 1024, 768 };//////////////////////
+static const WindowRect DEFAULT_SUB_WINDOW_RECT = { 20, 20, 200, 200 };///////////////
+static const float FRAMERATE = 1.0_sec / 60.0_msec;
 
 class AppImpl : public App
 {
@@ -38,7 +42,7 @@ public:
 
 	windowHandle CreateSubWindow() override
 	{
-		return CreateSubWindow({ 20, 20, 200, 200 });
+		return CreateSubWindow(DEFAULT_SUB_WINDOW_RECT);
 	}
 
 	windowHandle CreateSubWindow(WindowRect rect) override
@@ -51,7 +55,7 @@ public:
 		HWND hwnd = CreateWindow(
 			WINDOW_CLASS_NAME,
 			"",
-			WS_CHILD/* | WS_OVERLAPPED | WS_THICKFRAME | WS_CAPTION*/ | WS_VISIBLE,
+			WS_CHILD | WS_DISABLED | WS_VISIBLE,
 			rect.positionX,
 			rect.positionY,
 			rect.width,
@@ -175,10 +179,10 @@ public:
 	{
 		while(!m_finished)
 		{
-			static const float frameRate = 1000.0f / 60.0f;//TODO ////////////////////////////////////////////
-			Sleep((DWORD)frameRate);
+			//TODO: better framerate calculation
+			Sleep((DWORD)FRAMERATE);
 
-			m_editor->Update(frameRate);
+			m_editor->Update(FRAMERATE);
 			HandleEvents();
 		}
 	}
@@ -493,6 +497,8 @@ private:
 
 	void HandleRawInput(HWND hwnd, LPARAM lParam)
 	{
+		if(hwnd != m_hwnd) return;
+
 		RAWINPUT raw;
 		UINT size = sizeof(RAWINPUT);
 
