@@ -1,8 +1,10 @@
 #include "../os_utils.h"
 
-#include "core/asserts.h"
+#define NOMINMAX
 #define VC_EXTRALEAN
 #include <windows.h>
+
+#include "core/asserts.h"
 
 
 namespace Veng

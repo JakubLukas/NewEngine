@@ -68,8 +68,6 @@ inline bool checkAvailTransientBuffers(uint32_t _numVertices, const bgfx::Vertex
 
 }
 
-#define IMGUI_FLAGS_ALPHA_BLEND UINT8_C(0x01)
-
 
 namespace ImGui
 {
@@ -109,6 +107,10 @@ enum ModifierKeyBits : ModifierKeyFlags
 	MK_ALT_BIT   = 1 << MK_BO_ALT,
 	MK_SUPER_BIT = 1 << MK_BO_SUPER,
 };
+
+
+static const float FRAME_ROUNDING = 4.0f;
+static const float WINDOW_BORDER_SIZE = 0.0f;
 
 }
 
@@ -216,7 +218,7 @@ void Deallocate(void* ptr, void* userData)
 namespace Veng
 {
 
-RenderSystem* m_tmpPlugRender = nullptr;////////////////////////////////
+RenderSystem* m_renderSystem = nullptr;////////////////////////////////
 
 class EditorImpl : public Editor
 {
@@ -245,7 +247,7 @@ public:
 		{//DUMMY GAMEPLAY CODE //////////////////////////////////////////////////////////////////////////////////////////
 			worldId worldHandle = m_engine->AddWorld();
 			World* world = m_engine->GetWorld(worldHandle);
-			RenderScene* renderScene = static_cast<RenderScene*>(m_tmpPlugRender->GetScene());
+			RenderScene* renderScene = static_cast<RenderScene*>(m_renderSystem->GetScene());
 			Entity camEnt = world->CreateEntity();
 			Transform& camTrans = world->GetEntityTransform(camEnt);
 			renderScene->AddCameraComponent(camEnt, worldHandle, 60.0_deg, 0.001f, 100.0f);
@@ -275,7 +277,7 @@ public:
 	void Deinit() override
 	{
 		//TODO: shut down engine gracefully
-		RenderSystem::Destroy(m_tmpPlugRender);
+		RenderSystem::Destroy(m_renderSystem);
 		Engine::Destroy(m_engine, m_allocator);
 
 		DeinitImgui();
@@ -284,164 +286,12 @@ public:
 
 	void Update(float deltaTime) override
 	{
-
-		
-
-
-		ImGuiIO& io = ImGui::GetIO();
-		/*if(_inputChar < 0x7f)
-		{
-			io.AddInputCharacter(_inputChar); // ASCII or GTFO! :(
-		}*/
-
-		io.DeltaTime = SecFromMSec(deltaTime); //msec to sec
-
-		io.MousePos = m_mousePos;
-		io.MouseDown[0] = 0 != (m_mouseButtons & ImGui::MB_LEFT_BIT);
-		io.MouseDown[1] = 0 != (m_mouseButtons & ImGui::MB_RIGHT_BIT);
-		io.MouseDown[2] = 0 != (m_mouseButtons & ImGui::MB_MIDDLE_BIT);
-		io.MouseWheel = m_scroll;
-
-		io.KeyCtrl = 0 != (m_modifierKeys & ImGui::MK_CTRL_BIT);
-		io.KeyShift = 0 != (m_modifierKeys & ImGui::MK_SHIFT_BIT);
-		io.KeyAlt = 0 != (m_modifierKeys & ImGui::MK_ALT_BIT);
-		io.KeySuper = 0 != (m_modifierKeys & ImGui::MK_SUPER_BIT);
-		/* bool    */io.KeysDown[512];                  // Keyboard keys that are pressed (ideally left in the "native" order your engine has access to keyboard keys, so you can use your own defines/enums for keys).
-		/* ImWchar */io.InputCharacters[16 + 1];          // List of characters input (translated by user from keypress+keyboard state). Fill using AddInputCharacter() helper.
-		/* float   */io.NavInputs[ImGuiNavInput_COUNT]; // Gamepad inputs (keyboard keys will be auto-mapped and be written here by ImGui::NewFrame, all values will be cleared back to zero in ImGui::EndFrame)
-
-
-
-
-		ImGui::NewFrame();
-
-		ImGui::Begin("Engine");
-
-		ImVec2 windowPosition = ImGui::GetWindowPos();
-		if (windowPosition != m_subWindowPosition)
-		{
-			m_subWindowPosition = windowPosition;
-			windowPosition = windowPosition + ImGui::GetCursorPos();
-			m_app.SetWindowPosition(m_subHwnd, { (u32)(windowPosition.x), (u32)windowPosition.y });
-		}
-
-		ImVec2 windowSize = ImGui::GetContentRegionAvail();
-		if (windowSize != m_subWindowSize)
-		{
-			m_subWindowSize = windowSize;
-			m_app.SetWindowSize(m_subHwnd, { (u32)windowSize.x, (u32)windowSize.y });/////////////////windowSize can be negative (on window hide)
-		}
-
-		ImGui::End();
-
-
-		ImGui::Render();
+		UpdateImguiInput(deltaTime);
+		UpdateImgui();
 
 		UpdateRender();
 
-
-		//ImGuizmo::BeginFrame();
-		ImDrawData* drawData = ImGui::GetDrawData();
-
-		bgfx::setViewName(m_viewId, "ImGui");
-		bgfx::setViewMode(m_viewId, bgfx::ViewMode::Sequential);
-
-		const bgfx::Caps* caps = bgfx::getCaps();
-		{
-			float ortho[16];
-			bx::mtxOrtho(ortho, 0.0f, (float)m_windowSize.x, (float)m_windowSize.y, 0.0f, 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
-			bgfx::setViewTransform(m_viewId, NULL, ortho);
-			bgfx::setViewRect(m_viewId, 0, 0, uint16_t(m_windowSize.x), uint16_t(m_windowSize.y));/////////////////////
-		}
-
-		// Render command lists
-		for (int32_t ii = 0, num = drawData->CmdListsCount; ii < num; ++ii)
-		{
-			bgfx::TransientVertexBuffer tvb;
-			bgfx::TransientIndexBuffer tib;
-
-			const ImDrawList* drawList = drawData->CmdLists[ii];
-			uint32_t numVertices = (uint32_t)drawList->VtxBuffer.size();
-			uint32_t numIndices = (uint32_t)drawList->IdxBuffer.size();
-
-			if (!bgfx::checkAvailTransientBuffers(numVertices, m_decl, numIndices))
-			{
-				// not enough space in transient buffer just quit drawing the rest...
-				break;
-			}
-
-			bgfx::allocTransientVertexBuffer(&tvb, numVertices, m_decl);
-			bgfx::allocTransientIndexBuffer(&tib, numIndices);
-
-			ImDrawVert* verts = (ImDrawVert*)tvb.data;
-			memory::Copy(verts, drawList->VtxBuffer.begin(), numVertices * sizeof(ImDrawVert));
-
-			ImDrawIdx* indices = (ImDrawIdx*)tib.data;
-			memory::Copy(indices, drawList->IdxBuffer.begin(), numIndices * sizeof(ImDrawIdx));
-
-			uint32_t offset = 0;
-			for (const ImDrawCmd* cmd = drawList->CmdBuffer.begin(), *cmdEnd = drawList->CmdBuffer.end(); cmd != cmdEnd; ++cmd)
-			{
-				if (cmd->UserCallback)
-				{
-					cmd->UserCallback(drawList, cmd);
-				}
-				else if (0 != cmd->ElemCount)
-				{
-					uint64_t state = 0
-						| BGFX_STATE_WRITE_RGB
-						| BGFX_STATE_WRITE_A
-						| BGFX_STATE_MSAA
-						;
-
-					bgfx::TextureHandle th = m_texture;
-					bgfx::ProgramHandle program = m_program;
-
-					if (NULL != cmd->TextureId)
-					{
-						ASSERT(false);
-						/*union { ImTextureID ptr; struct { bgfx::TextureHandle handle; uint8_t flags; uint8_t mip; } s; } texture = { cmd->TextureId };
-						state |= 0 != (IMGUI_FLAGS_ALPHA_BLEND & texture.s.flags)
-							? BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
-							: BGFX_STATE_NONE
-							;
-						th = texture.s.handle;
-						if (0 != texture.s.mip)
-						{
-							const float lodEnabled[4] = { float(texture.s.mip), 1.0f, 0.0f, 0.0f };
-							bgfx::setUniform(u_imageLodEnabled, lodEnabled);
-							program = m_imageProgram;
-						}*/
-					}
-					else
-					{
-						state |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA);
-					}
-
-					const uint16_t xx = uint16_t(max(cmd->ClipRect.x, 0.0f));
-					const uint16_t yy = uint16_t(max(cmd->ClipRect.y, 0.0f));
-					bgfx::setScissor(xx, yy
-						, uint16_t(min(cmd->ClipRect.z, 65535.0f) - xx)
-						, uint16_t(min(cmd->ClipRect.w, 65535.0f) - yy)
-					);
-
-					bgfx::setState(state);
-					bgfx::setTexture(0, s_tex, th);
-					bgfx::setVertexBuffer(0, &tvb, 0, numVertices);
-					bgfx::setIndexBuffer(&tib, offset, cmd->ElemCount);
-					bgfx::submit(m_viewId, program);
-				}
-
-				offset += cmd->ElemCount;
-			}
-		}
-
-
-
-
-
-
-
+		RenderImgui();
 
 		bgfx::setViewFrameBuffer(1, m_fbh);
 		bgfx::touch(1);
@@ -456,12 +306,12 @@ public:
 
 	void Resize(windowHandle handle, u32 width, u32 height) override
 	{
-		if (m_tmpPlugRender && handle == m_subHwnd)
+		if (m_renderSystem && handle == m_subHwnd)
 		{
 			bgfx::destroy(m_fbh);
 			m_fbh = bgfx::createFrameBuffer(m_subHwnd, uint16_t(width), uint16_t(height));
 			bgfx::setViewRect(1, 0, 0, uint16_t(width), uint16_t(height));
-			m_tmpPlugRender->Resize(width, height);
+			m_renderSystem->Resize(width, height);
 		}
 		else if (handle == m_app.GetMainWindowHandle())
 		{
@@ -598,11 +448,11 @@ public:
 	void InitPlugins()
 	{
 		ASSERT(m_engine != nullptr);
-		m_tmpPlugRender = RenderSystem::Create(*m_engine);
-		m_tmpPlugRender->Init();
+		m_renderSystem = RenderSystem::Create(*m_engine);
+		m_renderSystem->Init();
 		WindowSize size = m_app.GetWindowSize(m_subHwnd);
-		m_tmpPlugRender->Resize(size.x, size.y);
-		m_engine->AddPlugin(m_tmpPlugRender);
+		m_renderSystem->Resize(size.x, size.y);
+		m_engine->AddPlugin(m_renderSystem);
 	}
 
 	void InitRender()
@@ -650,12 +500,6 @@ public:
 		);
 	}
 
-	void UpdateRender()
-	{
-		bgfx::setViewFrameBuffer(m_viewId, BGFX_INVALID_HANDLE);
-		bgfx::touch(m_viewId);
-	}
-
 	void DeinitRender()
 	{
 		bgfx::destroy(m_fbh);
@@ -664,20 +508,24 @@ public:
 		//m_app.DestroySubWindow(m_subHwnd);
 	}
 
+	void UpdateRender()
+	{
+		bgfx::setViewFrameBuffer(m_viewId, BGFX_INVALID_HANDLE);
+		bgfx::touch(m_viewId);
+	}
+
 
 	void InitImgui()
 	{
 		ImGui::SetAllocatorFunctions(&ImGui::Allocate, &ImGui::Deallocate, &m_imguiAllocator);
 		m_imgui = ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO();
-		io.DisplaySize = ImVec2((float)m_windowSize.x, (float)m_windowSize.y);
-		io.DeltaTime = 1.0f / 60.0f;
 		io.IniFilename = nullptr;
 
 		ImGuiStyle& style = ImGui::GetStyle();
 		ImGui::StyleColorsDark(&style);
-		style.FrameRounding = 4.0f;
-		style.WindowBorderSize = 0.0f;
+		style.FrameRounding = ImGui::FRAME_ROUNDING;
+		style.WindowBorderSize = ImGui::WINDOW_BORDER_SIZE;
 
 		bgfx::RendererType::Enum type = bgfx::getRendererType();
 
@@ -762,6 +610,156 @@ public:
 		bgfx::destroy(m_texture);
 		//ImGui::ShutdownDockContext();
 		ImGui::DestroyContext(m_imgui);
+	}
+
+	void UpdateImgui()
+	{
+		ImGui::NewFrame();
+
+		ImGui::Begin("Engine");
+
+		ImVec2 windowPosition = ImGui::GetWindowPos();
+		if (windowPosition != m_subWindowPosition)
+		{
+			m_subWindowPosition = windowPosition;
+			windowPosition = windowPosition + ImGui::GetCursorPos();
+			m_app.SetWindowPosition(m_subHwnd, { (u32)(windowPosition.x), (u32)windowPosition.y });
+		}
+
+		ImVec2 windowSize = ImGui::GetContentRegionAvail();
+		if (windowSize != m_subWindowSize)
+		{
+			m_subWindowSize = windowSize;
+			m_app.SetWindowSize(m_subHwnd, { (u32)windowSize.x, (u32)windowSize.y });/////////////////windowSize can be negative (on window hide)
+		}
+
+		ImGui::End();
+
+		ImGui::Render();
+	}
+
+	void UpdateImguiInput(float deltaTime)
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		/*if(_inputChar < 0x7f)
+		{
+		io.AddInputCharacter(_inputChar); // ASCII or GTFO! :(
+		}*/
+
+		io.DeltaTime = SecFromMSec(deltaTime); //msec to sec
+
+		io.MousePos = m_mousePos;
+		io.MouseDown[0] = 0 != (m_mouseButtons & ImGui::MB_LEFT_BIT);
+		io.MouseDown[1] = 0 != (m_mouseButtons & ImGui::MB_RIGHT_BIT);
+		io.MouseDown[2] = 0 != (m_mouseButtons & ImGui::MB_MIDDLE_BIT);
+		io.MouseWheel = m_scroll;
+
+		io.KeyCtrl = 0 != (m_modifierKeys & ImGui::MK_CTRL_BIT);
+		io.KeyShift = 0 != (m_modifierKeys & ImGui::MK_SHIFT_BIT);
+		io.KeyAlt = 0 != (m_modifierKeys & ImGui::MK_ALT_BIT);
+		io.KeySuper = 0 != (m_modifierKeys & ImGui::MK_SUPER_BIT);
+		/* bool    */io.KeysDown[512];                  // Keyboard keys that are pressed (ideally left in the "native" order your engine has access to keyboard keys, so you can use your own defines/enums for keys).
+		/* ImWchar */io.InputCharacters[16 + 1];          // List of characters input (translated by user from keypress+keyboard state). Fill using AddInputCharacter() helper.
+		/* float   */io.NavInputs[ImGuiNavInput_COUNT]; // Gamepad inputs (keyboard keys will be auto-mapped and be written here by ImGui::NewFrame, all values will be cleared back to zero in ImGui::EndFrame)
+	}
+
+	void RenderImgui()
+	{
+		ImDrawData* drawData = ImGui::GetDrawData();
+
+		bgfx::setViewName(m_viewId, "ImGui");
+		bgfx::setViewMode(m_viewId, bgfx::ViewMode::Sequential);
+
+		const bgfx::Caps* caps = bgfx::getCaps();
+		{
+			float ortho[16];
+			bx::mtxOrtho(ortho, 0.0f, (float)m_windowSize.x, (float)m_windowSize.y, 0.0f, 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
+			bgfx::setViewTransform(m_viewId, NULL, ortho);
+			bgfx::setViewRect(m_viewId, 0, 0, uint16_t(m_windowSize.x), uint16_t(m_windowSize.y));/////////////////////
+		}
+
+		// Render command lists
+		for (int32_t ii = 0, num = drawData->CmdListsCount; ii < num; ++ii)
+		{
+			bgfx::TransientVertexBuffer tvb;
+			bgfx::TransientIndexBuffer tib;
+
+			const ImDrawList* drawList = drawData->CmdLists[ii];
+			uint32_t numVertices = (uint32_t)drawList->VtxBuffer.size();
+			uint32_t numIndices = (uint32_t)drawList->IdxBuffer.size();
+
+			if (!bgfx::checkAvailTransientBuffers(numVertices, m_decl, numIndices))
+			{
+				// not enough space in transient buffer just quit drawing the rest...
+				break;
+			}
+
+			bgfx::allocTransientVertexBuffer(&tvb, numVertices, m_decl);
+			bgfx::allocTransientIndexBuffer(&tib, numIndices);
+
+			ImDrawVert* verts = (ImDrawVert*)tvb.data;
+			memory::Copy(verts, drawList->VtxBuffer.begin(), numVertices * sizeof(ImDrawVert));
+
+			ImDrawIdx* indices = (ImDrawIdx*)tib.data;
+			memory::Copy(indices, drawList->IdxBuffer.begin(), numIndices * sizeof(ImDrawIdx));
+
+			uint32_t offset = 0;
+			for (const ImDrawCmd* cmd = drawList->CmdBuffer.begin(), *cmdEnd = drawList->CmdBuffer.end(); cmd != cmdEnd; ++cmd)
+			{
+				if (cmd->UserCallback)
+				{
+					cmd->UserCallback(drawList, cmd);
+				}
+				else if (0 != cmd->ElemCount)
+				{
+					uint64_t state = 0
+						| BGFX_STATE_WRITE_RGB
+						| BGFX_STATE_WRITE_A
+						| BGFX_STATE_MSAA
+						;
+
+					bgfx::TextureHandle th = m_texture;
+					bgfx::ProgramHandle program = m_program;
+
+					if (NULL != cmd->TextureId)
+					{
+						ASSERT(false);
+						/*#define IMGUI_FLAGS_ALPHA_BLEND UINT8_C(0x01)
+						union { ImTextureID ptr; struct { bgfx::TextureHandle handle; uint8_t flags; uint8_t mip; } s; } texture = { cmd->TextureId };
+						state |= 0 != (IMGUI_FLAGS_ALPHA_BLEND & texture.s.flags)
+						? BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
+						: BGFX_STATE_NONE
+						;
+						th = texture.s.handle;
+						if (0 != texture.s.mip)
+						{
+						const float lodEnabled[4] = { float(texture.s.mip), 1.0f, 0.0f, 0.0f };
+						bgfx::setUniform(u_imageLodEnabled, lodEnabled);
+						program = m_imageProgram;
+						}*/
+					}
+					else
+					{
+						state |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA);
+					}
+
+					const uint16_t xx = uint16_t(max(cmd->ClipRect.x, 0.0f));
+					const uint16_t yy = uint16_t(max(cmd->ClipRect.y, 0.0f));
+					bgfx::setScissor(xx, yy
+						, uint16_t(min(cmd->ClipRect.z, 65535.0f) - xx)
+						, uint16_t(min(cmd->ClipRect.w, 65535.0f) - yy)
+					);
+
+					bgfx::setState(state);
+					bgfx::setTexture(0, s_tex, th);
+					bgfx::setVertexBuffer(0, &tvb, 0, numVertices);
+					bgfx::setIndexBuffer(&tib, offset, cmd->ElemCount);
+					bgfx::submit(m_viewId, program);
+				}
+
+				offset += cmd->ElemCount;
+			}
+		}
 	}
 
 

@@ -1,5 +1,6 @@
 #include "app.h"
 
+#define NOMINMAX
 #define VC_EXTRALEAN
 #include <windows.h>
 #include <hidsdi.h>

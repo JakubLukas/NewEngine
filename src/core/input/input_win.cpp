@@ -1,8 +1,9 @@
-#pragma once
-
 #include "input_win.h"
+
+#define NOMINMAX
 #define VC_EXTRALEAN
 #include <windows.h>
+
 #include "core\asserts.h"
 
 

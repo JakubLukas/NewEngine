@@ -1,10 +1,10 @@
 #include "../file.h"
 
-#include "../file_system.h"
-
+#define NOMINMAX
 #define VC_EXTRALEAN
 #include <windows.h>
 
+#include "../file_system.h"
 #include "core/asserts.h"
 
 
