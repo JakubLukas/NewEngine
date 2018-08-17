@@ -26,7 +26,7 @@ public:
 	virtual void Update(float deltaTime) = 0;
 	virtual void Deinit() = 0;
 
-	virtual void Resize(windowHandle handle, u32 width, u32 height) = 0;
+	virtual void Resize(windowHandle handle, i32 width, i32 height) = 0;
 	virtual void SetFocus(windowHandle handle, bool hasFocus) = 0;
 
 
@@ -39,7 +39,7 @@ public:
 	virtual void RegisterAxisEvent(windowHandle handle, inputDeviceHandle deviceHandle, MouseDevice::Axis axisId, const Vector3& delta) = 0;
 	virtual void RegisterAxisEvent(windowHandle handle, inputDeviceHandle deviceHandle, GamepadDevice::Axis axisId, const Vector3& delta) = 0;
 
-	virtual void MouseMove(u32 xPos, u32 yPos) = 0;
+	virtual void MouseMove(i32 xPos, i32 yPos) = 0;
 
 };
 

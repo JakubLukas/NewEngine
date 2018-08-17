@@ -35,7 +35,7 @@ Entity World::CreateEntity()
 	}
 	else
 	{
-		EntityItem item = m_entities.Push();
+		EntityItem& item = m_entities.Push();
 		item.entity = (Entity)(m_entities.GetSize() - 1);
 		item.alive = true;
 		m_entitiesTransform.Push();
@@ -61,6 +61,12 @@ Transform& World::GetEntityTransform(Entity entity)
 	size_t id = (size_t)entity;
 	ASSERT(id < m_entities.GetSize())
 	return m_entitiesTransform[id];
+}
+
+
+World::EntityIterator World::GetEntities() const
+{
+	return World::EntityIterator(*this);
 }
 
 

@@ -73,6 +73,16 @@ public:
 		return nullptr;
 	}
 
+	size_t GetWorldCount() const override
+	{
+		return m_worlds.GetSize();
+	}
+
+	World* GetWorlds() override
+	{
+		return m_worlds.Begin();
+	}
+
 
 	bool AddPlugin(IPlugin* plugin) override
 	{

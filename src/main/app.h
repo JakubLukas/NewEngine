@@ -11,16 +11,16 @@ static const windowHandle INVALID_WINDOW_HANDLE = nullptr;
 
 struct WindowRect
 {
-	u32 positionX;
-	u32 positionY;
-	u32 width;
-	u32 height;
+	i32 positionX;
+	i32 positionY;
+	i32 width;
+	i32 height;
 };
 
 struct WindowSize
 {
-	u32 x;
-	u32 y;
+	i32 x;
+	i32 y;
 };
 
 

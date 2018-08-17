@@ -68,53 +68,6 @@ inline bool checkAvailTransientBuffers(uint32_t _numVertices, const bgfx::Vertex
 
 }
 
-
-namespace ImGui
-{
-
-typedef Veng::u32 MouseButtonFlags;
-enum MouseButtonBitOffset : MouseButtonFlags
-{
-	MB_BO_LEFT = 0,
-	MB_BO_RIGHT,
-	MB_BO_MIDDLE,
-	MB_BO_EXTRA4,
-	MB_BO_EXTRA5,
-};
-enum MouseButtonBits : MouseButtonFlags
-{
-	MB_NONE       = 0,
-	MB_LEFT_BIT   = 1 << MB_BO_LEFT,
-	MB_RIGHT_BIT  = 1 << MB_BO_RIGHT,
-	MB_MIDDLE_BIT = 1 << MB_BO_MIDDLE,
-	MB_EXTRA4_BIT = 1 << MB_BO_EXTRA4,
-	MB_EXTRA5_BIT = 1 << MB_BO_EXTRA5,
-};
-
-typedef Veng::u32 ModifierKeyFlags;
-enum ModifierKeyBitOffset : ModifierKeyFlags
-{
-	MK_BO_CTRL = 0,
-	MK_BO_SHIFT,
-	MK_BO_ALT,
-	MK_BO_SUPER,
-};
-enum ModifierKeyBits : ModifierKeyFlags
-{
-	MK_NONE      = 0,
-	MK_CTRL_BIT  = 1 << MK_BO_CTRL,
-	MK_SHIFT_BIT = 1 << MK_BO_SHIFT,
-	MK_ALT_BIT   = 1 << MK_BO_ALT,
-	MK_SUPER_BIT = 1 << MK_BO_SUPER,
-};
-
-
-static const float FRAME_ROUNDING = 4.0f;
-static const float WINDOW_BORDER_SIZE = 0.0f;
-
-}
-
-
 namespace Veng
 {
 
@@ -194,6 +147,7 @@ struct BGFXCallback : public bgfx::CallbackI
 
 }
 
+
 namespace ImGui
 {
 
@@ -214,11 +168,58 @@ void Deallocate(void* ptr, void* userData)
 
 }
 
+namespace ImGui
+{
+
+typedef Veng::u32 MouseButtonFlags;
+enum MouseButtonBitOffset : MouseButtonFlags
+{
+	MB_BO_LEFT = 0,
+	MB_BO_RIGHT,
+	MB_BO_MIDDLE,
+	MB_BO_EXTRA4,
+	MB_BO_EXTRA5,
+};
+enum MouseButtonBits : MouseButtonFlags
+{
+	MB_NONE = 0,
+	MB_LEFT_BIT = 1 << MB_BO_LEFT,
+	MB_RIGHT_BIT = 1 << MB_BO_RIGHT,
+	MB_MIDDLE_BIT = 1 << MB_BO_MIDDLE,
+	MB_EXTRA4_BIT = 1 << MB_BO_EXTRA4,
+	MB_EXTRA5_BIT = 1 << MB_BO_EXTRA5,
+};
+
+typedef Veng::u32 ModifierKeyFlags;
+enum ModifierKeyBitOffset : ModifierKeyFlags
+{
+	MK_BO_CTRL = 0,
+	MK_BO_SHIFT,
+	MK_BO_ALT,
+	MK_BO_SUPER,
+};
+enum ModifierKeyBits : ModifierKeyFlags
+{
+	MK_NONE = 0,
+	MK_CTRL_BIT = 1 << MK_BO_CTRL,
+	MK_SHIFT_BIT = 1 << MK_BO_SHIFT,
+	MK_ALT_BIT = 1 << MK_BO_ALT,
+	MK_SUPER_BIT = 1 << MK_BO_SUPER,
+};
+
+
+static const float FRAME_ROUNDING = 4.0f;
+static const float WINDOW_BORDER_SIZE = 0.0f;
+
+}
+
 
 namespace Veng
 {
 
+
 RenderSystem* m_renderSystem = nullptr;////////////////////////////////
+
 
 class EditorImpl : public Editor
 {
@@ -241,7 +242,7 @@ public:
 		Engine::PlatformData platformData;
 		platformData.windowHndl = m_subHwnd;
 		m_engine->SetPlatformData(platformData);
-		InitPlugins();
+		InitSystems();
 
 
 		{//DUMMY GAMEPLAY CODE //////////////////////////////////////////////////////////////////////////////////////////
@@ -277,7 +278,7 @@ public:
 	void Deinit() override
 	{
 		//TODO: shut down engine gracefully
-		RenderSystem::Destroy(m_renderSystem);
+		DeinitSystems();
 		Engine::Destroy(m_engine, m_allocator);
 
 		DeinitImgui();
@@ -304,7 +305,7 @@ public:
 	}
 
 
-	void Resize(windowHandle handle, u32 width, u32 height) override
+	void Resize(windowHandle handle, i32 width, i32 height) override
 	{
 		if (m_renderSystem && handle == m_subHwnd)
 		{
@@ -438,14 +439,14 @@ public:
 		}
 	}
 
-	virtual void MouseMove(u32 xPos, u32 yPos)
+	virtual void MouseMove(i32 xPos, i32 yPos)
 	{
 		m_mousePos.x = (float)xPos;
 		m_mousePos.y = (float)yPos;
 	}
 
 
-	void InitPlugins()
+	void InitSystems()
 	{
 		ASSERT(m_engine != nullptr);
 		m_renderSystem = RenderSystem::Create(*m_engine);
@@ -454,6 +455,12 @@ public:
 		m_renderSystem->Resize(size.x, size.y);
 		m_engine->AddPlugin(m_renderSystem);
 	}
+
+	void DeinitSystems()
+	{
+		RenderSystem::Destroy(m_renderSystem);
+	}
+
 
 	void InitRender()
 	{
@@ -623,17 +630,41 @@ public:
 		{
 			m_subWindowPosition = windowPosition;
 			windowPosition = windowPosition + ImGui::GetCursorPos();
-			m_app.SetWindowPosition(m_subHwnd, { (u32)(windowPosition.x), (u32)windowPosition.y });
+			m_app.SetWindowPosition(m_subHwnd, { (i32)(windowPosition.x), (i32)windowPosition.y });
 		}
 
 		ImVec2 windowSize = ImGui::GetContentRegionAvail();
 		if (windowSize != m_subWindowSize)
 		{
 			m_subWindowSize = windowSize;
-			m_app.SetWindowSize(m_subHwnd, { (u32)windowSize.x, (u32)windowSize.y });/////////////////windowSize can be negative (on window hide)
+			m_app.SetWindowSize(m_subHwnd, { (i32)windowSize.x, (i32)windowSize.y });
 		}
 
-		ImGui::End();
+		ImGui::End();//Engine
+
+		ImGui::Begin("Worlds");
+
+		size_t worldsCount = m_engine->GetWorldCount();
+		const World* worlds = m_engine->GetWorlds();
+		for (int i = 0; i < worldsCount; ++i)
+		{
+			const World& world = worlds[i];
+			ImGui::Text("World %i (id:%i)", i, world.GetId());
+		}
+
+		ImGui::End();//Worlds
+
+		ImGui::Begin("Entities (World 0)");
+
+		const World& world = *m_engine->GetWorld(0);
+		World::EntityIterator& entityIter = world.GetEntities();
+		Entity entity;
+		for (int i = 0; entityIter.GetNext(entity); ++i)
+		{
+			ImGui::Text("Entity %i (id:%i) ", i, (u64)entity);
+		}
+
+		ImGui::End();//Entities
 
 		ImGui::Render();
 	}
@@ -674,7 +705,7 @@ public:
 		{
 			float ortho[16];
 			bx::mtxOrtho(ortho, 0.0f, (float)m_windowSize.x, (float)m_windowSize.y, 0.0f, 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
-			bgfx::setViewTransform(m_viewId, NULL, ortho);
+			bgfx::setViewTransform(m_viewId, nullptr, ortho);
 			bgfx::setViewRect(m_viewId, 0, 0, uint16_t(m_windowSize.x), uint16_t(m_windowSize.y));/////////////////////
 		}
 

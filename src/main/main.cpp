@@ -121,8 +121,8 @@ public:
 		RECT rect;
 		ASSERT(GetClientRect((HWND)hwnd, &rect));
 		return{
-			(u32)(rect.left),
-			(u32)(rect.top)
+			(i32)(rect.left),
+			(i32)(rect.top)
 		};
 	}
 
@@ -137,8 +137,8 @@ public:
 		RECT rect;
 		ASSERT(GetClientRect((HWND)hwnd, &rect));
 		return{
-			(u32)(rect.right - rect.left),
-			(u32)(rect.bottom - rect.top)
+			(i32)(rect.right - rect.left),
+			(i32)(rect.bottom - rect.top)
 		};
 	}
 
@@ -397,6 +397,7 @@ private:
 
 		if (mouse.usButtonFlags & RI_MOUSE_WHEEL)
 		{
+			short d = GET_WHEEL_DELTA_WPARAM(mouse.usButtonData);
 			Vector3 axisWheel{
 				(float)mouse.usButtonData,
 				0.0f,

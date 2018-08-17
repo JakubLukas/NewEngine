@@ -17,15 +17,31 @@ typedef u32 worldId;
 
 class World
 {
-private:
-	struct EntityItem
+public:
+	class EntityIterator
 	{
-		union
+	public:
+		EntityIterator(const World& world)
+			: m_world(world)
+		{}
+
+		bool GetNext(Entity& entity)
 		{
-			Entity entity;
-			i64 next;
-		};
-		bool alive;
+			for (m_index; m_index < m_world.m_entities.GetSize(); ++m_index)
+			{
+				if (m_world.m_entities[m_index].alive)
+				{
+					entity = m_world.m_entities[m_index].entity;
+					m_index++;
+					return true;
+				}
+			}
+			return false;
+		}
+
+	private:
+		size_t m_index = 0;
+		const World& m_world;
 	};
 
 public:
@@ -37,6 +53,18 @@ public:
 	Entity CreateEntity();
 	void DestroyEntity(Entity entity);
 	Transform& GetEntityTransform(Entity entity);
+	EntityIterator GetEntities() const;
+
+private:
+	struct EntityItem
+	{
+		union
+		{
+			Entity entity;
+			i64 next;
+		};
+		bool alive;
+	};
 
 private:
 	IAllocator& m_allocator;

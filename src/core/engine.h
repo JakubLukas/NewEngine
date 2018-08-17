@@ -35,6 +35,8 @@ public:
 	virtual worldId AddWorld() = 0;
 	virtual void RemoveWorld(worldId id) = 0;
 	virtual World* GetWorld(worldId id) = 0;
+	virtual size_t GetWorldCount() const = 0;
+	virtual World* GetWorlds() = 0;
 
 	virtual bool AddPlugin(IPlugin* plugin) = 0;
 	virtual void RemovePlugin(const char* name) = 0;
