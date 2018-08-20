@@ -396,10 +396,11 @@ private:
 		}
 
 		if (mouse.usButtonFlags & RI_MOUSE_WHEEL)
-		{
-			short d = GET_WHEEL_DELTA_WPARAM(mouse.usButtonData);
+		{ 
+			static const float WHEEL_DELTA_INV = 1.0f / WHEEL_DELTA;
+			float delta = (short)mouse.usButtonData * WHEEL_DELTA_INV;
 			Vector3 axisWheel{
-				(float)mouse.usButtonData,
+				delta,
 				0.0f,
 				0.0f
 			};
