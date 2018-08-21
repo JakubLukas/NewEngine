@@ -43,7 +43,6 @@ public:
 	virtual void SetWindowSize(windowHandle hwnd, WindowSize size) = 0;
 
 	virtual windowHandle GetMainWindowHandle() const = 0;
-
 };
 
 }

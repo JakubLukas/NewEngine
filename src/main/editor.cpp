@@ -14,11 +14,15 @@
 #include "core/file/file.h"////////////////////
 #include "core/memory.h"/////////////////////
 #include "core/time.h"////////////////////////////
+#include "core/matrix.h"////////////////////////////////////
 
 #include <bgfx/bgfx.h>///////////////
 #include "../external/imgui/imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "../external/imgui/imgui_internal.h"
+
+#include "editor/plugins/worlds_widget.h"
+#include "editor/plugins/entities_widget.h"
 
 
 namespace bx
@@ -221,7 +225,11 @@ namespace Veng
 RenderSystem* m_renderSystem = nullptr;////////////////////////////////
 
 
-struct EditorInput
+namespace Editor
+{
+
+
+struct Input
 {
 	ImVec2 m_mousePos = { 0.0f, 0.0f };
 	ImGui::MouseButtonFlags m_mouseButtons = ImGui::MB_NONE;
@@ -232,10 +240,10 @@ struct EditorInput
 };
 
 
-class EditorImpl : public Editor
+class EditorAppImpl : public EditorApp
 {
 public:
-	EditorImpl(IAllocator& allocator, App& app)
+	EditorAppImpl(IAllocator& allocator, App& app)
 		: m_allocator(allocator)
 		, m_app(app)
 		, m_bgfxAllocator(m_allocator)
@@ -254,6 +262,7 @@ public:
 		platformData.windowHndl = m_subHwnd;
 		m_engine->SetPlatformData(platformData);
 		InitSystems();
+		m_worldsWidget.SetEngine(m_engine);
 
 
 		{//DUMMY GAMEPLAY CODE //////////////////////////////////////////////////////////////////////////////////////////
@@ -305,8 +314,8 @@ public:
 
 		RenderImgui();
 
-		bgfx::setViewFrameBuffer(1, m_fbh);
-		bgfx::touch(1);
+		bgfx::setViewFrameBuffer(1, m_fbh);////////////////////////////////////
+		bgfx::touch(1);///////////////////////////
 
 		m_engine->Update(deltaTime);
 
@@ -322,7 +331,7 @@ public:
 		{
 			bgfx::destroy(m_fbh);
 			m_fbh = bgfx::createFrameBuffer(m_subHwnd, uint16_t(width), uint16_t(height));
-			bgfx::setViewRect(1, 0, 0, uint16_t(width), uint16_t(height));
+			bgfx::setViewRect(1, 0, 0, uint16_t(width), uint16_t(height));////////////////////////////////
 			m_renderSystem->Resize(width, height);
 		}
 		else if (handle == m_app.GetMainWindowHandle())
@@ -356,25 +365,25 @@ public:
 
 	void RegisterButtonEvent(windowHandle handle, inputDeviceHandle deviceHandle, KeyboardDevice::Button buttonId, bool pressed) override
 	{
-		if(m_inputEnabled)
+		if (m_inputEnabled)
 		{
-			if(handle == m_app.GetMainWindowHandle())
+			if (handle == m_app.GetMainWindowHandle())
 			{
 				ImGuiIO& io = ImGui::GetIO();
-				switch(buttonId)
+				switch (buttonId)
 				{
-					case KeyboardDevice::Button::ControlLeft:
-					case KeyboardDevice::Button::ControlRight:
-						m_inputBuffer.m_modifierKeys = (m_inputBuffer.m_modifierKeys & ~ImGui::MK_CTRL_BIT) | (pressed << ImGui::MK_BO_CTRL); break;
-					case KeyboardDevice::Button::ShiftLeft:
-					case KeyboardDevice::Button::ShiftRight:
-						m_inputBuffer.m_modifierKeys = (m_inputBuffer.m_modifierKeys & ~ImGui::MK_SHIFT_BIT) | (pressed << ImGui::MK_BO_SHIFT); break;
-					case KeyboardDevice::Button::AltLeft:
-					case KeyboardDevice::Button::AltRight:
-						m_inputBuffer.m_modifierKeys = (m_inputBuffer.m_modifierKeys & ~ImGui::MK_ALT_BIT) | (pressed << ImGui::MK_BO_ALT); break;
-					case KeyboardDevice::Button::GUILeft:
-					case KeyboardDevice::Button::GUIRight:
-						m_inputBuffer.m_modifierKeys = (m_inputBuffer.m_modifierKeys & ~ImGui::MK_SUPER_BIT) | (pressed << ImGui::MK_BO_SUPER); break;
+				case KeyboardDevice::Button::ControlLeft:
+				case KeyboardDevice::Button::ControlRight:
+					m_inputBuffer.m_modifierKeys = (m_inputBuffer.m_modifierKeys & ~ImGui::MK_CTRL_BIT) | (pressed << ImGui::MK_BO_CTRL); break;
+				case KeyboardDevice::Button::ShiftLeft:
+				case KeyboardDevice::Button::ShiftRight:
+					m_inputBuffer.m_modifierKeys = (m_inputBuffer.m_modifierKeys & ~ImGui::MK_SHIFT_BIT) | (pressed << ImGui::MK_BO_SHIFT); break;
+				case KeyboardDevice::Button::AltLeft:
+				case KeyboardDevice::Button::AltRight:
+					m_inputBuffer.m_modifierKeys = (m_inputBuffer.m_modifierKeys & ~ImGui::MK_ALT_BIT) | (pressed << ImGui::MK_BO_ALT); break;
+				case KeyboardDevice::Button::GUILeft:
+				case KeyboardDevice::Button::GUIRight:
+					m_inputBuffer.m_modifierKeys = (m_inputBuffer.m_modifierKeys & ~ImGui::MK_SUPER_BIT) | (pressed << ImGui::MK_BO_SUPER); break;
 				}
 			}
 			else
@@ -386,22 +395,22 @@ public:
 
 	void RegisterButtonEvent(windowHandle handle, inputDeviceHandle deviceHandle, MouseDevice::Button buttonId, bool pressed) override
 	{
-		if(m_inputEnabled)
+		if (m_inputEnabled)
 		{
-			if(handle == m_app.GetMainWindowHandle())
+			if (handle == m_app.GetMainWindowHandle())
 			{
-				switch(buttonId)
+				switch (buttonId)
 				{
-					case MouseDevice::Button::Left:
-						m_inputBuffer.m_mouseButtons = (m_inputBuffer.m_mouseButtons & ~ImGui::MB_LEFT_BIT) | (pressed << ImGui::MB_BO_LEFT); break;
-					case MouseDevice::Button::Right:
-						m_inputBuffer.m_mouseButtons = (m_inputBuffer.m_mouseButtons & ~ImGui::MB_RIGHT_BIT) | (pressed << ImGui::MB_BO_RIGHT); break;
-					case MouseDevice::Button::Middle:
-						m_inputBuffer.m_mouseButtons = (m_inputBuffer.m_mouseButtons & ~ImGui::MB_MIDDLE_BIT) | (pressed << ImGui::MB_BO_MIDDLE); break;
-					case MouseDevice::Button::Extra4:
-						m_inputBuffer.m_mouseButtons = (m_inputBuffer.m_mouseButtons & ~ImGui::MB_EXTRA4_BIT) | (pressed << ImGui::MB_BO_EXTRA4); break;
-					case MouseDevice::Button::Extra5:
-						m_inputBuffer.m_mouseButtons = (m_inputBuffer.m_mouseButtons & ~ImGui::MB_EXTRA5_BIT) | (pressed << ImGui::MB_BO_EXTRA5); break;
+				case MouseDevice::Button::Left:
+					m_inputBuffer.m_mouseButtons = (m_inputBuffer.m_mouseButtons & ~ImGui::MB_LEFT_BIT) | (pressed << ImGui::MB_BO_LEFT); break;
+				case MouseDevice::Button::Right:
+					m_inputBuffer.m_mouseButtons = (m_inputBuffer.m_mouseButtons & ~ImGui::MB_RIGHT_BIT) | (pressed << ImGui::MB_BO_RIGHT); break;
+				case MouseDevice::Button::Middle:
+					m_inputBuffer.m_mouseButtons = (m_inputBuffer.m_mouseButtons & ~ImGui::MB_MIDDLE_BIT) | (pressed << ImGui::MB_BO_MIDDLE); break;
+				case MouseDevice::Button::Extra4:
+					m_inputBuffer.m_mouseButtons = (m_inputBuffer.m_mouseButtons & ~ImGui::MB_EXTRA4_BIT) | (pressed << ImGui::MB_BO_EXTRA4); break;
+				case MouseDevice::Button::Extra5:
+					m_inputBuffer.m_mouseButtons = (m_inputBuffer.m_mouseButtons & ~ImGui::MB_EXTRA5_BIT) | (pressed << ImGui::MB_BO_EXTRA5); break;
 				}
 			}
 			else
@@ -413,9 +422,9 @@ public:
 
 	void RegisterButtonEvent(windowHandle handle, inputDeviceHandle deviceHandle, GamepadDevice::Button buttonId, bool pressed) override
 	{
-		if(m_inputEnabled)
+		if (m_inputEnabled)
 		{
-			if(handle != m_app.GetMainWindowHandle())
+			if (handle != m_app.GetMainWindowHandle())
 			{
 				m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, buttonId, pressed);
 			}
@@ -426,7 +435,7 @@ public:
 	{
 		if (m_inputEnabled)
 		{
-			if(handle == m_app.GetMainWindowHandle())
+			if (handle == m_app.GetMainWindowHandle())
 			{
 				switch (axisId)
 				{
@@ -444,9 +453,9 @@ public:
 
 	void RegisterAxisEvent(windowHandle handle, inputDeviceHandle deviceHandle, GamepadDevice::Axis axisId, const Vector3& delta) override
 	{
-		if(m_inputEnabled)
+		if (m_inputEnabled)
 		{
-			if(handle != m_app.GetMainWindowHandle())
+			if (handle != m_app.GetMainWindowHandle())
 			{
 				m_engine->GetInputSystem()->RegisterAxisEvent(deviceHandle, axisId, delta);
 			}
@@ -623,21 +632,25 @@ public:
 			, 0
 			, bgfx::copy(fontTextureData, fontTextureWidth * fontTextureHeight * 4)
 		);
+
+		ImGui::InitDockContext();
 	}
 
 	void DeinitImgui()
 	{
+		ImGui::ShutdownDockContext();
+		ImGui::DestroyContext(m_imgui);
 		bgfx::destroy(s_tex);
 		bgfx::destroy(m_texture);
-		//ImGui::ShutdownDockContext();
-		ImGui::DestroyContext(m_imgui);
 	}
 
 	void UpdateImgui()
 	{
 		ImGui::NewFrame();
 
-		ImGui::Begin("Engine");
+		ImGui::RootDock(ImVec2(0, 0), ImGui::GetIO().DisplaySize);
+
+		ImGui::BeginDock("Engine");
 
 		ImVec2 windowPosition = ImGui::GetWindowPos();
 		if (windowPosition != m_subWindowPosition)
@@ -647,38 +660,23 @@ public:
 			m_app.SetWindowPosition(m_subHwnd, { (i32)(windowPosition.x), (i32)windowPosition.y });
 		}
 
-		ImVec2 windowSize = ImGui::GetContentRegionAvail();
+		/*ImVec2 windowSize = ImGui::GetContentRegionAvail();
 		if (windowSize != m_subWindowSize)
 		{
 			m_subWindowSize = windowSize;
 			m_app.SetWindowSize(m_subHwnd, { (i32)windowSize.x, (i32)windowSize.y });
-		}
+		}*/
+		m_app.SetWindowSize(m_subHwnd, { (i32)0, (i32)0 });
 
-		ImGui::End();//Engine
+		ImGui::EndDock();//Engine
 
-		ImGui::Begin("Worlds");
+		m_worldsWidget.Render();
 
-		size_t worldsCount = m_engine->GetWorldCount();
-		const World* worlds = m_engine->GetWorlds();
-		for (int i = 0; i < worldsCount; ++i)
-		{
-			const World& world = worlds[i];
-			ImGui::Text("World %i (id:%i)", i, world.GetId());
-		}
+		World* world = m_engine->GetWorld(m_worldsWidget.GetSelected());
+		if (nullptr != world)
+			m_entitiesWidget.SetWorld(world);
 
-		ImGui::End();//Worlds
-
-		ImGui::Begin("Entities (World 0)");
-
-		const World& world = *m_engine->GetWorld(0);
-		World::EntityIterator& entityIter = world.GetEntities();
-		Entity entity;
-		for (int i = 0; entityIter.GetNext(entity); ++i)
-		{
-			ImGui::Text("Entity %i (id:%i) ", i, (u64)entity);
-		}
-
-		ImGui::End();//Entities
+		m_entitiesWidget.Render();
 
 		ImGui::Render();
 	}
@@ -813,12 +811,13 @@ private:
 	App& m_app;
 	Engine* m_engine = nullptr;
 	bool m_inputEnabled = false;
-	
+
 	//imgui
 	ImGuiContext* m_imgui;
 	HeapAllocator m_imguiAllocator;
-
-	EditorInput m_inputBuffer;
+	Input m_inputBuffer;
+	Editor::WorldsWidget m_worldsWidget;
+	Editor::EntitiesWidget m_entitiesWidget;
 	//imgui data
 	ImVec2 m_subWindowPosition = { 0.0f, 0.0f };
 	ImVec2 m_subWindowSize = { 0.0f, 0.0f };
@@ -842,14 +841,17 @@ private:
 };
 
 
-Editor* Editor::Create(IAllocator& allocator, App& app)
+EditorApp* EditorApp::Create(IAllocator& allocator, App& app)
 {
-	return NEW_OBJECT(allocator, EditorImpl)(allocator, app);
+	return NEW_OBJECT(allocator, EditorAppImpl)(allocator, app);
 }
 
-void Editor::Destroy(Editor* editor, IAllocator& allocator)
+void EditorApp::Destroy(EditorApp* editor, IAllocator& allocator)
 {
 	DELETE_OBJECT(allocator, editor);
+}
+
+
 }
 
 }

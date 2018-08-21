@@ -1,13 +1,14 @@
 #include "world.h"
 
 #include "scene.h"
+#include "core/matrix.h"
 
 
 namespace Veng
 {
 
 
-World::World(IAllocator& allocator, u32 id)
+World::World(IAllocator& allocator, worldId id)
 	: m_allocator(allocator)
 	, m_entities(m_allocator)
 	, m_id(id)

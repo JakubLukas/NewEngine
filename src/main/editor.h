@@ -12,14 +12,17 @@ class IAllocator;
 class Engine;
 
 
-class Editor
+namespace Editor
+{
+
+class EditorApp
 {
 public:
-	static Editor* Create(IAllocator& allocator, App& app);
-	static void Destroy(Editor* editor, IAllocator& allocator);
+	static EditorApp* Create(IAllocator& allocator, App& app);
+	static void Destroy(EditorApp* editor, IAllocator& allocator);
 
 public:
-	virtual ~Editor() {}
+	virtual ~EditorApp() {}
 
 
 	virtual void Init() = 0;
@@ -42,5 +45,7 @@ public:
 	virtual void MouseMove(i32 xPos, i32 yPos) = 0;
 
 };
+
+}
 
 }

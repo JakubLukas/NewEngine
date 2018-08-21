@@ -240,6 +240,10 @@ namespace ImGui
 
 		~DockContext()
 		{
+			for (Dock*& item : m_docks)
+			{
+				MemFree(item);
+			}
 		}
 
 		Dock& getDock(const char* label, bool opened)
@@ -247,10 +251,10 @@ namespace ImGui
 			ImU32 id = ImHash(label, 0);
 			for (int i = 0; i < m_docks.size(); ++i)
 			{
-        if (m_docks[i]->id == id)
-        {
-          return *m_docks[i];
-        }
+				if (m_docks[i]->id == id)
+				{
+					return *m_docks[i];
+				}
 			}
 
 			Dock* new_dock = (Dock*)MemAlloc(sizeof(Dock));

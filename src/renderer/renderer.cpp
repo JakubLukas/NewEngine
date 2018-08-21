@@ -5,6 +5,7 @@
 #include "core/associative_array.h"
 #include "core/logs.h"
 #include "core/file/path.h"
+#include "core/matrix.h"
 
 #include "core/resource/resource_management.h"
 #include "shader_manager.h"
@@ -177,11 +178,13 @@ public:
 		static const Vector4 eye = Vector4(0.0f, 0.0f, 35.0f, 1.0f);
 		static const Vector4 up = Vector4(0.0f, 1.0f, 0.0f, 0.0f);
 
+		worldId worldHandle = (worldId)0;
+
 		static Matrix44 view;
 		view.SetLookAt(eye, at, up);
 
 		static Matrix44 proj;
-		const RenderScene::CameraItem* cameraItem = m_scene->GetDefaultCamera(0);
+		const RenderScene::CameraItem* cameraItem = m_scene->GetDefaultCamera(worldHandle);
 		if(cameraItem != nullptr)
 		{
 			const Camera& cam = cameraItem->camera;
@@ -195,13 +198,13 @@ public:
 
 		bgfx::touch(VIEW_ID);//dummy draw call
 
-		World* world = m_engine.GetWorld(0);
+		World* world = m_engine.GetWorld(worldHandle);
 
 
 		// Set vertex and index buffer.
 		// TODO: DUMMY test
-		const RenderScene::ModelItem* modelItems = m_scene->GetModels(0);
-		for(size_t i = 0; i < m_scene->GetModelsCount(0); ++i)
+		const RenderScene::ModelItem* modelItems = m_scene->GetModels(worldHandle);
+		for(size_t i = 0; i < m_scene->GetModelsCount(worldHandle); ++i)
 		{
 
 			Transform& trans = world->GetEntityTransform(modelItems[i].entity);

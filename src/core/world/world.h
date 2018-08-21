@@ -5,14 +5,13 @@
 #include "core/int.h"
 
 #include "core/entity.h"
-#include "core/matrix.h"
 
 
 namespace Veng
 {
 
-
-typedef u32 worldId;
+struct Transform;
+enum class worldId : u32 {};
 
 
 class World
@@ -45,7 +44,7 @@ public:
 	};
 
 public:
-	explicit World(IAllocator& allocator, u32 id);
+	explicit World(IAllocator& allocator, worldId id);
 	~World();
 
 	worldId GetId() const { return m_id; }

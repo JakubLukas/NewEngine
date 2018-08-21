@@ -156,7 +156,7 @@ public:
 
 	void Init()
 	{
-		m_editor = Editor::Create(m_allocator, *this);
+		m_editor = Editor::EditorApp::Create(m_allocator, *this);
 
 		CreateMainWindow();
 
@@ -173,7 +173,7 @@ public:
 	void Deinit()
 	{
 		m_editor->Deinit();
-		Editor::Destroy(m_editor, m_allocator);
+		Editor::EditorApp::Destroy(m_editor, m_allocator);
 	}
 
 	void Run()
@@ -387,12 +387,10 @@ private:
 				0.0f
 			};
 			m_editor->RegisterAxisEvent(hwnd, deviceHandle, MouseDevice::Axis::Movement, axisMov);
-			return;
 		}
 		else if (mouse.usFlags & MOUSE_MOVE_ABSOLUTE)
 		{
 			ASSERT2(false, "Mouse movement should be relative");
-			return;
 		}
 
 		if (mouse.usButtonFlags & RI_MOUSE_WHEEL)
@@ -405,37 +403,34 @@ private:
 				0.0f
 			};
 			m_editor->RegisterAxisEvent(hwnd, deviceHandle, MouseDevice::Axis::Wheel, axisWheel);
-			return;
 		}
-		else
+
+		if (mouse.usButtonFlags != Mouse::BUTTON_NONE)
 		{
-			if (mouse.usButtonFlags != Mouse::BUTTON_NONE)
-			{
-				if((mouse.usButtonFlags & RI_MOUSE_BUTTON_1_DOWN) != 0)
-					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Left, true);
-				if((mouse.usButtonFlags & RI_MOUSE_BUTTON_1_UP) != 0)
-					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Left, false);
+			if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_1_DOWN) != 0)
+				m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Left, true);
+			if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_1_UP) != 0)
+				m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Left, false);
 
-				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_2_DOWN) != 0)
-					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Right, true);
-				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_2_UP) != 0)
-					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Right, false);
+			if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_2_DOWN) != 0)
+				m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Right, true);
+			if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_2_UP) != 0)
+				m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Right, false);
 
-				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_3_DOWN) != 0)
-					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Middle, true);
-				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_3_UP) != 0)
-					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Middle, false);
+			if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_3_DOWN) != 0)
+				m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Middle, true);
+			if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_3_UP) != 0)
+				m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Middle, false);
 
-				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_4_DOWN) != 0)
-					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Extra4, true);
-				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_4_UP) != 0)
-					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Extra4, false);
+			if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_4_DOWN) != 0)
+				m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Extra4, true);
+			if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_4_UP) != 0)
+				m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Extra4, false);
 
-				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_5_DOWN) != 0)
-					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Extra5, true);
-				if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_5_UP) != 0)
-					m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Extra5, false);
-			}
+			if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_5_DOWN) != 0)
+				m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Extra5, true);
+			if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_5_UP) != 0)
+				m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Extra5, false);
 		}
 	}
 
@@ -712,7 +707,7 @@ private:
 	HeapAllocator m_allocator;
 	HWND m_hwnd = nullptr;
 
-	Editor* m_editor = nullptr;
+	Editor::EditorApp* m_editor = nullptr;
 
 	static const int MAX_SUB_WINDOWS = 8;
 	int m_subHwndSize = 0;
