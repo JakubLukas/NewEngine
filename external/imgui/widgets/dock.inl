@@ -25,8 +25,6 @@
 //
 // For more information, please refer to <http://unlicense.org>
 
-//#include <new> // placement new
-
 namespace ImGui
 {
 
@@ -44,31 +42,31 @@ namespace ImGui
 {
 	struct DockContext
 	{
-		enum Slot_
+		enum class Slot
 		{
-			Slot_Left,
-			Slot_Right,
-			Slot_Top,
-			Slot_Bottom,
-			Slot_Tab,
+			Left,
+			Right,
+			Top,
+			Bottom,
+			Tab,
 
-			Slot_Float,
-			Slot_None
+			Float,
+			None
 		};
 
-		enum EndAction_
+		enum class EndAction
 		{
-			EndAction_None,
-			EndAction_Panel,
-			EndAction_End,
-			EndAction_EndChild
+			None,
+			Panel,
+			End,
+			EndChild
 		};
 
-		enum Status_
+		enum class Status
 		{
-			Status_Docked,
-			Status_Float,
-			Status_Dragged
+			Docked,
+			Float,
+			Dragged
 		};
 
 		struct Dock
@@ -82,7 +80,7 @@ namespace ImGui
 				, pos(0, 0)
 				, size(-1, -1)
 				, active(true)
-				, status(Status_Float)
+				, status(Status::Float)
 				, opened(false)
 				, first(true)
 			{
@@ -215,7 +213,7 @@ namespace ImGui
 			ImVec2  pos;
 			ImVec2  size;
 			bool    active;
-			Status_ status;
+			Status  status;
 			bool    opened;
 
 			Dock* children[2];
@@ -230,7 +228,7 @@ namespace ImGui
 		ImVec2 m_drag_offset;
 		Dock* m_current;
 		int m_last_frame;
-		EndAction_ m_end_action;
+		EndAction m_end_action;
 
 		DockContext()
 			: m_current(NULL)
@@ -242,6 +240,7 @@ namespace ImGui
 		{
 			for (Dock*& item : m_docks)
 			{
+				item->~Dock();
 				MemFree(item);
 			}
 		}
@@ -264,7 +263,7 @@ namespace ImGui
 			IM_ASSERT(new_dock->label);
 			new_dock->id = id;
 			new_dock->setActive();
-			new_dock->status = Status_Float;
+			new_dock->status = Status::Float;
 			new_dock->pos = ImVec2(0, 0);
 			new_dock->size = GetIO().DisplaySize;
 			new_dock->opened = opened;
@@ -321,7 +320,7 @@ namespace ImGui
 				PushID(i);
 				if (!IsMouseDown(0))
 				{
-					dock.status = Status_Docked;
+					dock.status = Status::Docked;
 				}
 
 				ImVec2 dsize(0, 0);
@@ -331,14 +330,14 @@ namespace ImGui
 				if (dock.isHorizontal())
 				{
 					InvisibleButton("split", ImVec2(3, dock.size.y));
-					if (dock.status == Status_Dragged) dsize.x = io.MouseDelta.x;
+					if (dock.status == Status::Dragged) dsize.x = io.MouseDelta.x;
 					dsize.x = -ImMin(-dsize.x, dock.children[0]->size.x - min_size0.x);
 					dsize.x = ImMin(dsize.x, dock.children[1]->size.x - min_size1.x);
 				}
 				else
 				{
 					InvisibleButton("split", ImVec2(dock.size.x, 3));
-					if (dock.status == Status_Dragged) dsize.y = io.MouseDelta.y;
+					if (dock.status == Status::Dragged) dsize.y = io.MouseDelta.y;
 					dsize.y = -ImMin(-dsize.y, dock.children[0]->size.y - min_size0.y);
 					dsize.y = ImMin(dsize.y, dock.children[1]->size.y - min_size1.y);
 				}
@@ -350,7 +349,7 @@ namespace ImGui
 
 				if (IsItemHovered() && IsMouseClicked(0))
 				{
-					dock.status = Status_Dragged;
+					dock.status = Status::Dragged;
 				}
 
 				draw_list->AddRectFilled(
@@ -366,14 +365,14 @@ namespace ImGui
 			{
 				Dock* dock = *it;
 				if (dock->isContainer()) continue;
-				if (dock->status == Status_Float) continue;
+				if (dock->status == Status::Float) continue;
 				if (dock->last_frame < frame_limit)
 				{
 					++dock->invalid_frames;
 					if (dock->invalid_frames > 2)
 					{
 						doUndock(*dock);
-						dock->status = Status_Float;
+						dock->status = Status::Float;
 					}
 					return;
 				}
@@ -423,7 +422,7 @@ namespace ImGui
 			{
 				Dock& dock = *m_docks[i];
 				if (dock.isContainer()) continue;
-				if (dock.status != Status_Docked) continue;
+				if (dock.status != Status::Docked) continue;
 				if (IsMouseHoveringRect(dock.pos, dock.pos + dock.size, false))
 				{
 					return &dock;
@@ -433,49 +432,49 @@ namespace ImGui
 			return NULL;
 		}
 
-		static ImRect getDockedRect(const ImRect& rect, Slot_ dock_slot)
+		static ImRect getDockedRect(const ImRect& rect, Slot dock_slot)
 		{
 			ImVec2 half_size = rect.GetSize() * 0.5f;
 			switch (dock_slot)
 			{
 				default: return rect;
-				case Slot_Top: return ImRect(rect.Min, rect.Min + ImVec2(rect.Max.x, half_size.y));
-				case Slot_Right: return ImRect(rect.Min + ImVec2(half_size.x, 0), rect.Max);
-				case Slot_Bottom: return ImRect(rect.Min + ImVec2(0, half_size.y), rect.Max);
-				case Slot_Left: return ImRect(rect.Min, rect.Min + ImVec2(half_size.x, rect.Max.y));
+				case Slot::Top: return ImRect(rect.Min, rect.Min + ImVec2(rect.Max.x, half_size.y));
+				case Slot::Right: return ImRect(rect.Min + ImVec2(half_size.x, 0), rect.Max);
+				case Slot::Bottom: return ImRect(rect.Min + ImVec2(0, half_size.y), rect.Max);
+				case Slot::Left: return ImRect(rect.Min, rect.Min + ImVec2(half_size.x, rect.Max.y));
 			}
 		}
 
-		static ImRect getSlotRect(ImRect parent_rect, Slot_ dock_slot)
+		static ImRect getSlotRect(ImRect parent_rect, Slot dock_slot)
 		{
 			ImVec2 size = parent_rect.Max - parent_rect.Min;
 			ImVec2 center = parent_rect.Min + size * 0.5f;
 			switch (dock_slot)
 			{
 				default: return ImRect(center - ImVec2(20, 20), center + ImVec2(20, 20));
-				case Slot_Top: return ImRect(center + ImVec2(-20, -50), center + ImVec2(20, -30));
-				case Slot_Right: return ImRect(center + ImVec2(30, -20), center + ImVec2(50, 20));
-				case Slot_Bottom: return ImRect(center + ImVec2(-20, +30), center + ImVec2(20, 50));
-				case Slot_Left: return ImRect(center + ImVec2(-50, -20), center + ImVec2(-30, 20));
+				case Slot::Top: return ImRect(center + ImVec2(-20, -50), center + ImVec2(20, -30));
+				case Slot::Right: return ImRect(center + ImVec2(30, -20), center + ImVec2(50, 20));
+				case Slot::Bottom: return ImRect(center + ImVec2(-20, +30), center + ImVec2(20, 50));
+				case Slot::Left: return ImRect(center + ImVec2(-50, -20), center + ImVec2(-30, 20));
 			}
 		}
 
-		static ImRect getSlotRectOnBorder(ImRect parent_rect, Slot_ dock_slot)
+		static ImRect getSlotRectOnBorder(ImRect parent_rect, Slot dock_slot)
 		{
 			ImVec2 size = parent_rect.Max - parent_rect.Min;
 			ImVec2 center = parent_rect.Min + size * 0.5f;
 			switch (dock_slot)
 			{
-				case Slot_Top:
+				case Slot::Top:
 					return ImRect(ImVec2(center.x - 20, parent_rect.Min.y + 10),
 							ImVec2(center.x + 20, parent_rect.Min.y + 30));
-				case Slot_Left:
+				case Slot::Left:
 					return ImRect(ImVec2(parent_rect.Min.x + 10, center.y - 20),
 							ImVec2(parent_rect.Min.x + 30, center.y + 20));
-				case Slot_Bottom:
+				case Slot::Bottom:
 					return ImRect(ImVec2(center.x - 20, parent_rect.Max.y - 30),
 							ImVec2(center.x + 20, parent_rect.Max.y - 10));
-				case Slot_Right:
+				case Slot::Right:
 					return ImRect(ImVec2(parent_rect.Max.x - 30, center.y - 20),
 							ImVec2(parent_rect.Max.x - 10, center.y + 20));
 				default: IM_ASSERT(false);
@@ -489,7 +488,7 @@ namespace ImGui
 			for (int i = 0; i < m_docks.size(); ++i)
 			{
 				if (!m_docks[i]->parent &&
-						(m_docks[i]->status == Status_Docked || m_docks[i]->children[0]))
+						(m_docks[i]->status == Status::Docked || m_docks[i]->children[0]))
 				{
 					return m_docks[i];
 				}
@@ -506,7 +505,7 @@ namespace ImGui
 			for (int i = 0; i < (on_border ? 4 : 5); ++i)
 			{
 				ImRect r =
-					on_border ? getSlotRectOnBorder(rect, (Slot_)i) : getSlotRect(rect, (Slot_)i);
+					on_border ? getSlotRectOnBorder(rect, (Slot)i) : getSlotRect(rect, (Slot)i);
 				bool hovered = r.Contains(mouse_pos);
 
 				canvas->AddRectFilled(r.Min, r.Max, hovered ? color_hovered : color);
@@ -514,10 +513,10 @@ namespace ImGui
 
 				if (!IsMouseDown(0))
 				{
-					doDock(dock, dest_dock ? dest_dock : getRootDock(), (Slot_)i);
+					doDock(dock, dest_dock ? dest_dock : getRootDock(), (Slot)i);
 					return true;
 				}
-				ImRect docked_rect = getDockedRect(rect, (Slot_)i);
+				ImRect docked_rect = getDockedRect(rect, (Slot)i);
 				canvas->AddRectFilled(docked_rect.Min, docked_rect.Max, GetColorU32(ImGuiCol_Button));
 			}
 			return false;
@@ -562,7 +561,7 @@ namespace ImGui
 
 			if (!IsMouseDown(0))
 			{
-				dock.status = Status_Float;
+				dock.status = Status::Float;
 				dock.location[0] = 0;
 				dock.setActive();
 			}
@@ -572,7 +571,7 @@ namespace ImGui
 
 		void fillLocation(Dock& dock)
 		{
-			if (dock.status == Status_Float) return;
+			if (dock.status == Status::Float) return;
 			char* c = dock.location;
 			Dock* tmp = &dock;
 			while (tmp->parent)
@@ -727,7 +726,7 @@ namespace ImGui
 					{
 						m_drag_offset = GetMousePos() - dock_tab->pos;
 						doUndock(*dock_tab);
-						dock_tab->status = Status_Dragged;
+						dock_tab->status = Status::Dragged;
 					}
 
 					bool hovered = IsItemHovered();
@@ -769,7 +768,7 @@ namespace ImGui
 			return tab_closed;
 		}
 
-		static void setDockPosSize(Dock& dest, Dock& dock, Slot_ dock_slot, Dock& container)
+		static void setDockPosSize(Dock& dest, Dock& dock, Slot dock_slot, Dock& container)
 		{
 			IM_ASSERT(!dock.prev_tab && !dock.next_tab && !dock.children[0] && !dock.children[1]);
 
@@ -780,22 +779,22 @@ namespace ImGui
 
 			switch (dock_slot)
 			{
-				case Slot_Bottom:
+				case Slot::Bottom:
 					dest.size.y *= 0.5f;
 					dock.size.y *= 0.5f;
 					dock.pos.y += dest.size.y;
 					break;
-				case Slot_Right:
+				case Slot::Right:
 					dest.size.x *= 0.5f;
 					dock.size.x *= 0.5f;
 					dock.pos.x += dest.size.x;
 					break;
-				case Slot_Left:
+				case Slot::Left:
 					dest.size.x *= 0.5f;
 					dock.size.x *= 0.5f;
 					dest.pos.x += dock.size.x;
 					break;
-				case Slot_Top:
+				case Slot::Top:
 					dest.size.y *= 0.5f;
 					dock.size.y *= 0.5f;
 					dest.pos.y += dock.size.y;
@@ -813,15 +812,15 @@ namespace ImGui
 			}
 		}
 
-		void doDock(Dock& dock, Dock* dest, Slot_ dock_slot)
+		void doDock(Dock& dock, Dock* dest, Slot dock_slot)
 		{
 			IM_ASSERT(!dock.parent);
 			if (!dest)
 			{
-				dock.status = Status_Docked;
+				dock.status = Status::Docked;
 				dock.setPosSize(ImVec2(0, 0), GetIO().DisplaySize);
 			}
-			else if (dock_slot == Slot_Tab)
+			else if (dock_slot == Slot::Tab)
 			{
 				Dock* tmp = dest;
 				while (tmp->next_tab)
@@ -834,11 +833,11 @@ namespace ImGui
 				dock.size = tmp->size;
 				dock.pos = tmp->pos;
 				dock.parent = dest->parent;
-				dock.status = Status_Docked;
+				dock.status = Status::Docked;
 			}
-			else if (dock_slot == Slot_None)
+			else if (dock_slot == Slot::None)
 			{
-				dock.status = Status_Float;
+				dock.status = Status::Float;
 			}
 			else
 			{
@@ -852,7 +851,7 @@ namespace ImGui
 				container->parent = dest->parent;
 				container->size = dest->size;
 				container->pos = dest->pos;
-				container->status = Status_Docked;
+				container->status = Status::Docked;
 				container->label = ImStrdup("");
 
 				if (!dest->parent)
@@ -869,7 +868,7 @@ namespace ImGui
 
 				dest->setParent(container);
 				dock.parent = container;
-				dock.status = Status_Docked;
+				dock.status = Status::Docked;
 
 				setDockPosSize(*dest, dock, dock_slot, *container);
 			}
@@ -892,14 +891,14 @@ namespace ImGui
 			if (m_current) m_current->setActive();
 		}
 
-		static Slot_ getSlotFromLocationCode(char code)
+		static Slot getSlotFromLocationCode(char code)
 		{
 			switch (code)
 			{
-				case '1': return Slot_Left;
-				case '2': return Slot_Top;
-				case '3': return Slot_Bottom;
-				default: return Slot_Right;
+				case '1': return Slot::Left;
+				case '2': return Slot::Top;
+				case '3': return Slot::Bottom;
+				default: return Slot::Right;
 			}
 		}
 
@@ -923,7 +922,7 @@ namespace ImGui
 
 		void tryDockToStoredLocation(Dock& dock)
 		{
-			if (dock.status == Status_Docked) return;
+			if (dock.status == Status::Docked) return;
 			if (dock.location[0] == 0) return;
 
 			Dock* tmp = getRootDock();
@@ -938,7 +937,7 @@ namespace ImGui
 				if(tmp) --c;
 			}
 			if (tmp && tmp->children[0]) tmp = tmp->parent;
-			doDock(dock, tmp ? tmp : prev, tmp && !tmp->children[0] ? Slot_Tab : getSlotFromLocationCode(*c));
+			doDock(dock, tmp ? tmp : prev, tmp && !tmp->children[0] ? Slot::Tab : getSlotFromLocationCode(*c));
 		}
 
 		bool begin(const char* label, bool* opened, ImGuiWindowFlags extra_flags)
@@ -952,30 +951,30 @@ namespace ImGui
 				dock.label = ImStrdup(label);
 			}
 
-			m_end_action = EndAction_None;
+			m_end_action = EndAction::None;
 
 			if (dock.first && opened) *opened = dock.opened;
 			dock.first = false;
 			if (opened && !*opened)
 			{
-				if (dock.status != Status_Float)
+				if (dock.status != Status::Float)
 				{
 					fillLocation(dock);
 					doUndock(dock);
-					dock.status = Status_Float;
+					dock.status = Status::Float;
 				}
 				dock.opened = false;
 				return false;
 			}
 			dock.opened = true;
 
-			m_end_action = EndAction_Panel;
+			m_end_action = EndAction::Panel;
 			beginPanel();
 
 			m_current = &dock;
-			if (dock.status == Status_Dragged) handleDrag(dock);
+			if (dock.status == Status::Dragged) handleDrag(dock);
 
-			bool is_float = dock.status == Status_Float;
+			bool is_float = dock.status == Status::Float;
 
 			if (is_float)
 			{
@@ -984,7 +983,7 @@ namespace ImGui
 				bool ret = Begin(label,
 						opened,
 						ImGuiWindowFlags_NoCollapse | extra_flags);
-				m_end_action = EndAction_End;
+				m_end_action = EndAction::End;
 				dock.pos = GetWindowPos();
 				dock.size = GetWindowSize();
 
@@ -994,14 +993,14 @@ namespace ImGui
 				{
 					m_drag_offset = GetMousePos() - dock.pos;
 					doUndock(dock);
-					dock.status = Status_Dragged;
+					dock.status = Status::Dragged;
 				}
 				return ret;
 			}
 
-			if (!dock.active && dock.status != Status_Dragged) return false;
+			if (!dock.active && dock.status != Status::Dragged) return false;
 
-			m_end_action = EndAction_EndChild;
+			m_end_action = EndAction::EndChild;
 
 			PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
 			PushStyleColor(ImGuiCol_BorderShadow, ImVec4(0, 0, 0, 0));
@@ -1032,11 +1031,11 @@ namespace ImGui
 
 		void end()
 		{
-			if (m_end_action == EndAction_End)
+			if (m_end_action == EndAction::End)
 			{
 				End();
 			}
-			else if (m_end_action == EndAction_EndChild)
+			else if (m_end_action == EndAction::EndChild)
 			{
 				PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
 				PushStyleColor(ImGuiCol_BorderShadow, ImVec4(0, 0, 0, 0));
@@ -1045,7 +1044,7 @@ namespace ImGui
 				PopStyleColor();
 			}
 			m_current = NULL;
-			if (m_end_action > EndAction_None) endPanel();
+			if (m_end_action > EndAction::None) endPanel();
 		}
 
 		int getDockIndex(Dock* dock)
