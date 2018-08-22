@@ -34,7 +34,6 @@ void WorldsWidget::RenderInternal()
 	{
 		ImGui::Text("Error: ListBoxHeader wasn't created");
 		ImGui::PopItemWidth();
-		ASSERT(false);
 		return;
 	}
 

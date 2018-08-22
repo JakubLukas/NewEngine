@@ -25,6 +25,10 @@
 //
 // For more information, please refer to <http://unlicense.org>
 
+#include "../external/imgui/imgui.h"
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "../external/imgui/imgui_internal.h"
+
 namespace ImGui
 {
 
@@ -69,14 +73,17 @@ namespace ImGui
 			Dragged
 		};
 
+		static const int INVALID_INDEX = -1;
+
 		struct Dock
 		{
 			Dock()
 				: id(0)
-				, label(NULL)
-				, next_tab(NULL)
-				, prev_tab(NULL)
-				, parent(NULL)
+				, label(nullptr)
+				, next_tab(INVALID_INDEX)
+				, prev_tab(INVALID_INDEX)
+				, parent(INVALID_INDEX)
+				, self(INVALID_INDEX)
 				, pos(0, 0)
 				, size(-1, -1)
 				, active(true)
@@ -85,163 +92,218 @@ namespace ImGui
 				, first(true)
 			{
 				location[0] = 0;
-				children[0] = children[1] = NULL;
-			}
-
-			~Dock()
-			{
-				MemFree(label);
-			}
-
-			ImVec2 getMinSize() const
-			{
-				if (!children[0]) return ImVec2(16, 16 + GetTextLineHeightWithSpacing());
-
-				ImVec2 s0 = children[0]->getMinSize();
-				ImVec2 s1 = children[1]->getMinSize();
-				return isHorizontal() ? ImVec2(s0.x + s1.x, ImMax(s0.y, s1.y))
-					: ImVec2(ImMax(s0.x, s1.x), s0.y + s1.y);
-			}
-
-			bool isHorizontal() const
-			{
-				return children[0]->pos.x < children[1]->pos.x;
-			}
-
-			void setParent(Dock* dock)
-			{
-				parent = dock;
-				for (Dock* tmp = prev_tab; tmp; tmp = tmp->prev_tab) tmp->parent = dock;
-				for (Dock* tmp = next_tab; tmp; tmp = tmp->next_tab) tmp->parent = dock;
-			}
-
-			Dock& getSibling()
-			{
-				IM_ASSERT(parent);
-				if (parent->children[0] == &getFirstTab()) return *parent->children[1];
-				return *parent->children[0];
-			}
-
-			Dock& getFirstTab()
-			{
-				Dock* tmp = this;
-				while (tmp->prev_tab) tmp = tmp->prev_tab;
-				return *tmp;
-			}
-
-			void setActive()
-			{
-				active = true;
-				for (Dock* tmp = prev_tab; tmp; tmp = tmp->prev_tab) tmp->active = false;
-				for (Dock* tmp = next_tab; tmp; tmp = tmp->next_tab) tmp->active = false;
-			}
-
-			bool isContainer() const
-			{
-				return children[0] != NULL;
-			}
-
-			void setChildrenPosSize(const ImVec2& _pos, const ImVec2& _size)
-			{
-				ImVec2 s = children[0]->size;
-				if (isHorizontal())
-				{
-					s.y = _size.y;
-					s.x = (float)int(
-							_size.x * children[0]->size.x / (children[0]->size.x + children[1]->size.x));
-					if (s.x < children[0]->getMinSize().x)
-					{
-						s.x = children[0]->getMinSize().x;
-					}
-					else if (_size.x - s.x < children[1]->getMinSize().x)
-					{
-						s.x = _size.x - children[1]->getMinSize().x;
-					}
-					children[0]->setPosSize(_pos, s);
-
-					s.x = _size.x - children[0]->size.x;
-					ImVec2 p = _pos;
-					p.x += children[0]->size.x;
-					children[1]->setPosSize(p, s);
-				}
-				else
-				{
-					s.x = _size.x;
-					s.y = (float)int(
-							_size.y * children[0]->size.y / (children[0]->size.y + children[1]->size.y));
-					if (s.y < children[0]->getMinSize().y)
-					{
-						s.y = children[0]->getMinSize().y;
-					}
-					else if (_size.y - s.y < children[1]->getMinSize().y)
-					{
-						s.y = _size.y - children[1]->getMinSize().y;
-					}
-					children[0]->setPosSize(_pos, s);
-
-					s.y = _size.y - children[0]->size.y;
-					ImVec2 p = _pos;
-					p.y += children[0]->size.y;
-					children[1]->setPosSize(p, s);
-				}
-			}
-
-			void setPosSize(const ImVec2& _pos, const ImVec2& _size)
-			{
-				size = _size;
-				pos = _pos;
-				for (Dock* tmp = prev_tab; tmp; tmp = tmp->prev_tab)
-				{
-					tmp->size = _size;
-					tmp->pos = _pos;
-				}
-				for (Dock* tmp = next_tab; tmp; tmp = tmp->next_tab)
-				{
-					tmp->size = _size;
-					tmp->pos = _pos;
-				}
-
-				if (!isContainer()) return;
-				setChildrenPosSize(_pos, _size);
+				children[0] = children[1] = INVALID_INDEX;
 			}
 
 			ImU32   id;
 			char*   label;
-			Dock*   next_tab;
-			Dock*   prev_tab;
-			Dock*   parent;
+			int     next_tab;
+			int     prev_tab;
+			int     parent;
+			int     self;
 			ImVec2  pos;
 			ImVec2  size;
 			bool    active;
 			Status  status;
 			bool    opened;
 
-			Dock* children[2];
-			char  location[16];
-			int   last_frame;
-			int   invalid_frames;
-			bool  first;
+			int     children[2];
+			char    location[16];
+			int     last_frame;
+			int     invalid_frames;
+			bool    first;
 		};
 
-		typedef ImVector<Dock*> DockVector;
+
+
+
+
+
+		ImVec2 dockGetMinSize(int dockIdx) const
+		{
+			IM_ASSERT(INVALID_INDEX != dockIdx);
+			const Dock& dock = m_docks[dockIdx];
+
+			if (INVALID_INDEX == dock.children[0])
+				return ImVec2(16, 16 + GetTextLineHeightWithSpacing());
+
+			ImVec2 s0 = dockGetMinSize(dock.children[0]);
+			ImVec2 s1 = dockGetMinSize(dock.children[1]);
+
+			if (dockIsHorizontal(dockIdx))
+				return ImVec2(s0.x + s1.x, ImMax(s0.y, s1.y));
+			else
+				return ImVec2(ImMax(s0.x, s1.x), s0.y + s1.y);
+		}
+
+		bool dockIsHorizontal(int dockIdx) const
+		{
+			IM_ASSERT(INVALID_INDEX != dockIdx);
+			const Dock& dock = m_docks[dockIdx];
+
+			const Dock& childOne = m_docks[dock.children[0]];
+			const Dock& childTwo = m_docks[dock.children[1]];
+
+			return childOne.pos.x < childTwo.pos.x;
+		}
+
+		void dockSetParent(int dockIdx, int parentIdx)
+		{
+			IM_ASSERT(INVALID_INDEX != dockIdx);
+			Dock& dock = m_docks[dockIdx];
+
+			dock.parent = parentIdx;
+
+			for (int tmpIdx = dock.prev_tab; tmpIdx != INVALID_INDEX; tmpIdx = m_docks[tmpIdx].prev_tab)
+				m_docks[tmpIdx].parent = parentIdx;
+			for (int tmpIdx = dock.next_tab; tmpIdx != INVALID_INDEX; tmpIdx = m_docks[tmpIdx].next_tab)
+				m_docks[tmpIdx].parent = parentIdx;
+		}
+
+		int dockGetSibling(int dockIdx)
+		{
+			IM_ASSERT(INVALID_INDEX != dockIdx);
+			const Dock& dock = m_docks[dockIdx];
+
+			const Dock& parent = m_docks[dock.parent];
+
+			IM_ASSERT(INVALID_INDEX != dock.parent);
+			if (parent.children[0] == dockGetFirstTab(dockIdx))
+				return parent.children[1];
+
+			return parent.children[0];
+		}
+
+		int dockGetFirstTab(int dockIdx)
+		{
+			IM_ASSERT(INVALID_INDEX != dockIdx);
+			const Dock& dock = m_docks[dockIdx];
+
+			int idx = dockIdx;
+			while (INVALID_INDEX != dock.prev_tab)
+				idx = m_docks[idx].prev_tab;
+
+			return idx;
+		}
+
+		void dockSetActive(int dockIdx)
+		{
+			IM_ASSERT(INVALID_INDEX != dockIdx);
+			Dock& dock = m_docks[dockIdx];
+
+			dock.active = true;
+			for (int tmpIdx = dock.prev_tab; INVALID_INDEX != tmpIdx; tmpIdx = m_docks[tmpIdx].prev_tab)
+				m_docks[tmpIdx].active = false;
+			for (int tmpIdx = dock.next_tab; INVALID_INDEX != tmpIdx; tmpIdx = m_docks[tmpIdx].next_tab)
+				m_docks[tmpIdx].active = false;
+		}
+
+		bool dockIsContainer(int dockIdx) const
+		{
+			IM_ASSERT(INVALID_INDEX != dockIdx);
+			const Dock& dock = m_docks[dockIdx];
+
+			return INVALID_INDEX != dock.children[0];
+		}
+
+		void dockSetChildrenPosSize(int dockIdx, const ImVec2& pos, const ImVec2& size)
+		{
+			IM_ASSERT(INVALID_INDEX != dockIdx);
+			const Dock& dock = m_docks[dockIdx];
+
+			const Dock& childOne = m_docks[dock.children[0]];
+			const Dock& childTwo = m_docks[dock.children[1]];
+
+			ImVec2 s = childOne.size;
+			if (dockIsHorizontal(dockIdx))
+			{
+				s.y = size.y;
+				s.x = (float)int(size.x * childOne.size.x / (childOne.size.x + childTwo.size.x));
+				if (s.x < dockGetMinSize(dock.children[0]).x)
+				{
+					s.x = dockGetMinSize(dock.children[0]).x;
+				}
+				else if (size.x - s.x < dockGetMinSize(dock.children[1]).x)
+				{
+					s.x = size.x - dockGetMinSize(dock.children[1]).x;
+				}
+				dockSetPosSize(dock.children[0], pos, s);
+
+				s.x = size.x - childOne.size.x;
+				ImVec2 p = pos;
+				p.x += childOne.size.x;
+				dockSetPosSize(dock.children[1], p, s);
+			}
+			else
+			{
+				s.x = size.x;
+				s.y = (float)int(
+					size.y * childOne.size.y / (childOne.size.y + childTwo.size.y));
+				if (s.y < dockGetMinSize(dock.children[0]).y)
+				{
+					s.y = dockGetMinSize(dock.children[0]).y;
+				}
+				else if (size.y - s.y < dockGetMinSize(dock.children[1]).y)
+				{
+					s.y = size.y - dockGetMinSize(dock.children[1]).y;
+				}
+				dockSetPosSize(dock.children[0], pos, s);
+
+				s.y = size.y - childOne.size.y;
+				ImVec2 p = pos;
+				p.y += childOne.size.y;
+				dockSetPosSize(dock.children[1], p, s);
+			}
+		}
+
+		void dockSetPosSize(int dockIdx, const ImVec2& pos, const ImVec2& size)
+		{
+			IM_ASSERT(INVALID_INDEX != dockIdx);
+			Dock& dock = m_docks[dockIdx];
+
+			dock.size = size;
+			dock.pos = pos;
+			for (int tmpIdx = dock.prev_tab; INVALID_INDEX != tmpIdx; tmpIdx = m_docks[tmpIdx].prev_tab)
+			{
+				m_docks[tmpIdx].size = size;
+				m_docks[tmpIdx].pos = pos;
+			}
+			for (int tmpIdx = dock.next_tab; INVALID_INDEX != tmpIdx; tmpIdx = m_docks[tmpIdx].next_tab)
+			{
+				m_docks[tmpIdx].size = size;
+				m_docks[tmpIdx].pos = pos;
+			}
+
+			if (!dockIsContainer(dockIdx))
+				return;
+
+			dockSetChildrenPosSize(dockIdx, pos, size);
+		}
+
+
+
+
+
+
+
+		typedef ImVector<Dock> DockVector;
 		DockVector m_docks;
 		ImVec2 m_drag_offset;
-		Dock* m_current;
+		int m_current;
 		int m_last_frame;
 		EndAction m_end_action;
 
 		DockContext()
-			: m_current(NULL)
+			: m_current(INVALID_INDEX)
 			, m_last_frame(0)
 		{
 		}
 
 		~DockContext()
 		{
-			for (Dock*& item : m_docks)
+			for (Dock& item : m_docks)
 			{
-				item->~Dock();
-				MemFree(item);
+				MemFree(item.label);
 			}
 		}
 
@@ -250,28 +312,28 @@ namespace ImGui
 			ImU32 id = ImHash(label, 0);
 			for (int i = 0; i < m_docks.size(); ++i)
 			{
-				if (m_docks[i]->id == id)
+				if (m_docks[i].id == id)
 				{
-					return *m_docks[i];
+					return m_docks[i];
 				}
 			}
 
-			Dock* new_dock = (Dock*)MemAlloc(sizeof(Dock));
-			IM_PLACEMENT_NEW(new_dock) Dock();
-			m_docks.push_back(new_dock);
-			new_dock->label = ImStrdup(label);
-			IM_ASSERT(new_dock->label);
-			new_dock->id = id;
-			new_dock->setActive();
-			new_dock->status = Status::Float;
-			new_dock->pos = ImVec2(0, 0);
-			new_dock->size = GetIO().DisplaySize;
-			new_dock->opened = opened;
-			new_dock->first = true;
-			new_dock->last_frame = 0;
-			new_dock->invalid_frames = 0;
-			new_dock->location[0] = 0;
-			return *new_dock;
+			m_docks.push_back(Dock());
+			Dock& new_dock = m_docks.back();
+			new_dock.self = m_docks.size() - 1;
+			new_dock.label = ImStrdup(label);
+			IM_ASSERT(new_dock.label);
+			new_dock.id = id;
+			dockSetActive(new_dock.self);
+			new_dock.status = Status::Float;
+			new_dock.pos = ImVec2(0, 0);
+			new_dock.size = GetIO().DisplaySize;
+			new_dock.opened = opened;
+			new_dock.first = true;
+			new_dock.last_frame = 0;
+			new_dock.invalid_frames = 0;
+			new_dock.location[0] = 0;
+			return new_dock;
 		}
 
 		void putInBackground()
@@ -311,8 +373,8 @@ namespace ImGui
 			ImGuiIO& io = GetIO();
 			for (int i = 0; i < m_docks.size(); ++i)
 			{
-				Dock& dock = *m_docks[i];
-				if (!dock.isContainer())
+				Dock& dock = m_docks[i];
+				if (!dockIsContainer(dock.self))
 				{
 					continue;
 				}
@@ -324,36 +386,37 @@ namespace ImGui
 				}
 
 				ImVec2 dsize(0, 0);
-				SetCursorScreenPos(dock.children[1]->pos);
-				ImVec2 min_size0 = dock.children[0]->getMinSize();
-				ImVec2 min_size1 = dock.children[1]->getMinSize();
-				if (dock.isHorizontal())
+				SetCursorScreenPos(m_docks[dock.children[1]].pos);
+				ImVec2 min_size0 = dockGetMinSize(dock.children[0]);
+				ImVec2 min_size1 = dockGetMinSize(dock.children[1]);
+				if (dockIsHorizontal(dock.self))
 				{
 					InvisibleButton("split", ImVec2(3, dock.size.y));
-					if (dock.status == Status::Dragged) dsize.x = io.MouseDelta.x;
-					dsize.x = -ImMin(-dsize.x, dock.children[0]->size.x - min_size0.x);
-					dsize.x = ImMin(dsize.x, dock.children[1]->size.x - min_size1.x);
+					if (dock.status == Status::Dragged)
+						dsize.x = io.MouseDelta.x;
+					dsize.x = -ImMin(-dsize.x, m_docks[dock.children[0]].size.x - min_size0.x);
+					dsize.x = ImMin(dsize.x, m_docks[dock.children[1]].size.x - min_size1.x);
 				}
 				else
 				{
 					InvisibleButton("split", ImVec2(dock.size.x, 3));
-					if (dock.status == Status::Dragged) dsize.y = io.MouseDelta.y;
-					dsize.y = -ImMin(-dsize.y, dock.children[0]->size.y - min_size0.y);
-					dsize.y = ImMin(dsize.y, dock.children[1]->size.y - min_size1.y);
+					if (dock.status == Status::Dragged)
+						dsize.y = io.MouseDelta.y;
+					dsize.y = -ImMin(-dsize.y, m_docks[dock.children[0]].size.y - min_size0.y);
+					dsize.y = ImMin(dsize.y, m_docks[dock.children[1]].size.y - min_size1.y);
 				}
-				ImVec2 new_size0 = dock.children[0]->size + dsize;
-				ImVec2 new_size1 = dock.children[1]->size - dsize;
-				ImVec2 new_pos1 = dock.children[1]->pos + dsize;
-				dock.children[0]->setPosSize(dock.children[0]->pos, new_size0);
-				dock.children[1]->setPosSize(new_pos1, new_size1);
+				ImVec2 new_size0 = m_docks[dock.children[0]].size + dsize;
+				ImVec2 new_size1 = m_docks[dock.children[1]].size - dsize;
+				ImVec2 new_pos1 = m_docks[dock.children[1]].pos + dsize;
+				dockSetPosSize(dock.children[0], m_docks[dock.children[0]].pos, new_size0);
+				dockSetPosSize(dock.children[1], new_pos1, new_size1);
 
 				if (IsItemHovered() && IsMouseClicked(0))
 				{
 					dock.status = Status::Dragged;
 				}
 
-				draw_list->AddRectFilled(
-						GetItemRectMin(), GetItemRectMax(), IsItemHovered() ? color_hovered : color);
+				draw_list->AddRectFilled(GetItemRectMin(), GetItemRectMax(), IsItemHovered() ? color_hovered : color);
 				PopID();
 			}
 		}
@@ -361,22 +424,24 @@ namespace ImGui
 		void checkNonexistent()
 		{
 			int frame_limit = ImMax(0, ImGui::GetFrameCount() - 2);
-			for (DockVector::iterator it = m_docks.begin(), itEnd = m_docks.end(); it != itEnd; ++it)
+			for(int i = 0; i < m_docks.size(); ++i)
 			{
-				Dock* dock = *it;
-				if (dock->isContainer()) continue;
-				if (dock->status == Status::Float) continue;
-				if (dock->last_frame < frame_limit)
+				Dock& dock = m_docks[i];
+				if (dockIsContainer(dock.self))
+					continue;
+				if (dock.status == Status::Float)
+					continue;
+				if (dock.last_frame < frame_limit)
 				{
-					++dock->invalid_frames;
-					if (dock->invalid_frames > 2)
+					++dock.invalid_frames;
+					if (dock.invalid_frames > 2)
 					{
-						doUndock(*dock);
-						dock->status = Status::Float;
+						doUndock(dock);
+						dock.status = Status::Float;
 					}
 					return;
 				}
-				dock->invalid_frames = 0;
+				dock.invalid_frames = 0;
 			}
 		}
 
@@ -387,13 +452,14 @@ namespace ImGui
 				ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
 				ImGuiWindowFlags_NoScrollWithMouse |
 				ImGuiWindowFlags_NoBringToFrontOnFocus;
-			Dock* root = getRootDock();
+			int rootIdx = getRootDock();
 			const ImVec2& displaySize = GetIO().DisplaySize;
-			if (root)
+			if (INVALID_INDEX != rootIdx)
 			{
-				const ImVec2 percentage(displaySize.x / root->size.x, displaySize.y / root->size.y );
-				const ImVec2 rescaledPos = root->pos * percentage;
-				const ImVec2 rescaledSize = root->size * percentage;
+				const Dock& root = m_docks[rootIdx];
+				const ImVec2 percentage(displaySize.x / root.size.x, displaySize.y / root.size.y );
+				const ImVec2 rescaledPos = root.pos * percentage;
+				const ImVec2 rescaledSize = root.size * percentage;
 				SetNextWindowPos(rescaledPos);
 				SetNextWindowSize(rescaledSize);
 			}
@@ -403,7 +469,7 @@ namespace ImGui
 				SetNextWindowSize(displaySize);
 			}
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-			Begin("###DockPanel", NULL, flags);
+			Begin("###DockPanel", nullptr, flags);
 			splits();
 
 			checkNonexistent();
@@ -416,20 +482,22 @@ namespace ImGui
 		}
 
 		// Doesn't use input??
-		Dock* getDockAt(const ImVec2& /*pos*/) const
+		Dock* getDockAt(const ImVec2& /*pos*/)
 		{
 			for (int i = 0; i < m_docks.size(); ++i)
 			{
-				Dock& dock = *m_docks[i];
-				if (dock.isContainer()) continue;
-				if (dock.status != Status::Docked) continue;
+				Dock& dock = m_docks[i];
+				if (dockIsContainer(dock.self))
+					continue;
+				if (dock.status != Status::Docked)
+					continue;
 				if (IsMouseHoveringRect(dock.pos, dock.pos + dock.size, false))
 				{
 					return &dock;
 				}
 			}
 
-			return NULL;
+			return nullptr;
 		}
 
 		static ImRect getDockedRect(const ImRect& rect, Slot dock_slot)
@@ -437,11 +505,11 @@ namespace ImGui
 			ImVec2 half_size = rect.GetSize() * 0.5f;
 			switch (dock_slot)
 			{
-				default: return rect;
 				case Slot::Top: return ImRect(rect.Min, rect.Min + ImVec2(rect.Max.x, half_size.y));
 				case Slot::Right: return ImRect(rect.Min + ImVec2(half_size.x, 0), rect.Max);
 				case Slot::Bottom: return ImRect(rect.Min + ImVec2(0, half_size.y), rect.Max);
 				case Slot::Left: return ImRect(rect.Min, rect.Min + ImVec2(half_size.x, rect.Max.y));
+				default: return rect;
 			}
 		}
 
@@ -451,11 +519,11 @@ namespace ImGui
 			ImVec2 center = parent_rect.Min + size * 0.5f;
 			switch (dock_slot)
 			{
-				default: return ImRect(center - ImVec2(20, 20), center + ImVec2(20, 20));
 				case Slot::Top: return ImRect(center + ImVec2(-20, -50), center + ImVec2(20, -30));
 				case Slot::Right: return ImRect(center + ImVec2(30, -20), center + ImVec2(50, 20));
 				case Slot::Bottom: return ImRect(center + ImVec2(-20, +30), center + ImVec2(20, 50));
 				case Slot::Left: return ImRect(center + ImVec2(-50, -20), center + ImVec2(-30, 20));
+				default: return ImRect(center - ImVec2(20, 20), center + ImVec2(20, 20));
 			}
 		}
 
@@ -483,17 +551,17 @@ namespace ImGui
 			return ImRect();
 		}
 
-		Dock* getRootDock()
+		int getRootDock()
 		{
 			for (int i = 0; i < m_docks.size(); ++i)
 			{
-				if (!m_docks[i]->parent &&
-						(m_docks[i]->status == Status::Docked || m_docks[i]->children[0]))
+				if (INVALID_INDEX == m_docks[i].parent &&
+						(m_docks[i].status == Status::Docked || INVALID_INDEX != m_docks[i].children[0]))
 				{
-					return m_docks[i];
+					return i;
 				}
 			}
-			return NULL;
+			return INVALID_INDEX;
 		}
 
 		bool dockSlots(Dock& dock, Dock* dest_dock, const ImRect& rect, bool on_border)
@@ -504,16 +572,16 @@ namespace ImGui
 			ImVec2 mouse_pos = GetIO().MousePos;
 			for (int i = 0; i < (on_border ? 4 : 5); ++i)
 			{
-				ImRect r =
-					on_border ? getSlotRectOnBorder(rect, (Slot)i) : getSlotRect(rect, (Slot)i);
+				ImRect r = on_border ? getSlotRectOnBorder(rect, (Slot)i) : getSlotRect(rect, (Slot)i);
 				bool hovered = r.Contains(mouse_pos);
 
 				canvas->AddRectFilled(r.Min, r.Max, hovered ? color_hovered : color);
-				if (!hovered) continue;
+				if (!hovered)
+					continue;
 
 				if (!IsMouseDown(0))
 				{
-					doDock(dock, dest_dock ? dest_dock : getRootDock(), (Slot)i);
+					doDock(dock.self, dest_dock ? dest_dock->self : getRootDock(), (Slot)i);
 					return true;
 				}
 				ImRect docked_rect = getDockedRect(rect, (Slot)i);
@@ -527,7 +595,7 @@ namespace ImGui
 			Dock* dest_dock = getDockAt(GetIO().MousePos);
 
 			Begin("##Overlay",
-					NULL,
+					nullptr,
 					ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove |
 					ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings |
 					ImGuiWindowFlags_AlwaysAutoResize);
@@ -538,19 +606,16 @@ namespace ImGui
 			ImU32 docked_color = GetColorU32(ImGuiCol_FrameBg);
 			docked_color = (docked_color & 0x00ffFFFF) | 0x80000000;
 			dock.pos = GetIO().MousePos - m_drag_offset;
-			if (dest_dock)
+			if (nullptr != dest_dock)
 			{
-				if (dockSlots(dock,
-							dest_dock,
-							ImRect(dest_dock->pos, dest_dock->pos + dest_dock->size),
-							false))
+				if (dockSlots(dock, dest_dock, ImRect(dest_dock->pos, dest_dock->pos + dest_dock->size), false))
 				{
 					canvas->PopClipRect();
 					End();
 					return;
 				}
 			}
-			if (dockSlots(dock, NULL, ImRect(ImVec2(0, 0), GetIO().DisplaySize), true))
+			if (dockSlots(dock, nullptr, ImRect(ImVec2(0, 0), GetIO().DisplaySize), true))
 			{
 				canvas->PopClipRect();
 				End();
@@ -563,7 +628,7 @@ namespace ImGui
 			{
 				dock.status = Status::Float;
 				dock.location[0] = 0;
-				dock.setActive();
+				dockSetActive(dock.self);
 			}
 
 			End();
@@ -574,10 +639,10 @@ namespace ImGui
 			if (dock.status == Status::Float) return;
 			char* c = dock.location;
 			Dock* tmp = &dock;
-			while (tmp->parent)
+			while (INVALID_INDEX != tmp->parent)
 			{
 				*c = getLocationCode(tmp);
-				tmp = tmp->parent;
+				tmp = &m_docks[tmp->parent];
 				++c;
 			}
 			*c = 0;
@@ -585,67 +650,92 @@ namespace ImGui
 
 		void doUndock(Dock& dock)
 		{
-			if (dock.prev_tab)
-				dock.prev_tab->setActive();
-			else if (dock.next_tab)
-				dock.next_tab->setActive();
+			if (INVALID_INDEX != dock.prev_tab)
+				dockSetActive(dock.prev_tab);
+			else if (INVALID_INDEX != dock.next_tab)
+				dockSetActive(dock.next_tab);
 			else
 				dock.active = false;
-			Dock* container = dock.parent;
 
-			if (container)
+			if (INVALID_INDEX != dock.parent)
 			{
-				Dock& sibling = dock.getSibling();
-				if (container->children[0] == &dock)
+				Dock& container = m_docks[dock.parent];
+				Dock& sibling = m_docks[dockGetSibling(dock.self)];
+				if (container.children[0] == dock.self)
 				{
-					container->children[0] = dock.next_tab;
+					container.children[0] = dock.next_tab;
 				}
-				else if (container->children[1] == &dock)
+				else if (container.children[1] == dock.self)
 				{
-					container->children[1] = dock.next_tab;
+					container.children[1] = dock.next_tab;
 				}
 
-				bool remove_container = !container->children[0] || !container->children[1];
+				bool remove_container = INVALID_INDEX == container.children[0] || INVALID_INDEX == container.children[1];
 				if (remove_container)
 				{
-					if (container->parent)
+					if (INVALID_INDEX != container.parent)
 					{
-						Dock*& child = container->parent->children[0] == container
-							? container->parent->children[0]
-							: container->parent->children[1];
-						child = &sibling;
-						child->setPosSize(container->pos, container->size);
-						child->setParent(container->parent);
+						if (m_docks[container.parent].children[0] == container.self)
+							m_docks[container.parent].children[0] = sibling.self;
+						else if (m_docks[container.parent].children[1] == container.self)
+							m_docks[container.parent].children[1] = sibling.self;
+						else
+							IM_ASSERT(false);
+						Dock& child = sibling;
+						dockSetPosSize(child.self, container.pos, container.size);
+						dockSetParent(child.self, container.parent);
 					}
 					else
 					{
-						if (container->children[0])
+						if (INVALID_INDEX != container.children[0])
 						{
-							container->children[0]->setParent(NULL);
-							container->children[0]->setPosSize(container->pos, container->size);
+							dockSetParent(container.children[0], INVALID_INDEX);
+							dockSetPosSize(container.children[0], container.pos, container.size);
 						}
-						if (container->children[1])
+						if (INVALID_INDEX != container.children[1])
 						{
-							container->children[1]->setParent(NULL);
-							container->children[1]->setPosSize(container->pos, container->size);
+							dockSetParent(container.children[1], INVALID_INDEX);
+							dockSetPosSize(container.children[1], container.pos, container.size);
 						}
 					}
-					for (int i = 0; i < m_docks.size(); ++i)
+
+					int idx = container.self;
+					MemFree(container.label);
+					m_docks.erase_unsorted(m_docks.begin() + idx);
+					if (idx < m_docks.size())
 					{
-						if (m_docks[i] == container)
+						Dock& changedDock = m_docks[idx];
+						int oldIdx = changedDock.self;
+						changedDock.self = idx;
+						if (INVALID_INDEX != changedDock.prev_tab)
+							m_docks[changedDock.prev_tab].next_tab = idx;
+						if (INVALID_INDEX != changedDock.next_tab)
+							m_docks[changedDock.next_tab].prev_tab = idx;
+						if (INVALID_INDEX != changedDock.children[0])
+							m_docks[changedDock.children[0]].parent = idx;
+						if (INVALID_INDEX != changedDock.children[1])
+							m_docks[changedDock.children[1]].parent = idx;
+						if (INVALID_INDEX != changedDock.parent)
 						{
-							m_docks.erase(m_docks.begin() + i);
-							break;
+							if (m_docks[changedDock.parent].children[0] == oldIdx)
+								m_docks[changedDock.parent].children[0] = idx;
+							else if (m_docks[changedDock.parent].children[1] == oldIdx)
+								m_docks[changedDock.parent].children[1] = idx;
+							else
+							{
+								IM_ASSERT(false);
+							}
 						}
 					}
-					container->~Dock();
-					MemFree(container);
+
 				}
 			}
-			if (dock.prev_tab) dock.prev_tab->next_tab = dock.next_tab;
-			if (dock.next_tab) dock.next_tab->prev_tab = dock.prev_tab;
-			dock.parent = NULL;
-			dock.prev_tab = dock.next_tab = NULL;
+			if (INVALID_INDEX != dock.prev_tab)
+				m_docks[dock.prev_tab].next_tab = dock.next_tab;
+			if (INVALID_INDEX != dock.next_tab)
+				m_docks[dock.next_tab].prev_tab = dock.prev_tab;
+			dock.parent = INVALID_INDEX;
+			dock.prev_tab = dock.next_tab = INVALID_INDEX;
 		}
 
 		void drawTabbarListButton(Dock& dock)
@@ -659,15 +749,15 @@ namespace ImGui
 			}
 			if (BeginPopup("tab_list_popup"))
 			{
-				Dock* tmp = &dock;
-				while (tmp)
+				int tmpIdx = dock.self;
+				while (tmpIdx != INVALID_INDEX)
 				{
 					bool dummy = false;
-					if (Selectable(tmp->label, &dummy))
+					if (Selectable(m_docks[tmpIdx].label, &dummy))
 					{
-						tmp->setActive();
+						dockSetActive(tmpIdx);
 					}
-					tmp = tmp->next_tab;
+					tmpIdx = m_docks[tmpIdx].next_tab;
 				}
 				EndPopup();
 			}
@@ -698,7 +788,7 @@ namespace ImGui
 			ImFormatString(tmp, IM_ARRAYSIZE(tmp), "tabs%d", (int)dock.id);
 			if (BeginChild(tmp, size0, true))
 			{
-				Dock* dock_tab = &dock;
+				int dockTabIdx = dock.self;
 
 				ImDrawList* draw_list = GetWindowDrawList();
 				ImU32 color = GetColorU32(ImGuiCol_FrameBg);
@@ -711,22 +801,23 @@ namespace ImGui
 
 				drawTabbarListButton(dock);
 
-				while (dock_tab)
+				while (dockTabIdx != INVALID_INDEX)
 				{
+					Dock& dock_tab = m_docks[dockTabIdx];
 					SameLine(0, 15);
 
-					const char* text_end = FindRenderedTextEnd(dock_tab->label);
-					ImVec2 size1(CalcTextSize(dock_tab->label, text_end).x, line_height);
-					if (InvisibleButton(dock_tab->label, size1))
+					const char* text_end = FindRenderedTextEnd(dock_tab.label);
+					ImVec2 size1(CalcTextSize(dock_tab.label, text_end).x, line_height);
+					if (InvisibleButton(dock_tab.label, size1))
 					{
-						dock_tab->setActive();
+						dockSetActive(dockTabIdx);
 					}
 
 					if (IsItemActive() && IsMouseDragging())
 					{
-						m_drag_offset = GetMousePos() - dock_tab->pos;
-						doUndock(*dock_tab);
-						dock_tab->status = Status::Dragged;
+						m_drag_offset = GetMousePos() - dock_tab.pos;
+						doUndock(dock_tab);
+						dock_tab.status = Status::Dragged;
 					}
 
 					bool hovered = IsItemHovered();
@@ -737,10 +828,10 @@ namespace ImGui
 
 					draw_list->AddRectFilled(pos+ImVec2(-8.0f, 0.0),
 							pos+size1,
-							hovered ? color_hovered : (dock_tab->active ? color_active : color));
-					draw_list->AddText(pos, text_color, dock_tab->label, text_end);
+							hovered ? color_hovered : (dock_tab.active ? color_active : color));
+					draw_list->AddText(pos, text_color, dock_tab.label, text_end);
 
-					if (dock_tab->active && close_button)
+					if (dock_tab.active && close_button)
 					{
 						SameLine();
 						tab_closed = InvisibleButton("close", ImVec2(16, 16));
@@ -749,7 +840,7 @@ namespace ImGui
 						draw_list->AddLine( center + ImVec2(-3.5f, -3.5f), center + ImVec2(3.5f, 3.5f), text_color);
 						draw_list->AddLine( center + ImVec2(3.5f, -3.5f), center + ImVec2(-3.5f, 3.5f), text_color);
 					} else {
-						if(!dock_tab->active && close_button) {
+						if(!dock_tab.active && close_button) {
 							SameLine();
 							InvisibleButton("close", ImVec2(16, 16));
 
@@ -759,7 +850,7 @@ namespace ImGui
 						}
 					}
 
-					dock_tab = dock_tab->next_tab;
+					dockTabIdx = m_docks[dockTabIdx].next_tab;
 				}
 				ImVec2 cp(dock.pos.x, tab_base + line_height);
 				draw_list->AddLine(cp, cp + ImVec2(dock.size.x, 0), color);
@@ -768,9 +859,9 @@ namespace ImGui
 			return tab_closed;
 		}
 
-		static void setDockPosSize(Dock& dest, Dock& dock, Slot dock_slot, Dock& container)
+		void setDockPosSize(Dock& dest, Dock& dock, Slot dock_slot, Dock& container)
 		{
-			IM_ASSERT(!dock.prev_tab && !dock.next_tab && !dock.children[0] && !dock.children[1]);
+			IM_ASSERT(INVALID_INDEX == dock.prev_tab && INVALID_INDEX == dock.next_tab && INVALID_INDEX == dock.children[0] && INVALID_INDEX == dock.children[1]);
 
 			dest.pos = container.pos;
 			dest.size = container.size;
@@ -801,94 +892,103 @@ namespace ImGui
 					break;
 				default: IM_ASSERT(false); break;
 			}
-			dest.setPosSize(dest.pos, dest.size);
+			dockSetPosSize(dest.self, dest.pos, dest.size);
 
-			if (container.children[1]->pos.x < container.children[0]->pos.x ||
-					container.children[1]->pos.y < container.children[0]->pos.y)
+			if (m_docks[container.children[1]].pos.x < m_docks[container.children[0]].pos.x ||
+				m_docks[container.children[1]].pos.y < m_docks[container.children[0]].pos.y)
 			{
-				Dock* tmp = container.children[0];
+				int tmp = container.children[0];
 				container.children[0] = container.children[1];
 				container.children[1] = tmp;
 			}
 		}
 
-		void doDock(Dock& dock, Dock* dest, Slot dock_slot)
+		void doDock(int dockIdx, int destIdx, Slot dock_slot)
 		{
-			IM_ASSERT(!dock.parent);
-			if (!dest)
+			IM_ASSERT(INVALID_INDEX != dockIdx);
+			IM_ASSERT(INVALID_INDEX == m_docks[dockIdx].parent);
+
+			if (INVALID_INDEX == destIdx)
 			{
-				dock.status = Status::Docked;
-				dock.setPosSize(ImVec2(0, 0), GetIO().DisplaySize);
+				m_docks[dockIdx].status = Status::Docked;
+				dockSetPosSize(dockIdx, ImVec2(0, 0), GetIO().DisplaySize);
 			}
 			else if (dock_slot == Slot::Tab)
 			{
-				Dock* tmp = dest;
-				while (tmp->next_tab)
+				Dock& dock = m_docks[dockIdx];
+				Dock* tmp = &m_docks[destIdx];
+				while (INVALID_INDEX != tmp->next_tab)
 				{
-					tmp = tmp->next_tab;
+					tmp = &m_docks[tmp->next_tab];
 				}
 
-				tmp->next_tab = &dock;
-				dock.prev_tab = tmp;
+				tmp->next_tab = dock.self;
+				dock.prev_tab = tmp->self;
 				dock.size = tmp->size;
 				dock.pos = tmp->pos;
-				dock.parent = dest->parent;
+				dock.parent = m_docks[destIdx].parent;
 				dock.status = Status::Docked;
 			}
 			else if (dock_slot == Slot::None)
 			{
-				dock.status = Status::Float;
+				m_docks[dockIdx].status = Status::Float;
 			}
 			else
 			{
-				Dock* container = (Dock*)MemAlloc(sizeof(Dock));
-				IM_PLACEMENT_NEW(container) Dock();
-				m_docks.push_back(container);
-				container->children[0] = &dest->getFirstTab();
-				container->children[1] = &dock;
-				container->next_tab = NULL;
-				container->prev_tab = NULL;
-				container->parent = dest->parent;
-				container->size = dest->size;
-				container->pos = dest->pos;
-				container->status = Status::Docked;
-				container->label = ImStrdup("");
+				m_docks.push_back(Dock());
+				Dock& container = m_docks.back();
+				Dock& dest = m_docks[destIdx];
 
-				if (!dest->parent)
+				container.self = m_docks.size() - 1;
+				container.children[0] = dockGetFirstTab(destIdx);
+				container.children[1] = dockIdx;
+				container.next_tab = INVALID_INDEX;
+				container.prev_tab = INVALID_INDEX;
+				container.parent = dest.parent;
+				container.size = dest.size;
+				container.pos = dest.pos;
+				container.status = Status::Docked;
+				container.label = ImStrdup("");
+
+				if (INVALID_INDEX == dest.parent)
 				{
 				}
-				else if (&dest->getFirstTab() == dest->parent->children[0])
+				else if (dockGetFirstTab(dest.self) == m_docks[dest.parent].children[0])
 				{
-					dest->parent->children[0] = container;
+					m_docks[dest.parent].children[0] = container.self;
 				}
 				else
 				{
-					dest->parent->children[1] = container;
+					m_docks[dest.parent].children[1] = container.self;
 				}
 
-				dest->setParent(container);
-				dock.parent = container;
-				dock.status = Status::Docked;
+				dockSetParent(dest.self, container.self);
+				m_docks[dockIdx].parent = container.self;
+				m_docks[dockIdx].status = Status::Docked;
 
-				setDockPosSize(*dest, dock, dock_slot, *container);
+				setDockPosSize(dest, m_docks[dockIdx], dock_slot, container);
 			}
-			dock.setActive();
+			dockSetActive(dockIdx);
 		}
 
 		void rootDock(const ImVec2& pos, const ImVec2& size)
 		{
-			Dock* root = getRootDock();
-			if (!root) return;
+			int rootIdx = getRootDock();
+			if (INVALID_INDEX == rootIdx)
+				return;
 
-			ImVec2 min_size = root->getMinSize();
+			const Dock& root = m_docks[rootIdx];
+
+			ImVec2 min_size = dockGetMinSize(root.self);
 			ImVec2 requested_size = size;
-			root->setPosSize(pos, ImMax(min_size, requested_size));
+			dockSetPosSize(root.self, pos, ImMax(min_size, requested_size));
 		}
 
 		void setDockActive()
 		{
-			IM_ASSERT(m_current);
-			if (m_current) m_current->setActive();
+			IM_ASSERT(INVALID_INDEX != m_current);
+			if (INVALID_INDEX != m_current)
+				dockSetActive(m_current);
 		}
 
 		static Slot getSlotFromLocationCode(char code)
@@ -902,116 +1002,134 @@ namespace ImGui
 			}
 		}
 
-		static char getLocationCode(Dock* dock)
+		char getLocationCode(Dock* dock)
 		{
-			if (!dock) return '0';
+			if (nullptr == dock)
+				return '0';
 
-			if (dock->parent->isHorizontal())
+			if (dockIsHorizontal(dock->parent))
 			{
-				if (dock->pos.x < dock->parent->children[0]->pos.x) return '1';
-				if (dock->pos.x < dock->parent->children[1]->pos.x) return '1';
+				if (dock->pos.x < m_docks[m_docks[dock->parent].children[0]].pos.x)
+					return '1';
+				if (dock->pos.x < m_docks[m_docks[dock->parent].children[1]].pos.x)
+					return '1';
 				return '0';
 			}
 			else
 			{
-				if (dock->pos.y < dock->parent->children[0]->pos.y) return '2';
-				if (dock->pos.y < dock->parent->children[1]->pos.y) return '2';
+				if (dock->pos.y < m_docks[m_docks[dock->parent].children[0]].pos.y)
+					return '2';
+				if (dock->pos.y < m_docks[m_docks[dock->parent].children[1]].pos.y)
+					return '2';
 				return '3';
 			}
 		}
 
 		void tryDockToStoredLocation(Dock& dock)
 		{
-			if (dock.status == Status::Docked) return;
-			if (dock.location[0] == 0) return;
+			if (dock.status == Status::Docked)
+				return;
+			if (dock.location[0] == 0)
+				return;
 
-			Dock* tmp = getRootDock();
-			if (!tmp) return;
+			int tmpIdx = getRootDock();
+			if (INVALID_INDEX != tmpIdx)
+				return;
 
-			Dock* prev = NULL;
+			int prevIdx = INVALID_INDEX;
 			char* c = dock.location + strlen(dock.location) - 1;
-			while (c >= dock.location && tmp)
+			while (c >= dock.location)
 			{
-				prev = tmp;
-				tmp = *c == getLocationCode(tmp->children[0]) ? tmp->children[0] : tmp->children[1];
-				if(tmp) --c;
+				Dock& dock = m_docks[tmpIdx];
+				prevIdx = tmpIdx;
+				tmpIdx = (*c == getLocationCode(&m_docks[dock.children[0]])) ? dock.children[0] : dock.children[1];
+				if(INVALID_INDEX != tmpIdx) --c;
 			}
-			if (tmp && tmp->children[0]) tmp = tmp->parent;
-			doDock(dock, tmp ? tmp : prev, tmp && !tmp->children[0] ? Slot::Tab : getSlotFromLocationCode(*c));
+			if (tmpIdx != tmpIdx && INVALID_INDEX != m_docks[tmpIdx].children[0])
+				tmpIdx = m_docks[tmpIdx].parent;
+			doDock(dock.self, INVALID_INDEX != tmpIdx ? tmpIdx : prevIdx, INVALID_INDEX != tmpIdx && INVALID_INDEX != m_docks[tmpIdx].children[0] ? Slot::Tab : getSlotFromLocationCode(*c));
 		}
 
 		bool begin(const char* label, bool* opened, ImGuiWindowFlags extra_flags)
 		{
-			Dock& dock = getDock(label, !opened || *opened);
-			if (!dock.opened && (!opened || *opened)) tryDockToStoredLocation(dock);
-			dock.last_frame = ImGui::GetFrameCount();
-			if (strcmp(dock.label, label) != 0)
+			Dock* dock = &getDock(label, nullptr == opened || *opened);
+			int dockIdx = dock->self;
+			if (!dock->opened && (nullptr == opened || *opened))
+				tryDockToStoredLocation(*dock);
+			dock->last_frame = ImGui::GetFrameCount();
+			if (strcmp(dock->label, label) != 0)
 			{
-				MemFree(dock.label);
-				dock.label = ImStrdup(label);
+				MemFree(dock->label);
+				dock->label = ImStrdup(label);
 			}
 
 			m_end_action = EndAction::None;
 
-			if (dock.first && opened) *opened = dock.opened;
-			dock.first = false;
-			if (opened && !*opened)
+			if (dock->first && nullptr != opened)
+				*opened = dock->opened;
+			dock->first = false;
+			if (nullptr != opened && !*opened)
 			{
-				if (dock.status != Status::Float)
+				if (dock->status != Status::Float)
 				{
-					fillLocation(dock);
-					doUndock(dock);
-					dock.status = Status::Float;
+					fillLocation(*dock);
+					doUndock(*dock);
+					dock = &m_docks[dockIdx];///////////////////////////////////////////
+					dock->status = Status::Float;
 				}
-				dock.opened = false;
+				dock->opened = false;
 				return false;
 			}
-			dock.opened = true;
+			dock->opened = true;
 
 			m_end_action = EndAction::Panel;
 			beginPanel();
 
-			m_current = &dock;
-			if (dock.status == Status::Dragged) handleDrag(dock);
+			m_current = dock->self;
+			if (dock->status == Status::Dragged)
+				handleDrag(*dock);
 
-			bool is_float = dock.status == Status::Float;
+			dock = &m_docks[dockIdx];///////////////////////////////////////////
+
+			bool is_float = (dock->status == Status::Float);
 
 			if (is_float)
 			{
-				SetNextWindowPos(dock.pos);
-				SetNextWindowSize(dock.size);
+				SetNextWindowPos(dock->pos);
+				SetNextWindowSize(dock->size);
 				bool ret = Begin(label,
 						opened,
 						ImGuiWindowFlags_NoCollapse | extra_flags);
 				m_end_action = EndAction::End;
-				dock.pos = GetWindowPos();
-				dock.size = GetWindowSize();
+				dock->pos = GetWindowPos();
+				dock->size = GetWindowSize();
 
 				ImGuiContext& g = *GImGui;
 
 				if (g.ActiveId == GetCurrentWindow()->MoveId && g.IO.MouseDown[0])
 				{
-					m_drag_offset = GetMousePos() - dock.pos;
-					doUndock(dock);
-					dock.status = Status::Dragged;
+					m_drag_offset = GetMousePos() - dock->pos;
+					doUndock(*dock);
+					dock = &m_docks[dockIdx];///////////////////////////////////////////
+					dock->status = Status::Dragged;
 				}
 				return ret;
 			}
 
-			if (!dock.active && dock.status != Status::Dragged) return false;
+			if (!dock->active && dock->status != Status::Dragged) return false;
 
 			m_end_action = EndAction::EndChild;
 
 			PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
 			PushStyleColor(ImGuiCol_BorderShadow, ImVec4(0, 0, 0, 0));
 			float tabbar_height = GetTextLineHeightWithSpacing();
-			if (tabbar(dock.getFirstTab(), opened != NULL))
+			if (tabbar(m_docks[dockGetFirstTab(dock->self)], nullptr != opened))
 			{
-				fillLocation(dock);
+				fillLocation(*dock);
 				*opened = false;
 			}
-			ImVec2 pos = dock.pos;
-			ImVec2 size = dock.size;
+			ImVec2 pos = dock->pos;
+			ImVec2 size = dock->size;
 			pos.y += tabbar_height + GetStyle().WindowPadding.y;
 			size.y -= tabbar_height + GetStyle().WindowPadding.y;
 
@@ -1043,42 +1161,39 @@ namespace ImGui
 				PopStyleColor();
 				PopStyleColor();
 			}
-			m_current = NULL;
-			if (m_end_action > EndAction::None) endPanel();
+			m_current = INVALID_INDEX;
+			if (m_end_action > EndAction::None)
+				endPanel();
 		}
 
 		int getDockIndex(Dock* dock)
 		{
-			if (!dock) return -1;
+			if (nullptr == dock)
+				return -1;
 
-			for (int i = 0; i < m_docks.size(); ++i)
-			{
-				if (dock == m_docks[i]) return i;
-			}
-
-			IM_ASSERT(false);
-			return -1;
+			return dock->self;
 		}
 
 		Dock* getDockByIndex(int idx)
 		{
-			return idx < 0 ? NULL : m_docks[(int)idx];
+			return (idx < 0 && idx >= m_docks.size()) ? nullptr : &m_docks[idx];
 		}
 	};
 
-	static DockContext* s_dock = NULL;
 
-	IMGUI_API void InitDockContext()
+	static DockContext* s_dock = nullptr;
+
+	IMGUI_API void CreateDockContext()
 	{
-		void* ptr = ImGui::MemAlloc(sizeof(DockContext) );
-		s_dock = new(NewPlaceholder(), ptr) DockContext;
+		void* ptr = ImGui::MemAlloc(sizeof(DockContext));
+		s_dock = new(NewPlaceholder(), ptr) DockContext();
 	}
 
-	IMGUI_API void ShutdownDockContext()
+	IMGUI_API void DestroyDockContext()
 	{
 		s_dock->~DockContext();
 		ImGui::MemFree(s_dock);
-		s_dock = NULL;
+		s_dock = nullptr;
 	}
 
 	IMGUI_API void RootDock(const ImVec2& pos, const ImVec2& size)

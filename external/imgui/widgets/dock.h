@@ -1,10 +1,10 @@
 namespace ImGui
 {
 	///
-	IMGUI_API void InitDockContext();
+	IMGUI_API void CreateDockContext();
 
 	///
-	IMGUI_API void ShutdownDockContext();
+	IMGUI_API void DestroyDockContext();
 
 	///
 	IMGUI_API void RootDock(const ImVec2& pos, const ImVec2& size);

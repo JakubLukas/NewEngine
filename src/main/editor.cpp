@@ -633,12 +633,12 @@ public:
 			, bgfx::copy(fontTextureData, fontTextureWidth * fontTextureHeight * 4)
 		);
 
-		ImGui::InitDockContext();
+		ImGui::CreateDockContext();
 	}
 
 	void DeinitImgui()
 	{
-		ImGui::ShutdownDockContext();
+		ImGui::DestroyDockContext();
 		ImGui::DestroyContext(m_imgui);
 		bgfx::destroy(s_tex);
 		bgfx::destroy(m_texture);
@@ -669,6 +669,19 @@ public:
 		m_app.SetWindowSize(m_subHwnd, { (i32)0, (i32)0 });
 
 		ImGui::EndDock();//Engine
+
+		//for (int i = 0; i < 20; i++)
+		{
+			//ImGui::PushID(i * 10);
+			ImGui::BeginDock("Dummy");
+			//ImGui::Text("Dummy window %i", i);
+			ImGui::EndDock();
+			//ImGui::PopID();
+		}
+
+		ImGui::BeginDock("Dummy2");
+		//ImGui::Text("Dummy window %i", i);
+		ImGui::EndDock();
 
 		m_worldsWidget.Render();
 
