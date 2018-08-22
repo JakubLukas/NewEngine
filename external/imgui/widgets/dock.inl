@@ -176,11 +176,8 @@ namespace ImGui
 
 		int dockGetFirstTab(int dockIdx)
 		{
-			IM_ASSERT(INVALID_INDEX != dockIdx);
-			const Dock& dock = m_docks[dockIdx];
-
 			int idx = dockIdx;
-			while (INVALID_INDEX != dock.prev_tab)
+			while (INVALID_INDEX != m_docks[idx].prev_tab)
 				idx = m_docks[idx].prev_tab;
 
 			return idx;
@@ -286,15 +283,16 @@ namespace ImGui
 
 
 
-		typedef ImVector<Dock> DockVector;
-		DockVector m_docks;
+		ImVector<Dock> m_docks;
 		ImVec2 m_drag_offset;
 		int m_current;
+		int m_to_remove;
 		int m_last_frame;
 		EndAction m_end_action;
 
 		DockContext()
 			: m_current(INVALID_INDEX)
+			, m_to_remove(INVALID_INDEX)
 			, m_last_frame(0)
 		{
 		}
@@ -699,35 +697,8 @@ namespace ImGui
 						}
 					}
 
-					int idx = container.self;
-					MemFree(container.label);
-					m_docks.erase_unsorted(m_docks.begin() + idx);
-					if (idx < m_docks.size())
-					{
-						Dock& changedDock = m_docks[idx];
-						int oldIdx = changedDock.self;
-						changedDock.self = idx;
-						if (INVALID_INDEX != changedDock.prev_tab)
-							m_docks[changedDock.prev_tab].next_tab = idx;
-						if (INVALID_INDEX != changedDock.next_tab)
-							m_docks[changedDock.next_tab].prev_tab = idx;
-						if (INVALID_INDEX != changedDock.children[0])
-							m_docks[changedDock.children[0]].parent = idx;
-						if (INVALID_INDEX != changedDock.children[1])
-							m_docks[changedDock.children[1]].parent = idx;
-						if (INVALID_INDEX != changedDock.parent)
-						{
-							if (m_docks[changedDock.parent].children[0] == oldIdx)
-								m_docks[changedDock.parent].children[0] = idx;
-							else if (m_docks[changedDock.parent].children[1] == oldIdx)
-								m_docks[changedDock.parent].children[1] = idx;
-							else
-							{
-								IM_ASSERT(false);
-							}
-						}
-					}
-
+					IM_ASSERT(INVALID_INDEX == m_to_remove);
+					m_to_remove = container.self;
 				}
 			}
 			if (INVALID_INDEX != dock.prev_tab)
@@ -984,6 +955,56 @@ namespace ImGui
 			dockSetPosSize(root.self, pos, ImMax(min_size, requested_size));
 		}
 
+		void handleRemoveDock()
+		{
+			if(INVALID_INDEX != m_to_remove)
+			{
+				MemFree(m_docks[m_to_remove].label);
+
+				m_docks.erase_unsorted(m_docks.begin() + m_to_remove);
+				if(m_to_remove < m_docks.size())
+				{
+					Dock& changedDock = m_docks[m_to_remove];
+					int oldIdx = changedDock.self;
+					changedDock.self = m_to_remove;
+					if(INVALID_INDEX != changedDock.prev_tab)
+						m_docks[changedDock.prev_tab].next_tab = m_to_remove;
+					if(INVALID_INDEX != changedDock.next_tab)
+						m_docks[changedDock.next_tab].prev_tab = m_to_remove;
+
+					{
+						int tmpIdx = changedDock.children[0];
+						while(INVALID_INDEX != tmpIdx)
+						{
+							m_docks[tmpIdx].parent = m_to_remove;
+							tmpIdx = m_docks[tmpIdx].next_tab;
+						}
+					}
+
+					{
+						int tmpIdx = changedDock.children[1];
+						while(INVALID_INDEX != tmpIdx)
+						{
+							m_docks[tmpIdx].parent = m_to_remove;
+							tmpIdx = m_docks[tmpIdx].next_tab;
+						}
+					}
+					if(INVALID_INDEX != changedDock.parent)
+					{
+						if(m_docks[changedDock.parent].children[0] == oldIdx)
+							m_docks[changedDock.parent].children[0] = m_to_remove;
+						else if(m_docks[changedDock.parent].children[1] == oldIdx)
+							m_docks[changedDock.parent].children[1] = m_to_remove;
+						else
+						{
+							IM_ASSERT(false);
+						}
+					}
+				}
+				m_to_remove = INVALID_INDEX;
+			}
+		}
+
 		void setDockActive()
 		{
 			IM_ASSERT(INVALID_INDEX != m_current);
@@ -1052,84 +1073,81 @@ namespace ImGui
 
 		bool begin(const char* label, bool* opened, ImGuiWindowFlags extra_flags)
 		{
-			Dock* dock = &getDock(label, nullptr == opened || *opened);
-			int dockIdx = dock->self;
-			if (!dock->opened && (nullptr == opened || *opened))
-				tryDockToStoredLocation(*dock);
-			dock->last_frame = ImGui::GetFrameCount();
-			if (strcmp(dock->label, label) != 0)
+			Dock& dock = getDock(label, nullptr == opened || *opened);
+			int dockIdx = dock.self;
+			if (!dock.opened && (nullptr == opened || *opened))
+				tryDockToStoredLocation(dock);
+			dock.last_frame = ImGui::GetFrameCount();
+			if (strcmp(dock.label, label) != 0)
 			{
-				MemFree(dock->label);
-				dock->label = ImStrdup(label);
+				MemFree(dock.label);
+				dock.label = ImStrdup(label);
 			}
 
 			m_end_action = EndAction::None;
 
-			if (dock->first && nullptr != opened)
-				*opened = dock->opened;
-			dock->first = false;
+			if (dock.first && nullptr != opened)
+				*opened = dock.opened;
+			dock.first = false;
 			if (nullptr != opened && !*opened)
 			{
-				if (dock->status != Status::Float)
+				if (dock.status != Status::Float)
 				{
-					fillLocation(*dock);
-					doUndock(*dock);
-					dock = &m_docks[dockIdx];///////////////////////////////////////////
-					dock->status = Status::Float;
+					fillLocation(dock);
+					doUndock(dock);
+					dock.status = Status::Float;
 				}
-				dock->opened = false;
+				dock.opened = false;
 				return false;
 			}
-			dock->opened = true;
+			dock.opened = true;
 
 			m_end_action = EndAction::Panel;
 			beginPanel();
 
-			m_current = dock->self;
-			if (dock->status == Status::Dragged)
-				handleDrag(*dock);
+			m_current = dock.self;
+			if (dock.status == Status::Dragged)
+				handleDrag(dock);
 
-			dock = &m_docks[dockIdx];///////////////////////////////////////////
-
-			bool is_float = (dock->status == Status::Float);
+			dock = m_docks[dockIdx];
+			bool is_float = (dock.status == Status::Float);
 
 			if (is_float)
 			{
-				SetNextWindowPos(dock->pos);
-				SetNextWindowSize(dock->size);
+				SetNextWindowPos(dock.pos);
+				SetNextWindowSize(dock.size);
 				bool ret = Begin(label,
 						opened,
 						ImGuiWindowFlags_NoCollapse | extra_flags);
 				m_end_action = EndAction::End;
-				dock->pos = GetWindowPos();
-				dock->size = GetWindowSize();
+				dock.pos = GetWindowPos();
+				dock.size = GetWindowSize();
 
 				ImGuiContext& g = *GImGui;
 
 				if (g.ActiveId == GetCurrentWindow()->MoveId && g.IO.MouseDown[0])
 				{
-					m_drag_offset = GetMousePos() - dock->pos;
-					doUndock(*dock);
-					dock = &m_docks[dockIdx];///////////////////////////////////////////
-					dock->status = Status::Dragged;
+					m_drag_offset = GetMousePos() - dock.pos;
+					doUndock(dock);
+					dock.status = Status::Dragged;
 				}
 				return ret;
 			}
 
-			if (!dock->active && dock->status != Status::Dragged) return false;
+			if (!dock.active && dock.status != Status::Dragged) return false;
 
 			m_end_action = EndAction::EndChild;
 
 			PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
 			PushStyleColor(ImGuiCol_BorderShadow, ImVec4(0, 0, 0, 0));
 			float tabbar_height = GetTextLineHeightWithSpacing();
-			if (tabbar(m_docks[dockGetFirstTab(dock->self)], nullptr != opened))
+			if (tabbar(m_docks[dockGetFirstTab(dock.self)], nullptr != opened))
 			{
-				fillLocation(*dock);
+				fillLocation(dock);
 				*opened = false;
 			}
-			ImVec2 pos = dock->pos;
-			ImVec2 size = dock->size;
+			ImVec2 pos = dock.pos;
+			ImVec2 size = dock.size;
 			pos.y += tabbar_height + GetStyle().WindowPadding.y;
 			size.y -= tabbar_height + GetStyle().WindowPadding.y;
 
@@ -1164,6 +1182,7 @@ namespace ImGui
 			m_current = INVALID_INDEX;
 			if (m_end_action > EndAction::None)
 				endPanel();
+			handleRemoveDock();
 		}
 
 		int getDockIndex(Dock* dock)
