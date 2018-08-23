@@ -16,6 +16,12 @@ namespace ImGui
 	IMGUI_API void EndDock();
 
 	///
+	IMGUI_API void DockNewFrame();
+
+	///
+	IMGUI_API void DockRender();
+
+	///
 	IMGUI_API void SetDockActive();
 
 } // namespace ImGui

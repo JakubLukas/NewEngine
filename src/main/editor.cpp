@@ -615,8 +615,6 @@ public:
 
 		s_tex = bgfx::createUniform("s_tex", bgfx::UniformType::Int1);
 
-		//ImGui::InitDockContext();
-
 		io.Fonts->AddFontDefault();
 		unsigned char* fontTextureData = nullptr;
 		int fontTextureWidth;
@@ -647,6 +645,7 @@ public:
 	void UpdateImgui()
 	{
 		ImGui::NewFrame();
+		ImGui::DockNewFrame();
 
 		ImGui::RootDock(ImVec2(0, 0), ImGui::GetIO().DisplaySize);
 
@@ -674,13 +673,12 @@ public:
 		{
 			//ImGui::PushID(i * 10);
 			ImGui::BeginDock("Dummy");
-			//ImGui::Text("Dummy window %i", i);
+			ImGui::Text("Dummy window %i", 1);
 			ImGui::EndDock();
-			//ImGui::PopID();
 		}
 
 		ImGui::BeginDock("Dummy2");
-		//ImGui::Text("Dummy window %i", i);
+		ImGui::Text("Dummy window %i", 2);
 		ImGui::EndDock();
 
 		m_worldsWidget.Render();
@@ -691,6 +689,7 @@ public:
 
 		m_entitiesWidget.Render();
 
+		ImGui::DockRender();
 		ImGui::Render();
 	}
 
