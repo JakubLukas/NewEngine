@@ -79,7 +79,7 @@ struct DockContext
 	struct Dock
 	{
 		ImU32   id = 0;
-		char*   label = nullptr;
+		char*   label = NULL;
 		int     next_tab = INVALID_INDEX;
 		int     prev_tab = INVALID_INDEX;
 		int     parent = INVALID_INDEX;
@@ -310,7 +310,7 @@ struct DockContext
 	}
 
 
-	void putInBackground()
+	/*void putInBackground()
 	{
 		ImGuiWindow* win = GetCurrentWindow();
 		ImGuiContext& g = *GImGui;
@@ -329,27 +329,20 @@ struct DockContext
 				break;
 			}
 		}
-	}
-
+	}*/
 
 	void splits()
 	{
-		//if (GetFrameCount() == m_last_frame)
-			//return;
+		if (GetFrameCount() == m_last_frame)
+			return;
 
-		//m_last_frame = GetFrameCount();
+		m_last_frame = GetFrameCount();
 
-		//putInBackground();
-
-		const ImVec2& displaySize = GetIO().DisplaySize;
-		SetNextWindowPos(ImVec2(0, 0));
-		SetNextWindowSize(displaySize);
-		
 		ImU32 color = GetColorU32(ImGuiCol_Button);
 		ImU32 color_hovered = GetColorU32(ImGuiCol_ButtonHovered);
 		ImDrawList* draw_list = GetWindowDrawList();
 		ImGuiIO& io = GetIO();
-		/*for (int i = 0; i < m_docks.size(); ++i)
+		for (int i = 0; i < m_docks.size(); ++i)
 		{
 			Dock& dock = m_docks[i];
 			if (!dockIsContainer(i))
@@ -392,15 +385,15 @@ struct DockContext
 				dock.status = Status_Dragged;
 			}
 
-			//draw_list->AddRectFilled(GetItemRectMin(), GetItemRectMax(), IsItemHovered() ? color_hovered : color);
+			draw_list->AddRectFilled(GetItemRectMin(), GetItemRectMax(), IsItemHovered() ? color_hovered : color);
 			PopID();
-		}*/
+		}
 	}
 
 	void checkNonexistent()
 	{
 		int frame_limit = ImMax(0, ImGui::GetFrameCount() - 2);
-		for(int i = 0; i < m_docks.size(); ++i)
+		for (int i = 0; i < m_docks.size(); ++i)
 		{
 			Dock& dock = m_docks[i];
 			if (dockIsContainer(dock.self))
@@ -433,7 +426,7 @@ struct DockContext
 		if (INVALID_INDEX != rootIdx)
 		{
 			const Dock& root = m_docks[rootIdx];
-			const ImVec2 percentage(displaySize.x / root.size.x, displaySize.y / root.size.y );
+			const ImVec2 percentage(displaySize.x / root.size.x, displaySize.y / root.size.y);
 			const ImVec2 rescaledPos = root.pos * percentage;
 			const ImVec2 rescaledSize = root.size * percentage;
 			SetNextWindowPos(rescaledPos);
@@ -445,8 +438,8 @@ struct DockContext
 			SetNextWindowSize(displaySize);
 		}
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-		Begin("###DockPanel", nullptr, flags);
-		//splits();
+		Begin("###DockPanel", NULL, flags);
+		splits();
 
 		checkNonexistent();
 	}
@@ -473,7 +466,7 @@ struct DockContext
 			}
 		}
 
-		return nullptr;
+		return NULL;
 	}
 
 	static ImRect getDockedRect(const ImRect& rect, Slot_ dock_slot)
@@ -481,11 +474,11 @@ struct DockContext
 		ImVec2 half_size = rect.GetSize() * 0.5f;
 		switch (dock_slot)
 		{
-			case Slot_Top: return ImRect(rect.Min, rect.Min + ImVec2(rect.Max.x, half_size.y));
-			case Slot_Right: return ImRect(rect.Min + ImVec2(half_size.x, 0), rect.Max);
-			case Slot_Bottom: return ImRect(rect.Min + ImVec2(0, half_size.y), rect.Max);
-			case Slot_Left: return ImRect(rect.Min, rect.Min + ImVec2(half_size.x, rect.Max.y));
-			default: return rect;
+		case Slot_Top: return ImRect(rect.Min, rect.Min + ImVec2(rect.Max.x, half_size.y));
+		case Slot_Right: return ImRect(rect.Min + ImVec2(half_size.x, 0), rect.Max);
+		case Slot_Bottom: return ImRect(rect.Min + ImVec2(0, half_size.y), rect.Max);
+		case Slot_Left: return ImRect(rect.Min, rect.Min + ImVec2(half_size.x, rect.Max.y));
+		default: return rect;
 		}
 	}
 
@@ -495,11 +488,11 @@ struct DockContext
 		ImVec2 center = parent_rect.Min + size * 0.5f;
 		switch (dock_slot)
 		{
-			case Slot_Top: return ImRect(center + ImVec2(-20, -50), center + ImVec2(20, -30));
-			case Slot_Right: return ImRect(center + ImVec2(30, -20), center + ImVec2(50, 20));
-			case Slot_Bottom: return ImRect(center + ImVec2(-20, +30), center + ImVec2(20, 50));
-			case Slot_Left: return ImRect(center + ImVec2(-50, -20), center + ImVec2(-30, 20));
-			default: return ImRect(center - ImVec2(20, 20), center + ImVec2(20, 20));
+		case Slot_Top: return ImRect(center + ImVec2(-20, -50), center + ImVec2(20, -30));
+		case Slot_Right: return ImRect(center + ImVec2(30, -20), center + ImVec2(50, 20));
+		case Slot_Bottom: return ImRect(center + ImVec2(-20, +30), center + ImVec2(20, 50));
+		case Slot_Left: return ImRect(center + ImVec2(-50, -20), center + ImVec2(-30, 20));
+		default: return ImRect(center - ImVec2(20, 20), center + ImVec2(20, 20));
 		}
 	}
 
@@ -509,19 +502,19 @@ struct DockContext
 		ImVec2 center = parent_rect.Min + size * 0.5f;
 		switch (dock_slot)
 		{
-			case Slot_Top:
-				return ImRect(ImVec2(center.x - 20, parent_rect.Min.y + 10),
-						ImVec2(center.x + 20, parent_rect.Min.y + 30));
-			case Slot_Left:
-				return ImRect(ImVec2(parent_rect.Min.x + 10, center.y - 20),
-						ImVec2(parent_rect.Min.x + 30, center.y + 20));
-			case Slot_Bottom:
-				return ImRect(ImVec2(center.x - 20, parent_rect.Max.y - 30),
-						ImVec2(center.x + 20, parent_rect.Max.y - 10));
-			case Slot_Right:
-				return ImRect(ImVec2(parent_rect.Max.x - 30, center.y - 20),
-						ImVec2(parent_rect.Max.x - 10, center.y + 20));
-			default: IM_ASSERT(false);
+		case Slot_Top:
+			return ImRect(ImVec2(center.x - 20, parent_rect.Min.y + 10),
+				ImVec2(center.x + 20, parent_rect.Min.y + 30));
+		case Slot_Left:
+			return ImRect(ImVec2(parent_rect.Min.x + 10, center.y - 20),
+				ImVec2(parent_rect.Min.x + 30, center.y + 20));
+		case Slot_Bottom:
+			return ImRect(ImVec2(center.x - 20, parent_rect.Max.y - 30),
+				ImVec2(center.x + 20, parent_rect.Max.y - 10));
+		case Slot_Right:
+			return ImRect(ImVec2(parent_rect.Max.x - 30, center.y - 20),
+				ImVec2(parent_rect.Max.x - 10, center.y + 20));
+		default: IM_ASSERT(false);
 		}
 		IM_ASSERT(false);
 		return ImRect();
@@ -532,7 +525,7 @@ struct DockContext
 		for (int i = 0; i < m_docks.size(); ++i)
 		{
 			if (INVALID_INDEX == m_docks[i].parent &&
-					(m_docks[i].status == Status_Docked || INVALID_INDEX != m_docks[i].children[0]))
+				(m_docks[i].status == Status_Docked || INVALID_INDEX != m_docks[i].children[0]))
 			{
 				return i;
 			}
@@ -571,10 +564,10 @@ struct DockContext
 		Dock* dest_dock = getDockAt(GetIO().MousePos);
 
 		Begin("##Overlay",
-				nullptr,
-				ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove |
-				ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings |
-				ImGuiWindowFlags_AlwaysAutoResize);
+			NULL,
+			ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove |
+			ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings |
+			ImGuiWindowFlags_AlwaysAutoResize);
 		ImDrawList* canvas = GetWindowDrawList();
 
 		canvas->PushClipRectFullScreen();
@@ -582,7 +575,7 @@ struct DockContext
 		ImU32 docked_color = GetColorU32(ImGuiCol_FrameBg);
 		docked_color = (docked_color & 0x00ffFFFF) | 0x80000000;
 		dock.pos = GetIO().MousePos - m_drag_offset;
-		if (nullptr != dest_dock)
+		if (NULL != dest_dock)
 		{
 			if (dockSlots(dock, dest_dock, ImRect(dest_dock->pos, dest_dock->pos + dest_dock->size), false))
 			{
@@ -591,7 +584,7 @@ struct DockContext
 				return;
 			}
 		}
-		if (dockSlots(dock, nullptr, ImRect(ImVec2(0, 0), GetIO().DisplaySize), true))
+		if (dockSlots(dock, NULL, ImRect(ImVec2(0, 0), GetIO().DisplaySize), true))
 		{
 			canvas->PopClipRect();
 			End();
@@ -718,12 +711,12 @@ struct DockContext
 		ImU32 text_color = GetColorU32(ImGuiCol_Text);
 		ImU32 color_active = GetColorU32(ImGuiCol_FrameBgActive);
 		draw_list->AddRectFilled(ImVec2(center.x - 4, min.y + 3),
-				ImVec2(center.x + 4, min.y + 5),
-				hovered ? color_active : text_color);
+			ImVec2(center.x + 4, min.y + 5),
+			hovered ? color_active : text_color);
 		draw_list->AddTriangleFilled(ImVec2(center.x - 4, min.y + 7),
-				ImVec2(center.x + 4, min.y + 7),
-				ImVec2(center.x, min.y + 12),
-				hovered ? color_active : text_color);
+			ImVec2(center.x + 4, min.y + 7),
+			ImVec2(center.x, min.y + 12),
+			hovered ? color_active : text_color);
 	}
 
 	bool tabbar(Dock& dock, bool close_button)
@@ -775,9 +768,9 @@ struct DockContext
 
 				tab_base = pos.y;
 
-				draw_list->AddRectFilled(pos+ImVec2(-8.0f, 0.0),
-						pos+size1,
-						hovered ? color_hovered : (dock_tab.active ? color_active : color));
+				draw_list->AddRectFilled(pos + ImVec2(-8.0f, 0.0),
+					pos + size1,
+					hovered ? color_hovered : (dock_tab.active ? color_active : color));
 				draw_list->AddText(pos, text_color, dock_tab.label, text_end);
 
 				if (dock_tab.active && close_button)
@@ -786,16 +779,17 @@ struct DockContext
 					tab_closed = InvisibleButton("close", ImVec2(16, 16));
 
 					ImVec2 center = ((GetItemRectMin() + GetItemRectMax()) * 0.5f);
-					draw_list->AddLine( center + ImVec2(-3.5f, -3.5f), center + ImVec2(3.5f, 3.5f), text_color);
-					draw_list->AddLine( center + ImVec2(3.5f, -3.5f), center + ImVec2(-3.5f, 3.5f), text_color);
-				} else {
-					if(!dock_tab.active && close_button) {
+					draw_list->AddLine(center + ImVec2(-3.5f, -3.5f), center + ImVec2(3.5f, 3.5f), text_color);
+					draw_list->AddLine(center + ImVec2(3.5f, -3.5f), center + ImVec2(-3.5f, 3.5f), text_color);
+				}
+				else {
+					if (!dock_tab.active && close_button) {
 						SameLine();
 						InvisibleButton("close", ImVec2(16, 16));
 
 						ImVec2 center = ((GetItemRectMin() + GetItemRectMax()) * 0.5f);
-						draw_list->AddLine( center + ImVec2(-3.5f, -3.5f), center + ImVec2(3.5f, 3.5f), text_color_disabled);
-						draw_list->AddLine( center + ImVec2(3.5f, -3.5f), center + ImVec2(-3.5f, 3.5f), text_color_disabled);
+						draw_list->AddLine(center + ImVec2(-3.5f, -3.5f), center + ImVec2(3.5f, 3.5f), text_color_disabled);
+						draw_list->AddLine(center + ImVec2(3.5f, -3.5f), center + ImVec2(-3.5f, 3.5f), text_color_disabled);
 					}
 				}
 
@@ -819,27 +813,27 @@ struct DockContext
 
 		switch (dock_slot)
 		{
-			case Slot_Bottom:
-				dest.size.y *= 0.5f;
-				dock.size.y *= 0.5f;
-				dock.pos.y += dest.size.y;
-				break;
-			case Slot_Right:
-				dest.size.x *= 0.5f;
-				dock.size.x *= 0.5f;
-				dock.pos.x += dest.size.x;
-				break;
-			case Slot_Left:
-				dest.size.x *= 0.5f;
-				dock.size.x *= 0.5f;
-				dest.pos.x += dock.size.x;
-				break;
-			case Slot_Top:
-				dest.size.y *= 0.5f;
-				dock.size.y *= 0.5f;
-				dest.pos.y += dock.size.y;
-				break;
-			default: IM_ASSERT(false); break;
+		case Slot_Bottom:
+			dest.size.y *= 0.5f;
+			dock.size.y *= 0.5f;
+			dock.pos.y += dest.size.y;
+			break;
+		case Slot_Right:
+			dest.size.x *= 0.5f;
+			dock.size.x *= 0.5f;
+			dock.pos.x += dest.size.x;
+			break;
+		case Slot_Left:
+			dest.size.x *= 0.5f;
+			dock.size.x *= 0.5f;
+			dest.pos.x += dock.size.x;
+			break;
+		case Slot_Top:
+			dest.size.y *= 0.5f;
+			dock.size.y *= 0.5f;
+			dest.pos.y += dock.size.y;
+			break;
+		default: IM_ASSERT(false); break;
 		}
 		dockSetPosSize(dest.self, dest.pos, dest.size);
 
@@ -875,7 +869,7 @@ struct DockContext
 			dock.prev_tab = tmp->self;
 			dock.size = tmp->size;
 			dock.pos = tmp->pos;
-			dock.parent = m_docks[destIdx].parent;
+			dock.parent = tmp->parent;
 			dock.status = Status_Docked;
 		}
 		else if (dock_slot == Slot_None)
@@ -935,24 +929,24 @@ struct DockContext
 
 	void handleRemoveDock()
 	{
-		if(INVALID_INDEX != m_to_remove)
+		if (INVALID_INDEX != m_to_remove)
 		{
 			MemFree(m_docks[m_to_remove].label);
 
 			m_docks.erase_unsorted(m_docks.begin() + m_to_remove);
-			if(m_to_remove < m_docks.size())
+			if (m_to_remove < m_docks.size())
 			{
 				Dock& changedDock = m_docks[m_to_remove];
 				int oldIdx = changedDock.self;
 				changedDock.self = m_to_remove;
-				if(INVALID_INDEX != changedDock.prev_tab)
+				if (INVALID_INDEX != changedDock.prev_tab)
 					m_docks[changedDock.prev_tab].next_tab = m_to_remove;
-				if(INVALID_INDEX != changedDock.next_tab)
+				if (INVALID_INDEX != changedDock.next_tab)
 					m_docks[changedDock.next_tab].prev_tab = m_to_remove;
 
 				{
 					int tmpIdx = changedDock.children[0];
-					while(INVALID_INDEX != tmpIdx)
+					while (INVALID_INDEX != tmpIdx)
 					{
 						m_docks[tmpIdx].parent = m_to_remove;
 						tmpIdx = m_docks[tmpIdx].next_tab;
@@ -961,17 +955,17 @@ struct DockContext
 
 				{
 					int tmpIdx = changedDock.children[1];
-					while(INVALID_INDEX != tmpIdx)
+					while (INVALID_INDEX != tmpIdx)
 					{
 						m_docks[tmpIdx].parent = m_to_remove;
 						tmpIdx = m_docks[tmpIdx].next_tab;
 					}
 				}
-				if(INVALID_INDEX != changedDock.parent)
+				if (INVALID_INDEX != changedDock.parent)
 				{
-					if(m_docks[changedDock.parent].children[0] == oldIdx)
+					if (m_docks[changedDock.parent].children[0] == oldIdx)
 						m_docks[changedDock.parent].children[0] = m_to_remove;
-					else if(m_docks[changedDock.parent].children[1] == oldIdx)
+					else if (m_docks[changedDock.parent].children[1] == oldIdx)
 						m_docks[changedDock.parent].children[1] = m_to_remove;
 					else
 					{
@@ -994,16 +988,16 @@ struct DockContext
 	{
 		switch (code)
 		{
-			case '1': return Slot_Left;
-			case '2': return Slot_Top;
-			case '3': return Slot_Bottom;
-			default: return Slot_Right;
+		case '1': return Slot_Left;
+		case '2': return Slot_Top;
+		case '3': return Slot_Bottom;
+		default: return Slot_Right;
 		}
 	}
 
 	char getLocationCode(Dock* dock)
 	{
-		if (nullptr == dock)
+		if (NULL == dock)
 			return '0';
 
 		if (dockIsHorizontal(dock->parent))
@@ -1042,7 +1036,7 @@ struct DockContext
 			Dock& dock = m_docks[tmpIdx];
 			prevIdx = tmpIdx;
 			tmpIdx = (*c == getLocationCode(&m_docks[dock.children[0]])) ? dock.children[0] : dock.children[1];
-			if(INVALID_INDEX != tmpIdx) --c;
+			if (INVALID_INDEX != tmpIdx) --c;
 		}
 		if (tmpIdx != tmpIdx && INVALID_INDEX != m_docks[tmpIdx].children[0])
 			tmpIdx = m_docks[tmpIdx].parent;
@@ -1051,9 +1045,9 @@ struct DockContext
 
 	bool begin(const char* label, bool* opened, ImGuiWindowFlags extra_flags)
 	{
-		Dock& dock = getDock(label, nullptr == opened || *opened);
+		Dock& dock = getDock(label, NULL == opened || *opened);
 		int dockIdx = dock.self;
-		if (!dock.opened && (nullptr == opened || *opened))
+		if (!dock.opened && (NULL == opened || *opened))
 			tryDockToStoredLocation(dock);
 		dock.last_frame = ImGui::GetFrameCount();
 		if (strcmp(dock.label, label) != 0)
@@ -1064,10 +1058,10 @@ struct DockContext
 
 		m_end_action = EndAction_None;
 
-		if (dock.first && nullptr != opened)
+		if (dock.first && NULL != opened)
 			*opened = dock.opened;
 		dock.first = false;
-		if (nullptr != opened && !*opened)
+		if (NULL != opened && !*opened)
 		{
 			if (dock.status != Status_Float)
 			{
@@ -1095,8 +1089,8 @@ struct DockContext
 			SetNextWindowPos(dock.pos);
 			SetNextWindowSize(dock.size);
 			bool ret = Begin(label,
-					opened,
-					ImGuiWindowFlags_NoCollapse | extra_flags);
+				opened,
+				ImGuiWindowFlags_NoCollapse | extra_flags);
 			m_end_action = EndAction_End;
 			dock.pos = GetWindowPos();
 			dock.size = GetWindowSize();
@@ -1119,7 +1113,7 @@ struct DockContext
 		PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
 		PushStyleColor(ImGuiCol_BorderShadow, ImVec4(0, 0, 0, 0));
 		float tabbar_height = GetTextLineHeightWithSpacing();
-		if (tabbar(m_docks[dockGetFirstTab(dock.self)], nullptr != opened))
+		if (tabbar(m_docks[dockGetFirstTab(dock.self)], NULL != opened))
 		{
 			fillLocation(dock);
 			*opened = false;
@@ -1165,7 +1159,7 @@ struct DockContext
 
 	int getDockIndex(Dock* dock)
 	{
-		if (nullptr == dock)
+		if (NULL == dock)
 			return -1;
 
 		return dock->self;
@@ -1173,17 +1167,12 @@ struct DockContext
 
 	Dock* getDockByIndex(int idx)
 	{
-		return (idx < 0 && idx >= m_docks.size()) ? nullptr : &m_docks[idx];
-	}
-
-	void render()
-	{
-		//splits();
+		return (idx < 0 && idx >= m_docks.size()) ? NULL : &m_docks[idx];
 	}
 };
 
 
-static DockContext* s_dock = nullptr;
+static DockContext* s_dock = NULL;
 
 IMGUI_API void CreateDockContext()
 {
@@ -1195,7 +1184,7 @@ IMGUI_API void DestroyDockContext()
 {
 	s_dock->~DockContext();
 	ImGui::MemFree(s_dock);
-	s_dock = nullptr;
+	s_dock = NULL;
 }
 
 IMGUI_API void RootDock(const ImVec2& pos, const ImVec2& size)
@@ -1211,23 +1200,6 @@ IMGUI_API bool BeginDock(const char* label, bool* opened, ImGuiWindowFlags extra
 IMGUI_API void EndDock()
 {
 	s_dock->end();
-}
-
-IMGUI_API void DockNewFrame()
-{
-	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
-		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
-		ImGuiWindowFlags_NoScrollWithMouse |
-		ImGuiWindowFlags_NoBringToFrontOnFocus;
-	Begin("###SplitsPanel", nullptr, flags);
-	s_dock->splits();
-	End();
-}
-
-IMGUI_API void DockRender()
-{
-	s_dock->render();
 }
 
 IMGUI_API void SetDockActive()

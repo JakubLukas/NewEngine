@@ -319,6 +319,8 @@ public:
 
 		m_engine->Update(deltaTime);
 
+		Render engine to frame buffer and than use it's texture as image in imgui
+
 		m_inputBuffer.m_scroll = 0;
 
 		bgfx::frame();//flip buffers
@@ -645,40 +647,43 @@ public:
 	void UpdateImgui()
 	{
 		ImGui::NewFrame();
-		ImGui::DockNewFrame();
 
 		ImGui::RootDock(ImVec2(0, 0), ImGui::GetIO().DisplaySize);
 
-		ImGui::BeginDock("Engine");
-
-		ImVec2 windowPosition = ImGui::GetWindowPos();
-		if (windowPosition != m_subWindowPosition)
+		if (ImGui::BeginDock("Engine"))
 		{
-			m_subWindowPosition = windowPosition;
-			windowPosition = windowPosition + ImGui::GetCursorPos();
-			m_app.SetWindowPosition(m_subHwnd, { (i32)(windowPosition.x), (i32)windowPosition.y });
+			ImVec2 windowPosition = ImGui::GetWindowPos();
+			if (windowPosition != m_subWindowPosition)
+			{
+				m_subWindowPosition = windowPosition;
+				windowPosition = windowPosition + ImGui::GetCursorPos();
+				m_app.SetWindowPosition(m_subHwnd, { (i32)(windowPosition.x), (i32)windowPosition.y });
+			}
+
+			ImVec2 windowSize = ImGui::GetContentRegionAvail();
+			if (windowSize != m_subWindowSize)
+			{
+				m_subWindowSize = windowSize;
+				m_app.SetWindowSize(m_subHwnd, { (i32)windowSize.x, (i32)windowSize.y });
+			}
+			//m_app.SetWindowSize(m_subHwnd, { (i32)10, (i32)10 });
 		}
-
-		/*ImVec2 windowSize = ImGui::GetContentRegionAvail();
-		if (windowSize != m_subWindowSize)
-		{
-			m_subWindowSize = windowSize;
-			m_app.SetWindowSize(m_subHwnd, { (i32)windowSize.x, (i32)windowSize.y });
-		}*/
-		m_app.SetWindowSize(m_subHwnd, { (i32)0, (i32)0 });
-
 		ImGui::EndDock();//Engine
 
 		//for (int i = 0; i < 20; i++)
 		{
 			//ImGui::PushID(i * 10);
-			ImGui::BeginDock("Dummy");
-			ImGui::Text("Dummy window %i", 1);
+			if (ImGui::BeginDock("Dummy"))
+			{
+				ImGui::Text("Dummy window %i", 1);
+			}
 			ImGui::EndDock();
 		}
 
-		ImGui::BeginDock("Dummy2");
-		ImGui::Text("Dummy window %i", 2);
+		if (ImGui::BeginDock("Dummy2"))
+		{
+			ImGui::Text("Dummy window %i", 2);
+		}
 		ImGui::EndDock();
 
 		m_worldsWidget.Render();
@@ -689,7 +694,6 @@ public:
 
 		m_entitiesWidget.Render();
 
-		ImGui::DockRender();
 		ImGui::Render();
 	}
 

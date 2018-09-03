@@ -12,8 +12,10 @@ namespace Editor
 
 void WidgetBase::Render()
 {
-	ImGui::BeginDock(GetName());
-	RenderInternal();
+	if (ImGui::BeginDock(GetName()))
+	{
+		RenderInternal();
+	}
 	ImGui::EndDock();
 }
 
