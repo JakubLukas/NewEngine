@@ -19,19 +19,10 @@ typedef void* windowHandle;
 class Engine
 {
 public:
-	struct PlatformData
-	{
-		windowHandle windowHndl;
-	};
-
-public:
 	static Engine* Create(IAllocator& allocator);
 	static void Destroy(Engine* engine, IAllocator& allocator);
 
 public:
-	virtual void SetPlatformData(const PlatformData& data) = 0;
-	virtual const PlatformData& GetPlatformData() const = 0;
-
 	virtual worldId AddWorld() = 0;
 	virtual void RemoveWorld(worldId id) = 0;
 	virtual World* GetWorld(worldId id) = 0;

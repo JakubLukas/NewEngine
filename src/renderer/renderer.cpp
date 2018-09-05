@@ -196,7 +196,7 @@ public:
 
 		bgfx::setViewTransform(VIEW_ID, &view.m11, &proj.m11/*projj*/);
 
-		bgfx::touch(VIEW_ID);//dummy draw call
+		//bgfx::touch(VIEW_ID);//dummy draw call
 
 		World* world = m_engine.GetWorld(worldHandle);
 

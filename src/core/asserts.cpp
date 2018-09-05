@@ -9,7 +9,7 @@ namespace Veng
 
 void MyDebugBreak()
 {
-	__debugbreak();
+	//__debugbreak();
 }
 
 void MyOutputDebugString(const char* text)

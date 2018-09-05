@@ -31,17 +31,6 @@ public:
 	}
 
 
-	void SetPlatformData(const PlatformData& data) override
-	{
-		m_platformData = data;
-	}
-
-	const PlatformData& GetPlatformData() const override
-	{
-		return m_platformData;
-	}
-
-
 	worldId AddWorld() override
 	{
 		World& world = m_worlds.EmplaceBack(m_allocator, (worldId)m_worlds.GetSize());
@@ -139,7 +128,6 @@ public:
 	}
 
 private:
-	PlatformData m_platformData;
 	IAllocator& m_allocator;
 	FileSystem* m_fileSystem;
 	InputSystem* m_inputSystem;
