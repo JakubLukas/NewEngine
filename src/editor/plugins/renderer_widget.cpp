@@ -50,16 +50,26 @@ void RendererWidget::RenderInternal()
 	if (windowSize != m_size)
 	{
 		m_size = windowSize;
-
-		bgfx::destroy(m_fbh);
-		m_fbh = bgfx::createFrameBuffer(uint16_t(windowSize.x), uint16_t(windowSize.y), bgfx::TextureFormat::Enum::RGB8);
-		bgfx::setViewFrameBuffer(m_viewId, m_fbh);
-		bgfx::setViewRect(m_viewId, 0, 0, uint16_t(windowSize.x), uint16_t(windowSize.y));
-
-		m_renderer->Resize((i32)m_size.x, (i32)m_size.y);
+		OnResize();
+		m_changedSize = true;
+	}
+	else
+	{
+		m_changedSize = false;
 	}
 
 	ImGui::Image((void*)&m_fbh, windowSize);
+}
+
+
+void RendererWidget::OnResize()
+{
+	bgfx::destroy(m_fbh);
+	m_fbh = bgfx::createFrameBuffer(uint16_t(m_size.x), uint16_t(m_size.y), bgfx::TextureFormat::Enum::RGB8);
+	bgfx::setViewFrameBuffer(m_viewId, m_fbh);
+	bgfx::setViewRect(m_viewId, 0, 0, uint16_t(m_size.x), uint16_t(m_size.y));
+
+	m_renderer->Resize((i32)m_size.x, (i32)m_size.y);
 }
 
 

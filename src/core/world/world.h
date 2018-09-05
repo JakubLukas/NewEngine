@@ -12,6 +12,7 @@ namespace Veng
 
 struct Transform;
 enum class worldId : u32 {};
+static const worldId INVALID_WORLD_ID = (worldId)-1;
 
 
 class World

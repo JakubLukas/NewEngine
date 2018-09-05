@@ -102,6 +102,15 @@ public:
 		return m_cameras.Find(entity, cam);
 	}
 
+	CameraItem* GetCameraComponent(Entity entity, worldId world) override
+	{
+		CameraItem* cam;
+		if(m_cameras.Find(entity, cam))
+			return cam;
+		else
+			return nullptr;
+	}
+
 	size_t GetCamerasCount(worldId world) const override
 	{
 		return m_cameras.GetSize();

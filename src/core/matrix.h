@@ -35,6 +35,8 @@ struct FORCE_ALIGNMENT(16) Matrix44
 	// vector * columns
 	static Vector4 Multiply(const Vector4& vec, const Matrix44& mat);
 
+	void SetOrthogonal(float left, float right, float bottom, float top, float near, float far, float offset, bool homogenDepth);
+
 	void SetPerspective(float fovY, float ratio, float near, float far, bool homogenDepth);
 
 	void SetLookAt(const Vector4& eye, const Vector4& at, const Vector4& up);

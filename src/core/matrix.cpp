@@ -94,6 +94,27 @@ Vector4 Matrix44::Multiply(const Vector4& vec, const Matrix44& mat)
 }
 
 
+void Matrix44::SetOrthogonal(float left, float right, float bottom, float top, float near, float far, float offset, bool homogenDepth)
+{
+	memory::Set(this, 0, sizeof(float) * 16);
+
+	const float aa = 2.0f / (right - left);
+	const float bb = 2.0f / (top - bottom);
+	const float cc = (homogenDepth ? 2.0f : 1.0f) / (far - near);
+	const float dd = (left + right) / (left - right);
+	const float ee = (top + bottom) / (bottom - top);
+	const float ff = homogenDepth ? (near + far) / (near - far) : near / (near - far);
+
+	m11 = aa;
+	m22 = bb;
+	m33 = -cc;
+	m41 = dd + offset;
+	m42 = ee;
+	m43 = ff;
+	m44 = 1.0f;
+}
+
+
 void Matrix44::SetPerspective(float fovY, float ratio, float near, float far, bool homogenDepth)
 {
 	memory::Set(this, 0, sizeof(float) * 16);

@@ -217,6 +217,9 @@ enum ModifierKeyBits : ModifierKeyFlags
 static const float FRAME_ROUNDING = 4.0f;
 static const float WINDOW_BORDER_SIZE = 0.0f;
 
+static const bgfx::ViewId VIEW_ID = 0;
+static const Veng::u32 CLEAR_COLOR = 0x408040ff;
+
 }
 
 
@@ -335,9 +338,21 @@ public:
 		UpdateImguiInput(deltaTime);
 
 		m_engine->Update(deltaTime);
+		UpdateDummyGameplay(deltaTime);
 		
 		UpdateImgui();
 		RenderImgui();
+
+		if(m_rendererWidget.SizeChanged())
+		{
+			RenderScene* renderScene = static_cast<RenderScene*>(m_renderSystem->GetScene());
+			RenderScene::CameraItem* cam = renderScene->GetCameraComponent(m_camera, m_world);
+			ImVec2 newSize = m_rendererWidget.GetSize();
+			cam->camera.screenWidth = newSize.x;
+			cam->camera.screenHeight = newSize.y;
+			cam->camera.aspect = cam->camera.screenWidth / cam->camera.screenHeight;//////////////////////////
+		}
+
 
 		m_inputBuffer.m_scroll = 0;
 
@@ -497,12 +512,12 @@ public:
 
 	void InitDummyGameplay()
 	{
-		worldId worldHandle = m_engine->AddWorld();
-		World* world = m_engine->GetWorld(worldHandle);
+		m_world = m_engine->AddWorld();
+		World* world = m_engine->GetWorld(m_world);
 		RenderScene* renderScene = static_cast<RenderScene*>(m_renderSystem->GetScene());
-		Entity camEnt = world->CreateEntity();
-		Transform& camTrans = world->GetEntityTransform(camEnt);
-		renderScene->AddCameraComponent(camEnt, worldHandle, 60.0_deg, 0.001f, 100.0f);
+		m_camera = world->CreateEntity();
+		Transform& camTrans = world->GetEntityTransform(m_camera);
+		renderScene->AddCameraComponent(m_camera, m_world, 60.0_deg, 0.001f, 100.0f);
 
 		for (unsigned yy = 0; yy < 11; ++yy)
 		{
@@ -510,7 +525,7 @@ public:
 			{
 				Entity entity = world->CreateEntity();
 				Transform& trans = world->GetEntityTransform(entity);
-				renderScene->AddModelComponent(entity, worldHandle, "models/cubes.model");
+				renderScene->AddModelComponent(entity, m_world, "models/cubes.model");
 
 				Quaternion rot = Quaternion::IDENTITY;
 				rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
@@ -522,6 +537,21 @@ public:
 				};
 				trans = Transform(rot, pos);
 			}
+		}
+	}
+
+	void UpdateDummyGameplay(float deltaTime)
+	{
+		Quaternion rot = Quaternion::IDENTITY;
+		rot = rot * Quaternion(Vector3::AXIS_X, SecFromMSec(deltaTime));
+
+		World* world = m_engine->GetWorld(m_world);
+		World::EntityIterator it = world->GetEntities();
+		Entity entity;
+		while(it.GetNext(entity))
+		{
+			Transform& trans = world->GetEntityTransform(entity);
+			trans.rotation = trans.rotation * rot;
 		}
 	}
 
@@ -546,7 +576,6 @@ public:
 		ASSERT(m_engine != nullptr);
 		m_renderSystem = RenderSystem::Create(*m_engine);
 		m_renderSystem->Init();
-		m_renderSystem->Resize(20, 20);/////////////////////////////////////
 		m_engine->AddPlugin(m_renderSystem);
 	}
 
@@ -578,13 +607,12 @@ public:
 
 		ASSERT(bgfx::init(bgfxInit));
 
-		bgfx::setDebug(BGFX_DEBUG_NONE);//TODO
+		bgfx::setDebug(BGFX_DEBUG_NONE);//TODO/////////////////////////////////////////
 	}
 
 	void DeinitRender()
 	{
 		bgfx::shutdown();
-		//m_app.DestroySubWindow(m_subHwnd);
 	}
 
 	// IMGUI
@@ -601,11 +629,13 @@ public:
 		style.FrameRounding = ImGui::FRAME_ROUNDING;
 		style.WindowBorderSize = ImGui::WINDOW_BORDER_SIZE;
 
-		m_imguiBgfxData.viewId = 0;////////////////////////////////////////////////////////////
+		m_imguiBgfxData.viewId = ImGui::VIEW_ID;
 
+		bgfx::setViewName(m_imguiBgfxData.viewId, "ImGui");
+		bgfx::setViewMode(m_imguiBgfxData.viewId, bgfx::ViewMode::Sequential);
 		bgfx::setViewClear(m_imguiBgfxData.viewId
 			, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
-			, 0x408040ff
+			, ImGui::CLEAR_COLOR
 			, 1.0f
 			, 0
 		);
@@ -623,6 +653,7 @@ public:
 			.end();
 
 		m_imguiBgfxData.textureUniform = bgfx::createUniform("s_tex", bgfx::UniformType::Int1);
+		ASSERT(isValid(m_imguiBgfxData.textureUniform));
 
 		io.Fonts->AddFontDefault();
 		unsigned char* fontTextureData = nullptr;
@@ -640,6 +671,7 @@ public:
 			, 0
 			, bgfx::copy(fontTextureData, fontTextureWidth * fontTextureHeight * fontTextureBPP)
 		);
+		ASSERT(isValid(m_imguiBgfxData.textureFont));
 
 		ImGui::CreateDockContext();
 	}
@@ -701,15 +733,16 @@ public:
 	{
 		ImDrawData* drawData = ImGui::GetDrawData();
 
-		bgfx::setViewName(m_imguiBgfxData.viewId, "ImGui");
-		bgfx::setViewMode(m_imguiBgfxData.viewId, bgfx::ViewMode::Sequential);
-
 		const bgfx::Caps* caps = bgfx::getCaps();
 		{
-			float ortho[16];
-			bx::mtxOrtho(ortho, 0.0f, (float)m_windowSize.x, (float)m_windowSize.y, 0.0f, 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
-			bgfx::setViewTransform(m_imguiBgfxData.viewId, nullptr, ortho);
-			bgfx::setViewRect(m_imguiBgfxData.viewId, 0, 0, uint16_t(m_windowSize.x), uint16_t(m_windowSize.y));/////////////////////
+			//float ortho[16];
+			//bx::mtxOrtho(ortho, 0.0f, (float)m_windowSize.x, (float)m_windowSize.y, 0.0f, 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
+			//bgfx::setViewTransform(m_imguiBgfxData.viewId, nullptr, ortho);
+			//bgfx::setViewRect(m_imguiBgfxData.viewId, 0, 0, uint16_t(m_windowSize.x), uint16_t(m_windowSize.y));/////////////////////
+
+			Matrix44 mat;
+			mat.SetOrthogonal(0.0f, (float)m_windowSize.x, (float)m_windowSize.y, 0.0f, 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
+			bgfx::setViewTransform(m_imguiBgfxData.viewId, nullptr, &mat.m11);
 		}
 
 		// Render command lists
@@ -790,6 +823,10 @@ private:
 	App& m_app;
 	Engine* m_engine = nullptr;
 	bool m_inputEnabled = false;
+
+	//gameplay
+	worldId m_world = INVALID_WORLD_ID;
+	Entity m_camera = INVALID_ENTITY;
 
 	//imgui
 	HeapAllocator m_imguiAllocator;
