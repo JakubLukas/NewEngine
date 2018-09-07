@@ -45,7 +45,6 @@ struct AllocatorI
 
 };
 
-	void mtxOrtho(float* _result, float _left, float _right, float _bottom, float _top, float _near, float _far, float _offset, bool _oglNdc);
 }
 
 
@@ -346,13 +345,9 @@ public:
 		if(m_rendererWidget.SizeChanged())
 		{
 			RenderScene* renderScene = static_cast<RenderScene*>(m_renderSystem->GetScene());
-			RenderScene::CameraItem* cam = renderScene->GetCameraComponent(m_camera, m_world);
 			ImVec2 newSize = m_rendererWidget.GetSize();
-			cam->camera.screenWidth = newSize.x;
-			cam->camera.screenHeight = newSize.y;
-			cam->camera.aspect = cam->camera.screenWidth / cam->camera.screenHeight;//////////////////////////
+			renderScene->SetCameraScreenSize(m_camera, newSize.x, newSize.y);
 		}
-
 
 		m_inputBuffer.m_scroll = 0;
 
@@ -787,10 +782,11 @@ public:
 
 					bgfx::TextureHandle th = m_imguiBgfxData.textureFont;
 
-					if (NULL != cmd->TextureId)
+					if (nullptr != cmd->TextureId)
 					{
 						//TODO: image blending
 						//TODO: image lods
+						//TODO: image alpha
 						th = bgfx::getTexture(*(bgfx::FrameBufferHandle*)cmd->TextureId);
 					}
 					else

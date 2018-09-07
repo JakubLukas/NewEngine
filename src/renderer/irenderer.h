@@ -50,7 +50,10 @@ public:
 	virtual void AddCameraComponent(Entity entity, worldId world, float fovY, float near, float far) = 0;
 	virtual void RemoveCameraComponent(Entity entity, worldId world) = 0;
 	virtual bool HasCameraComponent(Entity entity, worldId world) const = 0;
-	virtual CameraItem* GetCameraComponent(Entity entity, worldId world) = 0;
+	virtual const CameraItem* GetCameraComponent(Entity entity, worldId world) const = 0;
+	virtual void SetCameraFovY(Entity entity, float fovY) = 0;
+	virtual void SetCameraNearFar(Entity entity, float near, float far) = 0;
+	virtual void SetCameraScreenSize(Entity entity, float width, float height) = 0;
 	virtual size_t GetCamerasCount(worldId world) const = 0;
 	virtual const CameraItem* GetCameras(worldId world) const = 0;
 	virtual const CameraItem* GetDefaultCamera(worldId world) = 0;

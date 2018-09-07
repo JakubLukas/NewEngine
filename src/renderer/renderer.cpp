@@ -102,13 +102,41 @@ public:
 		return m_cameras.Find(entity, cam);
 	}
 
-	CameraItem* GetCameraComponent(Entity entity, worldId world) override
+	const CameraItem* GetCameraComponent(Entity entity, worldId world) const override
 	{
 		CameraItem* cam;
 		if(m_cameras.Find(entity, cam))
 			return cam;
 		else
 			return nullptr;
+	}
+
+	void SetCameraFovY(Entity entity, float fovY) override
+	{
+		CameraItem* cam;
+		if (m_cameras.Find(entity, cam))
+			cam->camera.fov = fovY;
+	}
+
+	void SetCameraNearFar(Entity entity, float near, float far) override
+	{
+		CameraItem* cam;
+		if (m_cameras.Find(entity, cam))
+		{
+			cam->camera.nearPlane = near;
+			cam->camera.farPlane = far;
+		}
+	}
+
+	void SetCameraScreenSize(Entity entity, float width, float height) override
+	{
+		CameraItem* cam;
+		if (m_cameras.Find(entity, cam))
+		{
+			cam->camera.screenWidth = width;
+			cam->camera.screenHeight = height;
+			cam->camera.aspect = width / height;
+		}
 	}
 
 	size_t GetCamerasCount(worldId world) const override
