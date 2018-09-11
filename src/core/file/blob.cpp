@@ -258,11 +258,12 @@ const char* InputBlob::GetData() const
 //
 
 
-static void* Reallocate(IAllocator& allocator, void* ptr, size_t& size)
+static void Reallocate(IAllocator& allocator, void*& ptr, size_t& size)
 {
 	if (size == 0)
 	{
-		return allocator.Allocate(1024, ALIGN_OF(char));
+		ptr = allocator.Allocate(1024, ALIGN_OF(char));
+		return;
 	}
 
 	size_t newSize = size * 2;
@@ -270,7 +271,7 @@ static void* Reallocate(IAllocator& allocator, void* ptr, size_t& size)
 	memory::Move(newPtr, ptr, size);
 	size = newSize;
 	allocator.Deallocate(ptr);
-	return newPtr;
+	ptr = newPtr;
 }
 
 
@@ -278,6 +279,7 @@ static void* Reallocate(IAllocator& allocator, void* ptr, size_t& size)
 
 OutputBlob::OutputBlob(IAllocator& allocator)
 	: m_allocator(allocator)
+	, m_data(nullptr)
 	, m_size(0)
 	, m_position(0)
 {
@@ -306,8 +308,7 @@ void OutputBlob::WriteString(const char* data)
 	}
 	if (m_position == m_size)
 		Reallocate(m_allocator, m_data, m_size);
-	m_data[m_position] = '\0';
-	m_position++;
+	m_data[m_position++] = '\0';
 }
 
 
@@ -323,29 +324,43 @@ void OutputBlob::WriteLine(const char* data)
 	}
 	if (m_position == m_size)
 		Reallocate(m_allocator, m_data, m_size);
-	m_data[m_position] = '\n';
-	m_position++;
+	m_data[m_position++] = '\n';
 }
 
 
 void OutputBlob::Write(int value)
 {
-	if (m_position + sizeof(int) > m_size)
-		Reallocate(m_allocator, m_data, m_size);
+	if(value < 0)
+	{
+		if(m_position == m_size)
+			Reallocate(m_allocator, m_data, m_size);
+		m_data[m_position++] = '-';
+		value *= -1;
+	}
 
-	memory::Copy(m_data + m_position, &value, sizeof(int));
-	m_position += sizeof(int);
-	wrong wrong wrong, intToStr is needed, for binary there will be some other class
+	int digits = 0;
+	while(value > 0)
+	{
+		if(m_position + digits == m_size)
+			Reallocate(m_allocator, m_data, m_size);
+		m_data[m_position + digits] = '0' + value % 10;
+		digits++;
+	}
+	for(int i = 0; i < digits / 2; ++i)
+	{
+		m_data[m_position + i] = m_data[m_position + digits - i];
+	}
+	m_position += digits;
 }
 
 void OutputBlob::Write(float value)
 {
-
+	ASSERT2(false, "Not implemented yet");
 }
 
 void OutputBlob::WriteHex(u32 value)
 {
-
+	ASSERT2(false, "Not implemented yet");
 }
 
 
@@ -358,12 +373,6 @@ const char* OutputBlob::GetData() const
 {
 	return m_data;
 }
-
-//private:
-	//IAllocator& m_allocator;
-	//const char* m_data;
-	//size_t m_size;
-	//size_t m_position;
 
 
 }
