@@ -1,6 +1,7 @@
 #include "blob.h"
 
 #include "core/memory.h"
+#include "core/allocators.h"
 
 
 namespace Veng
@@ -118,6 +119,8 @@ size_t StrToFloat(const char* str, float& num)
 }
 
 
+
+// INPUT BLOB
 
 InputBlob::InputBlob(const void* data, size_t size)
 	: m_data(static_cast<const char*>(data))
@@ -249,6 +252,118 @@ const char* InputBlob::GetData() const
 {
 	return m_data;
 }
+
+
+
+//
+
+
+static void* Reallocate(IAllocator& allocator, void* ptr, size_t& size)
+{
+	if (size == 0)
+	{
+		return allocator.Allocate(1024, ALIGN_OF(char));
+	}
+
+	size_t newSize = size * 2;
+	void* newPtr = allocator.Allocate(newSize, ALIGN_OF(char));
+	memory::Move(newPtr, ptr, size);
+	size = newSize;
+	allocator.Deallocate(ptr);
+	return newPtr;
+}
+
+
+// OUTPUT BLOB
+
+OutputBlob::OutputBlob(IAllocator& allocator)
+	: m_allocator(allocator)
+	, m_size(0)
+	, m_position(0)
+{
+
+}
+
+void OutputBlob::Write(const void* data, size_t size)
+{
+	if (m_position + size > m_size)
+		Reallocate(m_allocator, m_data, m_size);
+
+	memory::Copy(m_data + m_position, data, size);
+	m_position += size;
+}
+
+
+void OutputBlob::WriteString(const char* data)
+{
+	while (data[0] != '\0')
+	{
+		if(m_position == m_size)
+			Reallocate(m_allocator, m_data, m_size);
+		m_data[m_position] = data[0];
+		m_position++;
+		data++;
+	}
+	if (m_position == m_size)
+		Reallocate(m_allocator, m_data, m_size);
+	m_data[m_position] = '\0';
+	m_position++;
+}
+
+
+void OutputBlob::WriteLine(const char* data)
+{
+	while (data[0] != '\0')
+	{
+		if (m_position == m_size)
+			Reallocate(m_allocator, m_data, m_size);
+		m_data[m_position] = data[0];
+		m_position++;
+		data++;
+	}
+	if (m_position == m_size)
+		Reallocate(m_allocator, m_data, m_size);
+	m_data[m_position] = '\n';
+	m_position++;
+}
+
+
+void OutputBlob::Write(int value)
+{
+	if (m_position + sizeof(int) > m_size)
+		Reallocate(m_allocator, m_data, m_size);
+
+	memory::Copy(m_data + m_position, &value, sizeof(int));
+	m_position += sizeof(int);
+	wrong wrong wrong, intToStr is needed, for binary there will be some other class
+}
+
+void OutputBlob::Write(float value)
+{
+
+}
+
+void OutputBlob::WriteHex(u32 value)
+{
+
+}
+
+
+size_t OutputBlob::GetSize() const
+{
+	return m_size;
+}
+
+const char* OutputBlob::GetData() const
+{
+	return m_data;
+}
+
+//private:
+	//IAllocator& m_allocator;
+	//const char* m_data;
+	//size_t m_size;
+	//size_t m_position;
 
 
 }

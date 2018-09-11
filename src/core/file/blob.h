@@ -7,6 +7,8 @@
 namespace Veng
 {
 
+class IAllocator;
+
 
 class InputBlob
 {
@@ -28,6 +30,28 @@ public:
 
 private:
 	const char* m_data;
+	size_t m_size;
+	size_t m_position;
+};
+
+
+class OutputBlob
+{
+public:
+	OutputBlob(IAllocator& allocator);
+
+	void Write(const void* data, size_t size);
+	void WriteString(const char* data);
+	void WriteLine(const char* data);
+	void Write(int value);
+	void Write(float value);
+	void WriteHex(u32 value);
+	size_t GetSize() const;
+	const char* GetData() const;
+
+private:
+	IAllocator& m_allocator;
+	char* m_data;
 	size_t m_size;
 	size_t m_position;
 };
