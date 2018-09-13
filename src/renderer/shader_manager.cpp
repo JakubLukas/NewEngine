@@ -172,7 +172,7 @@ void ShaderInternalManager::ReloadResource(Resource* resource)
 }
 
 
-void ShaderInternalManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
+void ShaderInternalManager::ResourceLoaded(resourceHandle handle, InputClob& data)
 {
 	ShaderInternal* shaderInt = static_cast<ShaderInternal*>(ResourceManager::GetResource(handle));
 
@@ -269,7 +269,7 @@ void ShaderManager::ReloadResource(Resource* resource)
 }
 
 
-void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
+void ShaderManager::ResourceLoaded(resourceHandle handle, InputClob& data)
 {
 	Shader* shader = static_cast<Shader*>(ResourceManager::GetResource(handle));
 

@@ -8,122 +8,11 @@ namespace Veng
 {
 
 
-bool IsWhiteSpace(const char& c)
-{
-	return (c == '\t'
-		|| c == '\r'
-		|| c == '\n'
-		|| c == '\0'
-		|| c == ' ');
-}
-
-
-bool IsEndOfLine(const char& c)
-{
-	return (c == '\r'
-		|| c == '\n');
-}
-
-
-size_t StrToInt(const char* str, int& num)
-{
-	ASSERT(str[0] == '+' || str[0] == '-' || (str[0] >= '0' && str[0] <= '9'));
-
-	num = 0;
-	size_t idx = 0;
-
-	int sign = 1;
-	if (str[idx] == '-')
-	{
-		sign = -1;
-		idx++;
-	}
-	else if (str[idx] == '+')
-	{
-		idx++;
-	}
-
-	while (str[idx] >= '0' && str[idx] <= '9')
-	{
-		num = num * 10 + (str[idx] - '0');
-		idx++;
-	}
-	num *= sign;
-
-	return idx;
-}
-
-
-size_t StrToUIntHex(const char* str, u32& num)
-{
-	num = 0;
-	size_t idx = 0;
-	ASSERT(str[idx++] == '0');
-	ASSERT(str[idx++] == 'x');
-
-	while(true)
-	{
-		if(str[idx] >= '0' && str[idx] <= '9')
-			num = num * 16 + (str[idx] - '0');
-		else if(str[idx] >= 'A' && str[idx] <= 'F')
-			num = num * 16 + (str[idx] - 'A' + 10);
-		else if(str[idx] >= 'a' && str[idx] <= 'f')
-			num = num * 16 + (str[idx] - 'a' + 10);
-		else
-			break;
-		idx++;
-	}
-
-	return idx;
-}
-
-
-size_t StrToFloat(const char* str, float& num)
-{
-	ASSERT(str[0] == '+' || str[0] == '-' || (str[0] >= '0' && str[0] <= '9'));
-
-	num = 0;
-	size_t idx = 0;
-
-	int sign = 1;
-	if (str[idx] == '-')
-	{
-		sign = -1;
-		idx++;
-	}
-	else if (str[idx] == '+')
-	{
-		idx++;
-	}
-
-	while (str[idx] >= '0' && str[idx] <= '9')
-	{
-		num = num * 10 + (str[idx] - '0');
-		idx++;
-	}
-
-	if (str[idx] == '.')
-	{
-		idx++;
-		float decPlace = 0.1f;
-		while (str[idx] >= '0' && str[idx] <= '9')
-		{
-			num += (str[idx] - '0') * decPlace;
-			decPlace *= 0.1f;
-			idx++;
-		}
-	}
-	num *= sign;
-
-	return idx;
-}
-
-
 
 // INPUT BLOB
 
 InputBlob::InputBlob(const void* data, size_t size)
-	: m_data(static_cast<const char*>(data))
+	: m_data(static_cast<const unsigned char*>(data))
 	, m_size(size)
 	, m_position(0)
 {
@@ -133,7 +22,6 @@ InputBlob::InputBlob(const void* data, size_t size)
 
 bool InputBlob::Read(void* data, size_t size)
 {
-	SkipWhiteSpaces();
 	if(m_position + size < m_size)
 	{
 		memory::Copy(data, m_data + m_position, m_size);
@@ -149,86 +37,65 @@ bool InputBlob::Read(void* data, size_t size)
 
 bool InputBlob::ReadString(char* data, size_t maxSize)
 {
-	SkipWhiteSpaces();
-	size_t maxRead = (m_position + maxSize < m_size) ? (m_position + maxSize) : m_size;
+	size_t maxRead = (m_position + maxSize - 1 < m_size) ? (m_position + maxSize - 1) : m_size;
 	size_t charsReaded = 0;
-	for(size_t i = m_position; i < maxRead; ++i, ++charsReaded)
+	while (charsReaded < maxRead && m_data[m_position] != '\0')
 	{
-		if (!IsWhiteSpace(m_data[m_position]))
-		{
-			data[charsReaded] = m_data[i];
-			m_position++;
-		}
-		else
-		{
-			return true;
-		}
+		data[charsReaded++] = m_data[m_position++];
 	}
+	m_position++;//skip zero termination char
 
+	data[charsReaded] = '\0';
 	return (charsReaded <= maxSize);
 }
 
 
-bool InputBlob::ReadLine(char* data, size_t maxSize)
+bool InputBlob::Read(i32& value)
 {
-	SkipWhiteSpaces();
-	size_t maxRead = (m_position + maxSize < m_size) ? (m_position + maxSize) : m_size;
-	size_t charsReaded = 0;
-	for (size_t i = m_position; i < maxRead; ++i, ++charsReaded)
+	if (m_position + sizeof(i32) <= m_size)
 	{
-		if (!IsEndOfLine(m_data[m_position]))
-		{
-			data[charsReaded] = m_data[i];
-			m_position++;
-		}
-		else
-		{
-			return true;
-		}
+		memory::Copy(&value, m_data + m_position, sizeof(i32));
+		m_position += sizeof(i32);
+		return true;
 	}
-
-	return (charsReaded <= maxSize);
+	else
+	{
+		return false;
+	}
 }
 
-
-bool InputBlob::Read(int& value)
+bool InputBlob::Read(u32& value)
 {
-	SkipWhiteSpaces();
-	m_position += StrToInt(m_data + m_position, value);
-	return true;
+	if (m_position + sizeof(u32) <= m_size)
+	{
+		memory::Copy(&value, m_data + m_position, sizeof(u32));
+		m_position += sizeof(u32);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 bool InputBlob::Read(float& value)
 {
-	SkipWhiteSpaces();
-	m_position += StrToFloat(m_data + m_position, value);
-	return true;
+	if (m_position + sizeof(float) <= m_size)
+	{
+		memory::Copy(&value, m_data + m_position, sizeof(float));
+		m_position += sizeof(float);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
-
-bool InputBlob::ReadHex(u32& value)
-{
-	SkipWhiteSpaces();
-	m_position += StrToUIntHex(m_data + m_position, value);
-	return true;
-}
-
 
 void InputBlob::Skip(size_t size)
 {
 	ASSERT(m_position + size < m_size);
 	m_position += size;
-}
-
-
-void InputBlob::SkipWhiteSpaces()
-{
-	for (; m_position < m_size; ++m_position)
-	{
-		if (!IsWhiteSpace(m_data[m_position]))
-		{
-			return;
-		}
-	}
 }
 
 
@@ -248,7 +115,7 @@ size_t InputBlob::GetPosition() const
 	return m_position;
 }
 
-const char* InputBlob::GetData() const
+const void* InputBlob::GetData() const
 {
 	return m_data;
 }
@@ -258,16 +125,17 @@ const char* InputBlob::GetData() const
 //
 
 
-static void Reallocate(IAllocator& allocator, void*& ptr, size_t& size)
+static void Reallocate(IAllocator& allocator, unsigned char*& ptr, size_t& size)
 {
 	if (size == 0)
 	{
-		ptr = allocator.Allocate(1024, ALIGN_OF(char));
+		size = 1024;
+		ptr = (unsigned char*)allocator.Allocate(size, ALIGN_OF(unsigned char));
 		return;
 	}
 
 	size_t newSize = size * 2;
-	void* newPtr = allocator.Allocate(newSize, ALIGN_OF(char));
+	unsigned char* newPtr = (unsigned char*)allocator.Allocate(newSize, ALIGN_OF(unsigned char));
 	memory::Move(newPtr, ptr, size);
 	size = newSize;
 	allocator.Deallocate(ptr);
@@ -312,55 +180,31 @@ void OutputBlob::WriteString(const char* data)
 }
 
 
-void OutputBlob::WriteLine(const char* data)
+void OutputBlob::Write(i32 value)
 {
-	while (data[0] != '\0')
-	{
-		if (m_position == m_size)
-			Reallocate(m_allocator, m_data, m_size);
-		m_data[m_position] = data[0];
-		m_position++;
-		data++;
-	}
-	if (m_position == m_size)
+	if (m_position + sizeof(i32) >= m_size)
 		Reallocate(m_allocator, m_data, m_size);
-	m_data[m_position++] = '\n';
+
+	memory::Copy(m_data + m_position, &value, sizeof(i32));
+	m_position += sizeof(i32);
 }
 
-
-void OutputBlob::Write(int value)
+void OutputBlob::Write(u32 value)
 {
-	if(value < 0)
-	{
-		if(m_position == m_size)
-			Reallocate(m_allocator, m_data, m_size);
-		m_data[m_position++] = '-';
-		value *= -1;
-	}
+	if (m_position + sizeof(u32) >= m_size)
+		Reallocate(m_allocator, m_data, m_size);
 
-	int digits = 0;
-	while(value > 0)
-	{
-		if(m_position + digits == m_size)
-			Reallocate(m_allocator, m_data, m_size);
-		m_data[m_position + digits] = '0' + value % 10;
-		digits++;
-	}
-	for(int i = 0; i < digits / 2; ++i)
-	{
-		m_data[m_position + i] = m_data[m_position + digits - i];
-	}
-	m_position += digits;
+	memory::Copy(m_data + m_position, &value, sizeof(u32));
+	m_position += sizeof(u32);
 }
 
 void OutputBlob::Write(float value)
 {
-	ASSERT2(false, "Not implemented yet");
-}
+	if (m_position + sizeof(float) >= m_size)
+		Reallocate(m_allocator, m_data, m_size);
 
-void OutputBlob::WriteHex(u32 value)
-{
-	ASSERT2(false, "Not implemented yet");
+	memory::Copy(m_data + m_position, &value, sizeof(float));
+	m_position += sizeof(float);
 }
 
 
@@ -369,7 +213,7 @@ size_t OutputBlob::GetSize() const
 	return m_size;
 }
 
-const char* OutputBlob::GetData() const
+const void* OutputBlob::GetData() const
 {
 	return m_data;
 }

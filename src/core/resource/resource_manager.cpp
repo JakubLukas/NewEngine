@@ -121,7 +121,7 @@ void ResourceManager::FileSystemCallback(fileHandle handle)
 	ResourceAsyncOp* tmp;
 	if (m_asyncOps.Find(handle, tmp))
 	{
-		InputBlob blob(tmp->buffer, tmp->bufferSize);
+		InputClob blob(static_cast<char*>(tmp->buffer), tmp->bufferSize);
 
 		ResourceLoaded(tmp->handle, blob);
 

@@ -91,7 +91,7 @@ void ModelManager::ReloadResource(Resource* resource)
 }
 
 
-void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
+void ModelManager::ResourceLoaded(resourceHandle handle, InputClob& data)
 {
 	Model* model = static_cast<Model*>(ResourceManager::GetResource(handle));
 
@@ -116,7 +116,7 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 		data.Skip(1);
 		ASSERT(data.Read(vertices[i].m_z));
 		data.Skip(1);
-		ASSERT(data.ReadHex(vertices[i].m_abgr));
+		ASSERT(data.Read(vertices[i].m_abgr));
 	}
 
 	int indicesCount;

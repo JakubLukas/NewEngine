@@ -75,7 +75,7 @@ void MaterialManager::ReloadResource(Resource* resource)
 }
 
 
-void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
+void MaterialManager::ResourceLoaded(resourceHandle handle, InputClob& data)
 {
 	Material* material = static_cast<Material*>(ResourceManager::GetResource(handle));
 
