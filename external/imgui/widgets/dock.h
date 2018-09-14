@@ -1,3 +1,8 @@
+namespace Veng
+{
+class OutputBlob;
+}
+
 namespace ImGui
 {
 	///
@@ -17,5 +22,9 @@ namespace ImGui
 
 	///
 	IMGUI_API void SetDockActive();
+
+	IMGUI_API void Serialize(Veng::OutputBlob& blob);
+
+	IMGUI_API void Deserialize(Veng::InputBlob& blob);
 
 } // namespace ImGui

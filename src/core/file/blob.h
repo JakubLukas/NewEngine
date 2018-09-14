@@ -18,6 +18,7 @@ public:
 	bool ReadString(char* data, size_t maxSize);
 	bool Read(i32& value);
 	bool Read(u32& value);
+	bool Read(size_t& value);
 	bool Read(float& value);
 	void Skip(size_t size);
 	size_t GetSize() const;
@@ -41,6 +42,7 @@ public:
 	void WriteString(const char* data);
 	void Write(i32 value);
 	void Write(u32 value);
+	void Write(size_t value);
 	void Write(float value);
 	size_t GetSize() const;
 	const void* GetData() const;

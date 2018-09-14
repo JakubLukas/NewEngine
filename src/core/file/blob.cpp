@@ -78,6 +78,20 @@ bool InputBlob::Read(u32& value)
 	}
 }
 
+bool InputBlob::Read(size_t& value)
+{
+	if (m_position + sizeof(size_t) <= m_size)
+	{
+		memory::Copy(&value, m_data + m_position, sizeof(size_t));
+		m_position += sizeof(size_t);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 bool InputBlob::Read(float& value)
 {
 	if (m_position + sizeof(float) <= m_size)
@@ -196,6 +210,15 @@ void OutputBlob::Write(u32 value)
 
 	memory::Copy(m_data + m_position, &value, sizeof(u32));
 	m_position += sizeof(u32);
+}
+
+void OutputBlob::Write(size_t value)
+{
+	if (m_position + sizeof(size_t) >= m_size)
+		Reallocate(m_allocator, m_data, m_size);
+
+	memory::Copy(m_data + m_position, &value, sizeof(size_t));
+	m_position += sizeof(size_t);
 }
 
 void OutputBlob::Write(float value)

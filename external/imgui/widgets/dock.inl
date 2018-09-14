@@ -29,6 +29,8 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "../imgui_internal.h"
 
+#include "core/file/blob.h"
+
 namespace ImGui
 {
 
@@ -1169,6 +1171,21 @@ struct DockContext
 	{
 		return (idx < 0 && idx >= m_docks.size()) ? NULL : &m_docks[idx];
 	}
+
+	void serialize(Veng::OutputBlob& blob)
+	{
+		size_t size = m_docks.size();
+		blob.Write(size);
+		blob.Write(m_docks.begin(), size * sizeof(Dock));
+	}
+
+	void deserialize(Veng::InputBlob& blob)
+	{
+		size_t size;
+		blob.Read(size);
+		m_docks.resize(size);
+		blob.Read(m_docks.begin(), size * sizeof(Dock));
+	}
 };
 
 
@@ -1205,6 +1222,16 @@ IMGUI_API void EndDock()
 IMGUI_API void SetDockActive()
 {
 	s_dock->setDockActive();
+}
+
+IMGUI_API void Serialize(Veng::OutputBlob& blob)
+{
+
+}
+
+IMGUI_API void Deserialize(Veng::InputBlob& blob)
+{
+
 }
 
 } // namespace ImGui
