@@ -35,7 +35,7 @@ bool CloseFile(nativeFileHandle fileHandle);
 bool RemoveFile(const Path& path);
 
 bool ReadFile(nativeFileHandle fileHandle, Operation* operation, size_t filePosition, void* buffer, size_t size);
-bool WriteFile(nativeFileHandle fileHandle, Operation* operation, size_t filePosition, void* data, size_t size);
+bool WriteFile(nativeFileHandle fileHandle, Operation* operation, size_t filePosition, const void* data, size_t size);
 
 size_t GetFileSize(nativeFileHandle fileHandle);
 
@@ -49,6 +49,7 @@ bool RemoveDir(const Path& path);
 bool OpenFileSync(nativeFileHandle& fileHandle, const Path& path, const FileMode& mode);
 bool CloseFileSync(nativeFileHandle fileHandle);
 bool ReadFileSync(nativeFileHandle fileHandle, size_t filePosition, void* buffer, size_t size, size_t& bytesRead);
+bool WriteFileSync(nativeFileHandle fileHandle, size_t filePosition, const void* data, size_t size);
 }
 
 

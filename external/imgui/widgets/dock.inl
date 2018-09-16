@@ -1174,17 +1174,28 @@ struct DockContext
 
 	void serialize(Veng::OutputBlob& blob)
 	{
-		size_t size = m_docks.size();
+		int size = m_docks.size();
 		blob.Write(size);
 		blob.Write(m_docks.begin(), size * sizeof(Dock));
+		for(int i = 0; i < size; ++i)
+		{
+			blob.WriteString(m_docks[i].label);
+		}
 	}
 
 	void deserialize(Veng::InputBlob& blob)
 	{
-		size_t size;
+		int size;
 		blob.Read(size);
 		m_docks.resize(size);
 		blob.Read(m_docks.begin(), size * sizeof(Dock));
+		for(int i = 0; i < size; ++i)
+		{
+			static const size_t MAX_LABEL_SIZE = 256;
+			char label[MAX_LABEL_SIZE];
+			IM_ASSERT(blob.ReadString(label, MAX_LABEL_SIZE));
+			m_docks[i].label = ImStrdup(label);
+		}
 	}
 };
 
@@ -1224,14 +1235,14 @@ IMGUI_API void SetDockActive()
 	s_dock->setDockActive();
 }
 
-IMGUI_API void Serialize(Veng::OutputBlob& blob)
+IMGUI_API void SerializeDock(Veng::OutputBlob& blob)
 {
-
+	s_dock->serialize(blob);
 }
 
-IMGUI_API void Deserialize(Veng::InputBlob& blob)
+IMGUI_API void DeserializeDock(Veng::InputBlob& blob)
 {
-
+	s_dock->deserialize(blob);
 }
 
 } // namespace ImGui

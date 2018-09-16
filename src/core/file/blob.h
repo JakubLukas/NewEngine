@@ -27,7 +27,7 @@ public:
 	const void* GetData() const;
 
 private:
-	const unsigned char* m_data;
+	const u8* m_data;
 	size_t m_size;
 	size_t m_position;
 };
@@ -37,6 +37,7 @@ class OutputBlob
 {
 public:
 	OutputBlob(IAllocator& allocator);
+	~OutputBlob();
 
 	void Write(const void* data, size_t size);
 	void WriteString(const char* data);
@@ -49,7 +50,7 @@ public:
 
 private:
 	IAllocator& m_allocator;
-	unsigned char* m_data;
+	u8* m_data;
 	size_t m_size;
 	size_t m_position;
 };

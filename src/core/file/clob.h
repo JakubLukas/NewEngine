@@ -38,6 +38,7 @@ class OutputClob
 {
 public:
 	OutputClob(IAllocator& allocator);
+	~OutputClob();
 
 	void Write(const char* data, size_t size);
 	void WriteString(const char* data);

@@ -6,6 +6,7 @@
 #include "core/engine.h"
 #include "core/logs.h"
 #include "core/asserts.h"
+#include "core/file/blob.h"
 
 
 #include "renderer/irenderer.h"////////////////////////
@@ -16,17 +17,16 @@
 #include "core/time.h"////////////////////////////
 #include "core/matrix.h"////////////////////////////////////
 
-#include <bgfx/bgfx.h>///////////////
+#include <bgfx/bgfx.h>
 #include "../external/imgui/imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "../external/imgui/imgui_internal.h"
 
-#include "editor/plugins/worlds_widget.h"
-#include "editor/plugins/entities_widget.h"
-#include "editor/plugins/renderer_widget.h"
+#include "editor/widgets/worlds_widget.h"
+#include "editor/widgets/entities_widget.h"
+#include "editor/widgets/entity_widget.h"
+#include "editor/widgets/renderer_widget.h"
 
-#include "core/file/blob.h"//////////////////////////////////////////////////////////////////////////////////////////////
-#include "core/file/clob.h"//////////////////////////////////////////////////////////////////////////////////////////////
 
 
 namespace bx
@@ -235,6 +235,7 @@ RenderSystem* m_renderSystem = nullptr;////////////////////////////////
 namespace Editor
 {
 
+static const Path IMGUI_DOCK_DATA_PATH = "imgui_dock_data.bin";
 
 struct Input
 {
@@ -257,7 +258,7 @@ struct ImguiBgfxData
 
 static bgfx::ProgramHandle LoadProgram(const Path& vertexPath, const Path& fragmentPath, IAllocator& allocator)
 {
-	const FileMode fileMode{
+	static const FileMode fileMode{
 		FileMode::Access::Read,
 		FileMode::ShareMode::ShareRead,
 		FileMode::CreationDisposition::OpenExisting,
@@ -270,7 +271,7 @@ static bgfx::ProgramHandle LoadProgram(const Path& vertexPath, const Path& fragm
 	size_t vsFileSize = FS::GetFileSize(vsHandle);
 	u8* vsData = (u8*)allocator.Allocate(vsFileSize, ALIGN_OF(u8));
 	size_t vsFileSizeRead = 0;
-	FS::ReadFileSync(vsHandle, 0, vsData, vsFileSize, vsFileSizeRead);
+	ASSERT(FS::ReadFileSync(vsHandle, 0, vsData, vsFileSize, vsFileSizeRead));
 	ASSERT(vsFileSize == vsFileSizeRead);
 	ASSERT(FS::CloseFileSync(vsHandle));
 
@@ -287,7 +288,7 @@ static bgfx::ProgramHandle LoadProgram(const Path& vertexPath, const Path& fragm
 	size_t fsFileSize = FS::GetFileSize(fsHandle);
 	u8* fsData = (u8*)allocator.Allocate(fsFileSize, ALIGN_OF(u8));
 	size_t fsFileSizeRead = 0;
-	FS::ReadFileSync(fsHandle, 0, fsData, fsFileSize, fsFileSizeRead);
+	ASSERT(FS::ReadFileSync(fsHandle, 0, fsData, fsFileSize, fsFileSizeRead));
 	ASSERT(fsFileSize == fsFileSizeRead);
 	ASSERT(FS::CloseFileSync(fsHandle));
 
@@ -672,10 +673,14 @@ public:
 		ASSERT(isValid(m_imguiBgfxData.textureFont));
 
 		ImGui::CreateDockContext();
+
+		LoadImguiSettings();
 	}
 
 	void DeinitImgui()
 	{
+		SaveImguiSettings();
+
 		ImGui::DestroyDockContext();
 		ImGui::DestroyContext(m_imgui);
 		bgfx::destroy(m_imguiBgfxData.program);
@@ -698,6 +703,8 @@ public:
 			m_entitiesWidget.SetWorld(world);
 
 		m_entitiesWidget.Render();
+
+		m_entityWidget.Render();
 
 		ImGui::Render();
 	}
@@ -816,6 +823,52 @@ public:
 		}
 	}
 
+	void SaveImguiSettings()
+	{
+		static const FileMode fileMode{
+			FileMode::Access::Write,
+			FileMode::ShareMode::ShareWrite,
+			FileMode::CreationDisposition::CreateAlways,
+			FileMode::FlagNone
+		};
+
+		nativeFileHandle fHandle;
+		if(FS::OpenFileSync(fHandle, IMGUI_DOCK_DATA_PATH, fileMode))
+		{
+			OutputBlob blob(m_allocator);
+			ImGui::SerializeDock(blob);
+
+			ASSERT(FS::WriteFileSync(fHandle, 0, blob.GetData(), blob.GetSize()));
+			ASSERT(FS::CloseFileSync(fHandle));
+		}
+	}
+
+	void LoadImguiSettings()
+	{
+		static const FileMode fileMode{
+			FileMode::Access::Read,
+			FileMode::ShareMode::ShareRead,
+			FileMode::CreationDisposition::OpenExisting,
+			FileMode::FlagNone
+		};
+
+		nativeFileHandle fHandle;
+		if(FS::OpenFileSync(fHandle, IMGUI_DOCK_DATA_PATH, fileMode))
+		{
+			size_t fileSize = FS::GetFileSize(fHandle);
+			u8* data = (u8*)m_allocator.Allocate(fileSize, ALIGN_OF(u8));
+			size_t fileSizeRead = 0;
+			ASSERT(FS::ReadFileSync(fHandle, 0, data, fileSize, fileSizeRead));
+			ASSERT(fileSize == fileSizeRead);
+			ASSERT(FS::CloseFileSync(fHandle));
+
+			InputBlob blob(data, fileSize);
+			ImGui::DeserializeDock(blob);
+
+			m_allocator.Deallocate(data);
+		}
+	}
+
 
 private:
 	IAllocator& m_allocator;
@@ -834,6 +887,7 @@ private:
 	//widgets
 	Editor::WorldsWidget m_worldsWidget;
 	Editor::EntitiesWidget m_entitiesWidget;
+	Editor::EntityWidget m_entityWidget;
 	Editor::RendererWidget m_rendererWidget;
 
 	//bgfx for imgui

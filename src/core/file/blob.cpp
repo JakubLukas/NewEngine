@@ -12,7 +12,7 @@ namespace Veng
 // INPUT BLOB
 
 InputBlob::InputBlob(const void* data, size_t size)
-	: m_data(static_cast<const unsigned char*>(data))
+	: m_data(static_cast<const u8*>(data))
 	, m_size(size)
 	, m_position(0)
 {
@@ -22,7 +22,7 @@ InputBlob::InputBlob(const void* data, size_t size)
 
 bool InputBlob::Read(void* data, size_t size)
 {
-	if(m_position + size < m_size)
+	if(m_position + size <= m_size)
 	{
 		memory::Copy(data, m_data + m_position, m_size);
 		m_position += size;
@@ -37,7 +37,7 @@ bool InputBlob::Read(void* data, size_t size)
 
 bool InputBlob::ReadString(char* data, size_t maxSize)
 {
-	size_t maxRead = (m_position + maxSize - 1 < m_size) ? (m_position + maxSize - 1) : m_size;
+	size_t maxRead = (m_position + maxSize - 1 <= m_size) ? (m_position + maxSize - 1) : m_size;
 	size_t charsReaded = 0;
 	while (charsReaded < maxRead && m_data[m_position] != '\0')
 	{
@@ -108,7 +108,7 @@ bool InputBlob::Read(float& value)
 
 void InputBlob::Skip(size_t size)
 {
-	ASSERT(m_position + size < m_size);
+	ASSERT(m_position + size <= m_size);
 	m_position += size;
 }
 
@@ -139,17 +139,17 @@ const void* InputBlob::GetData() const
 //
 
 
-static void Reallocate(IAllocator& allocator, unsigned char*& ptr, size_t& size)
+static void Reallocate(IAllocator& allocator, u8*& ptr, size_t& size)
 {
 	if (size == 0)
 	{
 		size = 1024;
-		ptr = (unsigned char*)allocator.Allocate(size, ALIGN_OF(unsigned char));
+		ptr = (u8*)allocator.Allocate(size, ALIGN_OF(u8));
 		return;
 	}
 
 	size_t newSize = size * 2;
-	unsigned char* newPtr = (unsigned char*)allocator.Allocate(newSize, ALIGN_OF(unsigned char));
+	u8* newPtr = (u8*)allocator.Allocate(newSize, ALIGN_OF(u8));
 	memory::Move(newPtr, ptr, size);
 	size = newSize;
 	allocator.Deallocate(ptr);
@@ -167,6 +167,12 @@ OutputBlob::OutputBlob(IAllocator& allocator)
 {
 
 }
+
+OutputBlob::~OutputBlob()
+{
+	m_allocator.Deallocate(m_data);
+}
+
 
 void OutputBlob::Write(const void* data, size_t size)
 {
@@ -233,7 +239,7 @@ void OutputBlob::Write(float value)
 
 size_t OutputBlob::GetSize() const
 {
-	return m_size;
+	return m_position;
 }
 
 const void* OutputBlob::GetData() const

@@ -34,7 +34,7 @@ static bool IsEndOfLine(const char& c)
 
 
 
-// INPUT BLOB
+// INPUT CLOB
 
 InputClob::InputClob(const char* data, size_t size)
 	: m_data(data)
@@ -48,7 +48,7 @@ InputClob::InputClob(const char* data, size_t size)
 bool InputClob::Read(char* data, size_t size)
 {
 	SkipWhiteSpaces();
-	if(m_position + size < m_size)
+	if(m_position + size <= m_size)
 	{
 		memory::Copy(data, m_data + m_position, m_size);
 		m_position += size;
@@ -64,7 +64,7 @@ bool InputClob::Read(char* data, size_t size)
 bool InputClob::ReadString(char* data, size_t maxSize)
 {
 	SkipWhiteSpaces();
-	size_t maxRead = (m_position + maxSize - 1 < m_size) ? (m_position + maxSize - 1) : m_size;
+	size_t maxRead = (m_position + maxSize - 1 <= m_size) ? (m_position + maxSize - 1) : m_size;
 	size_t charsReaded = 0;
 	for(size_t i = m_position; i < maxRead; ++i, ++charsReaded)
 	{
@@ -88,7 +88,7 @@ bool InputClob::ReadString(char* data, size_t maxSize)
 bool InputClob::ReadLine(char* data, size_t maxSize)
 {
 	SkipWhiteSpaces();
-	size_t maxRead = (m_position + maxSize < m_size) ? (m_position + maxSize) : m_size;
+	size_t maxRead = (m_position + maxSize <= m_size) ? (m_position + maxSize) : m_size;
 	size_t charsReaded = 0;
 	for (size_t i = m_position; i < maxRead; ++i, ++charsReaded)
 	{
@@ -165,7 +165,7 @@ bool InputClob::Read(float& value)
 
 void InputClob::Skip(size_t size)
 {
-	ASSERT(m_position + size < m_size);
+	ASSERT(m_position + size <= m_size);
 	m_position += size;
 }
 
@@ -226,7 +226,7 @@ static void Reallocate(IAllocator& allocator, char*& ptr, size_t& size)
 }
 
 
-// OUTPUT BLOB
+// OUTPUT CLOB
 
 OutputClob::OutputClob(IAllocator& allocator)
 	: m_allocator(allocator)
@@ -236,6 +236,12 @@ OutputClob::OutputClob(IAllocator& allocator)
 {
 
 }
+
+OutputClob::~OutputClob()
+{
+	m_allocator.Deallocate(m_data);
+}
+
 
 void OutputClob::Write(const char* data, size_t size)
 {

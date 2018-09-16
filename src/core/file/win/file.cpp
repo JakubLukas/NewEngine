@@ -151,7 +151,7 @@ bool ReadFile(nativeFileHandle fileHandle, Operation* operation, size_t filePosi
 }
 
 
-bool WriteFile(nativeFileHandle fileHandle, Operation* operation, size_t filePosition, void* data, size_t size)
+bool WriteFile(nativeFileHandle fileHandle, Operation* operation, size_t filePosition, const void* data, size_t size)
 {
 	ASSERT(fileHandle != INVALID_HANDLE_VALUE);
 
@@ -162,7 +162,6 @@ bool WriteFile(nativeFileHandle fileHandle, Operation* operation, size_t filePos
 	overlapped->OffsetHigh = (DWORD)(filePosition >> 32);
 	overlapped->hEvent = NULL;
 
-	DWORD bytesWritten = 0;
 	BOOL result = ::WriteFile(
 		fileHandle,
 		data,
@@ -341,7 +340,33 @@ bool ReadFileSync(nativeFileHandle fileHandle, size_t filePosition, void* buffer
 	if(result != FALSE)
 		bytesRead = sizeRead;
 
-	return (result == FALSE);//async ReadFile returns FALSE
+	return (result != FALSE);
+}
+
+
+bool WriteFileSync(nativeFileHandle fileHandle, size_t filePosition, const void* data, size_t size)
+{
+	ASSERT(fileHandle != INVALID_HANDLE_VALUE);
+
+	OVERLAPPED overlapped;
+	overlapped.Internal = 0;
+	overlapped.InternalHigh = 0;
+	overlapped.Offset = (DWORD)(filePosition & 0xFFFFffff);
+	overlapped.OffsetHigh = (DWORD)(filePosition >> 32);
+	overlapped.hEvent = NULL;
+
+	DWORD bytesWritten = 0;
+	BOOL result = ::WriteFile(
+		fileHandle,
+		data,
+		(DWORD)size,
+		&bytesWritten,
+		&overlapped
+	);
+
+	ASSERT(size == bytesWritten);
+
+	return (result != FALSE);
 }
 
 
