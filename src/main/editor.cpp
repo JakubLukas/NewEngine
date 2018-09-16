@@ -561,6 +561,7 @@ public:
 		m_engine = Engine::Create(m_allocator);
 		InitSystems();
 		m_worldsWidget.SetEngine(m_engine);
+		m_entityWidget.SetEngine(m_engine);
 		m_rendererWidget.SetRenderSystem(m_renderSystem);
 	}
 
@@ -704,6 +705,7 @@ public:
 
 		m_entitiesWidget.Render();
 
+		m_entityWidget.SetEntity((Entity)2);
 		m_entityWidget.Render();
 
 		ImGui::Render();
