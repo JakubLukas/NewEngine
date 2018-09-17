@@ -16,6 +16,7 @@
 #include "core/memory.h"/////////////////////
 #include "core/time.h"////////////////////////////
 #include "core/matrix.h"////////////////////////////////////
+#include "core/input/input_win.h"/////////////////////////////
 
 #include <bgfx/bgfx.h>
 #include "../external/imgui/imgui.h"
@@ -239,12 +240,13 @@ static const Path IMGUI_DOCK_DATA_PATH = "imgui_dock_data.bin";
 
 struct Input
 {
-	ImVec2 m_mousePos = { 0.0f, 0.0f };
-	ImGui::MouseButtonFlags m_mouseButtons = ImGui::MB_NONE;
-	ImGui::ModifierKeyFlags m_modifierKeys = ImGui::MK_NONE;
+	ImVec2 mousePos = { 0.0f, 0.0f };
+	ImGui::MouseButtonFlags mouseButtons = ImGui::MB_NONE;
+	ImGui::ModifierKeyFlags modifierKeys = ImGui::MK_NONE;
 	static const size_t KEYBOARD_BUFFER_SIZE = 32;
-	u8 m_keyboardBuffer[KEYBOARD_BUFFER_SIZE];
-	float m_scroll = 0.0f;
+	u8 keyboardBuffer[KEYBOARD_BUFFER_SIZE];
+	int keyboardBufferPos = 0;
+	float scroll = 0.0f;
 };
 
 struct ImguiBgfxData
@@ -353,8 +355,6 @@ public:
 			renderScene->SetCameraScreenSize(m_camera, newSize.x, newSize.y);
 		}
 
-		m_inputBuffer.m_scroll = 0;
-
 		bgfx::frame();//flip buffers
 	}
 
@@ -413,16 +413,19 @@ public:
 				{
 				case KeyboardDevice::Button::ControlLeft:
 				case KeyboardDevice::Button::ControlRight:
-					m_inputBuffer.m_modifierKeys = (m_inputBuffer.m_modifierKeys & ~ImGui::MK_CTRL_BIT) | (pressed << ImGui::MK_BO_CTRL); break;
+					m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_CTRL_BIT) | (pressed << ImGui::MK_BO_CTRL); break;
 				case KeyboardDevice::Button::ShiftLeft:
 				case KeyboardDevice::Button::ShiftRight:
-					m_inputBuffer.m_modifierKeys = (m_inputBuffer.m_modifierKeys & ~ImGui::MK_SHIFT_BIT) | (pressed << ImGui::MK_BO_SHIFT); break;
+					m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_SHIFT_BIT) | (pressed << ImGui::MK_BO_SHIFT); break;
 				case KeyboardDevice::Button::AltLeft:
 				case KeyboardDevice::Button::AltRight:
-					m_inputBuffer.m_modifierKeys = (m_inputBuffer.m_modifierKeys & ~ImGui::MK_ALT_BIT) | (pressed << ImGui::MK_BO_ALT); break;
+					m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_ALT_BIT) | (pressed << ImGui::MK_BO_ALT); break;
 				case KeyboardDevice::Button::GUILeft:
 				case KeyboardDevice::Button::GUIRight:
-					m_inputBuffer.m_modifierKeys = (m_inputBuffer.m_modifierKeys & ~ImGui::MK_SUPER_BIT) | (pressed << ImGui::MK_BO_SUPER); break;
+					m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_SUPER_BIT) | (pressed << ImGui::MK_BO_SUPER); break;
+				default:
+					if(pressed)
+						m_inputBuffer.keyboardBuffer[m_inputBuffer.keyboardBufferPos++] = Keyboard::Scancode_USBHID::ToAsciiChar((u8)buttonId);
 				}
 			}
 			else
@@ -441,15 +444,15 @@ public:
 				switch (buttonId)
 				{
 				case MouseDevice::Button::Left:
-					m_inputBuffer.m_mouseButtons = (m_inputBuffer.m_mouseButtons & ~ImGui::MB_LEFT_BIT) | (pressed << ImGui::MB_BO_LEFT); break;
+					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MB_LEFT_BIT) | (pressed << ImGui::MB_BO_LEFT); break;
 				case MouseDevice::Button::Right:
-					m_inputBuffer.m_mouseButtons = (m_inputBuffer.m_mouseButtons & ~ImGui::MB_RIGHT_BIT) | (pressed << ImGui::MB_BO_RIGHT); break;
+					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MB_RIGHT_BIT) | (pressed << ImGui::MB_BO_RIGHT); break;
 				case MouseDevice::Button::Middle:
-					m_inputBuffer.m_mouseButtons = (m_inputBuffer.m_mouseButtons & ~ImGui::MB_MIDDLE_BIT) | (pressed << ImGui::MB_BO_MIDDLE); break;
+					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MB_MIDDLE_BIT) | (pressed << ImGui::MB_BO_MIDDLE); break;
 				case MouseDevice::Button::Extra4:
-					m_inputBuffer.m_mouseButtons = (m_inputBuffer.m_mouseButtons & ~ImGui::MB_EXTRA4_BIT) | (pressed << ImGui::MB_BO_EXTRA4); break;
+					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MB_EXTRA4_BIT) | (pressed << ImGui::MB_BO_EXTRA4); break;
 				case MouseDevice::Button::Extra5:
-					m_inputBuffer.m_mouseButtons = (m_inputBuffer.m_mouseButtons & ~ImGui::MB_EXTRA5_BIT) | (pressed << ImGui::MB_BO_EXTRA5); break;
+					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MB_EXTRA5_BIT) | (pressed << ImGui::MB_BO_EXTRA5); break;
 				}
 			}
 			else
@@ -479,7 +482,7 @@ public:
 				switch (axisId)
 				{
 				case Veng::MouseDevice::Axis::Wheel:
-					m_inputBuffer.m_scroll += delta.x;
+					m_inputBuffer.scroll += delta.x;
 					break;
 				}
 			}
@@ -503,8 +506,8 @@ public:
 
 	virtual void MouseMove(i32 xPos, i32 yPos)
 	{
-		m_inputBuffer.m_mousePos.x = (float)xPos;
-		m_inputBuffer.m_mousePos.y = (float)yPos;
+		m_inputBuffer.mousePos.x = (float)xPos;
+		m_inputBuffer.mousePos.y = (float)yPos;
 	}
 
 	// GAMEPLAY
@@ -705,7 +708,9 @@ public:
 
 		m_entitiesWidget.Render();
 
-		m_entityWidget.SetEntity((Entity)2);
+		if(m_entitiesWidget.GetSelected() != INVALID_ENTITY)
+			m_entityWidget.SetEntity(m_entitiesWidget.GetSelected());
+
 		m_entityWidget.Render();
 
 		ImGui::Render();
@@ -714,26 +719,34 @@ public:
 	void UpdateImguiInput(float deltaTime)
 	{
 		ImGuiIO& io = ImGui::GetIO();
-		/*if(_inputChar < 0x7f)
+
+		for(int i = 0; i < m_inputBuffer.keyboardBufferPos; ++i)
 		{
-		io.AddInputCharacter(_inputChar); // ASCII or GTFO! :(
-		}*/
+			u8 inputChar = m_inputBuffer.keyboardBuffer[i];
+			if(inputChar < 0x7f)
+			{
+				io.AddInputCharacter(inputChar); // ASCII or GTFO! :(
+			}
+		}
 
 		io.DeltaTime = SecFromMSec(deltaTime); //msec to sec
 
-		io.MousePos = m_inputBuffer.m_mousePos;
-		io.MouseDown[0] = 0 != (m_inputBuffer.m_mouseButtons & ImGui::MB_LEFT_BIT);
-		io.MouseDown[1] = 0 != (m_inputBuffer.m_mouseButtons & ImGui::MB_RIGHT_BIT);
-		io.MouseDown[2] = 0 != (m_inputBuffer.m_mouseButtons & ImGui::MB_MIDDLE_BIT);
-		io.MouseWheel = m_inputBuffer.m_scroll;
+		io.MousePos = m_inputBuffer.mousePos;
+		io.MouseDown[0] = 0 != (m_inputBuffer.mouseButtons & ImGui::MB_LEFT_BIT);
+		io.MouseDown[1] = 0 != (m_inputBuffer.mouseButtons & ImGui::MB_RIGHT_BIT);
+		io.MouseDown[2] = 0 != (m_inputBuffer.mouseButtons & ImGui::MB_MIDDLE_BIT);
+		io.MouseWheel = m_inputBuffer.scroll;
 
-		io.KeyCtrl = 0 != (m_inputBuffer.m_modifierKeys & ImGui::MK_CTRL_BIT);
-		io.KeyShift = 0 != (m_inputBuffer.m_modifierKeys & ImGui::MK_SHIFT_BIT);
-		io.KeyAlt = 0 != (m_inputBuffer.m_modifierKeys & ImGui::MK_ALT_BIT);
-		io.KeySuper = 0 != (m_inputBuffer.m_modifierKeys & ImGui::MK_SUPER_BIT);
+		io.KeyCtrl = 0 != (m_inputBuffer.modifierKeys & ImGui::MK_CTRL_BIT);
+		io.KeyShift = 0 != (m_inputBuffer.modifierKeys & ImGui::MK_SHIFT_BIT);
+		io.KeyAlt = 0 != (m_inputBuffer.modifierKeys & ImGui::MK_ALT_BIT);
+		io.KeySuper = 0 != (m_inputBuffer.modifierKeys & ImGui::MK_SUPER_BIT);
 		///* bool    */io.KeysDown[512];                  // Keyboard keys that are pressed (ideally left in the "native" order your engine has access to keyboard keys, so you can use your own defines/enums for keys).
 		///* ImWchar */io.InputCharacters[16 + 1];          // List of characters input (translated by user from keypress+keyboard state). Fill using AddInputCharacter() helper.
 		///* float   */io.NavInputs[ImGuiNavInput_COUNT]; // Gamepad inputs (keyboard keys will be auto-mapped and be written here by ImGui::NewFrame, all values will be cleared back to zero in ImGui::EndFrame)
+
+		m_inputBuffer.keyboardBufferPos = 0;
+		m_inputBuffer.scroll = 0;
 	}
 
 	void RenderImgui()

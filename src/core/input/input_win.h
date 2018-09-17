@@ -439,6 +439,8 @@ enum : u8
 
 u8 FromPS2(u32 scPS2);
 
+u8 ToAsciiChar(u8 usbHid);
+
 }
 
 

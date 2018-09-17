@@ -23,8 +23,11 @@ void EntityWidget::RenderInternal()
 	if(m_entity == INVALID_ENTITY)
 		return;
 
-	Transform entityTrans = m_engine->GetWorld((worldId)0)->GetEntityTransform(m_entity);
-	ImGui::Text("Position: %f, %f, %f", entityTrans.position.x, entityTrans.position.y, entityTrans.position.z);
+	Transform& entityTrans = m_engine->GetWorld((worldId)0)->GetEntityTransform(m_entity);
+	//ImGui::Text("Position:");
+	//ImGui::SameLine();
+	ImGui::InputFloat3("Position:", &entityTrans.position.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+	//ImGui::Text("Position: %f, %f, %f", entityTrans.position.x, entityTrans.position.y, entityTrans.position.z);
 }
 
 

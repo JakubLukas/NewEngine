@@ -502,6 +502,115 @@ static const u8 tableUSBHIDFromPS2E0[]
 };
 
 
+static const u8 tableAsciiCharFromUSBHID[]
+{
+	'\0', //None
+	'\0', //Overrun_Error
+	'\0', //POST_Fail
+	'\0', //ErrorUndefined
+	'a', //A = 0x04
+	'b', //B = 0x05
+	'c', //C = 0x06
+	'd', //D = 0x07
+	'e', //E = 0x08
+	'f', //F = 0x09
+	'g', //G = 0x0A
+	'h', //H = 0x0B
+	'i', //I = 0x0C
+	'j', //J = 0x0D
+	'k', //K = 0x0E
+	'l', //L = 0x0F
+	'm', //M = 0x10
+	'n', //N = 0x11
+	'o', //O = 0x12
+	'p', //P = 0x13
+	'q', //Q = 0x14
+	'r', //R = 0x15
+	's', //S = 0x16
+	't', //T = 0x17
+	'u', //U = 0x18
+	'v', //V = 0x19
+	'w', //W = 0x1A
+	'x', //X = 0x1B
+	'y', //Y = 0x1C
+	'z', //Z = 0x1D
+	'1', //N1 = 0x1E
+	'2', //N2 = 0x1F
+	'3', //N3 = 0x20
+	'4', //N4 = 0x21
+	'5', //N5 = 0x22
+	'6', //N6 = 0x23
+	'7', //N7 = 0x24
+	'8', //N8 = 0x25
+	'9', //N9 = 0x26
+	'0', //N0 = 0x27
+	'\r', //Return = 0x28
+	'\0', //Escape = 0x29
+	'\0', //Backspace = 0x2A
+	'\t', //Tab = 0x2B
+	' ', //Space = 0x2C
+	'-', //Minus = 0x2D
+	'=', //Equals = 0x2E
+	'(', //BracketLeft = 0x2F, //1A
+	')', //BracketRight = 0x30, //1B
+	'\\', //Backslash = 0x31, //2B
+	'\0', //Europe1 = 0x32, //WTF?
+	';', //Semicolon = 0x33, //27
+	'\'', //Apostrophe = 0x34, //28
+	'\0', //Grave = 0x35, //29
+	',', //Comma = 0x36, //33
+	'.', //Period = 0x37, //34
+	'/', //Slash = 0x38, //35
+	'\0', //CapsLock = 0x39, //3A
+	'\0', //F1 = 0x3A, //3B
+	'\0', //F2 = 0x3B, //3C
+	'\0', //F3 = 0x3C, //3D
+	'\0', //F4 = 0x3D, //3E
+	'\0', //F5 = 0x3E, //3F
+	'\0', //F6 = 0x3F, //40
+	'\0', //F7 = 0x40, //41
+	'\0', //F8 = 0x41, //42
+	'\0', //F9 = 0x42, //43
+	'\0', //F10 = 0x43, //44
+	'\0', //F11 = 0x44, //57
+	'\0', //F12 = 0x45, //58
+	'\0', //PrintScreen = 0x46, //E037
+	'\0', //ScrollLock = 0x47, //46
+	'\0', //Break = 0x48, //E046
+	'\0', //Pause = 0x48, //E11D45
+	'\0', //Insert = 0x49, //E052
+	'\0', //Home = 0x4A, //E047
+	'\0', //PageUp = 0x4B, //E049
+	'\0', //Delete = 0x4C, //E053
+	'\0', //End = 0x4D, //E04F
+	'\0', //PageDown = 0x4E, //E051
+	'\0', //ArrowRight = 0x4F, //E04D
+	'\0', //ArrowLeft = 0x50, //E04B
+	'\0', //ArrowDown = 0x51, //E050
+	'\0', //ArrowUp = 0x52, //E048
+	'\0', //NumLock = 0x53, //45
+	'/', //NumpadDivide = 0x54, //E035
+	'*', //NumpadMultiply = 0x55, //37
+	'-', //NumpadMinus = 0x56, //4A
+	'+', //NumpadPlus = 0x57, //4E
+	'\r', //NumpadEnter = 0x58, //E01C
+	'1', //Numpad1 = 0x59, //4F
+	'2', //Numpad2 = 0x5A, //50
+	'3', //Numpad3 = 0x5B, //51
+	'4', //Numpad4 = 0x5C, //4B
+	'5', //Numpad5 = 0x5D, //4C
+	'6', //Numpad6 = 0x5E, //4D
+	'7', //Numpad7 = 0x5F, //47
+	'8', //Numpad8 = 0x60, //48
+	'9', //Numpad9 = 0x61, //49
+	'0', //Numpad0 = 0x62, //52
+	'.', //NumpadPeriod = 0x63, //53
+	'\0', //Europe2 = 0x64, //56
+	'\0', //Application = 0x65, //E05D
+	'\0', //KeyboardPower = 0x66, //E05E
+	'\0', //NumpadResolution = 0x67, //59
+};
+
 
 namespace Scancode_PS2
 {
@@ -540,6 +649,15 @@ u8 FromPS2(u32 scPS2)
 		ASSERT2(false, "Wrong PS2 scancode");
 		return 0;
 	}
+}
+
+
+u8 ToAsciiChar(u8 usbHid)
+{
+	if(usbHid < NumpadResolution)
+		return tableAsciiCharFromUSBHID[usbHid];
+	else
+		return '@';
 }
 
 }
