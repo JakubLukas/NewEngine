@@ -11,6 +11,10 @@ namespace Veng
 {
 
 
+namespace Input
+{
+
+
 namespace Keyboard
 {
 
@@ -253,7 +257,7 @@ static const u32 tablePS2FromUSBHID[] =
 	Scancode_PS2::ShiftRight,
 	Scancode_PS2::AltRight,
 	Scancode_PS2::MetaRight, //GUIRight
-							 //last one is 0xE7
+													 //last one is 0xE7
 };
 
 static const u32 SC_MASK = 0xFF;
@@ -502,116 +506,6 @@ static const u8 tableUSBHIDFromPS2E0[]
 };
 
 
-static const u8 tableAsciiCharFromUSBHID[]
-{
-	'\0', //None
-	'\0', //Overrun_Error
-	'\0', //POST_Fail
-	'\0', //ErrorUndefined
-	'a', //A = 0x04
-	'b', //B = 0x05
-	'c', //C = 0x06
-	'd', //D = 0x07
-	'e', //E = 0x08
-	'f', //F = 0x09
-	'g', //G = 0x0A
-	'h', //H = 0x0B
-	'i', //I = 0x0C
-	'j', //J = 0x0D
-	'k', //K = 0x0E
-	'l', //L = 0x0F
-	'm', //M = 0x10
-	'n', //N = 0x11
-	'o', //O = 0x12
-	'p', //P = 0x13
-	'q', //Q = 0x14
-	'r', //R = 0x15
-	's', //S = 0x16
-	't', //T = 0x17
-	'u', //U = 0x18
-	'v', //V = 0x19
-	'w', //W = 0x1A
-	'x', //X = 0x1B
-	'y', //Y = 0x1C
-	'z', //Z = 0x1D
-	'1', //N1 = 0x1E
-	'2', //N2 = 0x1F
-	'3', //N3 = 0x20
-	'4', //N4 = 0x21
-	'5', //N5 = 0x22
-	'6', //N6 = 0x23
-	'7', //N7 = 0x24
-	'8', //N8 = 0x25
-	'9', //N9 = 0x26
-	'0', //N0 = 0x27
-	'\r', //Return = 0x28
-	'\0', //Escape = 0x29
-	'\0', //Backspace = 0x2A
-	'\t', //Tab = 0x2B
-	' ', //Space = 0x2C
-	'-', //Minus = 0x2D
-	'=', //Equals = 0x2E
-	'(', //BracketLeft = 0x2F, //1A
-	')', //BracketRight = 0x30, //1B
-	'\\', //Backslash = 0x31, //2B
-	'\0', //Europe1 = 0x32, //WTF?
-	';', //Semicolon = 0x33, //27
-	'\'', //Apostrophe = 0x34, //28
-	'\0', //Grave = 0x35, //29
-	',', //Comma = 0x36, //33
-	'.', //Period = 0x37, //34
-	'/', //Slash = 0x38, //35
-	'\0', //CapsLock = 0x39, //3A
-	'\0', //F1 = 0x3A, //3B
-	'\0', //F2 = 0x3B, //3C
-	'\0', //F3 = 0x3C, //3D
-	'\0', //F4 = 0x3D, //3E
-	'\0', //F5 = 0x3E, //3F
-	'\0', //F6 = 0x3F, //40
-	'\0', //F7 = 0x40, //41
-	'\0', //F8 = 0x41, //42
-	'\0', //F9 = 0x42, //43
-	'\0', //F10 = 0x43, //44
-	'\0', //F11 = 0x44, //57
-	'\0', //F12 = 0x45, //58
-	'\0', //PrintScreen = 0x46, //E037
-	'\0', //ScrollLock = 0x47, //46
-	'\0', //Break = 0x48, //E046
-	'\0', //Pause = 0x48, //E11D45
-	'\0', //Insert = 0x49, //E052
-	'\0', //Home = 0x4A, //E047
-	'\0', //PageUp = 0x4B, //E049
-	'\0', //Delete = 0x4C, //E053
-	'\0', //End = 0x4D, //E04F
-	'\0', //PageDown = 0x4E, //E051
-	'\0', //ArrowRight = 0x4F, //E04D
-	'\0', //ArrowLeft = 0x50, //E04B
-	'\0', //ArrowDown = 0x51, //E050
-	'\0', //ArrowUp = 0x52, //E048
-	'\0', //NumLock = 0x53, //45
-	'/', //NumpadDivide = 0x54, //E035
-	'*', //NumpadMultiply = 0x55, //37
-	'-', //NumpadMinus = 0x56, //4A
-	'+', //NumpadPlus = 0x57, //4E
-	'\r', //NumpadEnter = 0x58, //E01C
-	'1', //Numpad1 = 0x59, //4F
-	'2', //Numpad2 = 0x5A, //50
-	'3', //Numpad3 = 0x5B, //51
-	'4', //Numpad4 = 0x5C, //4B
-	'5', //Numpad5 = 0x5D, //4C
-	'6', //Numpad6 = 0x5E, //4D
-	'7', //Numpad7 = 0x5F, //47
-	'8', //Numpad8 = 0x60, //48
-	'9', //Numpad9 = 0x61, //49
-	'0', //Numpad0 = 0x62, //52
-	'.', //NumpadPeriod = 0x63, //53
-	'\0', //Europe2 = 0x64, //56
-	'\0', //Application = 0x65, //E05D
-	'\0', //KeyboardPower = 0x66, //E05E
-	'\0', //NumpadResolution = 0x67, //59
-};
-
-
 namespace Scancode_PS2
 {
 
@@ -626,6 +520,7 @@ u32 FromUSBHID(u8 scUSB)
 
 namespace Scancode_USBHID
 {
+
 
 u8 FromPS2(u32 scPS2)
 {
@@ -652,22 +547,14 @@ u8 FromPS2(u32 scPS2)
 }
 
 
-u8 ToAsciiChar(u8 usbHid)
-{
-	if(usbHid < NumpadResolution)
-		return tableAsciiCharFromUSBHID[usbHid];
-	else
-		return '@';
-}
-
 }
 
 
-u32 getScancodeFromRawInput(const tagRAWKEYBOARD* keyboard)
+u32 GetScancodePS2FromRawInput(const RAWKEYBOARD& keyboard)
 {
 	static bool pauseScancodeRead = false;
-	u32 scancode = keyboard->MakeCode; // MakeCode is USHORT
-	u16 flags = keyboard->Flags;
+	u32 scancode = keyboard.MakeCode; // MakeCode is USHORT
+	u16 flags = keyboard.Flags;
 	ASSERT(scancode <= Scancode_PS2::MAX_MAKECODE);
 
 	if (flags & RI_KEY_E0)
@@ -702,11 +589,11 @@ u32 getScancodeFromRawInput(const tagRAWKEYBOARD* keyboard)
 }
 
 
-i32 getUTF16TextFromRawInput(const tagRAWKEYBOARD* keyboard, wchar_t* buffer, u32 bufferSize)
+i32 GetUTF16TextFromRawInput(const RAWKEYBOARD& keyboard, wchar_t* buffer, u32 bufferSize)
 {
 	static BYTE keyState[256] = {};
 
-	u16 flags = keyboard->Flags;
+	u16 flags = keyboard.Flags;
 	bool pressed = ((flags & RI_KEY_BREAK) == 0);
 
 	bool e0 = (flags & RI_KEY_E0) != 0;
@@ -725,26 +612,26 @@ i32 getUTF16TextFromRawInput(const tagRAWKEYBOARD* keyboard, wchar_t* buffer, u3
 	// note: we set all bits in the byte if the key is down. 
 	// This is because windows expects it to be in the high_order_bit (when using it for converting to unicode for example)
 	// and I like it to be in the low_order_bit,  
-	if (keyboard->VKey == VK_CONTROL)
+	if (keyboard.VKey == VK_CONTROL)
 	{
 		if (e0)	updateKeyState(VK_RCONTROL);
 		else	updateKeyState(VK_LCONTROL);
 		keyState[VK_CONTROL] = keyState[VK_RCONTROL] | keyState[VK_LCONTROL];
 	}
-	else if (keyboard->VKey == VK_SHIFT)
+	else if (keyboard.VKey == VK_SHIFT)
 	{
 		// because why should any api be consistent lol
 		// (because we get different scancodes for l/r-shift but not for l/r ctrl etc... but still)
-		updateKeyState(MapVirtualKey(keyboard->MakeCode, MAPVK_VSC_TO_VK_EX));
+		updateKeyState(MapVirtualKey(keyboard.MakeCode, MAPVK_VSC_TO_VK_EX));
 		keyState[VK_SHIFT] = keyState[VK_LSHIFT] | keyState[VK_RSHIFT];
 	}
-	else if (keyboard->VKey == VK_MENU)
+	else if (keyboard.VKey == VK_MENU)
 	{
 		if (e0)	updateKeyState(VK_LMENU);
 		else	updateKeyState(VK_RMENU);
 		keyState[VK_MENU] = keyState[VK_RMENU] | keyState[VK_LMENU];
 	}
-	else if (keyboard->VKey == VK_RETURN)
+	else if (keyboard.VKey == VK_RETURN)
 	{
 		if (e0) updateKeyState(VK_RRETURN);
 		else	updateKeyState(VK_LRETURN);
@@ -752,7 +639,7 @@ i32 getUTF16TextFromRawInput(const tagRAWKEYBOARD* keyboard, wchar_t* buffer, u3
 	}
 	else
 	{
-		updateKeyState(keyboard->VKey);
+		updateKeyState(keyboard.VKey);
 	}
 
 	if (pressed)
@@ -763,7 +650,7 @@ i32 getUTF16TextFromRawInput(const tagRAWKEYBOARD* keyboard, wchar_t* buffer, u3
 		// which seem to work since ctrl is ignored on US versions of ToUnicode. Bad way of doing it, Not sure how to detect if left alt is altgr though.
 		BYTE ctrl = keyState[VK_CONTROL];
 		keyState[VK_CONTROL] |= keyState[VK_RMENU];
-		i32 utf16_len = ToUnicode(keyboard->VKey, keyboard->MakeCode, keyState, buffer, bufferSize, 0);
+		i32 utf16_len = ToUnicode(keyboard.VKey, keyboard.MakeCode, keyState, buffer, bufferSize, 0);
 		keyState[VK_CONTROL] = ctrl;
 		return utf16_len;
 	}
@@ -774,13 +661,13 @@ i32 getUTF16TextFromRawInput(const tagRAWKEYBOARD* keyboard, wchar_t* buffer, u3
 }
 
 
-u32 getScancodeName(u32 scancode, char* buffer, u32 bufferLength)
+u32 GetScancodePS2Name(u32 scancodePS2, char* buffer, u32 bufferLength)
 {
 	//- bit 16 - 23 contains the first byte of the scancode
 	//- bit 24 indicates that the scancode is 2 bytes (extended)
 
 	unsigned int result = 0;
-	unsigned int extended = scancode & 0xffff00;
+	unsigned int extended = scancodePS2 & 0xffff00;
 	unsigned int lParam = 0;
 
 	if (extended != 0)
@@ -788,18 +675,21 @@ u32 getScancodeName(u32 scancode, char* buffer, u32 bufferLength)
 		if (extended == 0xE11D00)
 			lParam = 0x45 << 16;
 		else
-			lParam = (0x100 | (scancode & 0xff)) << 16;
+			lParam = (0x100 | (scancodePS2 & 0xff)) << 16;
 	}
 	else
 	{
-		lParam = scancode << 16;
+		lParam = scancodePS2 << 16;
 
-		if (scancode == 0x45)
+		if (scancodePS2 == 0x45)
 			lParam |= (0x1 << 24);
 	}
 
 	result = GetKeyNameText(lParam, buffer, bufferLength);
 	return result;
+}
+
+
 }
 
 

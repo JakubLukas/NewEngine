@@ -90,10 +90,28 @@ project "renderer"
 	configuration {}
 	
 	
+project "script"
+	kind "StaticLib"
+	
+	links { "core" }
+	
+	includedirs {
+		
+	}
+	
+	files {
+		SRC_DIR .. "script/**.h",
+		SRC_DIR .. "script/**.inl",
+		SRC_DIR .. "script/**.cpp"
+	}
+	
+	configuration {}
+	
+	
 project "main"
 	kind "WindowedApp"
 	
-	links { "core", "renderer" }
+	links { "core", "renderer", "script" }
 	
 	debugdir(WORKING_DIR)
 	

@@ -76,7 +76,7 @@ struct Transform
 	Matrix44 ToMatrix44() const;
 
 
-	Quaternion rotation;
+	Quaternion rotation = Quaternion::IDENTITY;
 	Vector3 position;
 };
 

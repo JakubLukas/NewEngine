@@ -7,16 +7,19 @@
 #include "core/logs.h"
 #include "core/asserts.h"
 #include "core/file/blob.h"
+#include "core/associative_array.h"
 
 
-#include "renderer/irenderer.h"////////////////////////
+#include "renderer/renderer.h"////////////////////////
+#include "script/script.h"////////////////////////////
 #include "core/file/path.h"////////////////////////////////
 #include "core/math.h"////////////////////////////////
 #include "core/file/file.h"////////////////////
 #include "core/memory.h"/////////////////////
 #include "core/time.h"////////////////////////////
 #include "core/matrix.h"////////////////////////////////////
-#include "core/input/input_win.h"/////////////////////////////
+
+#include "core/input/devices/input_device_keyboard.h"
 
 #include <bgfx/bgfx.h>
 #include "../external/imgui/imgui.h"
@@ -216,6 +219,16 @@ enum ModifierKeyBits : ModifierKeyFlags
 	MK_SUPER_BIT = 1 << MK_BO_SUPER,
 };
 
+enum class TextEditSpecials : int
+{
+	SelectAll = 0x100,	// for text edit CTRL+A: select all
+	Copy = 0x101,				// for text edit CTRL+C: copy
+	Paste = 0x102,			// for text edit CTRL+V: paste
+	Cut = 0x103,				// for text edit CTRL+X: cut
+	Redo = 0x104,				// for text edit CTRL+Y: redo
+	Undo = 0x105,				// for text edit CTRL+Z: undo
+};
+
 
 static const float FRAME_ROUNDING = 4.0f;
 static const float WINDOW_BORDER_SIZE = 0.0f;
@@ -231,6 +244,7 @@ namespace Veng
 
 
 RenderSystem* m_renderSystem = nullptr;////////////////////////////////
+ScriptSystem* m_scriptSystem = nullptr;////////////////////////////////
 
 
 namespace Editor
@@ -246,7 +260,15 @@ struct Input
 	static const size_t KEYBOARD_BUFFER_SIZE = 32;
 	u8 keyboardBuffer[KEYBOARD_BUFFER_SIZE];
 	int keyboardBufferPos = 0;
+	static const size_t CHARACTER_BUFFER_SIZE = 16;
+	u8 characterBuffer[CHARACTER_BUFFER_SIZE];
+	int characterBufferPos = 0;
 	float scroll = 0.0f;
+};
+
+struct InputKeyboardFiltering
+{
+	u32 filter[8] = { 0 };
 };
 
 struct ImguiBgfxData
@@ -315,6 +337,7 @@ public:
 		, m_app(app)
 		, m_bgfxAllocator(m_allocator)
 		, m_imguiAllocator(m_allocator)
+		, m_inputKeyboardFilter(m_allocator)
 	{
 
 	}
@@ -326,7 +349,15 @@ public:
 		m_rendererWidget.Init(1);//////////////////////////
 		InitEngine();
 
-		InitDummyGameplay();
+		RenderScene* renderScene = static_cast<RenderScene*>(m_renderSystem->GetScene());
+		for (size_t i = 0; i < m_engine->GetWorldCount(); ++i)
+		{
+			World& world = m_engine->GetWorlds()[i];
+			m_camera = world.CreateEntity();
+			Transform& camTrans = world.GetEntityTransform(m_camera);
+			camTrans.position = Vector3(0, 0, 35);
+			renderScene->AddCameraComponent(m_camera, world.GetId(), 60.0_deg, 0.001f, 100.0f);
+		}
 	}
 
 	void Deinit() override
@@ -343,7 +374,6 @@ public:
 		UpdateImguiInput(deltaTime);
 
 		m_engine->Update(deltaTime);
-		UpdateDummyGameplay(deltaTime);
 		
 		UpdateImgui();
 		RenderImgui();
@@ -394,44 +424,70 @@ public:
 
 	inputDeviceID RegisterDevice(inputDeviceHandle deviceHandle, InputDeviceCategory category, const String& name) override
 	{
+		if (category == InputDeviceCategory::Keyboard)
+		{
+			InputKeyboardFiltering& filter = *m_inputKeyboardFilter.Insert(deviceHandle, InputKeyboardFiltering());
+		}
+
 		return m_engine->GetInputSystem()->RegisterDevice(deviceHandle, category, name);
 	}
 
 	void UnregisterDevice(inputDeviceHandle deviceHandle) override
 	{
+		m_inputKeyboardFilter.Erase(deviceHandle);
+
 		m_engine->GetInputSystem()->UnregisterDevice(deviceHandle);
 	}
 
 	void RegisterButtonEvent(windowHandle handle, inputDeviceHandle deviceHandle, KeyboardDevice::Button buttonId, bool pressed) override
 	{
-		if (m_inputEnabled)
+		if (!m_inputEnabled)
+			return;
+
+		//filter key down / up to be handled only once
+		InputKeyboardFiltering& filter = m_inputKeyboardFilter[deviceHandle];
+		u32& section = filter.filter[(u8)buttonId / 32];
+		u32 keyBit = 1 << (u8)buttonId % 32;
+		if (pressed)
 		{
-			if (handle == m_app.GetMainWindowHandle())
-			{
-				ImGuiIO& io = ImGui::GetIO();
-				switch (buttonId)
-				{
-				case KeyboardDevice::Button::ControlLeft:
-				case KeyboardDevice::Button::ControlRight:
-					m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_CTRL_BIT) | (pressed << ImGui::MK_BO_CTRL); break;
-				case KeyboardDevice::Button::ShiftLeft:
-				case KeyboardDevice::Button::ShiftRight:
-					m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_SHIFT_BIT) | (pressed << ImGui::MK_BO_SHIFT); break;
-				case KeyboardDevice::Button::AltLeft:
-				case KeyboardDevice::Button::AltRight:
-					m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_ALT_BIT) | (pressed << ImGui::MK_BO_ALT); break;
-				case KeyboardDevice::Button::GUILeft:
-				case KeyboardDevice::Button::GUIRight:
-					m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_SUPER_BIT) | (pressed << ImGui::MK_BO_SUPER); break;
-				default:
-					if(pressed)
-						m_inputBuffer.keyboardBuffer[m_inputBuffer.keyboardBufferPos++] = Keyboard::Scancode_USBHID::ToAsciiChar((u8)buttonId);
-				}
-			}
+			if (section & keyBit)
+				return;
 			else
+				section |= keyBit;
+		}
+		else
+		{
+			if (!(section & keyBit))
+				return;
+			else
+				section &= ~keyBit;
+		}
+
+		if (handle == m_app.GetMainWindowHandle())
+		{
+			ImGuiIO& io = ImGui::GetIO();
+			switch (buttonId)
 			{
-				m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, buttonId, pressed);
+			case KeyboardDevice::Button::ControlLeft:
+			case KeyboardDevice::Button::ControlRight:
+				m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_CTRL_BIT) | (pressed << ImGui::MK_BO_CTRL); break;
+			case KeyboardDevice::Button::ShiftLeft:
+			case KeyboardDevice::Button::ShiftRight:
+				m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_SHIFT_BIT) | (pressed << ImGui::MK_BO_SHIFT); break;
+			case KeyboardDevice::Button::AltLeft:
+			case KeyboardDevice::Button::AltRight:
+				m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_ALT_BIT) | (pressed << ImGui::MK_BO_ALT); break;
+			case KeyboardDevice::Button::GUILeft:
+			case KeyboardDevice::Button::GUIRight:
+				m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_SUPER_BIT) | (pressed << ImGui::MK_BO_SUPER); break;
+			default:
+				if (pressed)
+					m_inputBuffer.keyboardBuffer[m_inputBuffer.keyboardBufferPos++] = (u8)buttonId;
 			}
+		}
+		else
+		{
+			m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, buttonId, pressed);
 		}
 	}
 
@@ -504,56 +560,18 @@ public:
 		}
 	}
 
-	virtual void MouseMove(i32 xPos, i32 yPos)
+	void MouseMove(i32 xPos, i32 yPos) override
 	{
 		m_inputBuffer.mousePos.x = (float)xPos;
 		m_inputBuffer.mousePos.y = (float)yPos;
 	}
 
-	// GAMEPLAY
-
-	void InitDummyGameplay()
+	void InputChar(u8 character) override
 	{
-		m_world = m_engine->AddWorld();
-		World* world = m_engine->GetWorld(m_world);
-		RenderScene* renderScene = static_cast<RenderScene*>(m_renderSystem->GetScene());
-		m_camera = world->CreateEntity();
-		Transform& camTrans = world->GetEntityTransform(m_camera);
-		renderScene->AddCameraComponent(m_camera, m_world, 60.0_deg, 0.001f, 100.0f);
-
-		for (unsigned yy = 0; yy < 11; ++yy)
+		if (m_inputEnabled)
 		{
-			for (unsigned xx = 0; xx < 11; ++xx)
-			{
-				Entity entity = world->CreateEntity();
-				Transform& trans = world->GetEntityTransform(entity);
-				renderScene->AddModelComponent(entity, m_world, "models/cubes.model");
-
-				Quaternion rot = Quaternion::IDENTITY;
-				rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
-				rot = rot * Quaternion(Vector3::AXIS_Y, yy*0.37f);
-				Vector3 pos = {
-					-15.0f + float(xx) * 3.0f,
-					-15.0f + float(yy) * 3.0f,
-					0.0f
-				};
-				trans = Transform(rot, pos);
-			}
-		}
-	}
-
-	void UpdateDummyGameplay(float deltaTime)
-	{
-		Quaternion rot = Quaternion::IDENTITY;
-		rot = rot * Quaternion(Vector3::AXIS_X, SecFromMSec(deltaTime));
-
-		World* world = m_engine->GetWorld(m_world);
-		World::EntityIterator it = world->GetEntities();
-		Entity entity;
-		while(it.GetNext(entity))
-		{
-			Transform& trans = world->GetEntityTransform(entity);
-			trans.rotation = trans.rotation * rot;
+			if(0x1f < character && character < 0x7f)
+				m_inputBuffer.characterBuffer[m_inputBuffer.characterBufferPos++] = character;
 		}
 	}
 
@@ -578,12 +596,18 @@ public:
 	{
 		ASSERT(m_engine != nullptr);
 		m_renderSystem = RenderSystem::Create(*m_engine);
+		m_scriptSystem = ScriptSystem::Create(*m_engine);
+		m_engine->AddSystem(m_renderSystem);
+		m_engine->AddSystem(m_scriptSystem);
 		m_renderSystem->Init();
-		m_engine->AddPlugin(m_renderSystem);
+		m_scriptSystem->Init();
 	}
 
 	void DeinitSystems()
 	{
+		m_engine->RemoveSystem(m_scriptSystem->GetName());
+		m_engine->RemoveSystem(m_renderSystem->GetName());
+		ScriptSystem::Destroy(m_scriptSystem);
 		RenderSystem::Destroy(m_renderSystem);
 	}
 
@@ -626,6 +650,34 @@ public:
 		m_imgui = ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO();
 		io.IniFilename = nullptr;
+
+		io.KeyMap[ImGuiKey_Tab] = (int)KeyboardDevice::Button::Tab;
+		//io.KeyMap[ImGuiKey_LeftArrow]
+		io.KeyMap[ImGuiKey_Backspace] = 0x08;
+		io.KeyMap[ImGuiKey_Enter] = 0x0A;
+
+		io.KeyMap[ImGuiKey_Tab] = (int)KeyboardDevice::Button::Tab;
+		io.KeyMap[ImGuiKey_LeftArrow] = (int)KeyboardDevice::Button::ArrowLeft;
+		io.KeyMap[ImGuiKey_RightArrow] = (int)KeyboardDevice::Button::ArrowRight;
+		io.KeyMap[ImGuiKey_UpArrow] = (int)KeyboardDevice::Button::ArrowUp;
+		io.KeyMap[ImGuiKey_DownArrow] = (int)KeyboardDevice::Button::ArrowDown;
+		io.KeyMap[ImGuiKey_PageUp] = (int)KeyboardDevice::Button::PageUp;
+		io.KeyMap[ImGuiKey_PageDown] = (int)KeyboardDevice::Button::PageDown;
+		io.KeyMap[ImGuiKey_Home] = (int)KeyboardDevice::Button::Home;
+		io.KeyMap[ImGuiKey_End] = (int)KeyboardDevice::Button::End;
+		io.KeyMap[ImGuiKey_Insert] = (int)KeyboardDevice::Button::Insert;
+		io.KeyMap[ImGuiKey_Delete] = (int)KeyboardDevice::Button::Delete;
+		io.KeyMap[ImGuiKey_Backspace] = (int)KeyboardDevice::Button::Backspace;
+		io.KeyMap[ImGuiKey_Space] = (int)KeyboardDevice::Button::Space;
+		io.KeyMap[ImGuiKey_Enter] = (int)KeyboardDevice::Button::Return;
+		io.KeyMap[ImGuiKey_Escape] = (int)KeyboardDevice::Button::Escape;
+
+		io.KeyMap[ImGuiKey_A] = (int)ImGui::TextEditSpecials::SelectAll;
+		io.KeyMap[ImGuiKey_C] = (int)ImGui::TextEditSpecials::Copy;
+		io.KeyMap[ImGuiKey_V] = (int)ImGui::TextEditSpecials::Paste;
+		io.KeyMap[ImGuiKey_X] = (int)ImGui::TextEditSpecials::Cut;
+		io.KeyMap[ImGuiKey_Y] = (int)ImGui::TextEditSpecials::Redo;
+		io.KeyMap[ImGuiKey_Z] = (int)ImGui::TextEditSpecials::Undo;
 
 		ImGuiStyle& style = ImGui::GetStyle();
 		ImGui::StyleColorsDark(&style);
@@ -720,13 +772,19 @@ public:
 	{
 		ImGuiIO& io = ImGui::GetIO();
 
-		for(int i = 0; i < m_inputBuffer.keyboardBufferPos; ++i)
+		for(int i = 0; i < m_inputBuffer.characterBufferPos; ++i)
 		{
-			u8 inputChar = m_inputBuffer.keyboardBuffer[i];
+			u8 inputChar = m_inputBuffer.characterBuffer[i];
 			if(inputChar < 0x7f)
 			{
 				io.AddInputCharacter(inputChar); // ASCII or GTFO! :(
 			}
+		}
+
+		memory::Set(io.KeysDown, 0, 512 * sizeof(bool));
+		for (int i = 0; i < m_inputBuffer.keyboardBufferPos; ++i)
+		{
+			io.KeysDown[m_inputBuffer.keyboardBuffer[i]] = true;
 		}
 
 		io.DeltaTime = SecFromMSec(deltaTime); //msec to sec
@@ -746,6 +804,7 @@ public:
 		///* float   */io.NavInputs[ImGuiNavInput_COUNT]; // Gamepad inputs (keyboard keys will be auto-mapped and be written here by ImGui::NewFrame, all values will be cleared back to zero in ImGui::EndFrame)
 
 		m_inputBuffer.keyboardBufferPos = 0;
+		m_inputBuffer.characterBufferPos = 0;
 		m_inputBuffer.scroll = 0;
 	}
 
@@ -890,9 +949,9 @@ private:
 	App& m_app;
 	Engine* m_engine = nullptr;
 	bool m_inputEnabled = false;
+	AssociativeArray<inputDeviceHandle, InputKeyboardFiltering> m_inputKeyboardFilter;
 
 	//gameplay
-	worldId m_world = INVALID_WORLD_ID;
 	Entity m_camera = INVALID_ENTITY;
 
 	//imgui

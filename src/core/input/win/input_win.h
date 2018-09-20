@@ -1,14 +1,18 @@
 #pragma once
 
 #include "core/int.h"
-#include "core/input/devices/input_device_keyboard.h"
-#include "core/input/devices/input_device_mouse.h"
 
 struct tagRAWKEYBOARD;
+typedef tagRAWKEYBOARD RAWKEYBOARD;
 struct tagRAWMOUSE;
+typedef tagRAWMOUSE RAWMOUSE;
 
 
 namespace Veng
+{
+
+
+namespace Input
 {
 
 
@@ -439,24 +443,14 @@ enum : u8
 
 u8 FromPS2(u32 scPS2);
 
-u8 ToAsciiChar(u8 usbHid);
-
 }
 
 
-u32 getScancodeFromRawInput(const tagRAWKEYBOARD* keyboard);
+u32 GetScancodePS2FromRawInput(const RAWKEYBOARD& keyboard);
 
-i32 getUTF16TextFromRawInput(const tagRAWKEYBOARD* keyboard, wchar_t* buffer, u32 bufferSize);
+i32 GetUTF16TextFromRawInput(const RAWKEYBOARD& keyboard, wchar_t* buffer, u32 bufferSize);
 
-u32 getScancodeName(u32 scancode, char* buffer, u32 bufferLength);
-
-/*
-potrebujem:
-sync keys (WM_SETFOCUS)
-clear keys (WM_KILLFOCUS)
-GetRawInputDeviceList
-
-*/
+u32 GetScancodePS2Name(u32 scancodePS2, char* buffer, u32 bufferLength);
 
 
 }
@@ -467,6 +461,9 @@ namespace Mouse
 
 
 const u32 BUTTON_NONE = 0x0000;
+
+
+}
 
 
 }

@@ -1,6 +1,6 @@
 #include "renderer_widget.h"
 
-#include "renderer/irenderer.h"
+#include "renderer/renderer.h"
 
 
 namespace Veng

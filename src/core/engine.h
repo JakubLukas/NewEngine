@@ -1,7 +1,7 @@
 #pragma once
 
 #include "allocators.h"
-#include "iplugin.h"
+#include "isystem.h"
 
 #include "world/world.h"
 
@@ -29,8 +29,9 @@ public:
 	virtual size_t GetWorldCount() const = 0;
 	virtual World* GetWorlds() = 0;
 
-	virtual bool AddPlugin(IPlugin* plugin) = 0;
-	virtual void RemovePlugin(const char* name) = 0;
+	virtual bool AddSystem(ISystem* system) = 0;
+	virtual void RemoveSystem(const char* name) = 0;
+	virtual ISystem* GetSystem(const char* name) = 0;
 
 	virtual void Update(float deltaTime) = 0;
 

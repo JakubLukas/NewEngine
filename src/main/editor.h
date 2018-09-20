@@ -43,7 +43,7 @@ public:
 	virtual void RegisterAxisEvent(windowHandle handle, inputDeviceHandle deviceHandle, GamepadDevice::Axis axisId, const Vector3& delta) = 0;
 
 	virtual void MouseMove(i32 xPos, i32 yPos) = 0;
-
+	virtual void InputChar(u8 character) = 0;
 };
 
 }

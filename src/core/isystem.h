@@ -1,5 +1,7 @@
 #pragma once
 
+#include "int.h"
+
 
 namespace Veng
 {
@@ -17,10 +19,10 @@ public:
 };
 
 
-class IPlugin
+class ISystem
 {
 public:
-	virtual ~IPlugin() {}
+	virtual ~ISystem() {}
 
 	virtual void Init() = 0;
 

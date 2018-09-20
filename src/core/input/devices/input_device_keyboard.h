@@ -175,6 +175,7 @@ enum class Button : u8
 	KeyboardClear_Again = 0xA2,
 	KeyboardCrSel_Props = 0xA3,
 	KeyboardExSel = 0xA4,
+
 	ControlLeft = 0xE0,
 	ShiftLeft = 0xE1,
 	AltLeft = 0xE2,

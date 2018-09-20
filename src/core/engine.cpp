@@ -15,7 +15,7 @@ class EngineImpl : public Engine
 public:
 	EngineImpl(IAllocator& allocator)
 		: m_allocator(allocator)
-		, m_plugins(m_allocator)
+		, m_systems(m_allocator)
 		, m_worlds(m_allocator)
 	{
 		m_fileSystem = FileSystem::Create(m_allocator);
@@ -73,29 +73,43 @@ public:
 	}
 
 
-	bool AddPlugin(IPlugin* plugin) override
+	bool AddSystem(ISystem* system) override
 	{
-		m_plugins.Push(plugin);
+		m_systems.Push(system);
 		return true;
 	}
 
 
-	void RemovePlugin(const char* name) override
+	void RemoveSystem(const char* name) override
 	{
-		for (unsigned i = 0; i < m_plugins.GetSize(); ++i)
+		for (unsigned i = 0; i < m_systems.GetSize(); ++i)
 		{
-			if (string::Equal(m_plugins[i]->GetName(), name))
+			if (string::Equal(m_systems[i]->GetName(), name))
 			{
-				m_plugins.Erase(i);
+				m_systems.Erase(i);
 				return;
 			}
 		}
 	}
 
 
+	ISystem* GetSystem(const char* name) override
+	{
+		for (unsigned i = 0; i < m_systems.GetSize(); ++i)
+		{
+			if (string::Equal(m_systems[i]->GetName(), name))
+			{
+				return m_systems[i];
+			}
+		}
+
+		return nullptr;
+	}
+
+
 	void Update(float deltaTime) override
 	{
-		for (IPlugin* plugin : m_plugins)
+		for (ISystem* plugin : m_systems)
 		{
 			plugin->Update(deltaTime);
 		}
@@ -132,7 +146,7 @@ private:
 	FileSystem* m_fileSystem;
 	InputSystem* m_inputSystem;
 	ResourceManagement* m_resourceManager;
-	Array<IPlugin*> m_plugins;
+	Array<ISystem*> m_systems;
 	Array<World> m_worlds;
 };
 

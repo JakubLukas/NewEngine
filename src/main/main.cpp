@@ -9,7 +9,7 @@
 #include "core/engine.h"
 #include "core/asserts.h"
 #include "core/logs.h"
-#include "core/input/input_win.h"
+#include "core/input/win/input_win.h"
 #include "core/input/input_system.h"
 #include "core/array.h"
 #include "core/string.h"
@@ -24,7 +24,8 @@ namespace Veng
 
 static const RECT DEFAULT_MAIN_WINDOW_RECT = { 0, 0, 1024, 768 };//////////////////////
 static const WindowRect DEFAULT_SUB_WINDOW_RECT = { 20, 20, 200, 200 };///////////////
-static const float FRAMERATE = 1.0_sec / 60.0_msec;
+static const float FRAMERATE = 1.0_sec / 60.0_msec;//////////////////////////////////
+
 
 class AppImpl : public App
 {
@@ -286,9 +287,6 @@ private:
 			{
 			case RIM_TYPEMOUSE:
 				m_editor->RegisterDevice(deviceHandle, InputDeviceCategory::Mouse, deviceName);
-				//POINT mousePos;
-				//GetCursorPos(&mousePos);////////////////////////////////////////////////////////////////////////
-				//m_editor->RegisterAxisEvent(deviceHandle, MouseDevice::Axis::Movement, { (float)mousePos.x, (float)mousePos.y, 0.0f });
 				break;
 			case RIM_TYPEKEYBOARD:
 				m_editor->RegisterDevice(deviceHandle, InputDeviceCategory::Keyboard, deviceName);
@@ -318,13 +316,13 @@ private:
 		//mouse
 		rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
 		rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
-		rid[0].dwFlags = RIDEV_DEVNOTIFY; //if RIDEV_NOLEGACY is used, window will be unresponsive
+		rid[0].dwFlags = RIDEV_DEVNOTIFY;
 		rid[0].hwndTarget = m_hwnd;
 
 		//keyboard
 		rid[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
 		rid[1].usUsage = HID_USAGE_GENERIC_KEYBOARD;
-		rid[1].dwFlags = RIDEV_DEVNOTIFY | RIDEV_NOLEGACY;
+		rid[1].dwFlags = RIDEV_DEVNOTIFY;
 		rid[1].hwndTarget = m_hwnd;
 
 		//gamepad
@@ -344,23 +342,17 @@ private:
 		inputDeviceHandle deviceHandle = (inputDeviceHandle)(hDevice);
 
 		bool pressed = ((keyboard.Flags & RI_KEY_BREAK) == 0);
-		u32 scancodePS2 = Keyboard::getScancodeFromRawInput(&keyboard);
+		u32 scancodePS2 = Input::Keyboard::GetScancodePS2FromRawInput(keyboard);
 
-		u8 scUSB = Keyboard::Scancode_USBHID::FromPS2(scancodePS2);
+		u8 scUSB = Input::Keyboard::Scancode_USBHID::FromPS2(scancodePS2);
+
 		KeyboardDevice::Button keyCode = (KeyboardDevice::Button)scUSB;
 		m_editor->RegisterButtonEvent(hwnd, deviceHandle, keyCode, pressed);
-
-		u32 scPS2 = Keyboard::Scancode_PS2::FromUSBHID(scUSB);
-		char buffer[512] = {};
-		Keyboard::getScancodeName(scPS2, buffer, 512); // getting a human-readable string
-		Log(LogType::Info, "%s : %s\n", buffer, (pressed) ? "down" : "up");
-
-		/*const i32 BUFFER_SIZE = 4;
-		wchar_t utf16_buffer[BUFFER_SIZE] = { 0 };
-		i32 readChars = getUTF16TextFromRawInput(&rawKeyboard, utf16_buffer, BUFFER_SIZE);
-		ASSERT(readChars < BUFFER_SIZE - 1);
-		if(readChars > 0)
-		OutputDebugStringW(utf16_buffer);*/
+		
+		//u32 scPS2 = Keyboard::Scancode_PS2::FromUSBHID(scUSB);
+		//char buffer[512];
+		//Input::Keyboard::GetScancodePS2Name(scPS2, buffer, 512); // getting a human-readable string
+		//Log(LogType::Info, "%s : %s (flag: %d)\n", buffer, (pressed) ? "down" : "up", keyboard.Flags);
 	}
 
 	void HandleRawInputMouse(HWND hwnd, HANDLE hDevice, const RAWMOUSE& mouse)
@@ -405,7 +397,7 @@ private:
 			m_editor->RegisterAxisEvent(hwnd, deviceHandle, MouseDevice::Axis::Wheel, axisWheel);
 		}
 
-		if (mouse.usButtonFlags != Mouse::BUTTON_NONE)
+		if (mouse.usButtonFlags != Input::Mouse::BUTTON_NONE)
 		{
 			if ((mouse.usButtonFlags & RI_MOUSE_BUTTON_1_DOWN) != 0)
 				m_editor->RegisterButtonEvent(hwnd, deviceHandle, MouseDevice::Button::Left, true);
@@ -495,7 +487,11 @@ private:
 
 	void HandleRawInput(HWND hwnd, LPARAM lParam)
 	{
-		if(hwnd != m_hwnd) return;
+		if (hwnd != m_hwnd)
+		{
+			ASSERT(false);
+			return;
+		}
 
 		RAWINPUT raw;
 		UINT size = sizeof(RAWINPUT);
@@ -646,6 +642,11 @@ private:
 		}
 	}
 
+	void HandleChar(HWND hwnd, WPARAM wparam, LPARAM lparam)
+	{
+		m_editor->InputChar((u8)wparam);
+	}
+
 
 	void HandleResize(HWND hwnd, LPARAM lparam)
 	{
@@ -680,11 +681,14 @@ private:
 			case WM_INPUT:
 				HandleRawInput(hwnd, lparam);
 				break;
+			case WM_INPUT_DEVICE_CHANGE:
+				HandleRawInputDeviceChange(wparam, lparam);
+				break;
 			case WM_MOUSEMOVE:
 				HandleMouseMove(hwnd, lparam);
 				break;
-			case WM_INPUT_DEVICE_CHANGE:
-				HandleRawInputDeviceChange(wparam, lparam);
+			case WM_CHAR:
+				HandleChar(hwnd, wparam, lparam);
 				break;
 			/*case WM_SYSCOMMAND:
 				if(wparam == SC_KEYMENU) //Remove beeping sound when ALT + some key is pressed.

@@ -1,4 +1,4 @@
-#include "irenderer.h"
+#include "renderer.h"
 
 #include "core/allocators.h"
 #include "core/engine.h"
@@ -211,14 +211,15 @@ public:
 	{
 		static float time = 0;
 		time += deltaTime * 0.001f;
-		static const Vector4 at = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
-		static const Vector4 eye = Vector4(0.0f, 0.0f, 35.0f, 1.0f);
+		//static const Vector4 at = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+		//static const Vector4 eye = Vector4(0.0f, 0.0f, 35.0f, 1.0f);
 		static const Vector4 up = Vector4(0.0f, 1.0f, 0.0f, 0.0f);
 
 		worldId worldHandle = (worldId)0;
+		World* world = m_engine.GetWorld(worldHandle);
 
 		static Matrix44 view;
-		view.SetLookAt(eye, at, up);
+		//view.SetLookAt(eye, at, up);
 
 		static Matrix44 proj;
 		const RenderScene::CameraItem* cameraItem = m_scene->GetDefaultCamera(worldHandle);
@@ -226,6 +227,12 @@ public:
 		{
 			const Camera& cam = cameraItem->camera;
 			proj.SetPerspective(cam.fov, cam.aspect, cam.nearPlane, cam.farPlane, bgfx::getCaps()->homogeneousDepth);
+			const Transform& camTrans = world->GetEntityTransform(cameraItem->entity);
+			Matrix44 camRot;
+			camRot.SetRotation(camTrans.rotation);
+			Vector4 eye = Vector4(camTrans.position, 1);
+			Vector4 at = camRot * Vector4(0, 0, -1, 0) + Vector4(camTrans.position, 1);
+			view.SetLookAt(eye, at, up);
 		}
 
 		//float projj[16];
@@ -233,9 +240,7 @@ public:
 
 		bgfx::setViewTransform(VIEW_ID, &view.m11, &proj.m11/*projj*/);
 
-		//bgfx::touch(VIEW_ID);//dummy draw call
-
-		World* world = m_engine.GetWorld(worldHandle);
+		bgfx::touch(VIEW_ID);//dummy draw call
 
 
 		// Set vertex and index buffer.

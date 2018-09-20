@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/int.h"
-#include "core/iplugin.h"
+#include "core/isystem.h"
 #include "core/world/world.h"
 #include "camera.h"////////////////////////////////
 
@@ -60,7 +60,7 @@ public:
 };
 
 
-class RenderSystem : public IPlugin
+class RenderSystem : public ISystem
 {
 public:
 	static RenderSystem* Create(Engine& engine);
