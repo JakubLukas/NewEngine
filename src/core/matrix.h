@@ -8,7 +8,7 @@
 namespace Veng
 {
 
-//right hand coordinate system (z from display (DirectX style))
+//right hand coordinate system (z from display (OpenGL style))
 
 struct FORCE_ALIGNMENT(16) Matrix44
 {

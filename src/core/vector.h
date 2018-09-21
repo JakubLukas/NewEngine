@@ -35,6 +35,10 @@ struct Vector3
 
 struct Vector4
 {
+	static const Vector4 AXIS_X;
+	static const Vector4 AXIS_Y;
+	static const Vector4 AXIS_Z;
+
 	Vector4();
 	Vector4(float x, float y, float z, float w);
 	Vector4(const Vector3& vec3, float w);

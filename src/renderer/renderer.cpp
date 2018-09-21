@@ -209,18 +209,10 @@ public:
 
 	void Update(float deltaTime) override
 	{
-		static float time = 0;
-		time += deltaTime * 0.001f;
-		//static const Vector4 at = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
-		//static const Vector4 eye = Vector4(0.0f, 0.0f, 35.0f, 1.0f);
-		static const Vector4 up = Vector4(0.0f, 1.0f, 0.0f, 0.0f);
-
 		worldId worldHandle = (worldId)0;
 		World* world = m_engine.GetWorld(worldHandle);
 
 		static Matrix44 view;
-		//view.SetLookAt(eye, at, up);
-
 		static Matrix44 proj;
 		const RenderScene::CameraItem* cameraItem = m_scene->GetDefaultCamera(worldHandle);
 		if(cameraItem != nullptr)
@@ -232,13 +224,10 @@ public:
 			camRot.SetRotation(camTrans.rotation);
 			Vector4 eye = Vector4(camTrans.position, 1);
 			Vector4 at = camRot * Vector4(0, 0, -1, 0) + Vector4(camTrans.position, 1);
-			view.SetLookAt(eye, at, up);
+			view.SetLookAt(eye, at, Vector4::AXIS_Y);
 		}
 
-		//float projj[16];
-		//bx::mtxProj(projj, 60.0f, float(m_width) / float(m_height), 0.1f, 100.0f, bgfx::getCaps()->homogeneousDepth);
-
-		bgfx::setViewTransform(VIEW_ID, &view.m11, &proj.m11/*projj*/);
+		bgfx::setViewTransform(VIEW_ID, &view.m11, &proj.m11);
 
 		bgfx::touch(VIEW_ID);//dummy draw call
 
@@ -284,10 +273,7 @@ public:
 	const char* GetName() const override { return "renderer"; }
 
 
-	IScene* GetScene() const override
-	{
-		return m_scene;
-	}
+	IScene* GetScene() const override { return m_scene; }
 
 
 	MaterialManager& GetMaterialManager() const override { return *m_materialManager; }

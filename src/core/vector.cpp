@@ -93,6 +93,11 @@ Vector3 Vector3::Cross(const Vector3& vec1, const Vector3& vec2)
 
 
 
+const Vector4 Vector4::AXIS_X(1.0f, 0.0f, 0.0f, 0.0f);
+const Vector4 Vector4::AXIS_Y(0.0f, 1.0f, 0.0f, 0.0f);
+const Vector4 Vector4::AXIS_Z(0.0f, 0.0f, 1.0f, 0.0f);
+
+
 Vector4::Vector4()
 	: x(0.0f)
 	, y(0.0f)
