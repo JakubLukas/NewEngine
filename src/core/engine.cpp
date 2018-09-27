@@ -107,6 +107,18 @@ public:
 	}
 
 
+	size_t GetSystemCount() const override
+	{
+		return m_systems.GetSize();
+	}
+
+
+	ISystem* GetSystems() const override
+	{
+		return *m_systems.Begin();
+	}
+
+
 	void Update(float deltaTime) override
 	{
 		for (ISystem* plugin : m_systems)

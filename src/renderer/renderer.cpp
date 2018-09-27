@@ -68,6 +68,15 @@ public:
 		return m_models.Find(entity, model);
 	}
 
+	ModelItem* GetModelComponent(Entity entity, worldId world) const override
+	{
+		ModelItem* model;
+		if(m_models.Find(entity, model))
+			return model;
+		else
+			return nullptr;
+	}
+
 	size_t GetModelsCount(worldId world) const override
 	{
 		return m_models.GetSize();

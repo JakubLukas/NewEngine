@@ -32,6 +32,8 @@ public:
 	virtual bool AddSystem(ISystem* system) = 0;
 	virtual void RemoveSystem(const char* name) = 0;
 	virtual ISystem* GetSystem(const char* name) = 0;
+	virtual size_t GetSystemCount() const = 0;
+	virtual ISystem* GetSystems() const = 0;
 
 	virtual void Update(float deltaTime) = 0;
 
