@@ -7,12 +7,14 @@ namespace Veng
 {
 
 class IAllocator;
+class InputBlob;
 
 
 class InputClob
 {
 public:
 	InputClob(const char* data, size_t size);
+	InputClob(InputBlob& blob);
 
 	bool Read(char* data, size_t size);
 	bool ReadString(char* data, size_t maxSize);

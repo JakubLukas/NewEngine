@@ -57,7 +57,16 @@ void EntityWidget::RenderInternal()
 		const RenderScene::ModelItem* modelItem = renderScene->GetModelComponent(m_entity, world);
 		ImGui::Text("Model");
 		ModelManager& modelManager = renderer->GetModelManager();
-		Model* model = modelManager.GetResource()
+		MaterialManager& materialManager = renderer->GetMaterialManager();
+		const Model* model = modelManager.GetResource(modelItem->handle);
+
+		for(int i = 0; i < model->meshes.GetSize(); ++i)
+		{
+			const Mesh& mesh = model->meshes[i];
+			ImGui::Text("Mesh %d", i);
+			const Material* material = materialManager.GetResource(mesh.material);
+			ImGui::Text("Material %d", i);
+		}
 	}
 }
 

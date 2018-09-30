@@ -2,6 +2,7 @@
 
 #include "core/memory.h"
 #include "core/allocators.h"
+#include "core/file/blob.h"
 
 #include <cstdlib>
 #include <cerrno>
@@ -39,6 +40,14 @@ static bool IsEndOfLine(const char& c)
 InputClob::InputClob(const char* data, size_t size)
 	: m_data(data)
 	, m_size(size)
+	, m_position(0)
+{
+
+}
+
+InputClob::InputClob(InputBlob& blob)
+	: m_data((char*)blob.m_data)
+	, m_size(blob.m_size)
 	, m_position(0)
 {
 
