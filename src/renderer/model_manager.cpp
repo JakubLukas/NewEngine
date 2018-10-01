@@ -1,5 +1,8 @@
 #include "model_manager.h"
 
+#include "core/file/blob.h"
+#include "core/file/clob.h"
+
 #include <bgfx/bgfx.h>
 
 
@@ -91,9 +94,10 @@ void ModelManager::ReloadResource(Resource* resource)
 }
 
 
-void ModelManager::ResourceLoaded(resourceHandle handle, InputClob& data)
+void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
 	Model* model = static_cast<Model*>(ResourceManager::GetResource(handle));
+	InputClob dataText(data);
 
 	Mesh mesh;
 
@@ -104,23 +108,23 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputClob& data)
 		.end();
 
 	int verticesCount;
-	ASSERT(data.Read(verticesCount));
+	ASSERT(dataText.Read(verticesCount));
 
 	u32 verticesBufferSize = verticesCount * sizeof(PosColorVertex);
 	PosColorVertex* vertices = (PosColorVertex*)m_allocator.Allocate(verticesBufferSize, ALIGN_OF(PosColorVertex));
 	for(int i = 0; i < verticesCount; ++i)
 	{
-		ASSERT(data.Read(vertices[i].m_x));
-		data.Skip(1);
-		ASSERT(data.Read(vertices[i].m_y));
-		data.Skip(1);
-		ASSERT(data.Read(vertices[i].m_z));
-		data.Skip(1);
-		ASSERT(data.Read(vertices[i].m_abgr));
+		ASSERT(dataText.Read(vertices[i].m_x));
+		dataText.Skip(1);
+		ASSERT(dataText.Read(vertices[i].m_y));
+		dataText.Skip(1);
+		ASSERT(dataText.Read(vertices[i].m_z));
+		dataText.Skip(1);
+		ASSERT(dataText.Read(vertices[i].m_abgr));
 	}
 
 	int indicesCount;
-	ASSERT(data.Read(indicesCount));
+	ASSERT(dataText.Read(indicesCount));
 	indicesCount *= 3;
 
 	u32 indicesBufferSize = indicesCount * sizeof(u16);
@@ -128,7 +132,7 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputClob& data)
 	for(int i = 0; i < indicesCount; ++i)
 	{
 		int num;
-		ASSERT(data.Read(num));
+		ASSERT(dataText.Read(num));
 		indices[i] = (u16)num;
 	}
 
@@ -139,7 +143,7 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputClob& data)
 	m_allocator.Deallocate(indices);
 
 	char materialPath[Path::MAX_LENGTH + 1] = { '\0' };
-	ASSERT(data.ReadLine(materialPath, Path::MAX_LENGTH));
+	ASSERT(dataText.ReadLine(materialPath, Path::MAX_LENGTH));
 	mesh.material = static_cast<materialHandle>(m_depManager->LoadResource(ResourceType::Model, ResourceType::Material, Path(materialPath)));
 
 	model->meshes.Push(mesh);

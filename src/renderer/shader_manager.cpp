@@ -1,4 +1,7 @@
 #include "shader_manager.h"
+
+#include "core/file/blob.h"
+#include "core/file/clob.h"
 #include "core/file/file_system.h"
 #include "core/asserts.h"
 #include "core/logs.h"
@@ -172,12 +175,13 @@ void ShaderInternalManager::ReloadResource(Resource* resource)
 }
 
 
-void ShaderInternalManager::ResourceLoaded(resourceHandle handle, InputClob& data)
+void ShaderInternalManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
 	ShaderInternal* shaderInt = static_cast<ShaderInternal*>(ResourceManager::GetResource(handle));
+	InputClob dataText(data);
 
-	const bgfx::Memory* mem = bgfx::alloc((u32)data.GetSize() + 1);
-	memory::Copy(mem->data, data.GetData(), data.GetSize());
+	const bgfx::Memory* mem = bgfx::alloc((u32)dataText.GetSize() + 1);
+	memory::Copy(mem->data, dataText.GetData(), dataText.GetSize());
 	mem->data[mem->size - 1] = '\0';
 
 	shaderInt->handle = bgfx::createShader(mem);
@@ -269,12 +273,13 @@ void ShaderManager::ReloadResource(Resource* resource)
 }
 
 
-void ShaderManager::ResourceLoaded(resourceHandle handle, InputClob& data)
+void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
 	Shader* shader = static_cast<Shader*>(ResourceManager::GetResource(handle));
+	InputClob dataText(data);
 
 	char vsPath[Path::MAX_LENGTH + 1] = { '\0' };
-	ASSERT(data.ReadLine(vsPath, Path::MAX_LENGTH));
+	ASSERT(dataText.ReadLine(vsPath, Path::MAX_LENGTH));
 
 	Path vOutPath;
 	ASSERT(CompileShader(GetFileSystem(), Path(vsPath), vOutPath));
@@ -282,7 +287,7 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputClob& data)
 	shader->vsHandle = static_cast<shaderInternalHandle>(vsHandle);
 
 	char fsPath[Path::MAX_LENGTH + 1] = { '\0' };
-	ASSERT(data.ReadLine(fsPath, Path::MAX_LENGTH));
+	ASSERT(dataText.ReadLine(fsPath, Path::MAX_LENGTH));
 
 	Path fOutPath;
 	ASSERT(CompileShader(GetFileSystem(), Path(fsPath), fOutPath));

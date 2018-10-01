@@ -1,5 +1,8 @@
 #include "material_manager.h"
 
+#include "core/file/blob.h"
+#include "core/file/clob.h"
+
 
 namespace Veng
 {
@@ -75,12 +78,13 @@ void MaterialManager::ReloadResource(Resource* resource)
 }
 
 
-void MaterialManager::ResourceLoaded(resourceHandle handle, InputClob& data)
+void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
 	Material* material = static_cast<Material*>(ResourceManager::GetResource(handle));
+	InputClob dataText(data);
 
 	char shaderPath[Path::MAX_LENGTH + 1] = { '\0' };
-	ASSERT(data.ReadString(shaderPath, Path::MAX_LENGTH));
+	ASSERT(dataText.ReadString(shaderPath, Path::MAX_LENGTH));
 	material->shader = static_cast<shaderHandle>(m_depManager->LoadResource(ResourceType::Material, ResourceType::Shader, Path(shaderPath)));
 }
 

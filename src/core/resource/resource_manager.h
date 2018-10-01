@@ -3,8 +3,6 @@
 #include "core/allocators.h"
 #include "core/hash_map.h"
 #include "core/file/file_system.h"
-#include "core/file/clob.h"
-
 
 #include "resource.h"
 #include "dependency_manager.h"
@@ -13,7 +11,7 @@
 namespace Veng
 {
 
-
+class InputBlob;
 class DependencyManager;
 
 
@@ -48,7 +46,7 @@ protected:
 	virtual void DestroyResource(Resource* resource) = 0;
 	virtual void ReloadResource(Resource* resource) = 0;
 
-	virtual void ResourceLoaded(resourceHandle handle, InputClob& data) = 0;
+	virtual void ResourceLoaded(resourceHandle handle, InputBlob& data) = 0;
 	virtual void ChildResourceLoaded(resourceHandle childResource) { }
 
 	const FileSystem& GetFileSystem() const { return m_fileSystem; }

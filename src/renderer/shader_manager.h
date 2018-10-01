@@ -1,11 +1,9 @@
 #pragma once
 
-#include <bgfx/bgfx.h>
-
 #include "core/resource/resource.h"
 #include "core/resource/resource_manager.h"
 
-
+#include <bgfx/bgfx.h>
 
 
 namespace Veng
@@ -63,7 +61,7 @@ private:
 	Resource* CreateResource() override;
 	void DestroyResource(Resource* resource) override;
 	void ReloadResource(Resource* resource) override;
-	void ResourceLoaded(resourceHandle handle, InputClob& data) override;
+	void ResourceLoaded(resourceHandle handle, InputBlob& data) override;
 };
 
 
@@ -88,7 +86,7 @@ private:
 	Resource* CreateResource() override;
 	void DestroyResource(Resource* resource) override;
 	void ReloadResource(Resource* resource) override;
-	void ResourceLoaded(resourceHandle handle, InputClob& data) override;
+	void ResourceLoaded(resourceHandle handle, InputBlob& data) override;
 	void ChildResourceLoaded(resourceHandle childResource) override;
 
 	void FinalizeShader(Shader* shader);

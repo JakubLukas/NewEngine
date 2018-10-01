@@ -46,9 +46,9 @@ InputClob::InputClob(const char* data, size_t size)
 }
 
 InputClob::InputClob(InputBlob& blob)
-	: m_data((char*)blob.m_data)
-	, m_size(blob.m_size)
-	, m_position(0)
+	: m_data((char*)blob.GetData())
+	, m_size(blob.GetSize())
+	, m_position(blob.GetPosition())
 {
 
 }

@@ -14,7 +14,9 @@ enum class textureHandle : u64 {};
 struct Texture : public Resource
 {
 	//format
-	u8* data;
+	u32 width = 0;
+	u32 height = 0;
+	u8* data = nullptr;
 };
 
 
@@ -36,7 +38,7 @@ private:
 	Resource* CreateResource() override;
 	void DestroyResource(Resource* resource) override;
 	void ReloadResource(Resource* resource) override;
-	void ResourceLoaded(resourceHandle handle, InputClob& data) override;
+	void ResourceLoaded(resourceHandle handle, InputBlob& data) override;
 	void ChildResourceLoaded(resourceHandle childResource) override;
 
 	void FinalizeTexture(Texture* material);

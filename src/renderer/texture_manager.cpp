@@ -1,8 +1,41 @@
 #include "texture_manager.h"
 
+#include "core/file/blob.h"
+#include "core/memory.h"
+
 
 namespace Veng
 {
+
+
+namespace TGA
+{
+
+
+struct Header
+{
+	char  idlength;
+	char  colourmaptype;
+	char  datatypecode;
+	short int colourmaporigin;
+	short int colourmaplength;
+	char  colourmapdepth;
+	short int x_origin;
+	short int y_origin;
+	short width;
+	short height;
+	char  bitsperpixel;
+	char  imagedescriptor;
+};
+
+
+void LoadHeader(InputBlob& data, Header& header)
+{
+
+}
+
+
+}
 
 
 inline static textureHandle GenericToMaterialHandle(resourceHandle handle)
@@ -61,11 +94,11 @@ Resource* TextureManager::CreateResource()
 
 void TextureManager::DestroyResource(Resource* resource)
 {
-	Texture* material = static_cast<Texture*>(resource);
+	Texture* texture = static_cast<Texture*>(resource);
 
-	m_allocator.Deallocate(material->data);
+	m_allocator.Deallocate(texture->data);
 
-	DELETE_OBJECT(m_allocator, material);
+	DELETE_OBJECT(m_allocator, texture);
 }
 
 
@@ -75,35 +108,14 @@ void TextureManager::ReloadResource(Resource* resource)
 }
 
 
-void TextureManager::ResourceLoaded(resourceHandle handle, InputClob& data)
+void TextureManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
-	Material* material = static_cast<Material*>(ResourceManager::GetResource(handle));
+	Texture* texture = static_cast<Texture*>(ResourceManager::GetResource(handle));
 
-	char shaderPath[Path::MAX_LENGTH + 1] = { '\0' };
-	ASSERT(data.ReadString(shaderPath, Path::MAX_LENGTH));
-	material->shader = static_cast<shaderHandle>(m_depManager->LoadResource(ResourceType::Material, ResourceType::Shader, Path(shaderPath)));
-}
-
-
-void TextureManager::ChildResourceLoaded(resourceHandle childResource)
-{
-	shaderHandle childHandle = static_cast<shaderHandle>(childResource);
-
-	for(auto& res : m_resources)
-	{
-		Material* material = static_cast<Material*>(res.value);
-		if(material->shader == childHandle)
-		{
-			FinalizeMaterial(material);
-		}
-	}
-}
-
-
-void TextureManager::FinalizeMaterial(Material* material)
-{
-	material->SetState(Resource::State::Ready);
-	m_depManager->ResourceLoaded(ResourceType::Material, GetResourceHandle(material));
+	texture->width = 64;//////////////////////////
+	texture->height = 64;/////////////////////////
+	texture->data = (u8*)m_allocator.Allocate(data.GetSize(), ALIGN_OF(u8));
+	memory::Copy(texture->data, data.GetData(), data.GetSize());
 }
 
 

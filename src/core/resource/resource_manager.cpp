@@ -1,5 +1,7 @@
 #include "resource_manager.h"
 
+#include "core/file/blob.h"
+
 
 namespace Veng
 {
@@ -121,7 +123,7 @@ void ResourceManager::FileSystemCallback(fileHandle handle)
 	ResourceAsyncOp* tmp;
 	if (m_asyncOps.Find(handle, tmp))
 	{
-		InputClob blob(static_cast<char*>(tmp->buffer), tmp->bufferSize);
+		InputBlob blob(static_cast<char*>(tmp->buffer), tmp->bufferSize);
 
 		ResourceLoaded(tmp->handle, blob);
 
@@ -130,7 +132,7 @@ void ResourceManager::FileSystemCallback(fileHandle handle)
 	}
 	else
 	{
-		ASSERT2(false, "No tmp structure for file handle returned by callback");
+		ASSERT2(false, "No ResourceAsyncOp exists for fileHandle returned by callback");
 	}
 }
 
