@@ -3,39 +3,17 @@
 #include "core/file/blob.h"
 #include "core/memory.h"
 
+#define STBI_NO_STDIO
+#define STB_IMAGE_STATIC
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_MALLOC
+#define STBI_REALLOC
+#define STBI_FREE
+#include "../external/stb/stb_image.h"
+
 
 namespace Veng
 {
-
-
-namespace TGA
-{
-
-
-struct Header
-{
-	char  idlength;
-	char  colourmaptype;
-	char  datatypecode;
-	short int colourmaporigin;
-	short int colourmaplength;
-	char  colourmapdepth;
-	short int x_origin;
-	short int y_origin;
-	short width;
-	short height;
-	char  bitsperpixel;
-	char  imagedescriptor;
-};
-
-
-void LoadHeader(InputBlob& data, Header& header)
-{
-
-}
-
-
-}
 
 
 inline static textureHandle GenericToMaterialHandle(resourceHandle handle)
@@ -111,6 +89,11 @@ void TextureManager::ReloadResource(Resource* resource)
 void TextureManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
 	Texture* texture = static_cast<Texture*>(ResourceManager::GetResource(handle));
+
+	int x;
+	int y;
+	int channels;
+	const u8* data = (const u8*)stbi_load_from_memory((const stbi_uc*)data.GetData(), data.GetSize(), &x, &y, &channels, 0);
 
 	texture->width = 64;//////////////////////////
 	texture->height = 64;/////////////////////////
