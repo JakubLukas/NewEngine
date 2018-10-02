@@ -2,13 +2,32 @@
 
 #include "core/file/blob.h"
 #include "core/memory.h"
+#include "core/allocators.h"
 
+
+static Veng::HeapAllocator* stbImageAllocator = nullptr;
+
+static void* stbImageAlloc(size_t size)
+{
+	return stbImageAllocator->Allocate(size, ALIGN_OF(Veng::u8));
+}
+
+static void* stbImageRealloc(void* ptr, size_t size)
+{
+	return stbImageAllocator->Reallocate(ptr, size, ALIGN_OF(Veng::u8));
+}
+
+static void stbImageDealloc(void* ptr)
+{
+	stbImageAllocator->Deallocate(ptr);
+}
+
+#define STBI_MALLOC stbImageAlloc
+#define STBI_REALLOC stbImageRealloc
+#define STBI_FREE stbImageDealloc
 #define STBI_NO_STDIO
 #define STB_IMAGE_STATIC
 #define STB_IMAGE_IMPLEMENTATION
-#define STBI_MALLOC
-#define STBI_REALLOC
-#define STBI_FREE
 #include "../external/stb/stb_image.h"
 
 
@@ -30,13 +49,13 @@ inline static resourceHandle MaterialToGenericHandle(textureHandle handle)
 TextureManager::TextureManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
 	: ResourceManager(allocator, fileSystem, depManager)
 {
-
+	stbImageAllocator = NEW_OBJECT(m_allocator, HeapAllocator)(m_allocator);
 }
 
 
 TextureManager::~TextureManager()
 {
-
+	DELETE_OBJECT(m_allocator, stbImageAllocator);
 }
 
 
@@ -93,12 +112,14 @@ void TextureManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	int x;
 	int y;
 	int channels;
-	const u8* data = (const u8*)stbi_load_from_memory((const stbi_uc*)data.GetData(), data.GetSize(), &x, &y, &channels, 0);
+	u8* imageData = (u8*)stbi_load_from_memory((const stbi_uc*)data.GetData(), (int)data.GetSize(), &x, &y, &channels, 0);
 
-	texture->width = 64;//////////////////////////
-	texture->height = 64;/////////////////////////
-	texture->data = (u8*)m_allocator.Allocate(data.GetSize(), ALIGN_OF(u8));
-	memory::Copy(texture->data, data.GetData(), data.GetSize());
+	ASSERT2(imageData != nullptr, "Invalid image");
+
+	texture->width = (u32)x;
+	texture->height = (u32)y;
+	texture->channels = (u32)channels;
+	texture->data = imageData;
 }
 
 

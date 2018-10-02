@@ -192,7 +192,7 @@ void ShaderInternalManager::ResourceLoaded(resourceHandle handle, InputBlob& dat
 	}
 	else
 	{
-		ASSERT(false);/////failed load of resource
+		ASSERT2(false, "Shader was not created");
 	}
 	m_depManager->ResourceLoaded(ResourceType::ShaderInternal, handle);
 }
@@ -296,9 +296,9 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 }
 
 
-void ShaderManager::ChildResourceLoaded(resourceHandle childResource)
+void ShaderManager::ChildResourceLoaded(resourceHandle handle, ResourceType type)
 {
-	shaderInternalHandle childHandle = static_cast<shaderInternalHandle>(childResource);
+	shaderInternalHandle childHandle = static_cast<shaderInternalHandle>(handle);
 
 	for (auto& res : m_resources)
 	{

@@ -4,6 +4,9 @@
 #include "core/resource/resource_manager.h"
 
 #include "shader_manager.h"
+#include "texture_manager.h"
+
+#include "core/array.h"
 
 
 namespace Veng
@@ -16,7 +19,8 @@ enum class materialHandle : u64 {};
 struct Material : public Resource
 {
 	shaderHandle shader;
-	//Textures
+	static const int MAX_TEXTURES = 4;
+	textureHandle textures[MAX_TEXTURES] = { (textureHandle)INVALID_HANDLE };
 	//Uniforms?
 	//commandBuffer*
 };
@@ -24,6 +28,13 @@ struct Material : public Resource
 
 class MaterialManager final : public ResourceManager
 {
+private:
+	struct MaterialLoadingOp
+	{
+		bool shader = false;
+		bool textures[Material::MAX_TEXTURES] = { 0 };
+	};
+
 public:
 	MaterialManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
 	~MaterialManager() override;
@@ -41,9 +52,12 @@ private:
 	void DestroyResource(Resource* resource) override;
 	void ReloadResource(Resource* resource) override;
 	void ResourceLoaded(resourceHandle handle, InputBlob& data) override;
-	void ChildResourceLoaded(resourceHandle childResource) override;
+	void ChildResourceLoaded(resourceHandle handle, ResourceType type) override;
 
 	void FinalizeMaterial(Material* material);
+
+private:
+	Array<MaterialLoadingOp> m_loadingOp;
 };
 
 

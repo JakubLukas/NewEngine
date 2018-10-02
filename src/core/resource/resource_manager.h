@@ -47,7 +47,7 @@ protected:
 	virtual void ReloadResource(Resource* resource) = 0;
 
 	virtual void ResourceLoaded(resourceHandle handle, InputBlob& data) = 0;
-	virtual void ChildResourceLoaded(resourceHandle childResource) { }
+	virtual void ChildResourceLoaded(resourceHandle handle, ResourceType type) { }
 
 	const FileSystem& GetFileSystem() const { return m_fileSystem; }
 

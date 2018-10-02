@@ -15,7 +15,8 @@ enum class ResourceType
 	ShaderInternal,
 	Shader,
 	Material,
-	Model
+	Model,
+	Texture,
 };
 
 

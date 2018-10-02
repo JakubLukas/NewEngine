@@ -33,7 +33,7 @@ private:
 	void DestroyResource(Resource* resource) override;
 	void ReloadResource(Resource* resource) override;
 	void ResourceLoaded(resourceHandle handle, InputBlob& data) override;
-	void ChildResourceLoaded(resourceHandle childResource) override;
+	void ChildResourceLoaded(resourceHandle handle, ResourceType type) override;
 
 	void FinalizeModel(Model* model);
 };

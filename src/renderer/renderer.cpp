@@ -12,6 +12,7 @@
 #include "material_manager.h"
 #include "model_manager.h"
 #include "model.h"
+#include "texture_manager.h"
 
 #include <bgfx/bgfx.h>///////////////
 
@@ -191,11 +192,13 @@ public:
 		m_shaderManager = NEW_OBJECT(m_allocator, ShaderManager)(m_allocator, *m_engine.GetFileSystem(), resourceManagement);
 		m_materialManager = NEW_OBJECT(m_allocator, MaterialManager)(m_allocator, *m_engine.GetFileSystem(), resourceManagement);
 		m_modelManager = NEW_OBJECT(m_allocator, ModelManager)(m_allocator, *m_engine.GetFileSystem(), resourceManagement);
+		m_textureManager = NEW_OBJECT(m_allocator, TextureManager)(m_allocator, *m_engine.GetFileSystem(), resourceManagement);
 
 		resourceManagement->RegisterManager(ResourceType::ShaderInternal, m_shaderInternalManager);
 		resourceManagement->RegisterManager(ResourceType::Shader, m_shaderManager);
 		resourceManagement->RegisterManager(ResourceType::Material, m_materialManager);
 		resourceManagement->RegisterManager(ResourceType::Model, m_modelManager);
+		resourceManagement->RegisterManager(ResourceType::Texture, m_textureManager);
 	}
 
 
@@ -288,6 +291,7 @@ public:
 	MaterialManager& GetMaterialManager() const override { return *m_materialManager; }
 	ShaderManager& GetShaderManager() const override { return *m_shaderManager; }
 	ModelManager& GetModelManager() const override { return *m_modelManager; }
+	TextureManager& GetTextureManager() const override { return *m_textureManager; }
 
 
 	void Resize(u32 width, u32 height) override
@@ -311,6 +315,7 @@ private:
 	ShaderManager* m_shaderManager;
 	MaterialManager* m_materialManager;
 	ModelManager* m_modelManager;
+	TextureManager* m_textureManager;
 
 	/////////////////////
 	u32 m_width = 0;

@@ -17,6 +17,7 @@ class RenderSystem;
 class MaterialManager;
 class ShaderManager;
 class ModelManager;
+class TextureManager;
 enum class modelHandle : u64;
 struct Camera;
 
@@ -80,6 +81,7 @@ public:
 	virtual MaterialManager& GetMaterialManager() const = 0;
 	virtual ShaderManager& GetShaderManager() const = 0;
 	virtual ModelManager& GetModelManager() const = 0;
+	virtual TextureManager& GetTextureManager() const = 0;
 
 	virtual void Resize(u32 width, u32 height) = 0;
 	virtual u32 GetScreenWidth() const = 0;

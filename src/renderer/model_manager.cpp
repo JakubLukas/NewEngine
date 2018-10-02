@@ -150,9 +150,9 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 }
 
 
-void ModelManager::ChildResourceLoaded(resourceHandle childResource)
+void ModelManager::ChildResourceLoaded(resourceHandle handle, ResourceType type)
 {
-	materialHandle childHandle = static_cast<materialHandle>(childResource);
+	materialHandle childHandle = static_cast<materialHandle>(handle);
 
 	for (auto& res : m_resources)
 	{

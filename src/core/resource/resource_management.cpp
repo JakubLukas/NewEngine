@@ -90,7 +90,7 @@ public:
 
 		for (DependencyAsyncOp& asyncOp : loaded)
 		{
-			asyncOp.parent->ChildResourceLoaded(handle);
+			asyncOp.parent->ChildResourceLoaded(handle, resourceType);
 		}
 	}
 

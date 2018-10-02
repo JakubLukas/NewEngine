@@ -86,19 +86,42 @@ void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	char shaderPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(dataText.ReadString(shaderPath, Path::MAX_LENGTH));
 	material->shader = static_cast<shaderHandle>(m_depManager->LoadResource(ResourceType::Material, ResourceType::Shader, Path(shaderPath)));
+
+	load textures, assign to load, create MaterialLoadingOp
 }
 
 
-void MaterialManager::ChildResourceLoaded(resourceHandle childResource)
+void MaterialManager::ChildResourceLoaded(resourceHandle handle, ResourceType type)
 {
-	shaderHandle childHandle = static_cast<shaderHandle>(childResource);
-
-	for(auto& res : m_resources)
+	if(type == ResourceType::Shader)
 	{
-		Material* material = static_cast<Material*>(res.value);
-		if(material->shader == childHandle)
+		shaderHandle childHandle = static_cast<shaderHandle>(handle);
+
+		for(auto& res : m_resources)
 		{
-			FinalizeMaterial(material);
+			Material* material = static_cast<Material*>(res.value);
+			if(material->shader == childHandle)
+			{
+				assign MaterialLoadingOp
+				//FinalizeMaterial(material);
+			}
+		}
+	}
+	else if(type == ResourceType::Texture)
+	{
+		textureHandle childHandle = static_cast<textureHandle>(handle);
+
+		for(auto& res : m_resources)
+		{
+			Material* material = static_cast<Material*>(res.value);
+			for(textureHandle texHandle : material->textures)
+			{
+				if(texHandle == childHandle)
+				{
+					assign MaterialLoadingOp
+					//FinalizeMaterial(material);
+				}
+			}
 		}
 	}
 }
