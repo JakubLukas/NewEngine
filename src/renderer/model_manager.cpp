@@ -146,7 +146,7 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	ASSERT(dataText.ReadLine(materialPath, Path::MAX_LENGTH));
 	mesh.material = static_cast<materialHandle>(m_depManager->LoadResource(ResourceType::Model, ResourceType::Material, Path(materialPath)));
 
-	model->meshes.Push(mesh);
+	model->meshes.PushBack(mesh);
 }
 
 

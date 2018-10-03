@@ -219,6 +219,7 @@ void QueryChanges(nativeAsyncHandle asyncHandle, Function<void(nativeFileHandle,
 				}
 				else
 				{
+					DWORD err = GetLastError();
 					ASSERT(false);
 				}
 			}
@@ -321,7 +322,7 @@ bool ReadFileSync(nativeFileHandle fileHandle, size_t filePosition, void* buffer
 {
 	ASSERT(fileHandle != INVALID_HANDLE_VALUE);
 
-	OVERLAPPED overlapped;
+	OVERLAPPED overlapped = { 0 };
 	overlapped.Internal = 0;
 	overlapped.InternalHigh = 0;
 	overlapped.Offset = (DWORD)(filePosition & 0xFFFFffff);
@@ -348,7 +349,7 @@ bool WriteFileSync(nativeFileHandle fileHandle, size_t filePosition, const void*
 {
 	ASSERT(fileHandle != INVALID_HANDLE_VALUE);
 
-	OVERLAPPED overlapped;
+	OVERLAPPED overlapped = { 0 };
 	overlapped.Internal = 0;
 	overlapped.InternalHigh = 0;
 	overlapped.Offset = (DWORD)(filePosition & 0xFFFFffff);

@@ -58,8 +58,8 @@ public:
 		else
 		{
 			idx = m_files.GetSize();
-			file = &m_files.Push();
-			file->operation = &m_operations.Push();
+			file = &m_files.PushBack();
+			file->operation = &m_operations.PushBack();
 		}
 
 		if (FS::OpenFile(file->handle, m_asyncHandle, path, mode))

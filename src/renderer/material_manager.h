@@ -31,8 +31,11 @@ class MaterialManager final : public ResourceManager
 private:
 	struct MaterialLoadingOp
 	{
-		bool shader = false;
-		bool textures[Material::MAX_TEXTURES] = { 0 };
+		materialHandle material;
+		shaderHandle shader;
+		bool shaderLoaded = false;
+		textureHandle textures[Material::MAX_TEXTURES] = { (textureHandle)INVALID_HANDLE };
+		bool texturesLoaded[Material::MAX_TEXTURES] = { false };//use bitfields
 	};
 
 public:

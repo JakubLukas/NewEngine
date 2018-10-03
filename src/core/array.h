@@ -47,7 +47,7 @@ public:
 	const Type* End() const { return m_data + m_size; }
 
 
-	Type& Push(const Type& value)
+	Type& PushBack(const Type& value)
 	{
 		if(m_size == m_capacity)
 			Enlarge();
@@ -57,7 +57,7 @@ public:
 		return m_data[m_size++];
 	}
 
-	Type& Push()
+	Type& PushBack()
 	{
 		if (m_size == m_capacity)
 			Enlarge();
@@ -78,11 +78,13 @@ public:
 		return m_data[m_size++];
 	}
 
-	void Pop()
+	Type PopBack()
 	{
 		ASSERT(m_size > 0);
 		--m_size;
+		Type result(m_data[m_size]);
 		DELETE_PLACEMENT(m_data + m_size);
+		return result;
 	}
 
 	void Erase(size_t idx)
@@ -90,7 +92,7 @@ public:
 		ASSERT(idx < m_size);
 		DELETE_PLACEMENT(m_data + idx);
 
-		--m_size;
+		m_size--;
 
 		NEW_PLACEMENT(m_data + idx, Type)(m_data[m_size]);
 		DELETE_PLACEMENT(m_data + m_size);

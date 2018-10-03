@@ -128,7 +128,7 @@ public:
 			newEvent.deviceCategory = device->category;
 			newEvent.kbCode = buttonId;
 			newEvent.pressed = pressed;
-			m_events.Push(newEvent);
+			m_events.PushBack(newEvent);
 		}
 	}
 
@@ -147,7 +147,7 @@ public:
 			newEvent.deviceCategory = device->category;
 			newEvent.mbCode = buttonId;
 			newEvent.pressed = pressed;
-			m_events.Push(newEvent);
+			m_events.PushBack(newEvent);
 		}
 	}
 
@@ -166,7 +166,7 @@ public:
 			newEvent.deviceCategory = device->category;
 			newEvent.gbCode = buttonId;
 			newEvent.pressed = pressed;
-			m_events.Push(newEvent);
+			m_events.PushBack(newEvent);
 		}
 	}
 
@@ -185,7 +185,7 @@ public:
 			newEvent.deviceCategory = device->category;
 			newEvent.maCode = axisId;
 			newEvent.axis = delta;
-			m_events.Push(newEvent);
+			m_events.PushBack(newEvent);
 		}
 	}
 
@@ -204,7 +204,7 @@ public:
 			newEvent.deviceCategory = device->category;
 			newEvent.gaCode = axisId;
 			newEvent.axis = delta;
-			m_events.Push(newEvent);
+			m_events.PushBack(newEvent);
 		}
 	}
 

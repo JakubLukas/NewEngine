@@ -42,7 +42,7 @@ public:
 		ResourceManager** manager;
 		if (m_managers.Find(resourceType, manager))
 		{
-			DependencyAsyncOp& asyncOp = m_dependencyAsyncOps.Push();
+			DependencyAsyncOp& asyncOp = m_dependencyAsyncOps.PushBack();
 			ResourceManager** reqMng;
 			ASSERT(m_managers.Find(requestedType, reqMng));
 			asyncOp.parent = *reqMng;
@@ -78,7 +78,7 @@ public:
 			DependencyAsyncOp& asyncOp = m_dependencyAsyncOps[i];
 			if (asyncOp.childType == resourceType && asyncOp.childHandle == handle)
 			{
-				loaded.Push(asyncOp);
+				loaded.PushBack(asyncOp);
 				//tmp.parent->ChildResourceLoaded(handle);
 				m_dependencyAsyncOps.Erase((unsigned)i);
 			}

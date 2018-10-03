@@ -36,10 +36,10 @@ Entity World::CreateEntity()
 	}
 	else
 	{
-		EntityItem& item = m_entities.Push();
+		EntityItem& item = m_entities.PushBack();
 		item.entity = (Entity)(m_entities.GetSize() - 1);
 		item.alive = true;
-		m_entitiesTransform.Push();
+		m_entitiesTransform.PushBack();
 		return item.entity;
 	}
 }

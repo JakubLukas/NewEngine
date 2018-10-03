@@ -21,6 +21,7 @@ inline static resourceHandle MaterialToGenericHandle(materialHandle handle)
 
 MaterialManager::MaterialManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
 	: ResourceManager(allocator, fileSystem, depManager)
+	, m_loadingOp(m_allocator)
 {
 
 }
@@ -83,45 +84,46 @@ void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	Material* material = static_cast<Material*>(ResourceManager::GetResource(handle));
 	InputClob dataText(data);
 
+	MaterialLoadingOp& op = m_loadingOp.PushBack();
+	op.material = static_cast<materialHandle>(handle);
+
 	char shaderPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(dataText.ReadString(shaderPath, Path::MAX_LENGTH));
-	material->shader = static_cast<shaderHandle>(m_depManager->LoadResource(ResourceType::Material, ResourceType::Shader, Path(shaderPath)));
 
-	load textures, assign to load, create MaterialLoadingOp
+	char texturePath[Path::MAX_LENGTH + 1] = { '\0' };
+	ASSERT(dataText.ReadString(texturePath, Path::MAX_LENGTH));
+
+	material->shader = static_cast<shaderHandle>(m_depManager->LoadResource(ResourceType::Material, ResourceType::Shader, Path(shaderPath)));
+	op.shader = material->shader;
+
+	material->textures[0] = static_cast<textureHandle>(m_depManager->LoadResource(ResourceType::Material, ResourceType::Texture, Path(texturePath)));
+	op.textures[0] = material->textures[0];
 }
 
 
 void MaterialManager::ChildResourceLoaded(resourceHandle handle, ResourceType type)
 {
-	if(type == ResourceType::Shader)
+	for (MaterialLoadingOp& op : m_loadingOp)
 	{
-		shaderHandle childHandle = static_cast<shaderHandle>(handle);
-
-		for(auto& res : m_resources)
+		if (type == ResourceType::Shader)
 		{
-			Material* material = static_cast<Material*>(res.value);
-			if(material->shader == childHandle)
+			if (op.shader == static_cast<shaderHandle>(handle))
 			{
-				assign MaterialLoadingOp
-				//FinalizeMaterial(material);
+				op.shaderLoaded = true;
 			}
 		}
-	}
-	else if(type == ResourceType::Texture)
-	{
-		textureHandle childHandle = static_cast<textureHandle>(handle);
-
-		for(auto& res : m_resources)
+		if (type == ResourceType::Texture)
 		{
-			Material* material = static_cast<Material*>(res.value);
-			for(textureHandle texHandle : material->textures)
+			if (op.textures[0] == static_cast<textureHandle>(handle))
 			{
-				if(texHandle == childHandle)
-				{
-					assign MaterialLoadingOp
-					//FinalizeMaterial(material);
-				}
+				op.texturesLoaded[0] = true;
 			}
+		}
+
+		if (op.shaderLoaded && op.texturesLoaded[0])
+		{
+			Material* material = static_cast<Material*>(ResourceManager::GetResource(handle));
+			FinalizeMaterial(material);
 		}
 	}
 }
