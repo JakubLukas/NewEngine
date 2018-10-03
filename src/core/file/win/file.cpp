@@ -205,7 +205,7 @@ void QueryChanges(nativeAsyncHandle asyncHandle, Function<void(nativeFileHandle,
 				LPOVERLAPPED ol = overlapped[i].lpOverlapped;
 				DWORD bytesTransferred = overlapped[i].dwNumberOfBytesTransferred;
 
-				DWORD bytes_transfered = 0;
+				/*DWORD bytes_transfered = 0;
 				result = GetOverlappedResult(
 					hFile, //file
 					ol, //overlapped
@@ -213,15 +213,17 @@ void QueryChanges(nativeAsyncHandle asyncHandle, Function<void(nativeFileHandle,
 					FALSE //nonblocking
 				);
 
-				if(result != 0)
-				{
+				ASSERT(bytesTransferred == bytes_transfered);*/
+
+				//if(result != 0)
+				//{
 					callback(hFile, (size_t)bytesTransferred); // success
-				}
-				else
-				{
-					DWORD err = GetLastError();
-					ASSERT(false);
-				}
+				//}
+				//else
+				//{
+					//DWORD err = GetLastError();
+					//ASSERT(false);
+				//}
 			}
 		}
 		else
