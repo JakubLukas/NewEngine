@@ -93,7 +93,7 @@ void TextureManager::DestroyResource(Resource* resource)
 {
 	Texture* texture = static_cast<Texture*>(resource);
 
-	m_allocator.Deallocate(texture->data);
+	stbi_image_free(texture->data);
 
 	DELETE_OBJECT(m_allocator, texture);
 }
@@ -120,6 +120,9 @@ void TextureManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	texture->height = (u32)y;
 	texture->channels = (u32)channels;
 	texture->data = imageData;
+
+	texture->SetState(Resource::State::Ready);
+	m_depManager->ResourceLoaded(ResourceType::Texture, GetResourceHandle(texture));
 }
 
 

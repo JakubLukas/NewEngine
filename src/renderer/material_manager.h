@@ -43,6 +43,8 @@ public:
 	~MaterialManager() override;
 
 
+	ResourceType GetType() const override { return ResourceType::Material; };
+
 	materialHandle Load(const Path& path);
 	void Unload(materialHandle handle);
 	void Reload(materialHandle handle);

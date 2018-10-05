@@ -49,6 +49,8 @@ public:
 	~ShaderInternalManager() override;
 
 
+	ResourceType GetType() const override { return ResourceType::ShaderInternal; };
+
 	shaderInternalHandle Load(const Path& path);
 
 	void Unload(shaderInternalHandle handle);
@@ -74,6 +76,8 @@ public:
 	ShaderManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
 	~ShaderManager() override;
 
+
+	ResourceType GetType() const override { return ResourceType::Shader; };
 
 	shaderHandle Load(const Path& path);
 	void Unload(shaderHandle handle);

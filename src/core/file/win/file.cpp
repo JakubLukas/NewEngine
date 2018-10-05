@@ -202,28 +202,9 @@ void QueryChanges(nativeAsyncHandle asyncHandle, Function<void(nativeFileHandle,
 			for(ULONG i = 0; i < count; ++i)
 			{
 				nativeFileHandle hFile = reinterpret_cast<nativeFileHandle>(overlapped[i].lpCompletionKey);
-				LPOVERLAPPED ol = overlapped[i].lpOverlapped;
 				DWORD bytesTransferred = overlapped[i].dwNumberOfBytesTransferred;
 
-				/*DWORD bytes_transfered = 0;
-				result = GetOverlappedResult(
-					hFile, //file
-					ol, //overlapped
-					&bytes_transfered,
-					FALSE //nonblocking
-				);
-
-				ASSERT(bytesTransferred == bytes_transfered);*/
-
-				//if(result != 0)
-				//{
-					callback(hFile, (size_t)bytesTransferred); // success
-				//}
-				//else
-				//{
-					//DWORD err = GetLastError();
-					//ASSERT(false);
-				//}
+				callback(hFile, (size_t)bytesTransferred); // success
 			}
 		}
 		else

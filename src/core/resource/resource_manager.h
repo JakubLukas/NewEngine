@@ -33,6 +33,8 @@ public:
 	ResourceManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
 	virtual ~ResourceManager();
 
+	virtual ResourceType GetType() const = 0;
+
 protected:
 	resourceHandle Load(const Path& path);
 	void Unload(resourceHandle handle);
@@ -59,7 +61,7 @@ protected:
 	IAllocator& m_allocator;
 	HashMap<u32, Resource*> m_resources;
 	DependencyManager* m_depManager;
-
+	ResourceType m_type;
 
 private:
 	struct ResourceAsyncOp

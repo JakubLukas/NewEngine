@@ -186,30 +186,17 @@ public:
 		: m_allocator(engine.GetAllocator())
 		, m_engine(engine)
 	{
-		ResourceManagement* resourceManagement = m_engine.GetResourceManagement();
-
-		m_shaderInternalManager = NEW_OBJECT(m_allocator, ShaderInternalManager)(m_allocator, *m_engine.GetFileSystem(), resourceManagement);
-		m_shaderManager = NEW_OBJECT(m_allocator, ShaderManager)(m_allocator, *m_engine.GetFileSystem(), resourceManagement);
-		m_materialManager = NEW_OBJECT(m_allocator, MaterialManager)(m_allocator, *m_engine.GetFileSystem(), resourceManagement);
-		m_modelManager = NEW_OBJECT(m_allocator, ModelManager)(m_allocator, *m_engine.GetFileSystem(), resourceManagement);
-		m_textureManager = NEW_OBJECT(m_allocator, TextureManager)(m_allocator, *m_engine.GetFileSystem(), resourceManagement);
-
-		resourceManagement->RegisterManager(ResourceType::ShaderInternal, m_shaderInternalManager);
-		resourceManagement->RegisterManager(ResourceType::Shader, m_shaderManager);
-		resourceManagement->RegisterManager(ResourceType::Material, m_materialManager);
-		resourceManagement->RegisterManager(ResourceType::Model, m_modelManager);
-		resourceManagement->RegisterManager(ResourceType::Texture, m_textureManager);
+		m_shaderInternalManager = static_cast<ShaderInternalManager*>(m_engine.GetResourceManager(ResourceType::ShaderInternal));
+		m_shaderManager = static_cast<ShaderManager*>(m_engine.GetResourceManager(ResourceType::Shader));
+		m_materialManager = static_cast<MaterialManager*>(m_engine.GetResourceManager(ResourceType::Material));
+		m_modelManager = static_cast<ModelManager*>(m_engine.GetResourceManager(ResourceType::Model));
+		m_textureManager = static_cast<TextureManager*>(m_engine.GetResourceManager(ResourceType::Texture));
 	}
 
 
 	~RenderSystemImpl() override
 	{
 		DELETE_OBJECT(m_allocator, m_scene);
-
-		DELETE_OBJECT(m_allocator, m_modelManager);
-		DELETE_OBJECT(m_allocator, m_materialManager);
-		DELETE_OBJECT(m_allocator, m_shaderManager);
-		DELETE_OBJECT(m_allocator, m_shaderInternalManager);
 	}
 
 
@@ -311,11 +298,11 @@ private:
 	Engine& m_engine;
 	RenderSceneImpl* m_scene;
 
-	ShaderInternalManager* m_shaderInternalManager;
-	ShaderManager* m_shaderManager;
-	MaterialManager* m_materialManager;
-	ModelManager* m_modelManager;
-	TextureManager* m_textureManager;
+	ShaderInternalManager* m_shaderInternalManager = nullptr;
+	ShaderManager* m_shaderManager = nullptr;
+	MaterialManager* m_materialManager = nullptr;
+	ModelManager* m_modelManager = nullptr;
+	TextureManager* m_textureManager = nullptr;
 
 	/////////////////////
 	u32 m_width = 0;

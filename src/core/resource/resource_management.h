@@ -23,10 +23,11 @@ public:
 
 	virtual bool RegisterManager(ResourceType type, ResourceManager* manager) = 0;
 	virtual bool UnregisterManager(ResourceType type) = 0;
+	virtual ResourceManager* GetManager(ResourceType type) const = 0;
 
 
 	virtual resourceHandle LoadResource(ResourceType requestedType, ResourceType resourceType, const Path& path) override = 0;
-	virtual void UnloadResource(ResourceType resourceType, resourceHandle handle) override = 0;
+	virtual bool UnloadResource(ResourceType resourceType, resourceHandle handle) override = 0;
 	virtual void ResourceLoaded(ResourceType resourceType, resourceHandle handle) override = 0;
 	virtual const Resource* GetResource(ResourceType resourceType, resourceHandle handle) override = 0;
 };

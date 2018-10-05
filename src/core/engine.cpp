@@ -2,6 +2,7 @@
 
 #include "file/file_system.h"
 #include "input/input_system.h"
+#include "resource/resource_manager.h"
 #include "resource/resource_management.h"
 #include "string.h"
 
@@ -79,21 +80,20 @@ public:
 		return true;
 	}
 
-
-	void RemoveSystem(const char* name) override
+	bool RemoveSystem(const char* name) override
 	{
 		for (unsigned i = 0; i < m_systems.GetSize(); ++i)
 		{
 			if (string::Equal(m_systems[i]->GetName(), name))
 			{
 				m_systems.Erase(i);
-				return;
+				return true;
 			}
 		}
+		return false;
 	}
 
-
-	ISystem* GetSystem(const char* name) override
+	ISystem* GetSystem(const char* name) const override
 	{
 		for (unsigned i = 0; i < m_systems.GetSize(); ++i)
 		{
@@ -106,16 +106,35 @@ public:
 		return nullptr;
 	}
 
-
 	size_t GetSystemCount() const override
 	{
 		return m_systems.GetSize();
 	}
 
-
 	ISystem* GetSystems() const override
 	{
 		return *m_systems.Begin();
+	}
+
+
+	bool AddResourceManager(ResourceManager& manager) override
+	{
+		return m_resourceManager->RegisterManager(manager.GetType(), &manager);
+	}
+
+	bool RemoveResourceManager(ResourceType type) override
+	{
+		return m_resourceManager->UnregisterManager(type);
+	}
+
+	ResourceManager* GetResourceManager(ResourceType type) const override
+	{
+		return m_resourceManager->GetManager(type);
+	}
+
+	ResourceManagement* GetResourceManagement() const override
+	{
+		return m_resourceManager;
 	}
 
 
@@ -145,12 +164,6 @@ public:
 	InputSystem* GetInputSystem() const override
 	{
 		return m_inputSystem;
-	}
-
-
-	ResourceManagement* GetResourceManagement() const override
-	{
-		return m_resourceManager;
 	}
 
 private:

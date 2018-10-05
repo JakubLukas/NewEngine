@@ -12,7 +12,6 @@ class ResourceManagementImpl : public ResourceManagement
 public:
 	ResourceManagementImpl(IAllocator& allocator)
 		: m_allocator(allocator)
-		, m_managers(m_allocator)
 		, m_dependencyAsyncOps(allocator)
 	{}
 
@@ -22,32 +21,41 @@ public:
 
 	bool RegisterManager(ResourceType type, ResourceManager* manager)
 	{
-		ResourceManager** registeredMng;
-		if (m_managers.Find(type, registeredMng))
+		if (m_managers[(size_t)type] != nullptr)
 			return false;
 
-		m_managers.Insert(type, manager);
+		m_managers[(size_t)type] = manager;
 		return true;
 	}
 
 
 	bool UnregisterManager(ResourceType type)
 	{
-		return m_managers.Erase(type);
+		if (m_managers[(size_t)type] == nullptr)
+			return false;
+
+		m_managers[(size_t)type] = nullptr;
+		return true;
+	}
+
+
+	ResourceManager* GetManager(ResourceType type) const override
+	{
+		ASSERT(m_managers[(size_t)type] != nullptr);
+		return m_managers[(size_t)type];
 	}
 
 
 	resourceHandle LoadResource(ResourceType requestedType, ResourceType resourceType, const Path& path) override
 	{
-		ResourceManager** manager;
-		if (m_managers.Find(resourceType, manager))
+		ResourceManager* manager = m_managers[(size_t)resourceType];
+		if (manager != nullptr)
 		{
 			DependencyAsyncOp& asyncOp = m_dependencyAsyncOps.PushBack();
-			ResourceManager** reqMng;
-			ASSERT(m_managers.Find(requestedType, reqMng));
-			asyncOp.parent = *reqMng;
+			ASSERT(m_managers[(size_t)requestedType] != nullptr);
+			asyncOp.parent = m_managers[(size_t)requestedType];
 			asyncOp.childType = resourceType;
-			asyncOp.childHandle = (*manager)->Load(path);
+			asyncOp.childHandle = manager->Load(path);
 			return asyncOp.childHandle;
 		}
 		else
@@ -58,13 +66,13 @@ public:
 	}
 
 
-	void UnloadResource(ResourceType resourceType, resourceHandle handle) override
+	bool UnloadResource(ResourceType resourceType, resourceHandle handle) override
 	{
-		ResourceManager** manager;
-		if (m_managers.Find(resourceType, manager))
-		{
-			(*manager)->Unload(handle);
-		}
+		if (m_managers[(size_t)resourceType] == nullptr)
+			return false;
+
+		m_managers[(size_t)resourceType]->Unload(handle);
+		return true;
 	}
 
 
@@ -97,10 +105,10 @@ public:
 
 	const Resource* GetResource(ResourceType resourceType, resourceHandle handle) override
 	{
-		ResourceManager** manager;
-		if (m_managers.Find(resourceType, manager))
+		ResourceManager* manager = m_managers[(size_t)resourceType];
+		if (manager != nullptr)
 		{
-			return (*manager)->GetResource(handle);
+			return manager->GetResource(handle);
 		}
 		else
 		{
@@ -120,7 +128,7 @@ private:
 
 private:
 	IAllocator& m_allocator;
-	AssociativeArray<ResourceType, ResourceManager*> m_managers;
+	ResourceManager* m_managers[(size_t)ResourceType::Count] = { nullptr };
 	Array<DependencyAsyncOp> m_dependencyAsyncOps;
 };
 

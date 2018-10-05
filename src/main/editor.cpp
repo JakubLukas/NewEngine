@@ -15,9 +15,19 @@
 #include "core/file/path.h"////////////////////////////////
 #include "core/math.h"////////////////////////////////
 #include "core/file/file.h"////////////////////
+#include "core/file/file_system.h"/////////////////
 #include "core/memory.h"/////////////////////
 #include "core/time.h"////////////////////////////
 #include "core/matrix.h"////////////////////////////////////
+
+#include "core/resource/resource.h"
+#include "core/resource/resource_manager.h"
+#include "core/resource/resource_management.h"
+#include "renderer/shader_manager.h"
+#include "renderer/material_manager.h"
+#include "renderer/model_manager.h"
+#include "renderer/model.h"
+#include "renderer/texture_manager.h"
 
 #include "core/input/devices/input_device_keyboard.h"
 
@@ -245,6 +255,12 @@ namespace Veng
 
 RenderSystem* m_renderSystem = nullptr;////////////////////////////////
 ScriptSystem* m_scriptSystem = nullptr;////////////////////////////////
+
+ShaderInternalManager* m_shaderInternalManager = nullptr;////////////////////////////////
+ShaderManager* m_shaderManager = nullptr;////////////////////////////////
+MaterialManager* m_materialManager = nullptr;////////////////////////////////
+ModelManager* m_modelManager = nullptr;////////////////////////////////
+TextureManager* m_textureManager = nullptr;////////////////////////////////
 
 
 namespace Editor
@@ -595,6 +611,22 @@ public:
 	void InitSystems()
 	{
 		ASSERT(m_engine != nullptr);
+
+		//resource managers
+		ResourceManagement* resourceManagement = m_engine->GetResourceManagement();
+		m_shaderInternalManager = NEW_OBJECT(m_allocator, ShaderInternalManager)(m_allocator, *m_engine->GetFileSystem(), resourceManagement);
+		m_shaderManager = NEW_OBJECT(m_allocator, ShaderManager)(m_allocator, *m_engine->GetFileSystem(), resourceManagement);
+		m_materialManager = NEW_OBJECT(m_allocator, MaterialManager)(m_allocator, *m_engine->GetFileSystem(), resourceManagement);
+		m_modelManager = NEW_OBJECT(m_allocator, ModelManager)(m_allocator, *m_engine->GetFileSystem(), resourceManagement);
+		m_textureManager = NEW_OBJECT(m_allocator, TextureManager)(m_allocator, *m_engine->GetFileSystem(), resourceManagement);
+
+		resourceManagement->RegisterManager(ResourceType::ShaderInternal, m_shaderInternalManager);
+		resourceManagement->RegisterManager(ResourceType::Shader, m_shaderManager);
+		resourceManagement->RegisterManager(ResourceType::Material, m_materialManager);
+		resourceManagement->RegisterManager(ResourceType::Model, m_modelManager);
+		resourceManagement->RegisterManager(ResourceType::Texture, m_textureManager);
+
+		//systems
 		m_renderSystem = RenderSystem::Create(*m_engine);
 		m_scriptSystem = ScriptSystem::Create(*m_engine);
 		m_engine->AddSystem(m_renderSystem);
@@ -609,6 +641,12 @@ public:
 		m_engine->RemoveSystem(m_renderSystem->GetName());
 		ScriptSystem::Destroy(m_scriptSystem);
 		RenderSystem::Destroy(m_renderSystem);
+
+		DELETE_OBJECT(m_allocator, m_modelManager);
+		DELETE_OBJECT(m_allocator, m_materialManager);
+		DELETE_OBJECT(m_allocator, m_shaderManager);
+		DELETE_OBJECT(m_allocator, m_shaderInternalManager);
+		DELETE_OBJECT(m_allocator, m_textureManager);
 	}
 
 	// RENDERING

@@ -27,6 +27,8 @@ public:
 	~TextureManager() override;
 
 
+	ResourceType GetType() const override { return ResourceType::Texture; }
+
 	textureHandle Load(const Path& path);
 	void Unload(textureHandle handle);
 	void Reload(textureHandle handle);

@@ -21,6 +21,8 @@ public:
 	~ModelManager() override;
 
 
+	ResourceType GetType() const override { return ResourceType::Model; };
+
 	modelHandle Load(const Path& path);
 	void Unload(modelHandle handle);
 	void Reload(modelHandle handle);

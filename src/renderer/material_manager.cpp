@@ -69,6 +69,8 @@ void MaterialManager::DestroyResource(Resource* resource)
 
 	m_depManager->UnloadResource(ResourceType::Shader, static_cast<resourceHandle>(material->shader));
 
+	m_depManager->UnloadResource(ResourceType::Texture, static_cast<resourceHandle>(material->textures[0]));
+
 	DELETE_OBJECT(m_allocator, material);
 }
 
@@ -85,7 +87,7 @@ void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	InputClob dataText(data);
 
 	MaterialLoadingOp& op = m_loadingOp.PushBack();
-	op.material = static_cast<materialHandle>(handle);
+	op.material = GenericToMaterialHandle(handle);
 
 	char shaderPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(dataText.ReadString(shaderPath, Path::MAX_LENGTH));
@@ -103,8 +105,10 @@ void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 
 void MaterialManager::ChildResourceLoaded(resourceHandle handle, ResourceType type)
 {
-	for (MaterialLoadingOp& op : m_loadingOp)
+	for (size_t i = 0; i < m_loadingOp.GetSize(); ++i)
 	{
+		MaterialLoadingOp& op = m_loadingOp[i];
+
 		if (type == ResourceType::Shader)
 		{
 			if (op.shader == static_cast<shaderHandle>(handle))
@@ -122,8 +126,9 @@ void MaterialManager::ChildResourceLoaded(resourceHandle handle, ResourceType ty
 
 		if (op.shaderLoaded && op.texturesLoaded[0])
 		{
-			Material* material = static_cast<Material*>(ResourceManager::GetResource(handle));
+			Material* material = static_cast<Material*>(ResourceManager::GetResource(MaterialToGenericHandle(op.material)));
 			FinalizeMaterial(material);
+			m_loadingOp.Erase(i--);
 		}
 	}
 }

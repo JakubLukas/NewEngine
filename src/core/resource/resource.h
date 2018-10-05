@@ -17,6 +17,8 @@ enum class ResourceType
 	Material,
 	Model,
 	Texture,
+
+	Count
 };
 
 

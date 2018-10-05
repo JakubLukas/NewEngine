@@ -69,7 +69,7 @@ public:
 	static void Destroy(RenderSystem* system);
 
 public:
-	virtual ~RenderSystem() override {}
+	virtual ~RenderSystem() override {}//////////////////////////////// can be = 0 ?
 
 	virtual void Init() override = 0;
 
