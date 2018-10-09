@@ -148,6 +148,7 @@ bool ReadFile(nativeFileHandle fileHandle, Operation* operation, size_t filePosi
 		overlapped
 	);
 	return (result == FALSE);//async ReadFile returns FALSE
+	//if returns TRUE, operation isn't asynchronous ?
 }
 
 
@@ -202,9 +203,26 @@ void QueryChanges(nativeAsyncHandle asyncHandle, Function<void(nativeFileHandle,
 			for(ULONG i = 0; i < count; ++i)
 			{
 				nativeFileHandle hFile = reinterpret_cast<nativeFileHandle>(overlapped[i].lpCompletionKey);
+				LPOVERLAPPED ol = overlapped[i].lpOverlapped;
 				DWORD bytesTransferred = overlapped[i].dwNumberOfBytesTransferred;
 
-				callback(hFile, (size_t)bytesTransferred); // success
+				DWORD bytes_transfered = 0;
+				result = GetOverlappedResult(
+					hFile, //file
+					ol, //overlapped
+					&bytes_transfered,
+					FALSE //nonblocking
+				);
+
+				if (result != FALSE)
+				{
+					callback(hFile, (size_t)bytesTransferred); // success
+				}
+				else
+				{
+					DWORD err = GetLastError();
+					ASSERT(false);
+				}
 			}
 		}
 		else

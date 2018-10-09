@@ -153,6 +153,11 @@ public:
 		m_capacity = m_size = size;
 	}
 
+	void Compact()
+	{
+		Resize(m_size);
+	}
+
 
 	size_t GetSize() const { return m_size; }
 
