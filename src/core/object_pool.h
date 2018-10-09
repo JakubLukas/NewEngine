@@ -18,62 +18,80 @@ public:
 
 	~ObjectPool()
 	{
-		while(m_batch != nullptr)
+		while(m_batches != nullptr)
 		{
-			Batch* next = m_batch->next;
-			DELETE_OBJECT(m_batch);
-			m_batch = next;
+			Batch* next = m_batches->next;
+			DELETE_OBJECT(m_allocator, m_batches);
+			m_batches = next;
 		}
 	}
 
 	Type& GetObject()
 	{
-		Batch* data = m_batch;
-		while (data != nullptr)
+		Batch* batch = m_batches;
+		while (batch != nullptr)
 		{
-			if (data->size < BATCH_SIZE)
-				return data->data[data->size++];
+			if(batch->size < BATCH_SIZE)
+				break;
 			else
-				data = data->next;
+				batch = batch->next;
 		}
 
-		Enlarge();
-
-		Batch* data = m_batch;
-		while (data->next != nullptr)
+		if(batch == nullptr)
 		{
-			ASSERT(data->size == 0);
-			return data->data[data->size++];
+			Enlarge();
+			batch = m_batches;
+			while(batch->next != nullptr)
+			{
+				batch = batch->next;
+			}
 		}
+
+		Type& result = batch->data[batch->freeIdx].value;
+		batch->freeIdx = batch->data[batch->freeIdx].next;
+		batch->size++;
+		m_size++;
+		memory::Set(&result, 0, sizeof(Type));///////////////////////////
+		return result;
 	}
 
 	void ReturnObject(Type& object)
 	{
-		Batch* data = m_batch;
-		while (data != nullptr)
+		Batch* batch = m_batches;
+		while (batch != nullptr)
 		{
-			if (data->data <= &object && &object < data->data + BATCH_SIZE)
+			if (&batch->data[0].value <= &object && &object < &batch->data[0].value + BATCH_SIZE)
 			{
-
+				i32 idx = (i32)((&object - &batch->data[0].value) / sizeof(Type));
+				batch->data[idx].next = batch->freeIdx;
+				batch->freeIdx = idx;
+				batch->size--;
+				m_size--;
+				return;
+			}
+			else
+			{
+				batch = batch->next;
 			}
 		}
+		ASSERT2(false, "Object to return not found in internal batches");
 	}
 
 	void Compact()
 	{
-		Batch** prevNext = &m_batch;
-		Batch* data;
-		while (data != nullptr)
+		Batch** prevNext = &m_batches;
+		Batch* batch;
+		while (batch != nullptr)
 		{
-			if (data->size == 0)
+			if (batch->size == 0)
 			{
-				prevNext = data->next;
-				DELETE_OBJECT(data);
+				prevNext = batch->next;
+				DELETE_OBJECT(m_allocator, batch);
 			}
 			else
 			{
-				prevNext = &data->next;
-				data = data->next;
+				prevNext = &batch->next;
+				batch = batch->next;
 			}
 		}
 	}
@@ -95,10 +113,10 @@ public:
 private:
 	void Enlarge()
 	{
-		if (m_batch == nullptr)
-			m_batch = NEW_OBJECT(m_allocator, Batch)();
+		if (m_batches == nullptr)
+			m_batches = NEW_OBJECT(m_allocator, Batch)();
 
-		Batch* batch = m_batch;
+		Batch* batch = m_batches;
 		while (batch->next != nullptr)
 			batch = batch->next;
 
@@ -106,7 +124,9 @@ private:
 		m_batchCount++;
 
 		batch = batch->next;
-		for(int i = 0; i < BATCH_SIZE)
+		for(int i = 0; i < BATCH_SIZE; ++i)
+			batch->data[i].next = i + 1;
+		batch->data[BATCH_SIZE - 1].next = -1;
 	}
 
 private:
@@ -114,16 +134,21 @@ private:
 
 	struct Batch
 	{
-		Type data[BATCH_SIZE];
+		union
+		{
+			Type value;
+			i32 next;
+		} data[BATCH_SIZE];
 		size_t size = 0;
-		size_t unused = (size_t)-1;
+		i32 freeIdx = 0;
 		Batch* next = nullptr;
 	};
 
 private:
 	IAllocator& m_allocator;
+	Batch* m_batches;
+	size_t m_size = 0;
 	size_t m_batchCount = 0;
-	Batch* m_batch;
 };
 
 

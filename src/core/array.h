@@ -98,6 +98,18 @@ public:
 		DELETE_PLACEMENT(m_data + m_size);
 	}
 
+	bool Erase(Type& value)
+	{
+		for(size_t i = 0; i < m_size; ++i)
+		{
+			if(m_data[i] == value)
+			{
+				Erase(i);
+				return true;
+			}
+		}
+	}
+
 	const Type& operator[](size_t index) const
 	{
 		ASSERT(index < m_size);
