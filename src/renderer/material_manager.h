@@ -19,10 +19,16 @@ enum class materialHandle : u64 {};
 struct Material : public Resource
 {
 	shaderHandle shader;
-	static const int MAX_TEXTURES = 4;
-	textureHandle textures[MAX_TEXTURES] = { (textureHandle)INVALID_HANDLE };
+	static const size_t MAX_TEXTURES = 4;
+	textureHandle textures[MAX_TEXTURES];
 	//Uniforms?
 	//commandBuffer*
+
+	Material()
+	{
+		for (size_t i = 0; i < Material::MAX_TEXTURES; ++i)
+			textures[i] = (textureHandle)INVALID_HANDLE;
+	}
 };
 
 
@@ -34,8 +40,14 @@ private:
 		materialHandle material;
 		shaderHandle shader;
 		bool shaderLoaded = false;
-		textureHandle textures[Material::MAX_TEXTURES] = { (textureHandle)INVALID_HANDLE };
+		textureHandle textures[Material::MAX_TEXTURES];
 		bool texturesLoaded[Material::MAX_TEXTURES] = { false };//use bitfields
+
+		MaterialLoadingOp()
+		{
+			for (size_t i = 0; i < Material::MAX_TEXTURES; ++i)
+				textures[i] = (textureHandle)INVALID_HANDLE;
+		}
 	};
 
 public:

@@ -18,7 +18,7 @@ public:
 
 	~ObjectPool()
 	{
-		while(m_batches != nullptr)
+		while (m_batches != nullptr)
 		{
 			Batch* next = m_batches->next;
 			DELETE_OBJECT(m_allocator, m_batches);
@@ -26,43 +26,44 @@ public:
 		}
 	}
 
-	Type& GetObject()
+	Type* GetObject()
 	{
 		Batch* batch = m_batches;
 		while (batch != nullptr)
 		{
-			if(batch->size < BATCH_SIZE)
+			if (batch->size < BATCH_SIZE)
 				break;
 			else
 				batch = batch->next;
 		}
 
-		if(batch == nullptr)
+		if (batch == nullptr)
 		{
 			Enlarge();
 			batch = m_batches;
-			while(batch->next != nullptr)
+			while (batch->next != nullptr)
 			{
 				batch = batch->next;
 			}
 		}
 
-		Type& result = batch->data[batch->freeIdx].value;
-		batch->freeIdx = batch->data[batch->freeIdx].next;
+		i32 nextIdx = batch->data[batch->freeIdx].next;
+		Type* result = NEW_PLACEMENT(&batch->data[batch->freeIdx].value, Type)();
+		batch->freeIdx = nextIdx;
 		batch->size++;
 		m_size++;
-		memory::Set(&result, 0, sizeof(Type));///////////////////////////
 		return result;
 	}
 
-	void ReturnObject(Type& object)
+	void ReturnObject(Type* object)
 	{
 		Batch* batch = m_batches;
 		while (batch != nullptr)
 		{
-			if (&batch->data[0].value <= &object && &object < &batch->data[0].value + BATCH_SIZE)
+			if (&batch->data[0].value <= object && object < &batch->data[0].value + BATCH_SIZE)
 			{
-				i32 idx = (i32)((&object - &batch->data[0].value) / sizeof(Type));
+				i32 idx = (i32)(object - &batch->data[0].value);
+				DELETE_PLACEMENT(object);
 				batch->data[idx].next = batch->freeIdx;
 				batch->freeIdx = idx;
 				batch->size--;
@@ -87,6 +88,7 @@ public:
 			{
 				prevNext = batch->next;
 				DELETE_OBJECT(m_allocator, batch);
+				m_batchCount--;
 			}
 			else
 			{
@@ -102,7 +104,7 @@ public:
 			return;
 
 		size_t newBatchCount = (capacity + BATCH_SIZE - 1) / BATCH_SIZE;
-		for (int i = 0, c = newBatchCount - m_batchCount; i < c; ++i)
+		for (i32 i = 0, c = newBatchCount - m_batchCount; i < c; ++i)
 			Enlarge();
 	}
 
@@ -113,18 +115,25 @@ public:
 private:
 	void Enlarge()
 	{
+		Batch* batch;
 		if (m_batches == nullptr)
+		{
 			m_batches = NEW_OBJECT(m_allocator, Batch)();
+			batch = m_batches;
+		}
+		else
+		{
+			batch = m_batches;
+			while (batch->next != nullptr)
+				batch = batch->next;
 
-		Batch* batch = m_batches;
-		while (batch->next != nullptr)
+			batch->next = NEW_OBJECT(m_allocator, Batch)();
 			batch = batch->next;
-
-		batch->next = NEW_OBJECT(m_allocator, Batch)();
+		}
+		
 		m_batchCount++;
 
-		batch = batch->next;
-		for(int i = 0; i < BATCH_SIZE; ++i)
+		for (i32 i = 0; i < BATCH_SIZE; ++i)
 			batch->data[i].next = i + 1;
 		batch->data[BATCH_SIZE - 1].next = -1;
 	}
@@ -134,11 +143,14 @@ private:
 
 	struct Batch
 	{
-		union
+		union Foo
 		{
-			Type value;
 			i32 next;
-		} data[BATCH_SIZE];
+			Type value;
+			Foo() : next(-1) {}
+		};
+		Foo data[BATCH_SIZE];
+
 		size_t size = 0;
 		i32 freeIdx = 0;
 		Batch* next = nullptr;
@@ -146,7 +158,7 @@ private:
 
 private:
 	IAllocator& m_allocator;
-	Batch* m_batches;
+	Batch* m_batches = nullptr;
 	size_t m_size = 0;
 	size_t m_batchCount = 0;
 };

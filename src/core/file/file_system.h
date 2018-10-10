@@ -58,7 +58,7 @@ enum class MoveMethod
 };
 
 
-enum fileHandle : u64 {};
+enum class fileHandle : u64 {};
 
 
 class FileSystem

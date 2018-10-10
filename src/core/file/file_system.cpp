@@ -47,13 +47,13 @@ public:
 
 	bool OpenFile(fileHandle& handle, const Path& path, FileMode mode) override
 	{
-		File& file = m_filePool.GetObject();
-		m_files.PushBack(&file);
+		File* file = m_filePool.GetObject();
+		m_files.PushBack(file);
 
-		if (FS::OpenFile(file.handle, m_asyncHandle, path, mode))
+		if (FS::OpenFile(file->handle, m_asyncHandle, path, mode))
 		{
-			file.size = FS::GetFileSize(file.handle);
-			handle = *(fileHandle*)(&file);
+			file->size = FS::GetFileSize(file->handle);
+			handle = static_cast<fileHandle>(reinterpret_cast<u64>(file));
 			return true;
 		}
 		else
@@ -65,22 +65,24 @@ public:
 
 	void CloseFile(fileHandle handle) override
 	{
-		File& file = *(File*)handle;
-		m_files.Erase(&file);
+		File* file = reinterpret_cast<File*>(handle);
 
-		ASSERT(FS::CloseFile(file.handle));
+		ASSERT(FS::CloseFile(file->handle));
 
-		file.callback.Clear();
-		file.position = 0;
-		file.handle = nullptr;
+		file->callback.Clear();
+		file->position = 0;
+		file->handle = nullptr;
+
+		ASSERT(m_files.Erase(file));
+		m_filePool.ReturnObject(file);
 	}
 
 
 	bool Read(fileHandle handle, void* buffer, size_t size, Function<void(fileHandle)> callback) override
 	{
-		File& file = *(File*)handle;
-		file.callback = callback;
-		if(FS::ReadFile(file.handle, &file.operation, file.position, buffer, size))
+		File* file = reinterpret_cast<File*>(handle);
+		file->callback = callback;
+		if(FS::ReadFile(file->handle, &file->operation, file->position, buffer, size))
 		{
 			return true;
 		}
@@ -94,10 +96,10 @@ public:
 
 	bool Write(fileHandle handle, void* data, size_t size, Function<void(fileHandle)> callback) override
 	{
-		File& file = *(File*)handle;
-		file.callback = callback;
+		File* file = reinterpret_cast<File*>(handle);
+		file->callback = callback;
 
-		if(FS::WriteFile(file.handle, &file.operation, file.position, data, size))
+		if(FS::WriteFile(file->handle, &file->operation, file->position, data, size))
 		{
 			return true;
 		}
@@ -111,33 +113,33 @@ public:
 
 	void SetPosition(fileHandle handle, MoveMethod method, size_t position) override
 	{
-		File& file = *(File*)handle;
+		File* file = reinterpret_cast<File*>(handle);
 
 		switch(method)
 		{
 			case MoveMethod::Begin:
-				file.position = position;
+				file->position = position;
 				break;
 			case MoveMethod::Current:
-				file.position += position;
+				file->position += position;
 			case MoveMethod::End:
-				file.position = file.size - position;
+				file->position = file->size - position;
 		}
-		file.position = position;
+		file->position = position;
 	}
 
 
 	size_t GetPosition(fileHandle handle) const override
 	{
-		const File& file = *(File*)handle;
-		return file.position;
+		const File* file = reinterpret_cast<File*>(handle);
+		return file->position;
 	}
 
 
 	size_t GetSize(fileHandle handle) const override
 	{
-		const File& file = *(File*)handle;
-		return file.size;
+		const File* file = reinterpret_cast<File*>(handle);
+		return file->size;
 	}
 
 
@@ -167,14 +169,14 @@ public:
 private:
 	void Callback(nativeFileHandle handle, size_t bytesTransfered)
 	{
-		for(size_t i = 0; i < m_filePool.GetSize(); ++i)
+		for(size_t i = 0; i < m_files.GetSize(); ++i)
 		{
-			File& file = m_filePool[i];
-			if(file.handle == handle)
+			File* file = m_files[i];
+			if(file->handle == handle)
 			{
-				file.size = FS::GetFileSize(handle);
-				file.position += bytesTransfered;
-				file.callback((fileHandle)i);
+				file->size = FS::GetFileSize(handle);
+				file->position += bytesTransfered;
+				file->callback(static_cast<fileHandle>(reinterpret_cast<u64>(file)));
 				return;
 			}
 		}

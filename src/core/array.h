@@ -21,18 +21,18 @@ public:
 
 	~Array()
 	{
-		for(size_t i = 0; i < m_size; ++i)
+		for (size_t i = 0; i < m_size; ++i)
 		{
 			DELETE_PLACEMENT(m_data + i);
 		}
-		if(m_data != nullptr)
+		if (m_data != nullptr)
 			m_allocator.Deallocate(m_data);
 	}
 
 
 	void Clear()
 	{
-		for(size_t i = 0; i < m_size; ++i)
+		for (size_t i = 0; i < m_size; ++i)
 		{
 			DELETE_PLACEMENT(m_data + i);
 		}
@@ -49,7 +49,7 @@ public:
 
 	Type& PushBack(const Type& value)
 	{
-		if(m_size == m_capacity)
+		if (m_size == m_capacity)
 			Enlarge();
 
 		NEW_PLACEMENT(m_data + m_size, Type)(value);
@@ -70,7 +70,7 @@ public:
 	template< class... Args >
 	Type& EmplaceBack(Args&&... args)
 	{
-		if(m_size == m_capacity)
+		if (m_size == m_capacity)
 			Enlarge();
 
 		NEW_PLACEMENT(m_data + m_size, Type)(Utils::Forward<Args>(args)...);
@@ -81,7 +81,7 @@ public:
 	Type PopBack()
 	{
 		ASSERT(m_size > 0);
-		--m_size;
+		m_size--;
 		Type result(m_data[m_size]);
 		DELETE_PLACEMENT(m_data + m_size);
 		return result;
@@ -100,14 +100,15 @@ public:
 
 	bool Erase(Type& value)
 	{
-		for(size_t i = 0; i < m_size; ++i)
+		for (size_t i = 0; i < m_size; ++i)
 		{
-			if(m_data[i] == value)
+			if (m_data[i] == value)
 			{
 				Erase(i);
 				return true;
 			}
 		}
+		return false;
 	}
 
 	const Type& operator[](size_t index) const
@@ -126,18 +127,18 @@ public:
 
 	void Reserve(size_t capacity)
 	{
-		if(capacity <= m_capacity) return;
+		if (capacity <= m_capacity) return;
 
 		m_capacity = capacity;
 		Type* newData = static_cast<Type*>(m_allocator.Allocate(m_capacity * sizeof(Type), ALIGN_OF(Type)));
 
-		for(size_t i = 0; i < m_size; ++i)
+		for (size_t i = 0; i < m_size; ++i)
 		{
 			NEW_PLACEMENT(newData + i, Type)(m_data[i]);
 			DELETE_PLACEMENT(m_data + i);
 		}
 
-		if(m_data != nullptr)
+		if (m_data != nullptr)
 			m_allocator.Deallocate(m_data);
 		m_data = newData;
 	}
@@ -159,7 +160,7 @@ public:
 			DELETE_PLACEMENT(m_data + i);
 		}
 
-		if(m_data != nullptr)
+		if (m_data != nullptr)
 			m_allocator.Deallocate(m_data);
 		m_data = newData;
 		m_capacity = m_size = size;
