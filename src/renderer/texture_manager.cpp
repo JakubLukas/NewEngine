@@ -121,6 +121,24 @@ void TextureManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	texture->channels = (u32)channels;
 	texture->data = imageData;
 
+	const bgfx::Memory* mem = bgfx::makeRef(texture->data, texture->width * texture->height * texture->channels);
+
+	texture->handle = bgfx::createTexture2D(
+		uint16_t(texture->width)
+		, uint16_t(texture->height)
+		, false //hasMipMap
+		, 1
+		, bgfx::TextureFormat::Enum::RGBA8
+		, BGFX_TEXTURE_NONE
+		, mem
+	);
+
+	ASSERT(bgfx::isValid(texture->handle));
+	//if(bgfx::isValid(texture->handle))
+	{
+		//bgfx::setName(texture->handle, _filePath);
+	}
+
 	texture->SetState(Resource::State::Ready);
 	m_depManager->ResourceLoaded(ResourceType::Texture, GetResourceHandle(texture));
 }

@@ -197,11 +197,15 @@ public:
 	~RenderSystemImpl() override
 	{
 		DELETE_OBJECT(m_allocator, m_scene);
+
+		bgfx::destroy(m_uniformTextureColor);
 	}
 
 
 	void Init() override
 	{
+		m_uniformTextureColor = bgfx::createUniform("s_texColor", bgfx::UniformType::Int1);
+
 		m_scene = NEW_OBJECT(m_allocator, RenderSceneImpl)(m_allocator, *this);
 	}
 
@@ -254,6 +258,9 @@ public:
 					{
 						bgfx::setVertexBuffer(0, mesh.vertexBufferHandle);
 						bgfx::setIndexBuffer(mesh.indexBufferHandle);
+
+						const Texture* texture = m_textureManager->GetResource(material->textures[0]);
+						bgfx::setTexture(0, m_uniformTextureColor, texture->handle);
 
 						// Set render states.
 						bgfx::setState(BGFX_STATE_DEFAULT);
@@ -308,6 +315,8 @@ private:
 	u32 m_width = 0;
 	u32 m_height = 0;
 	/////////////////////
+
+	bgfx::UniformHandle m_uniformTextureColor;
 };
 
 

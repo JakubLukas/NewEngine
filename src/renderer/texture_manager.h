@@ -3,6 +3,8 @@
 #include "core/resource/resource.h"
 #include "core/resource/resource_manager.h"
 
+#include "../external/bgfx/include/bgfx/bgfx.h"
+
 
 namespace Veng
 {
@@ -17,6 +19,7 @@ struct Texture : public Resource
 	u32 height = 0;
 	u32 channels = 0;
 	u8* data = nullptr;
+	bgfx::TextureHandle handle;
 };
 
 
