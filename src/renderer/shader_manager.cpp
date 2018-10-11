@@ -34,13 +34,22 @@ namespace Veng
 
 static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& outPath)
 {
+	static const char* IN_DIR = "raw";
+	static const char* ROOT_PATH = "shaders/";
+	static const char* OUT_PATH = "compiled/";
+	static const char* COMMON_PATH = "common/";
+	static const char* IN_VERTEX_EXT = "vsr";
+	static const char* IN_FRAGMENT_EXT = "fsr";
+	static const char* OUT_VERTEX_EXT = "vs";
+	static const char* OUT_FRAGMENT_EXT = "fs";
+
 	StaticInputBuffer<512> inPath;
 	inPath << path.path;
 
 	StaticInputBuffer<512> outPathBuffer;
-	outPathBuffer << "shaders/compiled/";
+	outPathBuffer << ROOT_PATH << OUT_PATH;
 	fileSystem.CreateDirectory(Path(outPathBuffer.Cstr()));
-	const char* namePtr = string::FindStr(path.path, "raw");
+	const char* namePtr = string::FindStr(path.path, IN_DIR);
 	ASSERT2(namePtr != nullptr, "Wrong shader path");
 	namePtr += 4;//move by raw/
 	const char* ptr = string::FindChar(namePtr, '/');
@@ -58,25 +67,22 @@ static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& 
 	extPtr++;
 
 	bool vertexShader;
-	if (string::Equal(extPtr, "vsr"))
+	if (string::Equal(extPtr, IN_VERTEX_EXT))
 	{
 		vertexShader = true;
-		outPathBuffer << ".vs";
+		outPathBuffer << "." << OUT_VERTEX_EXT;
 	}
-	else if (string::Equal(extPtr, "fsr"))
+	else if (string::Equal(extPtr, IN_FRAGMENT_EXT))
 	{
 		vertexShader = false;
-		outPathBuffer << ".fs";
+		outPathBuffer << "." << OUT_FRAGMENT_EXT;
 	}
 
 	StaticInputBuffer<512> includeDir;
-	includeDir << "shaders/";
+	includeDir << ROOT_PATH << COMMON_PATH;
 
 	StaticInputBuffer<512> varyingPath;
-	const char* lastSlash = string::FindCharR(path.path, '/');
-	ASSERT2(lastSlash != nullptr, "Wrong shader path");
-	varyingPath.Add(path.path, lastSlash - path.path + 1);
-	varyingPath << "varying.def";
+	varyingPath << ROOT_PATH << COMMON_PATH << "varying.def";
 
 	const char* args[] = {
 		"-f",

@@ -23,10 +23,12 @@ inline static resourceHandle ModelToGenericHandle(modelHandle handle)
 
 struct PosColorVertex
 {
-	float m_x;
-	float m_y;
-	float m_z;
-	u32 m_abgr;
+	float x;
+	float y;
+	float z;
+	u32 abgr;
+	float u0;
+	float v0;
 };
 
 
@@ -105,6 +107,7 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 		.begin()
 		.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
 		.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
+		.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
 		.end();
 
 	int verticesCount;
@@ -114,13 +117,17 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	PosColorVertex* vertices = (PosColorVertex*)m_allocator.Allocate(verticesBufferSize, ALIGN_OF(PosColorVertex));
 	for(int i = 0; i < verticesCount; ++i)
 	{
-		ASSERT(dataText.Read(vertices[i].m_x));
+		ASSERT(dataText.Read(vertices[i].x));
 		dataText.Skip(1);
-		ASSERT(dataText.Read(vertices[i].m_y));
+		ASSERT(dataText.Read(vertices[i].y));
 		dataText.Skip(1);
-		ASSERT(dataText.Read(vertices[i].m_z));
+		ASSERT(dataText.Read(vertices[i].z));
 		dataText.Skip(1);
-		ASSERT(dataText.Read(vertices[i].m_abgr));
+		ASSERT(dataText.Read(vertices[i].abgr));
+		dataText.Skip(1);
+		ASSERT(dataText.Read(vertices[i].u0));
+		dataText.Skip(1);
+		ASSERT(dataText.Read(vertices[i].v0));
 	}
 
 	int indicesCount;

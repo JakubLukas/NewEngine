@@ -33,7 +33,7 @@ void EntityWidget::RenderInternal()
 	Transform& entityTrans = m_engine->GetWorld(world)->GetEntityTransform(m_entity);
 	ImGui::Text("Transform");
 	ImGui::InputFloat3("position", &entityTrans.position.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
-	ImGui::InputFloat3("rotation", &entityTrans.rotation.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+	ImGui::InputFloat4("rotation", &entityTrans.rotation.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
 	ImGui::Separator();
 	
 	RenderSystem* renderer = static_cast<RenderSystem*>(m_engine->GetSystem("renderer"));
