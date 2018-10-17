@@ -222,7 +222,7 @@ public:
 
 		m_bucketSize = bucketSize;
 		m_size = 0;
-		void* data = m_allocator.Allocate(bucketSize * (sizeof(int) + sizeof(Node)) + ALIGN_OF(Node), ALIGN_OF(Node));
+		void* data = m_allocator.Allocate(bucketSize * (sizeof(int) + sizeof(Node)) + ALIGN_OF(Node), ALIGN_OF(int));
 		m_buckets = static_cast<int*>(data);
 		m_table = static_cast<Node*>(AlignPointer(m_buckets + bucketSize, ALIGN_OF(Node)));
 
