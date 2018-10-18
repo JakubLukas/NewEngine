@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/array.h"
+#include "core/containers/array.h"
 #include "core/resource/resource.h"
 #include "material_manager.h"
 

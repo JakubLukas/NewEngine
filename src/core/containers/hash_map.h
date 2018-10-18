@@ -1,8 +1,8 @@
 #pragma once
 
-#include "int.h"
-#include "allocators.h"
-#include "asserts.h"
+#include "core/int.h"
+#include "core/allocators.h"
+#include "core/asserts.h"
 
 
 namespace Veng
@@ -99,6 +99,8 @@ public:
 	HashMap(IAllocator& allocator)
 		: m_allocator(allocator)
 	{}
+	HashMap(HashMap&) = delete;
+	HashMap& operator =(HashMap&) = delete;
 
 	~HashMap()
 	{

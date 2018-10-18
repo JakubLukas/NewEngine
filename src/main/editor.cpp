@@ -7,18 +7,18 @@
 #include "core/logs.h"
 #include "core/asserts.h"
 #include "core/file/blob.h"
-#include "core/associative_array.h"
+#include "core/containers/associative_array.h"
 
 
 #include "renderer/renderer.h"////////////////////////
 #include "script/script.h"////////////////////////////
 #include "core/file/path.h"////////////////////////////////
-#include "core/math.h"////////////////////////////////
+#include "core/math/math.h"////////////////////////////////
 #include "core/file/file.h"////////////////////
 #include "core/file/file_system.h"/////////////////
 #include "core/memory.h"/////////////////////
 #include "core/time.h"////////////////////////////
-#include "core/matrix.h"////////////////////////////////////
+#include "core/math/matrix.h"////////////////////////////////////
 
 #include "core/resource/resource.h"
 #include "core/resource/resource_manager.h"

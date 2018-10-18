@@ -1,6 +1,6 @@
 #include "matrix.h"
 
-#include "memory.h"
+#include "core/memory.h"
 #include "math.h"
 
 

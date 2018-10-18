@@ -1,8 +1,8 @@
 #include "file_system.h"
 
 #include "file.h"
-#include "core/array.h"
-#include "core/object_pool.h"
+#include "core/containers/array.h"
+#include "core/containers/object_pool.h"
 #include "core/os/os_utils.h"
 
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/allocators.h"
-#include "core/hash_map.h"
+#include "core/containers/hash_map.h"
 #include "core/file/file_system.h"
 
 #include "resource.h"

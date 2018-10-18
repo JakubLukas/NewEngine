@@ -11,7 +11,7 @@
 #include "core/logs.h"
 #include "core/input/win/input_win.h"
 #include "core/input/input_system.h"
-#include "core/array.h"
+#include "core/containers/array.h"
 #include "core/string.h"
 #include "core/time.h"
 

@@ -1,7 +1,7 @@
 #include "vector.h"
 
 #include "math.h"
-#include "asserts.h"
+#include "core/asserts.h"
 
 
 namespace Veng

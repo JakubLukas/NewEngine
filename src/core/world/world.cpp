@@ -1,7 +1,8 @@
 #include "world.h"
 
 #include "scene.h"
-#include "core/matrix.h"
+#include "core/math/matrix.h"
+#include "core/utility.h"
 
 
 namespace Veng
@@ -13,6 +14,16 @@ World::World(IAllocator& allocator, worldId id)
 	, m_entities(m_allocator)
 	, m_id(id)
 	, m_entitiesTransform(m_allocator)
+{
+
+}
+
+
+World::World(World&& world)
+	: m_allocator(world.m_allocator)
+	, m_entities(Utils::Move(world.m_entities))
+	, m_id(world.m_id)
+	, m_entitiesTransform(Utils::Move(world.m_entitiesTransform))
 {
 
 }

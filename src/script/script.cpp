@@ -5,10 +5,10 @@
 
 #include "core/world/world.h"//////////////
 #include "renderer/renderer.h"////////////
-#include "core/math.h"///////////////////
+#include "core/math/math.h"///////////////////
 #include "core/file/path.h"/////////////
-#include "core/quaternion.h"///////////
-#include "core/matrix.h"//////////////
+#include "core/math/quaternion.h"///////////
+#include "core/math/matrix.h"//////////////
 #include "core/time.h"///////////////
 
 

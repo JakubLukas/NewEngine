@@ -6,7 +6,7 @@
 #include "shader_manager.h"
 #include "texture_manager.h"
 
-#include "core/array.h"
+#include "core/containers/array.h"
 
 
 namespace Veng

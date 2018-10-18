@@ -1,6 +1,6 @@
 #pragma once
 
-#include "allocators.h"
+#include "core/allocators.h"
 
 
 namespace Veng
@@ -15,6 +15,8 @@ public:
 		: m_allocator(allocator)
 	{
 	}
+	ObjectPool(ObjectPool&) = delete;
+	ObjectPool& operator =(ObjectPool&) = delete;
 
 	~ObjectPool()
 	{

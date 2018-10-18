@@ -2,10 +2,10 @@
 
 #include "core/allocators.h"
 #include "core/engine.h"
-#include "core/associative_array.h"
+#include "core/containers/associative_array.h"
 #include "core/logs.h"
 #include "core/file/path.h"
-#include "core/matrix.h"
+#include "core/math/matrix.h"
 
 #include "core/resource/resource_management.h"
 #include "shader_manager.h"
@@ -16,7 +16,7 @@
 
 #include <bgfx/bgfx.h>///////////////
 
-#include "core/math.h"
+#include "core/math/math.h"
 #include "camera.h"
 
 
@@ -85,7 +85,7 @@ public:
 
 	const ModelItem* GetModels(worldId world) const override
 	{
-		return m_models.getValues();
+		return m_models.GetValues();
 	}
 
 
@@ -156,7 +156,7 @@ public:
 
 	const CameraItem* GetCameras(worldId world) const override
 	{
-		return m_cameras.getValues();
+		return m_cameras.GetValues();
 	}
 
 	const CameraItem* GetDefaultCamera(worldId world) override
@@ -164,7 +164,7 @@ public:
 		if (m_cameras.GetSize() == 0)
 			return nullptr;
 		else
-			return m_cameras.getValues();
+			return m_cameras.GetValues();
 	}
 
 private:

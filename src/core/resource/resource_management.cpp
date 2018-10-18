@@ -2,6 +2,8 @@
 
 #include "resource_manager.h"
 
+#include "core/containers/array.h"
+
 
 namespace Veng
 {
@@ -79,7 +81,7 @@ public:
 	void ResourceLoaded(ResourceType resourceType, resourceHandle handle) override
 	{
 		StackAllocator<4096> allocator;
-		Array<DependencyAsyncOp> loaded(allocator);//TODO: use temp allocator (stack)
+		Array<DependencyAsyncOp> loaded(allocator);
 
 		for (size_t i = 0; i < m_dependencyAsyncOps.GetSize();)
 		{

@@ -43,6 +43,8 @@ public:
 	explicit String(IAllocator& allocator);
 	String(IAllocator& allocator, const char* str);
 	String(IAllocator& allocator, const char* str, unsigned length);
+	String(String&) = delete;
+	String& operator =(String&) = delete;
 	~String();
 
 	char& operator[](unsigned index);

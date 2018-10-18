@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/allocators.h"
-#include "core/array.h"
+#include "core/containers/array.h"
 #include "core/int.h"
 
 #include "core/entity.h"
@@ -46,6 +46,7 @@ public:
 
 public:
 	explicit World(IAllocator& allocator, worldId id);
+	World(World&& world);
 	~World();
 
 	worldId GetId() const { return m_id; }
