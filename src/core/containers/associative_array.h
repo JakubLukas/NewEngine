@@ -24,15 +24,14 @@ public:
 
 	bool Find(const KeyType& key, ValueType*& value) const;
 
-	ValueType* begin();
-	ValueType* end();
-	const ValueType* begin() const;
-	const ValueType* end() const;
+	ValueType* Begin();
+	ValueType* End();
+	const ValueType* Begin() const;
+	const ValueType* End() const;
 
 	ValueType* Insert(const KeyType& key, const ValueType& value);
 
 	bool Erase(const KeyType& key);
-
 
 	const ValueType& operator[](const KeyType& key) const;
 	ValueType& operator[](const KeyType& key);
@@ -47,7 +46,6 @@ public:
 
 private:
 	void Enlarge();
-
 	size_t GetIndex(const KeyType& key) const;
 
 private:

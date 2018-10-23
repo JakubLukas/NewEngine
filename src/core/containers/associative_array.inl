@@ -16,6 +16,10 @@ AssociativeArray<KeyType, ValueType>::AssociativeArray(AssociativeArray&& other)
 	, m_keys(other.m_keys)
 	, m_values(other.m_values)
 {
+	other.m_capacity = 0;
+	other.m_size = 0;
+	other.m_keys = nullptr;
+	other.m_values = nullptr;
 }
 
 template<class KeyType, class ValueType>
@@ -26,6 +30,13 @@ AssociativeArray<KeyType, ValueType>& AssociativeArray<KeyType, ValueType>::oper
 	m_size = other.m_size;
 	m_keys = other.m_keys;
 	m_values = other.m_values;
+
+	other.m_capacity = 0;
+	other.m_size = 0;
+	other.m_keys = nullptr;
+	other.m_values = nullptr;
+
+	return *this;
 }
 
 template<class KeyType, class ValueType>
@@ -70,16 +81,16 @@ bool AssociativeArray<KeyType, ValueType>::Find(const KeyType& key, ValueType*& 
 
 
 template<class KeyType, class ValueType>
-ValueType* AssociativeArray<KeyType, ValueType>::begin() { return m_values; }
+ValueType* AssociativeArray<KeyType, ValueType>::Begin() { return m_values; }
 
 template<class KeyType, class ValueType>
-ValueType* AssociativeArray<KeyType, ValueType>::end() { return m_values + m_size; }
+ValueType* AssociativeArray<KeyType, ValueType>::End() { return m_values + m_size; }
 
 template<class KeyType, class ValueType>
-const ValueType* AssociativeArray<KeyType, ValueType>::begin() const { return m_values; }
+const ValueType* AssociativeArray<KeyType, ValueType>::Begin() const { return m_values; }
 
 template<class KeyType, class ValueType>
-const ValueType* AssociativeArray<KeyType, ValueType>::end() const { return m_values + m_size; }
+const ValueType* AssociativeArray<KeyType, ValueType>::End() const { return m_values + m_size; }
 
 
 template<class KeyType, class ValueType>
@@ -234,6 +245,37 @@ size_t AssociativeArray<KeyType, ValueType>::GetIndex(const KeyType& key) const
 	}
 
 	return low;// (low == 0) ? low : low - 1;
+}
+
+
+// hack to make interface clear
+
+
+template<class KeyType, class ValueType>
+inline ValueType* begin(AssociativeArray<KeyType, ValueType>& a)
+{
+	return a.Begin();
+}
+
+
+template<class KeyType, class ValueType>
+inline ValueType* end(AssociativeArray<KeyType, ValueType>& a)
+{
+	return a.End();
+}
+
+
+template<class KeyType, class ValueType>
+inline const ValueType* begin(const AssociativeArray<KeyType, ValueType>& a)
+{
+	return a.Begin();
+}
+
+
+template<class KeyType, class ValueType>
+inline const ValueType* end(const AssociativeArray<KeyType, ValueType>& a)
+{
+	return a.End();
 }
 
 

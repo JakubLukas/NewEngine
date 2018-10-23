@@ -15,6 +15,9 @@ Array<Type>::Array(Array&& other)
 	, m_size(other.m_size)
 	, m_data(other.m_data)
 {
+	other.m_capacity = 0;
+	other.m_size = 0;
+	other.m_data = nullptr;
 }
 
 template<class Type>
@@ -24,6 +27,12 @@ Array<Type>& Array<Type>::operator =(Array&& other)
 	m_capacity = other.m_capacity;
 	m_size = other.m_size;
 	m_data = other.m_data;
+
+	other.m_capacity = 0;
+	other.m_size = 0;
+	other.m_data = nullptr;
+
+	return *this
 }
 
 template<class Type>
@@ -207,7 +216,7 @@ size_t Array<Type>::GetCapacity() const { return m_capacity; }
 template<class Type>
 void Array<Type>::Enlarge()
 {
-	size_t newCapacity = (m_capacity == 0) ? 4 : m_capacity * 2;
+	size_t newCapacity = (m_capacity == 0) ? INITIAL_SIZE : m_capacity * ENLARGE_MULTIPLIER;
 	Reserve(newCapacity);
 }
 
@@ -216,28 +225,28 @@ void Array<Type>::Enlarge()
 
 
 template<class Type>
-Type* begin(Array<Type>& a)
+inline Type* begin(Array<Type>& a)
 {
 	return a.Begin();
 }
 
 
 template<class Type>
-Type* end(Array<Type>& a)
+inline Type* end(Array<Type>& a)
 {
 	return a.End();
 }
 
 
 template<class Type>
-const Type* begin(const Array<Type>& a)
+inline const Type* begin(const Array<Type>& a)
 {
 	return a.Begin();
 }
 
 
 template<class Type>
-const Type* end(const Array<Type>& a)
+inline const Type* end(const Array<Type>& a)
 {
 	return a.End();
 }

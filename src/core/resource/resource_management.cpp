@@ -43,7 +43,7 @@ public:
 
 	ResourceManager* GetManager(ResourceType type) const override
 	{
-		ASSERT(m_managers[(size_t)type] != nullptr);
+		ASSERT2(m_managers[(size_t)type] != nullptr, "Manager of requested type is not registered.");
 		return m_managers[(size_t)type];
 	}
 
@@ -54,8 +54,7 @@ public:
 		if (manager != nullptr)
 		{
 			DependencyAsyncOp& asyncOp = m_dependencyAsyncOps.PushBack();
-			ASSERT(m_managers[(size_t)requestedType] != nullptr);
-			asyncOp.parent = m_managers[(size_t)requestedType];
+			asyncOp.parent = GetManager(requestedType);
 			asyncOp.childType = resourceType;
 			asyncOp.childHandle = manager->Load(path);
 			return asyncOp.childHandle;

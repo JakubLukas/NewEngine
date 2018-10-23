@@ -49,6 +49,10 @@ public:
 	size_t GetCapacity() const;
 
 private:
+	static const int INITIAL_SIZE = 4;
+	static const int ENLARGE_MULTIPLIER = 2;
+
+private:
 	void Enlarge();
 
 private:
