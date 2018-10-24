@@ -41,7 +41,10 @@ public:
 			{
 				m_entities[i] = world->CreateEntity();
 				Transform& trans = world->GetEntityTransform(m_entities[i]);
-				renderScene->AddModelComponent(m_entities[i], m_world, "models/cubes.model");
+				if(i % 2 == 0)
+					renderScene->AddModelComponent(m_entities[i], m_world, "models/cubes.model");
+				else
+					renderScene->AddModelComponent(m_entities[i], m_world, "models/pyramid.model");
 
 				Quaternion rot = Quaternion::IDENTITY;
 				rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
