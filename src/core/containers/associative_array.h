@@ -45,6 +45,13 @@ public:
 	ValueType* GetValues() const;
 
 private:
+	enum
+	{
+		INITIAL_SIZE = 4,
+		ENLARGE_MULTIPLIER = 2,
+	};
+
+private:
 	void Enlarge();
 	size_t GetIndex(const KeyType& key) const;
 

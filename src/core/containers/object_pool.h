@@ -28,11 +28,12 @@ public:
 	size_t GetSize() const;
 	size_t GetCapacity() const;
 
-private:
-	void Enlarge();
 
 private:
-	static const size_t BATCH_SIZE = 64;
+	enum
+	{
+		BATCH_SIZE = 64,
+	};
 
 	struct Batch
 	{
@@ -48,6 +49,9 @@ private:
 		i32 freeIdx = 0;
 		Batch* next = nullptr;
 	};
+
+private:
+	void Enlarge();
 
 private:
 	IAllocator& m_allocator;

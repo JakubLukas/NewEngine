@@ -167,7 +167,6 @@ void Array<Type>::Reserve(size_t capacity)
 	for (size_t i = 0; i < m_size; ++i)
 	{
 		NEW_PLACEMENT(newData + i, Type)(Utils::Move(m_data[i]));
-		//DELETE_PLACEMENT(m_data + i);
 	}
 
 	if (m_data != nullptr)
@@ -188,10 +187,6 @@ void Array<Type>::Resize(size_t size)
 	{
 		NEW_PLACEMENT(newData + i, Type)(Utils::Move(m_data[i]));
 	}
-	//for (size_t i = 0; i < m_size; ++i)
-	//{
-	//	DELETE_PLACEMENT(m_data + i);
-	//}
 
 	if (m_data != nullptr)
 		m_allocator.Deallocate(m_data);

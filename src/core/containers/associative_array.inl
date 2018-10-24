@@ -218,7 +218,7 @@ ValueType* AssociativeArray<KeyType, ValueType>::GetValues() const { return m_va
 template<class KeyType, class ValueType>
 void AssociativeArray<KeyType, ValueType>::Enlarge()
 {
-	size_t newCapacity = (m_capacity == 0) ? 4 : m_capacity * 2;
+	size_t newCapacity = (m_capacity == 0) ? INITIAL_SIZE : m_capacity * ENLARGE_MULTIPLIER;
 	Reserve(newCapacity);
 }
 

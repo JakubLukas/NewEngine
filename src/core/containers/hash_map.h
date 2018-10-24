@@ -32,15 +32,6 @@ inline u32 HashChar(const char*& key)
 template<class KeyType, class ValueType>
 class HashMap
 {
-private:
-	enum
-	{
-		MAX_FACTOR = 70,
-		INITIAL_SIZE = 8,
-		ENLARGE_MULTIPLIER = 2,
-		INVALID_INDEX = -1,
-	};
-
 public:
 	using Map = HashMap<KeyType, ValueType>;
 	using HashFunction = u32(*)(const KeyType&);
@@ -89,6 +80,16 @@ public:
 	unsigned GetBucketsSize() const;
 
 	unsigned GetSize() const;
+
+
+private:
+	enum
+	{
+		MAX_FACTOR = 70,
+		INITIAL_SIZE = 8,
+		ENLARGE_MULTIPLIER = 2,
+		INVALID_INDEX = -1,
+	};
 
 private:
 	ValueType* Insert(unsigned bucketIdx, const KeyType& key, const ValueType& value);

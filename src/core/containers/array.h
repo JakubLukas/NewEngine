@@ -48,9 +48,13 @@ public:
 	size_t GetSize() const;
 	size_t GetCapacity() const;
 
+
 private:
-	static const int INITIAL_SIZE = 4;
-	static const int ENLARGE_MULTIPLIER = 2;
+	enum
+	{
+		INITIAL_SIZE = 4,
+		ENLARGE_MULTIPLIER = 2,
+	};
 
 private:
 	void Enlarge();
