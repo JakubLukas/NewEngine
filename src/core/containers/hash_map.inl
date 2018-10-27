@@ -126,15 +126,15 @@ bool HashMap<KeyType, ValueType>::Find(const KeyType& key, ValueType*& value) co
 	if (m_buckets[bucketIdx] == INVALID_INDEX)
 		return false;
 
-	HashNode& node = m_table[m_buckets[bucketIdx]];
-	while (node.next != INVALID_INDEX && node.key != key)
+	HashNode* node = &m_table[m_buckets[bucketIdx]];
+	while (node->next != INVALID_INDEX && node->key != key)
 	{
-		node = Utils::Move(m_table[node.next]);
+		node = &m_table[node->next];
 	}
 
-	if (node.key == key)
+	if (node->key == key)
 	{
-		value = &node.value;
+		value = &node->value;
 		return true;
 	}
 	else
@@ -179,9 +179,9 @@ bool HashMap<KeyType, ValueType>::Erase(const KeyType& key)
 	*pointingIdx = node->next;
 
 	DELETE_PLACEMENT(node);
-	--m_size;
+	m_size--;
 
-	if(m_size > 0)
+	if(m_size > 0 && freeNodeIdx != m_size)
 	{
 		//fill up hole in m_table
 		HashNode& lastNode = m_table[m_size];
@@ -195,7 +195,7 @@ bool HashMap<KeyType, ValueType>::Erase(const KeyType& key)
 		*pointingIdx = freeNodeIdx;
 
 		NEW_PLACEMENT(node, HashNode)(Utils::Move(lastNode));
-		DELETE_PLACEMENT(&lastNode);
+		//DELETE_PLACEMENT(&lastNode);
 	}
 
 	return true;

@@ -30,7 +30,7 @@ inline u32 HashChar(const char*& key)
 
 
 template<class KeyType, class ValueType>
-class HashMap
+class HashMap final
 {
 public:
 	using Map = HashMap<KeyType, ValueType>;

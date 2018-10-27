@@ -9,7 +9,7 @@ namespace Veng
 
 
 template<class KeyType, class ValueType>
-class AssociativeArray
+class AssociativeArray final
 {
 public:
 	explicit AssociativeArray(IAllocator& allocator);

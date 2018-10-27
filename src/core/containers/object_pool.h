@@ -8,7 +8,7 @@ namespace Veng
 
 
 template<class Type>
-class ObjectPool
+class ObjectPool final
 {
 public:
 	explicit ObjectPool(IAllocator& allocator);
