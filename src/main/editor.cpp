@@ -40,6 +40,7 @@
 #include "editor/widgets/entities_widget.h"
 #include "editor/widgets/entity_widget.h"
 #include "editor/widgets/renderer_widget.h"
+#include "editor/widgets/resource_manager_widget.h"
 
 
 
@@ -788,6 +789,8 @@ public:
 
 		ImGui::RootDock(ImVec2(0, 0), ImGui::GetIO().DisplaySize);
 
+		m_resourceManagerWidget.Render();
+
 		m_rendererWidget.Render();
 
 		m_worldsWidget.Render();
@@ -1001,6 +1004,7 @@ private:
 	Editor::EntitiesWidget m_entitiesWidget;
 	Editor::EntityWidget m_entityWidget;
 	Editor::RendererWidget m_rendererWidget;
+	Editor::ResourceManagerWidget m_resourceManagerWidget;
 
 	//bgfx for imgui
 	ImguiBgfxData m_imguiBgfxData;

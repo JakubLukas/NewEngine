@@ -89,6 +89,23 @@ private:
 };
 
 
+class DebugAllocator : public IAllocator
+{
+public:
+	DebugAllocator(IAllocator& allocator);
+	~DebugAllocator();
+
+	void* Allocate(size_t size, size_t alignment) override;
+	void* Reallocate(void* ptr, size_t size, size_t alignment) override;
+	void Deallocate(void* p) override;
+	size_t AllocatedSize(void* p) override;
+
+private:
+	IAllocator& m_source;
+	//some array
+};
+
+
 //PoolAllocator
 
 
@@ -140,6 +157,8 @@ void DeleteObject(Veng::IAllocator& allocator, Type* ptr)
 		allocator.Deallocate(ptr);
 	}
 }
+
+#define ALLOCATE(allocator, size, alignment)
 
 #define NEW_OBJECT(allocator, Type) new (allocator, ALIGN_OF(Type)) Type
 #define DELETE_OBJECT(allocator, object) DeleteObject(allocator, object);

@@ -15,6 +15,7 @@ class Engine;
 namespace Editor
 {
 
+
 class EditorApp
 {
 public:
@@ -46,6 +47,8 @@ public:
 	virtual void InputChar(u8 character) = 0;
 };
 
+
 }
+
 
 }
