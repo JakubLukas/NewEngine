@@ -29,7 +29,7 @@ solution "NewEngine"
 		"NoPCH",
 		"NoExceptions",
 		"NoRTTI",
-		"WinMain"
+		"WinMain",
 	}
 	
 	language "C++"

@@ -14,6 +14,13 @@ namespace Veng
 void* AlignPointer(void* ptr, size_t alignment);
 
 
+struct AllocationInfo
+{
+	size_t size;
+	size_t allSize;
+};
+
+
 class IAllocator
 {
 public:
@@ -21,8 +28,12 @@ public:
 
 	virtual void* Allocate(size_t size, size_t alignment) = 0;
 	virtual void* Reallocate(void* ptr, size_t size, size_t alignment) = 0;
-	virtual void Deallocate(void* p) = 0;
-	virtual size_t AllocatedSize(void* p) = 0;
+	virtual void Deallocate(void* ptr) = 0;
+	virtual size_t GetSize(void* ptr) const = 0;
+
+	virtual const char* GetName() const = 0;
+	virtual i64 GetAllocCount() const = 0;
+	virtual size_t GetAllocSize() const = 0;
 };
 
 
@@ -34,11 +45,16 @@ public:
 
 	void* Allocate(size_t size, size_t alignment) override;
 	void* Reallocate(void* ptr, size_t size, size_t alignment) override;
-	void Deallocate(void* p) override;
-	size_t AllocatedSize(void* p) override;
+	void Deallocate(void* ptr) override;
+	size_t GetSize(void* ptr) const override;
+
+	const char* GetName() const override;
+	i64 GetAllocCount() const override;
+	size_t GetAllocSize() const override;
 
 private:
-	i32 m_allocCount;
+	i64 m_allocCount = 0;
+	size_t m_allocSize = 0;
 };
 
 
@@ -50,12 +66,19 @@ public:
 
 	void* Allocate(size_t size, size_t alignment) override;
 	void* Reallocate(void* ptr, size_t size, size_t alignment) override;
-	void Deallocate(void* p) override;
-	size_t AllocatedSize(void* p) override;
+	void Deallocate(void* ptr) override;
+	size_t GetSize(void* ptr) const override;
+
+	void SetName(const char* name);
+	const char* GetName() const override;
+	i64 GetAllocCount() const override;
+	size_t GetAllocSize() const override;
 
 private:
 	IAllocator& m_source;
-	i32 m_allocCount;
+	i32 m_allocCount = 0;
+	size_t m_allocSize = 0;
+	const char* m_name = "Heap";
 };
 
 
@@ -79,30 +102,17 @@ public:
 		return ptr;
 	}
 
-	void Deallocate(void* p) override { }
+	void Deallocate(void* ptr) override { }
 
-	size_t AllocatedSize(void* p) override { return 0; }
+	size_t GetSize(void* ptr) const override { return 0; }
+
+	const char* GetName() const override { return "Stack"; }
+	i64 GetAllocCount() const override { return 0; }
+	size_t GetAllocSize() const override { return maxSize; }
 
 private:
 	u8 m_memory[maxSize];
 	u8* m_ptr = m_memory;
-};
-
-
-class DebugAllocator : public IAllocator
-{
-public:
-	DebugAllocator(IAllocator& allocator);
-	~DebugAllocator();
-
-	void* Allocate(size_t size, size_t alignment) override;
-	void* Reallocate(void* ptr, size_t size, size_t alignment) override;
-	void Deallocate(void* p) override;
-	size_t AllocatedSize(void* p) override;
-
-private:
-	IAllocator& m_source;
-	//some array
 };
 
 

@@ -40,7 +40,7 @@
 #include "editor/widgets/entities_widget.h"
 #include "editor/widgets/entity_widget.h"
 #include "editor/widgets/renderer_widget.h"
-#include "editor/widgets/resource_manager_widget.h"
+//#include "editor/widgets/resource_manager_widget.h"
 
 
 
@@ -789,7 +789,14 @@ public:
 
 		ImGui::RootDock(ImVec2(0, 0), ImGui::GetIO().DisplaySize);
 
-		m_resourceManagerWidget.Render();
+		//m_resourceManagerWidget.Render();
+
+		if (ImGui::BeginDock("Allocations"))
+		{
+			ImGui::Text("Allocator %s : memUsed: %d , allocCount: %d", m_allocator.GetName(), m_allocator.GetAllocSize(), m_allocator.GetAllocCount());
+			ImGui::Text("Allocator %s : memUsed: %d , allocCount: %d", m_imguiAllocator.GetName(), m_imguiAllocator.GetAllocSize(), m_imguiAllocator.GetAllocCount());
+		}
+		ImGui::EndDock();
 
 		m_rendererWidget.Render();
 
@@ -919,11 +926,11 @@ public:
 						state |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA);
 					}
 
-					const uint16_t xx = uint16_t(max(cmd->ClipRect.x, 0.0f));
-					const uint16_t yy = uint16_t(max(cmd->ClipRect.y, 0.0f));
+					const uint16_t xx = uint16_t(Max(cmd->ClipRect.x, 0.0f));
+					const uint16_t yy = uint16_t(Max(cmd->ClipRect.y, 0.0f));
 					bgfx::setScissor(xx, yy
-						, uint16_t(min(cmd->ClipRect.z, 65535.0f) - xx)
-						, uint16_t(min(cmd->ClipRect.w, 65535.0f) - yy)
+						, uint16_t(Min(cmd->ClipRect.z, 65535.0f) - xx)
+						, uint16_t(Min(cmd->ClipRect.w, 65535.0f) - yy)
 					);
 
 					bgfx::setState(state);
@@ -1004,7 +1011,7 @@ private:
 	Editor::EntitiesWidget m_entitiesWidget;
 	Editor::EntityWidget m_entityWidget;
 	Editor::RendererWidget m_rendererWidget;
-	Editor::ResourceManagerWidget m_resourceManagerWidget;
+	//Editor::ResourceManagerWidget m_resourceManagerWidget;
 
 	//bgfx for imgui
 	ImguiBgfxData m_imguiBgfxData;

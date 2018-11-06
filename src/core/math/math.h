@@ -13,6 +13,19 @@ namespace Veng
 */
 
 
+template<class Type>
+Type Min(Type v1, Type v2)
+{
+	return (v1 < v2) ? v1 : v2;
+}
+
+template<class Type>
+Type Max(Type v1, Type v2)
+{
+	return (v1 > v2) ? v1 : v2;
+}
+
+
 constexpr float PI = 3.1415926535897932384626433832795f;
 
 
@@ -28,9 +41,6 @@ float atanf(float num);
 float pow(float num, float exp);
 float sqrtf(float num);
 
-
-float min(float v1, float v2);
-float max(float v1, float v2);
 
 constexpr float toRad(float deg)
 {
