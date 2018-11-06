@@ -5,27 +5,9 @@
 #include "core/file/file_system.h"
 #include "core/asserts.h"
 #include "core/logs.h"
+#include "core/os/os_utils.h"
 
 #include "core/string.h"
-
-
-namespace shaderc
-{
-
-
-int compileShader(int _argc, const char* _argv[]);
-
-}
-
-extern "C"
-int fprintf_hook(void* stream, char const* const format, ...)
-{
-	va_list args;
-	va_start(args, format);
-	Veng::Log(Veng::LogType::Error, format, args);
-	va_end(args);
-	return 0;
-}
 
 
 namespace Veng
@@ -100,13 +82,16 @@ static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& 
 		"--profile",
 		(vertexShader) ? "vs_4_0" : "ps_4_0"
 	};
+	StaticInputBuffer<32000> cmdLine;
+	cmdLine << "-f \"" << inPath.Cstr() << "\"";
+	cmdLine << " -o \"" << outPathBuffer.Cstr() << "\"";
+	cmdLine << " -i \"" << includeDir.Cstr() << "\"";
+	cmdLine << " --platform " << "windows";
+	cmdLine << " --varyingdef \"" << varyingPath.Cstr() << "\"";
+	cmdLine << " --type " << ((vertexShader) ? "vertex" : "fragment");
+	cmdLine << " --profile " << ((vertexShader) ? "vs_4_0" : "ps_4_0");
 
-	//bgfx::setShaderCErrorFunction(CompileErrorCallback, nullptr);
-	if (shaderc::compileShader(sizeof(args) / sizeof(args[0]), args) == EXIT_FAILURE)
-	{
-		Log(LogType::Error, "Failed to compile %s -> %s", path.path, outPathBuffer.Cstr());
-		return false;
-	}
+	os::CallProcess("./external/bgfx/shadercDebug.exe", cmdLine.Data());
 
 	outPath = Path(outPathBuffer.Cstr());
 	return true;

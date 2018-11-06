@@ -23,14 +23,18 @@ ObjectPool<Type>::ObjectPool(ObjectPool&& other)
 template<class Type>
 ObjectPool<Type>& ObjectPool<Type>::operator=(ObjectPool&& other)
 {
+	Batch* batches = m_batches;
+	size_t size = m_size;
+	size_t batchCount = m_batchCount;
+
 	m_allocator = other.m_allocator;
 	m_batches = other.m_batches;
 	m_size = other.m_size;
 	m_batchCount = other.m_batchCount;
 
-	other.m_batches = nullptr;
-	other.m_size = 0;
-	other.m_batchCount = 0;
+	other.m_batches = batches;
+	other.m_size = size;
+	other.m_batchCount = batchCount;
 
 	return *this;
 }

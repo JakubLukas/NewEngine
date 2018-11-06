@@ -177,7 +177,7 @@ namespace ImGui
 void* Allocate(size_t sz, void* userData)
 {
 	Veng::IAllocator* allocator = static_cast<Veng::IAllocator*>(userData);
-	return allocator->Allocate(sz, ALIGN_OF(char));
+	return allocator->Allocate(sz, alignof(char));
 }
 
 void Deallocate(void* ptr, void* userData)
@@ -310,7 +310,7 @@ static bgfx::ProgramHandle LoadProgram(const Path& vertexPath, const Path& fragm
 	nativeFileHandle vsHandle;
 	ASSERT(FS::OpenFileSync(vsHandle, vertexPath, fileMode));
 	size_t vsFileSize = FS::GetFileSize(vsHandle);
-	u8* vsData = (u8*)allocator.Allocate(vsFileSize, ALIGN_OF(u8));
+	u8* vsData = (u8*)allocator.Allocate(vsFileSize, alignof(u8));
 	size_t vsFileSizeRead = 0;
 	ASSERT(FS::ReadFileSync(vsHandle, 0, vsData, vsFileSize, vsFileSizeRead));
 	ASSERT(vsFileSize == vsFileSizeRead);
@@ -327,7 +327,7 @@ static bgfx::ProgramHandle LoadProgram(const Path& vertexPath, const Path& fragm
 	nativeFileHandle fsHandle;
 	ASSERT(FS::OpenFileSync(fsHandle, fragmentPath, fileMode));
 	size_t fsFileSize = FS::GetFileSize(fsHandle);
-	u8* fsData = (u8*)allocator.Allocate(fsFileSize, ALIGN_OF(u8));
+	u8* fsData = (u8*)allocator.Allocate(fsFileSize, alignof(u8));
 	size_t fsFileSizeRead = 0;
 	ASSERT(FS::ReadFileSync(fsHandle, 0, fsData, fsFileSize, fsFileSizeRead));
 	ASSERT(fsFileSize == fsFileSizeRead);
@@ -978,7 +978,7 @@ public:
 		if(FS::OpenFileSync(fHandle, IMGUI_DOCK_DATA_PATH, fileMode))
 		{
 			size_t fileSize = FS::GetFileSize(fHandle);
-			u8* data = (u8*)m_allocator.Allocate(fileSize, ALIGN_OF(u8));
+			u8* data = (u8*)m_allocator.Allocate(fileSize, alignof(u8));
 			size_t fileSizeRead = 0;
 			ASSERT(FS::ReadFileSync(fHandle, 0, data, fileSize, fileSizeRead));
 			ASSERT(fileSize == fileSizeRead);

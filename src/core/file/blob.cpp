@@ -144,12 +144,12 @@ static void Reallocate(IAllocator& allocator, u8*& ptr, size_t& size)
 	if (size == 0)
 	{
 		size = 1024;
-		ptr = (u8*)allocator.Allocate(size, ALIGN_OF(u8));
+		ptr = (u8*)allocator.Allocate(size, alignof(u8));
 		return;
 	}
 
 	size_t newSize = size * 2;
-	u8* newPtr = (u8*)allocator.Allocate(newSize, ALIGN_OF(u8));
+	u8* newPtr = (u8*)allocator.Allocate(newSize, alignof(u8));
 	memory::Move(newPtr, ptr, size);
 	size = newSize;
 	allocator.Deallocate(ptr);

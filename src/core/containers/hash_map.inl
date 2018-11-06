@@ -28,10 +28,15 @@ HashMap<KeyType, ValueType>::HashNode::HashNode(HashNode&& other)
 template<class KeyType, class ValueType>
 typename HashMap<KeyType, ValueType>::HashNode& HashMap<KeyType, ValueType>::HashNode::operator=(typename HashMap<KeyType, ValueType>::HashNode&& other)
 {
+	KeyType k = key;
+	ValueType v = value;
+
 	key = other.key;
 	value = other.value;
 	next = other.next;
 
+	other.key = k;
+	other.value = v;
 	other.next = INVALID_INDEX;
 
 	return *this;
@@ -61,16 +66,21 @@ HashMap<KeyType, ValueType>::HashMap(HashMap<KeyType, ValueType>&& other)
 template<class KeyType, class ValueType>
 HashMap<KeyType, ValueType>& HashMap<KeyType, ValueType>::operator=(HashMap<KeyType, ValueType>&& other)
 {
+	int* buckets = m_buckets;
+	unsigned bucketSize = m_bucketSize;
+	HashNode* table = m_table;
+	unsigned size = m_size;
+
 	m_allocator = other.m_allocator;
 	m_buckets = other.m_buckets;
 	m_bucketSize = other.m_bucketSize;
 	m_table = other.m_table;
 	m_size = other.m_size;
 
-	other.m_buckets = nullptr;
-	other.m_bucketSize = 0;
-	other.m_table = nullptr;
-	other.m_size = 0;
+	other.m_buckets = buckets;
+	other.m_bucketSize = bucketSize;
+	other.m_table = table;
+	other.m_size = size;
 
 	return *this;
 }
@@ -214,9 +224,9 @@ void HashMap<KeyType, ValueType>::Rehash(unsigned bucketSize)
 
 	m_bucketSize = bucketSize;
 	m_size = 0;
-	void* data = m_allocator.Allocate(bucketSize * (sizeof(int) + sizeof(HashNode)) + ALIGN_OF(HashNode), ALIGN_OF(int));
+	void* data = m_allocator.Allocate(bucketSize * (sizeof(int) + sizeof(HashNode)) + alignof(HashNode), alignof(int));
 	m_buckets = static_cast<int*>(data);
-	m_table = static_cast<HashNode*>(AlignPointer(m_buckets + bucketSize, ALIGN_OF(HashNode)));
+	m_table = static_cast<HashNode*>(AlignPointer(m_buckets + bucketSize, alignof(HashNode)));
 
 	for (unsigned i = 0; i < m_bucketSize; ++i)
 	{

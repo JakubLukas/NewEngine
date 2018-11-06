@@ -8,9 +8,6 @@
 namespace Veng
 {
 
-
-#define ALIGN_OF(x) __alignof(x)
-
 void* AlignPointer(void* ptr, size_t alignment);
 
 
@@ -170,7 +167,7 @@ void DeleteObject(Veng::IAllocator& allocator, Type* ptr)
 
 #define ALLOCATE(allocator, size, alignment)
 
-#define NEW_OBJECT(allocator, Type) new (allocator, ALIGN_OF(Type)) Type
+#define NEW_OBJECT(allocator, Type) new (allocator, alignof(Type)) Type
 #define DELETE_OBJECT(allocator, object) DeleteObject(allocator, object);
 
 #define NEW_PLACEMENT(ptr, Type) new (Veng::NewPlaceholder(), static_cast<void*>(ptr)) Type

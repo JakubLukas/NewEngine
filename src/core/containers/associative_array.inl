@@ -25,16 +25,21 @@ AssociativeArray<KeyType, ValueType>::AssociativeArray(AssociativeArray&& other)
 template<class KeyType, class ValueType>
 AssociativeArray<KeyType, ValueType>& AssociativeArray<KeyType, ValueType>::operator =(AssociativeArray&& other)
 {
+	size_t capacity = m_capacity;
+	size_t size = m_size;
+	KeyType* keys = m_keys;
+	ValueType* values = m_values;
+
 	m_allocator = other.m_allocator;
 	m_capacity = other.m_capacity;
 	m_size = other.m_size;
 	m_keys = other.m_keys;
 	m_values = other.m_values;
 
-	other.m_capacity = 0;
-	other.m_size = 0;
-	other.m_keys = nullptr;
-	other.m_values = nullptr;
+	other.m_capacity = capacity;
+	other.m_size = size;
+	other.m_keys = keys;
+	other.m_values = values;
 
 	return *this;
 }
@@ -181,9 +186,9 @@ void AssociativeArray<KeyType, ValueType>::Reserve(size_t capacity)
 	if (capacity <= m_capacity) return;
 
 	m_capacity = capacity;
-	void* data = m_allocator.Allocate(m_capacity * (sizeof(KeyType) + sizeof(ValueType)) + ALIGN_OF(ValueType), ALIGN_OF(KeyType));
+	void* data = m_allocator.Allocate(m_capacity * (sizeof(KeyType) + sizeof(ValueType)) + alignof(ValueType), alignof(KeyType));
 	KeyType* newKeys = static_cast<KeyType*>(data);
-	ValueType* newValues = static_cast<ValueType*>(AlignPointer(newKeys + m_capacity, ALIGN_OF(ValueType)));
+	ValueType* newValues = static_cast<ValueType*>(AlignPointer(newKeys + m_capacity, alignof(ValueType)));
 
 
 

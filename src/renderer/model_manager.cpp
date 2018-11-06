@@ -114,7 +114,7 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	ASSERT(dataText.Read(verticesCount));
 
 	u32 verticesBufferSize = verticesCount * sizeof(PosColorVertex);
-	PosColorVertex* vertices = (PosColorVertex*)m_allocator.Allocate(verticesBufferSize, ALIGN_OF(PosColorVertex));
+	PosColorVertex* vertices = (PosColorVertex*)m_allocator.Allocate(verticesBufferSize, alignof(PosColorVertex));
 	for(int i = 0; i < verticesCount; ++i)
 	{
 		ASSERT(dataText.Read(vertices[i].x));
@@ -135,7 +135,7 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	indicesCount *= 3;
 
 	u32 indicesBufferSize = indicesCount * sizeof(u16);
-	u16* indices = (u16*)m_allocator.Allocate(indicesBufferSize, ALIGN_OF(u16));
+	u16* indices = (u16*)m_allocator.Allocate(indicesBufferSize, alignof(u16));
 	for(int i = 0; i < indicesCount; ++i)
 	{
 		int num;

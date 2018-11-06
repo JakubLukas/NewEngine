@@ -105,7 +105,7 @@ void ResourceManager::LoadResource(const Path& path, Resource* resource)
 	ResourceAsyncOp tmp;
 	ASSERT(m_fileSystem.OpenFile(resource->m_fileHandle, path, mode));
 	tmp.bufferSize = m_fileSystem.GetSize(resource->m_fileHandle);
-	tmp.buffer = m_allocator.Allocate(tmp.bufferSize, ALIGN_OF(char));
+	tmp.buffer = m_allocator.Allocate(tmp.bufferSize, alignof(char));
 	tmp.handle = GetResourceHandle(resource);
 	Function<void(fileHandle)> f;
 	f.Bind<ResourceManager, &ResourceManager::FileSystemCallback>(this);

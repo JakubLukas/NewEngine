@@ -44,7 +44,9 @@ public:
 	String(IAllocator& allocator, const char* str);
 	String(IAllocator& allocator, const char* str, unsigned length);
 	String(String&) = delete;
+	String(String&& other);
 	String& operator =(String&) = delete;
+	String& operator =(String&& other);
 	~String();
 
 	char& operator[](unsigned index);
@@ -136,6 +138,7 @@ public:
 
 	const char* Cstr() const { return m_data; }
 
+	char* Data() { return &m_data[0]; }
 
 private:
 	char m_data[size + 1] = { '\0' };

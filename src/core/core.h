@@ -7,3 +7,9 @@
 #else
 #	error Platform not supported
 #endif
+
+#ifdef DEBUG
+#endif
+
+#ifdef RELEASE
+#endif

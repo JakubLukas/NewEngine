@@ -54,7 +54,7 @@ void LogDebugString(const char* str)
 }
 
 
-void CallProcess(const char* appPath, char* args)
+int CallProcess(const char* appPath, char* args)
 {
 	STARTUPINFO si;
 	ZeroMemory(&si, sizeof(si));
@@ -78,15 +78,34 @@ void CallProcess(const char* appPath, char* args)
 
 	if (result != FALSE)
 	{
+		// Successfully created the process.  Wait for it to finish.
+		ASSERT2(WAIT_OBJECT_0 == WaitForSingleObject(pi.hProcess, INFINITE), "WaitForSingleObject failed");
+
+		// Get the exit code.
+		DWORD exitCode;
+		result = GetExitCodeProcess(pi.hProcess, &exitCode);
+
 		// Close process and thread handles. 
 		::CloseHandle(pi.hProcess);
 		::CloseHandle(pi.hThread);
+
+		if(result != FALSE)
+		{
+			return exitCode;
+		}
+		else
+		{
+			// Could not get exit code.
+			ASSERT2(false, "Executed command but couldn't get exit code.");
+			return 0;
+		}
 	}
 	else
 	{
 		DWORD errId = ::GetLastError();
 		LogErrorMessage(errId);
-		ASSERT(false);
+		ASSERT2(false, "CreateProcess failed");
+		return 0;
 	}
 }
 

@@ -9,12 +9,12 @@ static Veng::HeapAllocator* stbImageAllocator = nullptr;
 
 static void* stbImageAlloc(size_t size)
 {
-	return stbImageAllocator->Allocate(size, ALIGN_OF(Veng::u8));
+	return stbImageAllocator->Allocate(size, alignof(Veng::u8));
 }
 
 static void* stbImageRealloc(void* ptr, size_t size)
 {
-	return stbImageAllocator->Reallocate(ptr, size, ALIGN_OF(Veng::u8));
+	return stbImageAllocator->Reallocate(ptr, size, alignof(Veng::u8));
 }
 
 static void stbImageDealloc(void* ptr)

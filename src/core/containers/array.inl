@@ -23,14 +23,19 @@ Array<Type>::Array(Array&& other)
 template<class Type>
 Array<Type>& Array<Type>::operator =(Array&& other)
 {
+	size_t capacity = m_capacity;
+	size_t size = m_size;
+	Type* data = m_data;
+
 	m_allocator = other.m_allocator;
+
 	m_capacity = other.m_capacity;
 	m_size = other.m_size;
 	m_data = other.m_data;
 
-	other.m_capacity = 0;
-	other.m_size = 0;
-	other.m_data = nullptr;
+	other.m_capacity = capacity;
+	other.m_size = size;
+	other.m_data = data;
 
 	return *this
 }
@@ -162,7 +167,7 @@ void Array<Type>::Reserve(size_t capacity)
 	if (capacity <= m_capacity) return;
 
 	m_capacity = capacity;
-	Type* newData = static_cast<Type*>(m_allocator.Allocate(m_capacity * sizeof(Type), ALIGN_OF(Type)));
+	Type* newData = static_cast<Type*>(m_allocator.Allocate(m_capacity * sizeof(Type), alignof(Type)));
 
 	for (size_t i = 0; i < m_size; ++i)
 	{
@@ -180,7 +185,7 @@ void Array<Type>::Resize(size_t size)
 {
 	if (size == m_size && size == m_capacity) return;
 
-	Type* newData = static_cast<Type*>(m_allocator.Allocate(size * sizeof(Type), ALIGN_OF(Type)));
+	Type* newData = static_cast<Type*>(m_allocator.Allocate(size * sizeof(Type), alignof(Type)));
 
 	size_t sizeMin = (size < m_size) ? size : m_size;
 	for (size_t i = 0; i < sizeMin; ++i)

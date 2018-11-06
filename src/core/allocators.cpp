@@ -54,18 +54,18 @@ MainAllocator::~MainAllocator()
 void* MainAllocator::Allocate(size_t size, size_t alignment)
 {
 	m_allocCount++;
-	size_t allocAlign = Max(alignment, ALIGN_OF(AllocationInfo));
-	size_t allocSize = allocAlign + sizeof(AllocationInfo) + alignment + size + ALIGN_OF(uintptr) + sizeof(uintptr);
+	size_t allocAlign = Max(alignment, alignof(AllocationInfo));
+	size_t allocSize = allocAlign + sizeof(AllocationInfo) + alignment + size + alignof(uintptr) + sizeof(uintptr);
 	m_allocSize += allocSize;
 	void* ptr = malloc(allocSize);
 	void* data = AlignPointer((char*)ptr + sizeof(AllocationInfo), allocAlign);
 	ASSERT2((uintptr)data % alignment == 0, "Invalid alignment");
 	AllocationInfo* info = static_cast<AllocationInfo*>((void*)((char*)data - sizeof(AllocationInfo)));
-	ASSERT2((uintptr)info % ALIGN_OF(AllocationInfo) == 0, "Invalid alignment");
+	ASSERT2((uintptr)info % alignof(AllocationInfo) == 0, "Invalid alignment");
 	info->size = size;
 	info->allSize = allocSize;
-	uintptr* startPtr = static_cast<uintptr*>(AlignPointer((char*)data + size, ALIGN_OF(uintptr)));
-	ASSERT2((uintptr)startPtr % ALIGN_OF(uintptr) == 0, "Invalid alignment");
+	uintptr* startPtr = static_cast<uintptr*>(AlignPointer((char*)data + size, alignof(uintptr)));
+	ASSERT2((uintptr)startPtr % alignof(uintptr) == 0, "Invalid alignment");
 	*startPtr = reinterpret_cast<uintptr>(ptr);
 	return data;
 }
@@ -73,19 +73,19 @@ void* MainAllocator::Allocate(size_t size, size_t alignment)
 void* MainAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 {
 	AllocationInfo* origInfo = static_cast<AllocationInfo*>((void*)((char*)ptr - sizeof(AllocationInfo)));
-	uintptr* origPtr = static_cast<uintptr*>(AlignPointer((char*)ptr + origInfo->size, ALIGN_OF(uintptr)));
-	size_t allocAlign = Max(alignment, ALIGN_OF(AllocationInfo));
-	size_t allocSize = allocAlign + sizeof(AllocationInfo) + alignment + size + ALIGN_OF(uintptr) + sizeof(uintptr);
+	uintptr* origPtr = static_cast<uintptr*>(AlignPointer((char*)ptr + origInfo->size, alignof(uintptr)));
+	size_t allocAlign = Max(alignment, alignof(AllocationInfo));
+	size_t allocSize = allocAlign + sizeof(AllocationInfo) + alignment + size + alignof(uintptr) + sizeof(uintptr);
 	m_allocSize += allocSize - origInfo->allSize;
 	void* newptr = realloc((void*)*origPtr, allocSize);
 	void* data = AlignPointer((char*)newptr + sizeof(AllocationInfo), allocAlign);
 	ASSERT2((uintptr)data % alignment == 0, "Invalid alignment");
 	AllocationInfo* info = static_cast<AllocationInfo*>((void*)((char*)data - sizeof(AllocationInfo)));
-	ASSERT2((uintptr)info % ALIGN_OF(AllocationInfo) == 0, "Invalid alignment");
+	ASSERT2((uintptr)info % alignof(AllocationInfo) == 0, "Invalid alignment");
 	info->size = size;
 	info->allSize = allocSize;
-	uintptr* startPtr = static_cast<uintptr*>(AlignPointer((char*)data + size, ALIGN_OF(uintptr)));
-	ASSERT2((uintptr)startPtr % ALIGN_OF(uintptr) == 0, "Invalid alignment");
+	uintptr* startPtr = static_cast<uintptr*>(AlignPointer((char*)data + size, alignof(uintptr)));
+	ASSERT2((uintptr)startPtr % alignof(uintptr) == 0, "Invalid alignment");
 	*startPtr = reinterpret_cast<uintptr>(newptr);
 	return data;
 }
@@ -95,7 +95,7 @@ void MainAllocator::Deallocate(void* ptr)
 	ASSERT(ptr != nullptr);
 
 	AllocationInfo* origInfo = static_cast<AllocationInfo*>((void*)((char*)ptr - sizeof(AllocationInfo)));
-	uintptr* origPtr = static_cast<uintptr*>(AlignPointer((char*)ptr + origInfo->size, ALIGN_OF(uintptr)));
+	uintptr* origPtr = static_cast<uintptr*>(AlignPointer((char*)ptr + origInfo->size, alignof(uintptr)));
 
 	m_allocCount--;
 	m_allocSize -= origInfo->allSize;

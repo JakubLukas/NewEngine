@@ -47,11 +47,13 @@ solution "NewEngine"
 	configuration "Debug"
 		objdir(OBJ_DIR .. "Debug")
 		targetdir(BINARY_DIR .. "Debug")
+		defines { "DEBUG" }
 		flags { "Symbols" }
 		
 	configuration "Release"
 		objdir(OBJ_DIR .. "Release")
 		targetdir(BINARY_DIR .. "Release")
+		defines { "RELEASE" }
 		flags { "Optimize" }
 		
 	configuration {}
@@ -134,9 +136,9 @@ project "main"
 	libdirs { "../external/bgfx/lib/win64" }
 	
 	configuration { "Debug", "x64" }
-		links { "bgfxDebug", "bimgDebug", "bxDebug", "fcppDebug", "glslangDebug", "glsl-optimizerDebug", "shadercDebug", "spirv-optDebug" }
+		links { "bgfxDebug", "bimgDebug", "bxDebug" }
 	configuration { "Release", "x64" }
-		links { "bgfxRelease", "bimgRelease", "bxRelease", "fcppRelease", "glslangRelease", "glsl-optimizerRelease", "shadercRelease", "spirv-optRelease" }
+		links { "bgfxRelease", "bimgRelease", "bxRelease" }
 	configuration {}
 	
 	

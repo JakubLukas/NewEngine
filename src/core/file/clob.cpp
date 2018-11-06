@@ -222,12 +222,12 @@ static void Reallocate(IAllocator& allocator, char*& ptr, size_t& size)
 	if (size == 0)
 	{
 		size = 1024;
-		ptr = (char*)allocator.Allocate(size, ALIGN_OF(char));
+		ptr = (char*)allocator.Allocate(size, alignof(char));
 		return;
 	}
 
 	size_t newSize = size * 2;
-	char* newPtr = (char*)allocator.Allocate(newSize, ALIGN_OF(char));
+	char* newPtr = (char*)allocator.Allocate(newSize, alignof(char));
 	memory::Move(newPtr, ptr, size);
 	size = newSize;
 	allocator.Deallocate(ptr);

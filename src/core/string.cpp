@@ -117,7 +117,6 @@ String::String(IAllocator& allocator)
 {
 }
 
-
 String::String(IAllocator& allocator, const char* str)
 	: m_allocator(allocator)
 {
@@ -127,7 +126,6 @@ String::String(IAllocator& allocator, const char* str)
 	m_data[m_size] = '\0';
 }
 
-
 String::String(IAllocator& allocator, const char* str, unsigned length)
 	: m_allocator(allocator)
 	, m_size(length)
@@ -135,6 +133,30 @@ String::String(IAllocator& allocator, const char* str, unsigned length)
 	m_data = (char*)m_allocator.Allocate(m_size + 1, sizeof(char));
 	string::Copy(m_data, str, m_size);
 	m_data[m_size] = '\0';
+}
+
+String::String(String&& other)
+	: m_allocator(other.m_allocator)
+	, m_data(other.m_data)
+	, m_size(other.m_size)
+{
+	other.m_data = nullptr;
+	other.m_size = 0;
+}
+
+String& String::operator =(String&& other)
+{
+	char* data = m_data;
+	size_t size = m_size;
+
+	m_allocator = other.m_allocator;
+	m_data = other.m_data;
+	m_size = other.m_size;
+
+	other.m_data = data;
+	other.m_size = size;
+
+	return *this;
 }
 
 
