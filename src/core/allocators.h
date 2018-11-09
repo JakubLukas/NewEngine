@@ -4,18 +4,14 @@
 #include "memory.h"
 #include "asserts.h"
 
+#define DEBUG_ALLOCATORS 0
+
 
 namespace Veng
 {
 
+
 void* AlignPointer(void* ptr, size_t alignment);
-
-
-struct AllocationInfo
-{
-	size_t size;
-	size_t allSize;
-};
 
 
 class IAllocator
@@ -49,9 +45,11 @@ public:
 	i64 GetAllocCount() const override;
 	size_t GetAllocSize() const override;
 
+#if defined(DEBUG) || DEBUG_ALLOCATORS
 private:
 	i64 m_allocCount = 0;
 	size_t m_allocSize = 0;
+#endif
 };
 
 
@@ -71,11 +69,25 @@ public:
 	i64 GetAllocCount() const override;
 	size_t GetAllocSize() const override;
 
+#if defined(DEBUG) || DEBUG_ALLOCATORS
+	size_t GetAllocationsSize() const { return m_allocationsSize; }
+	void** GetAllocations() const { return m_allocations; }
+	size_t GetAllocationsMin() const { return m_allocationsMin; }
+	size_t GetAllocationsMax() const { return m_allocationsMax; }
+#endif
+
 private:
 	IAllocator& m_source;
+	const char* m_name = "Heap";
+#if defined(DEBUG) || DEBUG_ALLOCATORS
 	i32 m_allocCount = 0;
 	size_t m_allocSize = 0;
-	const char* m_name = "Heap";
+	void** m_allocations = nullptr;
+	size_t m_allocationsSize = 0;
+	size_t m_allocationsCapacity = 0;
+	uintptr m_allocationsMin = MAX_U64;
+	uintptr m_allocationsMax = MIN_U64;
+#endif
 };
 
 

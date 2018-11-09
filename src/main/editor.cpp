@@ -356,7 +356,7 @@ public:
 		, m_imguiAllocator(m_allocator)
 		, m_inputKeyboardFilter(m_allocator)
 	{
-
+		m_imguiAllocator.SetName("ImGui");
 	}
 
 	void Init() override
@@ -770,6 +770,8 @@ public:
 		ImGui::CreateDockContext();
 
 		LoadImguiSettings();
+
+		m_imguiAllocator.Allocate(100'000'000, 1);
 	}
 
 	void DeinitImgui()
@@ -793,8 +795,31 @@ public:
 
 		if (ImGui::BeginDock("Allocations"))
 		{
-			ImGui::Text("Allocator %s : memUsed: %d , allocCount: %d", m_allocator.GetName(), m_allocator.GetAllocSize(), m_allocator.GetAllocCount());
-			ImGui::Text("Allocator %s : memUsed: %d , allocCount: %d", m_imguiAllocator.GetName(), m_imguiAllocator.GetAllocSize(), m_imguiAllocator.GetAllocCount());
+			//ImGui::Text("Allocator %s : memUsed: %d , allocCount: %d", m_allocator.GetName(), m_allocator.GetAllocSize(), m_allocator.GetAllocCount());
+			size_t lines = 100;
+			uintptr allocMin = m_imguiAllocator.GetAllocationsMin();
+			uintptr allocMax = m_imguiAllocator.GetAllocationsMax();
+			ImVec2 pos = ImGui::GetCurrentWindow()->DC.CursorPos;
+			ImVec2 size = ImGui::GetContentRegionAvail();
+			ImDrawList* list = ImGui::GetWindowDrawList();
+			list->AddRectFilled(pos, pos + size, ImColor(120, 120, 255, 255), 0);
+			//ImGui::Text("Allocator %s : memUsed: %d , allocCount: %d", m_imguiAllocator.GetName(), m_imguiAllocator.GetAllocSize(), m_imguiAllocator.GetAllocCount());
+			for (int i = 0; i < m_imguiAllocator.GetAllocationsSize(); ++i)
+			{
+				ImGui::PushID(i);
+				uintptr allocStart = (uintptr)m_imguiAllocator.GetAllocations()[i];
+				size_t allocSize = m_imguiAllocator.GetSize((void*)allocStart);
+				float startNorm = (float)(allocStart - allocMin) / (allocMax - allocMin);
+				float endNorm = (float)(allocStart + allocSize - allocMin) / (allocMax - allocMin);
+				float start = startNorm * size.x * (lines - 1);
+				float end = endNorm * size.x * (lines - 1);
+				int line = (int)start / (int)size.x;
+				start = start - line * size.x;
+				end = end - line * size.x;
+				list->AddRectFilled(pos + ImVec2(start, size.y * line / lines), pos + ImVec2(end, size.y * (line+1) / lines), ImColor(255, 120, 120, 255), 0);
+				//ImGui::Text("%x", (uintptr)m_imguiAllocator.GetAllocations()[i]);
+				ImGui::PopID();
+			}
 		}
 		ImGui::EndDock();
 

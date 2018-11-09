@@ -50,6 +50,13 @@ typedef u32 uintptr;
 #endif
 
 
+#define MIN_U32 0x0ull
+#define MAX_U32 0xFFFFffffu
+
+#define MIN_U64 0x0ull
+#define MAX_U64 0xFFFFffffFFFFffffull
+
+
 static_assert(sizeof(i8) == 1, "Incorrect size of i8");
 static_assert(sizeof(i16) == 2, "Incorrect size of i16");
 static_assert(sizeof(i32) == 4, "Incorrect size of i32");
