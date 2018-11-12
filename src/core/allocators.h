@@ -4,7 +4,7 @@
 #include "memory.h"
 #include "asserts.h"
 
-#define DEBUG_ALLOCATORS 0
+#define DEBUG_ALLOCATORS 1
 
 
 namespace Veng
@@ -12,6 +12,18 @@ namespace Veng
 
 
 void* AlignPointer(void* ptr, size_t alignment);
+
+
+#if DEBUG_ALLOCATORS
+
+struct AllocArray
+{
+	void** data = nullptr;
+	size_t size = 0;
+	size_t capacity = 0;
+};
+
+#endif
 
 
 class IAllocator
@@ -45,7 +57,7 @@ public:
 	i64 GetAllocCount() const override;
 	size_t GetAllocSize() const override;
 
-#if defined(DEBUG) || DEBUG_ALLOCATORS
+#if DEBUG_ALLOCATORS
 private:
 	i64 m_allocCount = 0;
 	size_t m_allocSize = 0;
@@ -69,24 +81,28 @@ public:
 	i64 GetAllocCount() const override;
 	size_t GetAllocSize() const override;
 
-#if defined(DEBUG) || DEBUG_ALLOCATORS
-	size_t GetAllocationsSize() const { return m_allocationsSize; }
-	void** GetAllocations() const { return m_allocations; }
-	size_t GetAllocationsMin() const { return m_allocationsMin; }
-	size_t GetAllocationsMax() const { return m_allocationsMax; }
+#if DEBUG_ALLOCATORS
+	size_t GetAllocationsSize() const { return m_allocations.size; }
+	void** GetAllocations() const { return m_allocations.data; }
+	size_t GetPagesSize() const { return m_pages.size; }
+	void** GetPages() const { return m_pages.data; }
+#else
+	size_t GetAllocationsSize() const { return 0; }
+	void** GetAllocations() const { return nullptr; }
+	size_t GetPagesSize() const { return 0; }
+	void** GetPages() const { return nullptr; }
 #endif
 
 private:
 	IAllocator& m_source;
 	const char* m_name = "Heap";
-#if defined(DEBUG) || DEBUG_ALLOCATORS
+#if DEBUG_ALLOCATORS
 	i32 m_allocCount = 0;
 	size_t m_allocSize = 0;
-	void** m_allocations = nullptr;
-	size_t m_allocationsSize = 0;
-	size_t m_allocationsCapacity = 0;
-	uintptr m_allocationsMin = MAX_U64;
-	uintptr m_allocationsMax = MIN_U64;
+
+	AllocArray m_allocations;
+	AllocArray m_pages;
+	AllocArray m_pagesCounts;
 #endif
 };
 

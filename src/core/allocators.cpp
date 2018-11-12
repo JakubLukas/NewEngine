@@ -1,6 +1,8 @@
 #include "allocators.h"
 #include <cstdlib>
 
+#include <windows.h>///////////////////////////////////////////
+
 #include "math/math.h"
 
 
@@ -38,7 +40,7 @@ void* AlignPointer(void* ptr, size_t alignment)
 }
 
 
-#if defined(DEBUG) || DEBUG_ALLOCATORS
+#if DEBUG_ALLOCATORS
 
 struct AllocHeader
 {
@@ -48,6 +50,105 @@ struct AllocHeader
 };
 
 
+struct SystemInfo
+{
+	SystemInfo()
+	{
+		SYSTEM_INFO sysInfo;
+		::GetSystemInfo(&sysInfo);
+
+		minAddress = sysInfo.lpMinimumApplicationAddress;
+		maxAddress = sysInfo.lpMaximumApplicationAddress;
+		allocationGranularity = sysInfo.dwAllocationGranularity;
+		pageSize = sysInfo.dwPageSize;
+	}
+
+	void* minAddress;
+	void* maxAddress;
+	size_t allocationGranularity;
+	size_t pageSize;
+};
+static SystemInfo s_systemInfo;
+
+
+void ArrayInit(AllocArray& arr, class IAllocator& allocator)
+{
+	arr.capacity = 64;
+	arr.data = (void**)allocator.Allocate(arr.capacity * sizeof(void*), alignof(void*));
+}
+
+void ArrayDeinit(AllocArray& arr, class IAllocator& allocator)
+{
+	allocator.Deallocate(arr.data);
+	arr.data = nullptr;
+	arr.size = 0;
+	arr.capacity = 0;
+}
+
+void ArrayCheckSize(AllocArray& arr, class IAllocator& allocator)
+{
+	if (arr.size == arr.capacity)
+	{
+		arr.capacity *= 2;
+		arr.data = (void**)allocator.Reallocate(arr.data, arr.capacity * sizeof(void*), alignof(void*));
+	}
+}
+
+void ArrayAddOrdered(AllocArray& arr, void* elem)
+{
+	ASSERT2(arr.size < arr.capacity, "Not enough memory in array");
+
+	for (size_t i = 0; i < arr.size; ++i)
+	{
+		if (arr.data[i] > elem)
+		{
+			memory::Move(arr.data + i + 1, arr.data + i, (arr.size - i) * sizeof(void*));
+			arr.data[i] = elem;
+			arr.size++;
+			return;
+		}
+	}
+	arr.data[arr.size++] = elem;
+}
+
+void ArrayEraseOrdered(AllocArray& arr, void* elem)
+{
+	for (size_t i = 0; i < arr.size; ++i)
+	{
+		if (arr.data[i] == elem)
+		{
+			memory::Move(arr.data + i, arr.data + i + 1, (arr.size - i) * sizeof(void*));
+			arr.size--;
+			return;
+		}
+	}
+}
+
+bool ArrayReplace(AllocArray& arr, void* oldElem, void* newElem)
+{
+	for (size_t i = 0; i < arr.size; ++i)
+	{
+		if (arr.data[i] == oldElem)
+		{
+			arr.data[i] = newElem;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool ArrayFind(AllocArray& arr, void* elem, void*& arrElem)
+{
+	for (size_t i = 0; i < arr.size; ++i)
+	{
+		if (arr.data[i] == elem)
+		{
+			arrElem = arr.data[i];
+			return true;
+		}
+	}
+	return false;
+}
 
 #endif
 
@@ -61,7 +162,7 @@ MainAllocator::MainAllocator()
 
 MainAllocator::~MainAllocator()
 {
-#if defined(DEBUG) || DEBUG_ALLOCATORS
+#if DEBUG_ALLOCATORS
 	ASSERT2(m_allocCount == 0, "Memory leak");
 	ASSERT2(m_allocSize == 0, "Memory leak");
 #endif
@@ -69,7 +170,7 @@ MainAllocator::~MainAllocator()
 
 void* MainAllocator::Allocate(size_t size, size_t alignment)
 {
-#if defined(DEBUG) || DEBUG_ALLOCATORS
+#if DEBUG_ALLOCATORS
 	size_t allocAlign = Max(alignment, alignof(AllocHeader));
 	size_t allocSize = allocAlign + sizeof(AllocHeader) + alignment + size;
 	void* ptr = malloc(allocSize);
@@ -94,7 +195,7 @@ void* MainAllocator::Allocate(size_t size, size_t alignment)
 
 void* MainAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 {
-#if defined(DEBUG) || DEBUG_ALLOCATORS
+#if DEBUG_ALLOCATORS
 	AllocHeader origHeader = *static_cast<AllocHeader*>((void*)((char*)ptr - sizeof(AllocHeader)));
 
 	size_t allocAlign = Max(alignment, alignof(AllocHeader));
@@ -125,7 +226,7 @@ void MainAllocator::Deallocate(void* ptr)
 {
 	ASSERT(ptr != nullptr);
 
-#if defined(DEBUG) || DEBUG_ALLOCATORS
+#if DEBUG_ALLOCATORS
 	AllocHeader* header = static_cast<AllocHeader*>((void*)((char*)ptr - sizeof(AllocHeader)));
 	m_allocCount--;
 	m_allocSize -= header->allSize;
@@ -138,7 +239,7 @@ void MainAllocator::Deallocate(void* ptr)
 
 size_t MainAllocator::GetSize(void* ptr) const
 {
-#if defined(DEBUG) || DEBUG_ALLOCATORS
+#if DEBUG_ALLOCATORS
 	AllocHeader* info = static_cast<AllocHeader*>((void*)((char*)ptr - sizeof(AllocHeader)));
 	return info->size;
 #else
@@ -150,7 +251,7 @@ const char* MainAllocator::GetName() const{ return "Main"; }
 
 i64 MainAllocator::GetAllocCount() const
 {
-#if defined(DEBUG) || DEBUG_ALLOCATORS
+#if DEBUG_ALLOCATORS
 	return m_allocCount;
 #else
 	return 0;
@@ -159,7 +260,7 @@ i64 MainAllocator::GetAllocCount() const
 
 size_t MainAllocator::GetAllocSize() const
 {
-#if defined(DEBUG) || DEBUG_ALLOCATORS
+#if DEBUG_ALLOCATORS
 	return m_allocSize;
 #else
 	return 0;
@@ -173,15 +274,20 @@ size_t MainAllocator::GetAllocSize() const
 HeapAllocator::HeapAllocator(IAllocator& allocator)
 	: m_source(allocator)
 {
-	m_allocationsCapacity = 64;
-	m_allocations = (void**)m_source.Allocate(m_allocationsCapacity * sizeof(void*), alignof(void*));
+#if DEBUG_ALLOCATORS
+	ArrayInit(m_allocations, m_source);
+	ArrayInit(m_pages, m_source);
+	ArrayInit(m_pagesCounts, m_source);
+#endif
 }
 
 HeapAllocator::~HeapAllocator()
 {
-	m_source.Deallocate(m_allocations);
+#if DEBUG_ALLOCATORS
+	ArrayDeinit(m_pages, m_source);
+	ArrayDeinit(m_pagesCounts, m_source);
+	ArrayDeinit(m_allocations, m_source);
 
-#if defined(DEBUG) || DEBUG_ALLOCATORS
 	ASSERT2(m_allocCount == 0, "Memory leak");
 	ASSERT2(m_allocSize == 0, "Memory leak");
 #endif
@@ -190,42 +296,61 @@ HeapAllocator::~HeapAllocator()
 void* HeapAllocator::Allocate(size_t size, size_t alignment)
 {
 	void* data = m_source.Allocate(size, alignment);
-#if defined(DEBUG) || DEBUG_ALLOCATORS
+#if DEBUG_ALLOCATORS
 	m_allocCount++;
 	m_allocSize += size;
-	//add to array
-	if (m_allocationsSize == m_allocationsCapacity)
+
+	ArrayCheckSize(m_allocations, m_source);
+	ArrayAddOrdered(m_allocations, data);
+
+	void* pagePtr = (void*)(((uintptr)data / s_systemInfo.pageSize) * s_systemInfo.pageSize);//TODO: bit operations
+	void* arrPagePtr = nullptr;
+	if (!ArrayFind(m_pages, pagePtr, arrPagePtr))
 	{
-		m_allocationsCapacity *= 2;
-		m_allocations = (void**)m_source.Reallocate(m_allocations, m_allocationsCapacity * sizeof(void*), alignof(void*));
+		ArrayCheckSize(m_pages, m_source);
+		ArrayAddOrdered(m_pages, pagePtr);
+		ArrayCheckSize(m_pagesCounts, m_source);
+		ArrayAddOrdered(m_pagesCounts, (void*)0);
 	}
-	m_allocations[m_allocationsSize++] = data;
-	m_allocationsMin = Min(m_allocationsMin, (uintptr)data);
-	m_allocationsMax = Max(m_allocationsMax, (uintptr)data + size);
+	else
+	{
+		arrPagePtr = (void*)((uintptr)arrPagePtr + 1);
+	}
 #endif
 	return data;
 }
 
 void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 {
-#if defined(DEBUG) || DEBUG_ALLOCATORS
+#if DEBUG_ALLOCATORS
 	m_allocSize += size - m_source.GetSize(ptr);
 #endif
 
 	void* data = m_source.Reallocate(ptr, size, alignment);
 
-#if defined(DEBUG) || DEBUG_ALLOCATORS
-	//change in array
-	for (size_t i = 0; i < m_allocationsSize; ++i)
+#if DEBUG_ALLOCATORS
+	if (ptr == nullptr)
 	{
-		if (m_allocations[i] == ptr)
-		{
-			m_allocations[i] = data;
-			break;
-		}
+		ArrayCheckSize(m_allocations, m_source);
+		ArrayAddOrdered(m_allocations, data);
 	}
-	m_allocationsMin = Min(m_allocationsMin, (uintptr)data);
-	m_allocationsMax = Max(m_allocationsMax, (uintptr)data + size);
+	else
+	{
+		ArrayReplace(m_allocations, ptr, data);
+	}
+	
+	void* pagePtr = (void*)((uintptr)data / s_systemInfo.pageSize);
+	void* arrPagePtr = nullptr;
+	if (!ArrayFind(m_pages, pagePtr, arrPagePtr))
+	{
+		ArrayCheckSize(m_pages, m_source);
+		ArrayAddOrdered(m_pages, pagePtr);
+	}
+	else
+	{
+		//ASSERT(ArrayFind(m_pagesCounts, ), "");
+		arrPagePtr = (void*)((uintptr)arrPagePtr + 1);
+	}
 #endif
 
 	return data;
@@ -234,20 +359,18 @@ void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 void HeapAllocator::Deallocate(void* ptr)
 {
 	ASSERT(ptr != nullptr);
-#if defined(DEBUG) || DEBUG_ALLOCATORS
+#if DEBUG_ALLOCATORS
 	m_allocCount--;
 	m_allocSize -= m_source.GetSize(ptr);
-	//remove from array
-	/*for (size_t i = 0; i < m_allocationsSize; ++i)
+
+	ArrayEraseOrdered(m_allocations, ptr);
+
+	void* pagePtr = (void*)((uintptr)ptr / s_systemInfo.pageSize);
+	void* arrPagePtr = nullptr;
+	if (ArrayFind(m_pages, pagePtr, arrPagePtr))
 	{
-		if (m_allocations[i] == ptr)
-		{
-			m_allocationsSize--;
-			m_allocations[i] = m_allocations[m_allocationsSize];
-			break;
-		}
-	}*/
-	//shrink m_allocationsMin and m_allocationsMax
+
+	}
 #endif
 	m_source.Deallocate(ptr);
 }
@@ -263,7 +386,7 @@ const char* HeapAllocator::GetName() const { return m_name; }
 
 i64 HeapAllocator::GetAllocCount() const
 {
-#if defined(DEBUG) || DEBUG_ALLOCATORS
+#if DEBUG_ALLOCATORS
 	return m_allocCount;
 #else
 	return 0;
@@ -272,7 +395,7 @@ i64 HeapAllocator::GetAllocCount() const
 
 size_t HeapAllocator::GetAllocSize() const
 {
-#if defined(DEBUG) || DEBUG_ALLOCATORS
+#if DEBUG_ALLOCATORS
 	return m_allocSize;
 #else
 	return 0;
