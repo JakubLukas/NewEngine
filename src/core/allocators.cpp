@@ -2,6 +2,7 @@
 #include <cstdlib>
 
 #include <windows.h>///////////////////////////////////////////
+#include "logs.h"
 
 #include "math/math.h"
 
@@ -94,7 +95,7 @@ void ArrayCheckSize(AllocArray& arr, class IAllocator& allocator)
 	}
 }
 
-void ArrayAddOrdered(AllocArray& arr, void* elem)
+size_t ArrayAddOrdered(AllocArray& arr, void* elem)
 {
 	ASSERT2(arr.size < arr.capacity, "Not enough memory in array");
 
@@ -105,10 +106,21 @@ void ArrayAddOrdered(AllocArray& arr, void* elem)
 			memory::Move(arr.data + i + 1, arr.data + i, (arr.size - i) * sizeof(void*));
 			arr.data[i] = elem;
 			arr.size++;
-			return;
+			return i;
 		}
 	}
 	arr.data[arr.size++] = elem;
+	return arr.size - 1;
+}
+
+void ArrayAddOrdered(AllocArray& arr, void* elem, size_t elemIdx)
+{
+	ASSERT2(arr.size < arr.capacity, "Not enough memory in array");
+
+	if(elemIdx < arr.size)
+		memory::Move(arr.data + elemIdx + 1, arr.data + elemIdx, (arr.size - elemIdx) * sizeof(void*));
+	arr.data[elemIdx] = elem;
+	arr.size++;
 }
 
 void ArrayEraseOrdered(AllocArray& arr, void* elem)
@@ -117,11 +129,22 @@ void ArrayEraseOrdered(AllocArray& arr, void* elem)
 	{
 		if (arr.data[i] == elem)
 		{
-			memory::Move(arr.data + i, arr.data + i + 1, (arr.size - i) * sizeof(void*));
+			if (i < arr.size - 1)
+				memory::Move(arr.data + i, arr.data + i + 1, (arr.size - i) * sizeof(void*));
 			arr.size--;
 			return;
 		}
 	}
+	ASSERT2(false, "Nothing removed");
+}
+
+void ArrayEraseOrdered(AllocArray& arr, size_t elemIdx)
+{
+	ASSERT2(elemIdx < arr.size, "Index out of bounds");
+
+	if (elemIdx < arr.size - 1)
+		memory::Move(arr.data + elemIdx, arr.data + elemIdx + 1, (arr.size - elemIdx) * sizeof(void*));
+	arr.size--;
 }
 
 bool ArrayReplace(AllocArray& arr, void* oldElem, void* newElem)
@@ -137,13 +160,13 @@ bool ArrayReplace(AllocArray& arr, void* oldElem, void* newElem)
 	return false;
 }
 
-bool ArrayFind(AllocArray& arr, void* elem, void*& arrElem)
+bool ArrayFind(AllocArray& arr, void* elem, size_t& elemIdx)
 {
 	for (size_t i = 0; i < arr.size; ++i)
 	{
 		if (arr.data[i] == elem)
 		{
-			arrElem = arr.data[i];
+			elemIdx = i;
 			return true;
 		}
 	}
@@ -271,22 +294,32 @@ size_t MainAllocator::GetAllocSize() const
 // ---------------- HEAP ALLOCATOR ----------------
 
 
-HeapAllocator::HeapAllocator(IAllocator& allocator)
+HeapAllocator::HeapAllocator(IAllocator& allocator, bool debug)
 	: m_source(allocator)
+	, m_debug(debug)
 {
 #if DEBUG_ALLOCATORS
-	ArrayInit(m_allocations, m_source);
-	ArrayInit(m_pages, m_source);
-	ArrayInit(m_pagesCounts, m_source);
+	if (m_debug)
+	{
+		ArrayInit(m_allocations, m_source);
+		ArrayInit(m_pages, m_source);
+		ArrayInit(m_pagesCounts, m_source);
+	}
 #endif
 }
 
 HeapAllocator::~HeapAllocator()
 {
 #if DEBUG_ALLOCATORS
-	ArrayDeinit(m_pages, m_source);
-	ArrayDeinit(m_pagesCounts, m_source);
-	ArrayDeinit(m_allocations, m_source);
+	if (m_debug)
+	{
+		ASSERT2(m_pages.size == 0, "Memory leak");
+		ASSERT2(m_pagesCounts.size == 0, "Memory leak");
+		ASSERT2(m_allocations.size == 0, "Memory leak");
+		ArrayDeinit(m_pages, m_source);
+		ArrayDeinit(m_pagesCounts, m_source);
+		ArrayDeinit(m_allocations, m_source);
+	}
 
 	ASSERT2(m_allocCount == 0, "Memory leak");
 	ASSERT2(m_allocSize == 0, "Memory leak");
@@ -300,21 +333,27 @@ void* HeapAllocator::Allocate(size_t size, size_t alignment)
 	m_allocCount++;
 	m_allocSize += size;
 
-	ArrayCheckSize(m_allocations, m_source);
-	ArrayAddOrdered(m_allocations, data);
+	if (m_debug)
+	{
+		ArrayCheckSize(m_allocations, m_source);
+		ArrayAddOrdered(m_allocations, data);
 
-	void* pagePtr = (void*)(((uintptr)data / s_systemInfo.pageSize) * s_systemInfo.pageSize);//TODO: bit operations
-	void* arrPagePtr = nullptr;
-	if (!ArrayFind(m_pages, pagePtr, arrPagePtr))
-	{
-		ArrayCheckSize(m_pages, m_source);
-		ArrayAddOrdered(m_pages, pagePtr);
-		ArrayCheckSize(m_pagesCounts, m_source);
-		ArrayAddOrdered(m_pagesCounts, (void*)0);
-	}
-	else
-	{
-		arrPagePtr = (void*)((uintptr)arrPagePtr + 1);
+		void* pagePtr = (void*)(((uintptr)data / s_systemInfo.pageSize) * s_systemInfo.pageSize);//TODO: bit operations
+		size_t arrPageIdx;
+		if (ArrayFind(m_pages, pagePtr, arrPageIdx))
+		{
+			uintptr count = (uintptr)m_pagesCounts.data[arrPageIdx] + 1;
+			Log(LogType::Info, "a Changed page: %p (ptr: %p) (c: %d -> %d) (t: %d)\n", pagePtr, data, (uintptr)m_pagesCounts.data[arrPageIdx], count, GetCurrentThreadId());
+			m_pagesCounts.data[arrPageIdx] = (void*)count;
+		}
+		else
+		{
+			ArrayCheckSize(m_pages, m_source);
+			size_t addIdx = ArrayAddOrdered(m_pages, pagePtr);
+			ArrayCheckSize(m_pagesCounts, m_source);
+			ArrayAddOrdered(m_pagesCounts, (void*)1, addIdx);
+			Log(LogType::Info, "a Added page: %p (ptr: %p) (c: %d) (t: %d)\n", pagePtr, data, 1, GetCurrentThreadId());
+		}
 	}
 #endif
 	return data;
@@ -329,27 +368,62 @@ void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 	void* data = m_source.Reallocate(ptr, size, alignment);
 
 #if DEBUG_ALLOCATORS
-	if (ptr == nullptr)
+	if (m_debug)
 	{
-		ArrayCheckSize(m_allocations, m_source);
-		ArrayAddOrdered(m_allocations, data);
-	}
-	else
-	{
-		ArrayReplace(m_allocations, ptr, data);
-	}
-	
-	void* pagePtr = (void*)((uintptr)data / s_systemInfo.pageSize);
-	void* arrPagePtr = nullptr;
-	if (!ArrayFind(m_pages, pagePtr, arrPagePtr))
-	{
-		ArrayCheckSize(m_pages, m_source);
-		ArrayAddOrdered(m_pages, pagePtr);
-	}
-	else
-	{
-		//ASSERT(ArrayFind(m_pagesCounts, ), "");
-		arrPagePtr = (void*)((uintptr)arrPagePtr + 1);
+		if (ptr == nullptr)
+		{
+			ArrayCheckSize(m_allocations, m_source);
+			ArrayAddOrdered(m_allocations, data);
+		}
+		else
+		{
+			ArrayReplace(m_allocations, ptr, data);
+		}
+
+		if (ptr != nullptr)
+		{
+			void* oldPagePtr = (void*)(((uintptr)ptr / s_systemInfo.pageSize) * s_systemInfo.pageSize);
+			size_t oldArrPageIdx;
+			if (ArrayFind(m_pages, oldPagePtr, oldArrPageIdx))
+			{
+				uintptr count = (uintptr)m_pagesCounts.data[oldArrPageIdx] - 1;
+				if (count == 0)
+				{
+					Log(LogType::Info, "r Removed page: %p (ptr: %p) (c: %d) (t: %d)\n", oldPagePtr, ptr, count, GetCurrentThreadId());
+					ArrayEraseOrdered(m_pages, oldArrPageIdx);
+					ArrayEraseOrdered(m_pagesCounts, oldArrPageIdx);
+				}
+				else
+				{
+					Log(LogType::Info, "r Changed page: %p (ptr: %p) (c: %d -> %d) (t: %d)\n", oldPagePtr, ptr, (uintptr)m_pagesCounts.data[oldArrPageIdx], count, GetCurrentThreadId());
+					m_pagesCounts.data[oldArrPageIdx] = (void*)count;
+				}
+			}
+			else
+			{
+				ASSERT2(false, "There must be record of page for given allocation");
+			}
+		}
+
+		if (data != nullptr)
+		{
+			void* pagePtr = (void*)(((uintptr)data / s_systemInfo.pageSize) * s_systemInfo.pageSize);
+			size_t arrPageIdx;
+			if (ArrayFind(m_pages, pagePtr, arrPageIdx))
+			{
+				uintptr count = (uintptr)m_pagesCounts.data[arrPageIdx] + 1;
+				Log(LogType::Info, "r Changed page: %p (ptr: %p) (c: %d -> %d) (t: %d)\n", pagePtr, data, (uintptr)m_pagesCounts.data[arrPageIdx], count, GetCurrentThreadId());
+				m_pagesCounts.data[arrPageIdx] = (void*)count;
+			}
+			else
+			{
+				ArrayCheckSize(m_pages, m_source);
+				size_t addIdx = ArrayAddOrdered(m_pages, pagePtr);
+				ArrayCheckSize(m_pagesCounts, m_source);
+				ArrayAddOrdered(m_pagesCounts, (void*)1, addIdx);
+				Log(LogType::Info, "r Added page: %p (ptr: %p) (c: %d) (t: %d)\n", pagePtr, data, 1, GetCurrentThreadId());
+			}
+		}
 	}
 #endif
 
@@ -363,13 +437,31 @@ void HeapAllocator::Deallocate(void* ptr)
 	m_allocCount--;
 	m_allocSize -= m_source.GetSize(ptr);
 
-	ArrayEraseOrdered(m_allocations, ptr);
-
-	void* pagePtr = (void*)((uintptr)ptr / s_systemInfo.pageSize);
-	void* arrPagePtr = nullptr;
-	if (ArrayFind(m_pages, pagePtr, arrPagePtr))
+	if (m_debug)
 	{
+		ArrayEraseOrdered(m_allocations, ptr);
 
+		void* pagePtr = (void*)(((uintptr)ptr / s_systemInfo.pageSize) * s_systemInfo.pageSize);
+		size_t arrPageIdx;
+		if (ArrayFind(m_pages, pagePtr, arrPageIdx))
+		{
+			uintptr count = (uintptr)m_pagesCounts.data[arrPageIdx] - 1;
+			if (count == 0)
+			{
+				Log(LogType::Info, "d Removed page: %p (ptr: %p) (c: %d) (t: %d)\n", pagePtr, ptr, count, GetCurrentThreadId());
+				ArrayEraseOrdered(m_pages, arrPageIdx);
+				ArrayEraseOrdered(m_pagesCounts, arrPageIdx);
+			}
+			else
+			{
+				Log(LogType::Info, "d Changed page: %p (ptr: %p) (c: %d -> %d) (t: %d)\n", pagePtr, ptr, (uintptr)m_pagesCounts.data[arrPageIdx], count, GetCurrentThreadId());
+				m_pagesCounts.data[arrPageIdx] = (void*)count;
+			}
+		}
+		else
+		{
+			ASSERT2(false, "There must be record of page for given allocation");
+		}
 	}
 #endif
 	m_source.Deallocate(ptr);

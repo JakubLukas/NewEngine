@@ -353,7 +353,7 @@ public:
 		: m_allocator(allocator)
 		, m_app(app)
 		, m_bgfxAllocator(m_allocator)
-		, m_imguiAllocator(m_allocator)
+		, m_imguiAllocator(m_allocator, true)
 		, m_inputKeyboardFilter(m_allocator)
 	{
 		m_imguiAllocator.SetName("ImGui");
@@ -770,8 +770,6 @@ public:
 		ImGui::CreateDockContext();
 
 		LoadImguiSettings();
-
-		m_imguiAllocator.Allocate(100'000'000, 1);
 	}
 
 	void DeinitImgui()
@@ -805,16 +803,19 @@ public:
 			{
 				uintptr page = (uintptr)m_imguiAllocator.GetPages()[i];
 				uintptr allocStart = (uintptr)m_imguiAllocator.GetAllocations()[allocIdx];
-				while (page <= allocStart && allocStart < page + 4096)
+				int allocs = 0;
+				while (page <= allocStart && allocStart < page + 4096 && allocIdx < m_imguiAllocator.GetAllocationsSize())
 				{
 					size_t allocSize = m_imguiAllocator.GetSize((void*)allocStart);
 					float start = (float)(allocStart - page) / 4096 * size.x;
-					float end = (float)(allocStart + allocSize - page) / 4096 * size.x;
+					float end = (float)(allocStart + allocSize + 20 - page) / 4096 * size.x;
 					ImGui::PushID((void*)allocStart);
 					list->AddRectFilled(pos + ImVec2(start, (float)i / c * size.y), pos + ImVec2(end, (float)(i + 1) / c * size.y), ImColor(255, 120, 120, 255), 0);
 					ImGui::PopID();
-					allocStart = (uintptr)m_imguiAllocator.GetAllocations()[allocIdx++];
+					allocStart = (uintptr)m_imguiAllocator.GetAllocations()[++allocIdx];
+					allocs++;
 				}
+				ASSERT(allocs > 0);
 			}
 		}
 		ImGui::EndDock();

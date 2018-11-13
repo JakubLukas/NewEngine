@@ -68,7 +68,7 @@ private:
 class HeapAllocator : public IAllocator
 {
 public:
-	HeapAllocator(IAllocator& allocator);
+	HeapAllocator(IAllocator& allocator, bool debug = false);
 	~HeapAllocator();
 
 	void* Allocate(size_t size, size_t alignment) override;
@@ -97,6 +97,7 @@ private:
 	IAllocator& m_source;
 	const char* m_name = "Heap";
 #if DEBUG_ALLOCATORS
+	bool m_debug = false;
 	i32 m_allocCount = 0;
 	size_t m_allocSize = 0;
 
