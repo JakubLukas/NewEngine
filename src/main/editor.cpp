@@ -803,19 +803,18 @@ public:
 			{
 				uintptr page = (uintptr)m_imguiAllocator.GetPages()[i];
 				uintptr allocStart = (uintptr)m_imguiAllocator.GetAllocations()[allocIdx];
-				int allocs = 0;
 				while (page <= allocStart && allocStart < page + 4096 && allocIdx < m_imguiAllocator.GetAllocationsSize())
 				{
 					size_t allocSize = m_imguiAllocator.GetSize((void*)allocStart);
 					float start = (float)(allocStart - page) / 4096 * size.x;
 					float end = (float)(allocStart + allocSize + 20 - page) / 4096 * size.x;
+
 					ImGui::PushID((void*)allocStart);
 					list->AddRectFilled(pos + ImVec2(start, (float)i / c * size.y), pos + ImVec2(end, (float)(i + 1) / c * size.y), ImColor(255, 120, 120, 255), 0);
 					ImGui::PopID();
+
 					allocStart = (uintptr)m_imguiAllocator.GetAllocations()[++allocIdx];
-					allocs++;
 				}
-				ASSERT(allocs > 0);
 			}
 		}
 		ImGui::EndDock();

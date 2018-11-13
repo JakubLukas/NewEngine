@@ -43,6 +43,8 @@ void* AlignPointer(void* ptr, size_t alignment)
 
 #if DEBUG_ALLOCATORS
 
+static IAllocator* s_allocators[1000];
+
 struct AllocHeader
 {
 	size_t size;
@@ -343,7 +345,6 @@ void* HeapAllocator::Allocate(size_t size, size_t alignment)
 		if (ArrayFind(m_pages, pagePtr, arrPageIdx))
 		{
 			uintptr count = (uintptr)m_pagesCounts.data[arrPageIdx] + 1;
-			Log(LogType::Info, "a Changed page: %p (ptr: %p) (c: %d -> %d) (t: %d)\n", pagePtr, data, (uintptr)m_pagesCounts.data[arrPageIdx], count, GetCurrentThreadId());
 			m_pagesCounts.data[arrPageIdx] = (void*)count;
 		}
 		else
@@ -352,7 +353,6 @@ void* HeapAllocator::Allocate(size_t size, size_t alignment)
 			size_t addIdx = ArrayAddOrdered(m_pages, pagePtr);
 			ArrayCheckSize(m_pagesCounts, m_source);
 			ArrayAddOrdered(m_pagesCounts, (void*)1, addIdx);
-			Log(LogType::Info, "a Added page: %p (ptr: %p) (c: %d) (t: %d)\n", pagePtr, data, 1, GetCurrentThreadId());
 		}
 	}
 #endif
@@ -389,13 +389,11 @@ void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 				uintptr count = (uintptr)m_pagesCounts.data[oldArrPageIdx] - 1;
 				if (count == 0)
 				{
-					Log(LogType::Info, "r Removed page: %p (ptr: %p) (c: %d) (t: %d)\n", oldPagePtr, ptr, count, GetCurrentThreadId());
 					ArrayEraseOrdered(m_pages, oldArrPageIdx);
 					ArrayEraseOrdered(m_pagesCounts, oldArrPageIdx);
 				}
 				else
 				{
-					Log(LogType::Info, "r Changed page: %p (ptr: %p) (c: %d -> %d) (t: %d)\n", oldPagePtr, ptr, (uintptr)m_pagesCounts.data[oldArrPageIdx], count, GetCurrentThreadId());
 					m_pagesCounts.data[oldArrPageIdx] = (void*)count;
 				}
 			}
@@ -412,7 +410,6 @@ void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 			if (ArrayFind(m_pages, pagePtr, arrPageIdx))
 			{
 				uintptr count = (uintptr)m_pagesCounts.data[arrPageIdx] + 1;
-				Log(LogType::Info, "r Changed page: %p (ptr: %p) (c: %d -> %d) (t: %d)\n", pagePtr, data, (uintptr)m_pagesCounts.data[arrPageIdx], count, GetCurrentThreadId());
 				m_pagesCounts.data[arrPageIdx] = (void*)count;
 			}
 			else
@@ -421,7 +418,6 @@ void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 				size_t addIdx = ArrayAddOrdered(m_pages, pagePtr);
 				ArrayCheckSize(m_pagesCounts, m_source);
 				ArrayAddOrdered(m_pagesCounts, (void*)1, addIdx);
-				Log(LogType::Info, "r Added page: %p (ptr: %p) (c: %d) (t: %d)\n", pagePtr, data, 1, GetCurrentThreadId());
 			}
 		}
 	}
@@ -448,13 +444,11 @@ void HeapAllocator::Deallocate(void* ptr)
 			uintptr count = (uintptr)m_pagesCounts.data[arrPageIdx] - 1;
 			if (count == 0)
 			{
-				Log(LogType::Info, "d Removed page: %p (ptr: %p) (c: %d) (t: %d)\n", pagePtr, ptr, count, GetCurrentThreadId());
 				ArrayEraseOrdered(m_pages, arrPageIdx);
 				ArrayEraseOrdered(m_pagesCounts, arrPageIdx);
 			}
 			else
 			{
-				Log(LogType::Info, "d Changed page: %p (ptr: %p) (c: %d -> %d) (t: %d)\n", pagePtr, ptr, (uintptr)m_pagesCounts.data[arrPageIdx], count, GetCurrentThreadId());
 				m_pagesCounts.data[arrPageIdx] = (void*)count;
 			}
 		}
