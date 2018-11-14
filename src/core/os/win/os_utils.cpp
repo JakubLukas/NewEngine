@@ -110,6 +110,29 @@ int CallProcess(const char* appPath, char* args)
 }
 
 
+SystemInfo GetSystemInfo()
+{
+	SYSTEM_INFO sysInfo;
+	::GetSystemInfo(&sysInfo);
+
+	SystemInfo::ProcessorArchitecture architecture;
+	switch (sysInfo.wProcessorArchitecture)
+	{
+	case 0:
+		architecture = SystemInfo::ProcessorArchitecture::Intel;
+		break;
+	default:
+		architecture = SystemInfo::ProcessorArchitecture::Unknown;
+		break;
+	}
+
+	return
+	{
+
+	};
+}
+
+
 }
 
 

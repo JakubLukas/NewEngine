@@ -11,9 +11,6 @@ namespace Veng
 {
 
 
-void* AlignPointer(void* ptr, size_t alignment);
-
-
 #if DEBUG_ALLOCATORS
 
 struct AllocArray
@@ -23,8 +20,24 @@ struct AllocArray
 	size_t capacity = 0;
 };
 
+
+struct AllocInfo
+{
+	void* minAddress;
+	void* maxAddress;
+	size_t allocationGranularity;
+	size_t pageSize;
+};
+
+const AllocInfo& GetAllocInfo();
+
 #endif
 
+//-----------------------------------------------
+
+void* AlignPointer(void* ptr, size_t alignment);
+
+//-----------------------------------------------
 
 class IAllocator
 {

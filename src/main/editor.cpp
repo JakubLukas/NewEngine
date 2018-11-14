@@ -42,6 +42,8 @@
 #include "editor/widgets/renderer_widget.h"
 //#include "editor/widgets/resource_manager_widget.h"
 
+#include <windows.h>
+
 
 
 namespace bx
@@ -797,17 +799,18 @@ public:
 			ImVec2 size = ImGui::GetContentRegionAvail();
 			ImDrawList* list = ImGui::GetWindowDrawList();
 			list->AddRectFilled(pos, pos + size, ImColor(120, 120, 255, 255), 0);
+			size_t pageSize = GetAllocInfo().pageSize;
 
 			size_t allocIdx = 0;
 			for (size_t i = 0, c = m_imguiAllocator.GetPagesSize(); i < c; ++i)
 			{
 				uintptr page = (uintptr)m_imguiAllocator.GetPages()[i];
 				uintptr allocStart = (uintptr)m_imguiAllocator.GetAllocations()[allocIdx];
-				while (page <= allocStart && allocStart < page + 4096 && allocIdx < m_imguiAllocator.GetAllocationsSize())
+				while (page <= allocStart && allocStart < page + pageSize && allocIdx < m_imguiAllocator.GetAllocationsSize())
 				{
 					size_t allocSize = m_imguiAllocator.GetSize((void*)allocStart);
-					float start = (float)(allocStart - page) / 4096 * size.x;
-					float end = (float)(allocStart + allocSize + 20 - page) / 4096 * size.x;
+					float start = (float)(allocStart - page) / pageSize * size.x;
+					float end = (float)(allocStart + allocSize - page) / pageSize * size.x;
 
 					ImGui::PushID((void*)allocStart);
 					list->AddRectFilled(pos + ImVec2(start, (float)i / c * size.y), pos + ImVec2(end, (float)(i + 1) / c * size.y), ImColor(255, 120, 120, 255), 0);

@@ -7,43 +7,11 @@
 #include "math/math.h"
 
 
-void* operator new(size_t)
-{
-	ASSERT2(false, "Usage of new is forbidden, use placement new instead");
-	return nullptr;
-}
-
-void operator delete(void*)
-{
-	ASSERT2(false, "Usage of new is forbidden, use placement new instead");
-}
-
-
-void* operator new[](size_t)
-{
-	ASSERT2(false, "Usage of new is forbidden, use placement new instead");
-	return nullptr;
-}
-
-void operator delete[](void*)
-{
-	ASSERT2(false, "Usage of new is forbidden, use placement new instead");
-}
-
-
 namespace Veng
 {
 
 
-void* AlignPointer(void* ptr, size_t alignment)
-{
-	return (void*)(((uintptr)ptr + (uintptr)alignment - 1) & ~(uintptr)(alignment - 1));
-}
-
-
 #if DEBUG_ALLOCATORS
-
-static IAllocator* s_allocators[1000];
 
 struct AllocHeader
 {
@@ -53,9 +21,9 @@ struct AllocHeader
 };
 
 
-struct SystemInfo
+struct AllocInfoInternal final : public AllocInfo
 {
-	SystemInfo()
+	AllocInfoInternal()
 	{
 		SYSTEM_INFO sysInfo;
 		::GetSystemInfo(&sysInfo);
@@ -65,13 +33,14 @@ struct SystemInfo
 		allocationGranularity = sysInfo.dwAllocationGranularity;
 		pageSize = sysInfo.dwPageSize;
 	}
-
-	void* minAddress;
-	void* maxAddress;
-	size_t allocationGranularity;
-	size_t pageSize;
 };
-static SystemInfo s_systemInfo;
+
+static const AllocInfoInternal s_allocInfo;
+
+const AllocInfo& GetAllocInfo()
+{
+	return s_allocInfo;
+}
 
 
 void ArrayInit(AllocArray& arr, class IAllocator& allocator)
@@ -119,7 +88,7 @@ void ArrayAddOrdered(AllocArray& arr, void* elem, size_t elemIdx)
 {
 	ASSERT2(arr.size < arr.capacity, "Not enough memory in array");
 
-	if(elemIdx < arr.size)
+	if (elemIdx < arr.size)
 		memory::Move(arr.data + elemIdx + 1, arr.data + elemIdx, (arr.size - elemIdx) * sizeof(void*));
 	arr.data[elemIdx] = elem;
 	arr.size++;
@@ -176,6 +145,12 @@ bool ArrayFind(AllocArray& arr, void* elem, size_t& elemIdx)
 }
 
 #endif
+
+
+void* AlignPointer(void* ptr, size_t alignment)
+{
+	return (void*)(((uintptr)ptr + (uintptr)alignment - 1) & ~(uintptr)(alignment - 1));
+}
 
 
 // ---------------- MAIN ALLOCATOR ----------------
@@ -272,7 +247,7 @@ size_t MainAllocator::GetSize(void* ptr) const
 #endif
 }
 
-const char* MainAllocator::GetName() const{ return "Main"; }
+const char* MainAllocator::GetName() const { return "Main"; }
 
 i64 MainAllocator::GetAllocCount() const
 {
@@ -340,7 +315,7 @@ void* HeapAllocator::Allocate(size_t size, size_t alignment)
 		ArrayCheckSize(m_allocations, m_source);
 		ArrayAddOrdered(m_allocations, data);
 
-		void* pagePtr = (void*)(((uintptr)data / s_systemInfo.pageSize) * s_systemInfo.pageSize);//TODO: bit operations
+		void* pagePtr = (void*)(((uintptr)data / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);//TODO: bit operations
 		size_t arrPageIdx;
 		if (ArrayFind(m_pages, pagePtr, arrPageIdx))
 		{
@@ -382,7 +357,7 @@ void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 
 		if (ptr != nullptr)
 		{
-			void* oldPagePtr = (void*)(((uintptr)ptr / s_systemInfo.pageSize) * s_systemInfo.pageSize);
+			void* oldPagePtr = (void*)(((uintptr)ptr / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);
 			size_t oldArrPageIdx;
 			if (ArrayFind(m_pages, oldPagePtr, oldArrPageIdx))
 			{
@@ -405,7 +380,7 @@ void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 
 		if (data != nullptr)
 		{
-			void* pagePtr = (void*)(((uintptr)data / s_systemInfo.pageSize) * s_systemInfo.pageSize);
+			void* pagePtr = (void*)(((uintptr)data / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);
 			size_t arrPageIdx;
 			if (ArrayFind(m_pages, pagePtr, arrPageIdx))
 			{
@@ -437,7 +412,7 @@ void HeapAllocator::Deallocate(void* ptr)
 	{
 		ArrayEraseOrdered(m_allocations, ptr);
 
-		void* pagePtr = (void*)(((uintptr)ptr / s_systemInfo.pageSize) * s_systemInfo.pageSize);
+		void* pagePtr = (void*)(((uintptr)ptr / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);
 		size_t arrPageIdx;
 		if (ArrayFind(m_pages, pagePtr, arrPageIdx))
 		{
@@ -489,6 +464,30 @@ size_t HeapAllocator::GetAllocSize() const
 }
 
 
+}
+
+
+void* operator new(size_t)
+{
+	ASSERT2(false, "Usage of new is forbidden, use placement new instead");
+	return nullptr;
+}
+
+void operator delete(void*)
+{
+	ASSERT2(false, "Usage of new is forbidden, use placement new instead");
+}
+
+
+void* operator new[](size_t)
+{
+	ASSERT2(false, "Usage of new is forbidden, use placement new instead");
+	return nullptr;
+}
+
+void operator delete[](void*)
+{
+	ASSERT2(false, "Usage of new is forbidden, use placement new instead");
 }
 
 
