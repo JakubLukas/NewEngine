@@ -23,13 +23,13 @@ struct SystemInfo
 		ARM64,
 	};
 
-	ProcessorArchitecture processorArchitecture = ProcessorArchitecture::Unknown;
-	u32 pageSize = 0;
-	void* minimumAddress = nullptr;
-	void* maximumAddress = nullptr;
-	u32 activeProcessorMask = 0;
-	u32 numberOfProcessors = 0;
-	u32 allocationGranularity = 0;
+	ProcessorArchitecture processorArchitecture;
+	u32 pageSize;
+	void* minimumAddress;
+	void* maximumAddress;
+	u32 activeProcessorMask;
+	u32 numberOfProcessors;
+	u32 allocationGranularity;
 };
 
 

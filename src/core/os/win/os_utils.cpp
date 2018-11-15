@@ -3,6 +3,7 @@
 #define NOMINMAX
 #define VC_EXTRALEAN
 #include <windows.h>
+#define PROCESSOR_ARCHITECTURE_ARM64 12
 
 #include "core/asserts.h"
 
@@ -115,20 +116,38 @@ SystemInfo GetSystemInfo()
 	SYSTEM_INFO sysInfo;
 	::GetSystemInfo(&sysInfo);
 
-	SystemInfo::ProcessorArchitecture architecture;
+	SystemInfo::ProcessorArchitecture procArchitecture;
 	switch (sysInfo.wProcessorArchitecture)
 	{
-	case 0:
-		architecture = SystemInfo::ProcessorArchitecture::Intel;
+	case PROCESSOR_ARCHITECTURE_INTEL:
+		procArchitecture = SystemInfo::ProcessorArchitecture::Intel;
+		break;
+	case PROCESSOR_ARCHITECTURE_IA64:
+		procArchitecture = SystemInfo::ProcessorArchitecture::IA64;
+		break;
+	case PROCESSOR_ARCHITECTURE_AMD64:
+		procArchitecture = SystemInfo::ProcessorArchitecture::AMD64;
+		break;
+	case PROCESSOR_ARCHITECTURE_ARM:
+		procArchitecture = SystemInfo::ProcessorArchitecture::ARM;
+		break;
+	case PROCESSOR_ARCHITECTURE_ARM64:
+		procArchitecture = SystemInfo::ProcessorArchitecture::ARM64;
 		break;
 	default:
-		architecture = SystemInfo::ProcessorArchitecture::Unknown;
+		procArchitecture = SystemInfo::ProcessorArchitecture::Unknown;
 		break;
 	}
 
-	return
+	return SystemInfo
 	{
-
+		procArchitecture,
+		sysInfo.dwPageSize,
+		sysInfo.lpMinimumApplicationAddress,
+		sysInfo.lpMaximumApplicationAddress,
+		(u32)sysInfo.dwActiveProcessorMask,
+		sysInfo.dwNumberOfProcessors,
+		sysInfo.dwAllocationGranularity
 	};
 }
 
