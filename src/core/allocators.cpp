@@ -20,9 +20,9 @@ struct AllocHeader
 };
 
 
-struct AllocInfoInternal final : public AllocInfo
+struct AllocInfo
 {
-	AllocInfoInternal()
+	AllocInfo()
 	{
 		const os::SystemInfo sysInfo = os::GetSystemInfo();
 
@@ -31,9 +31,14 @@ struct AllocInfoInternal final : public AllocInfo
 		allocationGranularity = sysInfo.allocationGranularity;
 		pageSize = sysInfo.pageSize;
 	}
+
+	void* minAddress;
+	void* maxAddress;
+	size_t allocationGranularity;
+	size_t pageSize;
 };
 
-static const AllocInfoInternal s_allocInfo;
+static const AllocInfo s_allocInfo;
 
 const AllocInfo& GetAllocInfo()
 {
@@ -117,19 +122,6 @@ void ArrayEraseOrdered(AllocArray& arr, size_t elemIdx)
 	arr.size--;
 }
 
-bool ArrayReplace(AllocArray& arr, void* oldElem, void* newElem)
-{
-	for (size_t i = 0; i < arr.size; ++i)
-	{
-		if (arr.data[i] == oldElem)
-		{
-			arr.data[i] = newElem;
-			return true;
-		}
-	}
-	return false;
-}
-
 bool ArrayFind(AllocArray& arr, void* elem, size_t& elemIdx)
 {
 	for (size_t i = 0; i < arr.size; ++i)
@@ -148,9 +140,9 @@ static const size_t MAX_ALLOCATORS = 1000;
 static HeapAllocator* s_allocatorsData[MAX_ALLOCATORS] = { nullptr };
 static AllocArray s_allocators{ (void**)&s_allocatorsData, 0, MAX_ALLOCATORS };
 
-const IAllocator* GetAllocators()
+const IAllocator** GetAllocators()
 {
-	return (IAllocator*)s_allocators.data;
+	return (const IAllocator**)s_allocators.data;
 }
 
 size_t GetAllocatorsSize()
@@ -173,6 +165,9 @@ void* AlignPointer(void* ptr, size_t alignment)
 
 MainAllocator::MainAllocator()
 {
+#if DEBUG_ALLOCATORS
+	ArrayAddOrdered(s_allocators, this);
+#endif
 }
 
 MainAllocator::~MainAllocator()
@@ -180,6 +175,8 @@ MainAllocator::~MainAllocator()
 #if DEBUG_ALLOCATORS
 	ASSERT2(m_allocCount == 0, "Memory leak");
 	ASSERT2(m_allocSize == 0, "Memory leak");
+
+	ArrayEraseOrdered(s_allocators, this);
 #endif
 }
 
@@ -201,13 +198,13 @@ void* MainAllocator::Allocate(size_t size, size_t alignment)
 
 	m_allocCount++;
 	m_allocSize += allocSize;
-	return data;
 #else
 	void* ptr = malloc(alignment + size);
 	void* data = AlignPointer((char*)ptr + 1, alignment);
 	*((char*)data - 1) = (char)((ptrdiff_t)data - (ptrdiff_t)ptr);
-	return data;
 #endif
+
+	return data;
 }
 
 void* MainAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
@@ -215,30 +212,51 @@ void* MainAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 	ScopeLock<SpinLock> lock(m_lock);
 
 #if DEBUG_ALLOCATORS
-	AllocHeader origHeader = *static_cast<AllocHeader*>((void*)((char*)ptr - sizeof(AllocHeader)));
+	if (ptr != nullptr)
+	{
+		AllocHeader origHeader = *static_cast<AllocHeader*>((void*)((char*)ptr - sizeof(AllocHeader)));
+		m_allocCount--;
+		m_allocSize -= origHeader.allSize;
+		ptr = (void*)origHeader.ptr;
+	}
 
 	size_t allocAlign = Max(alignment, alignof(AllocHeader));
 	size_t allocSize = allocAlign + sizeof(AllocHeader) + alignment + size;
-	void* newptr = realloc((void*)origHeader.ptr, allocSize);
+	void* newptr = realloc(ptr, allocSize);
 	//if realloc returns memory pointer with different alignment as malloc, whole universe will explode (data pointer would points to wrong memory)
-	void* data = AlignPointer((char*)newptr + sizeof(AllocHeader), allocAlign);
-	ASSERT2((uintptr)data % alignment == 0, "Invalid alignment");
-	AllocHeader* header = static_cast<AllocHeader*>((void*)((char*)data - sizeof(AllocHeader)));
-	ASSERT2((uintptr)header % alignof(AllocHeader) == 0, "Invalid alignment");
-	header->size = size;
-	header->allSize = allocSize;
-	header->ptr = newptr;
+	
+	if (newptr != nullptr)
+	{
+		void* data = AlignPointer((char*)newptr + sizeof(AllocHeader), allocAlign);
+		ASSERT2((uintptr)data % alignment == 0, "Invalid alignment");
+		AllocHeader* header = static_cast<AllocHeader*>((void*)((char*)data - sizeof(AllocHeader)));
+		ASSERT2((uintptr)header % alignof(AllocHeader) == 0, "Invalid alignment");
+		header->size = size;
+		header->allSize = allocSize;
+		header->ptr = newptr;
 
-	m_allocSize += allocSize - origHeader.allSize;
-	return data;
+		m_allocCount++;
+		m_allocSize += allocSize;
+
+		newptr = data;
+	}
 #else
-	void* origPtr = (char*)ptr - *((char*)ptr - 1);
-	void* newPtr = realloc(origPtr, alignment + size);
+	if (ptr != nullptr)
+	{
+		void* origPtr = (char*)ptr - *((char*)ptr - 1);
+		ptr = origPtr;
+	}
+	void* newPtr = realloc(ptr, alignment + size);
 	//if realloc returns memory pointer with different alignment as malloc, whole universe will explode (data pointer would points to wrong memory)
-	void* data = AlignPointer((char*)newPtr + 1, alignment);
-	*((char*)data - 1) = (char)((ptrdiff_t)data - (ptrdiff_t)newPtr);
-	return data;
+	if (newptr != nullptr)
+	{
+		void* data = AlignPointer((char*)newPtr + 1, alignment);
+		*((char*)data - 1) = (char)((ptrdiff_t)data - (ptrdiff_t)newPtr);
+		newPtr = data;
+	}
 #endif
+
+	return newptr;
 }
 
 void MainAllocator::Deallocate(void* ptr)
@@ -268,25 +286,19 @@ size_t MainAllocator::GetSize(void* ptr) const
 #endif
 }
 
-const char* MainAllocator::GetName() const { return "Main"; }
+#if DEBUG_ALLOCATORS
 
 i64 MainAllocator::GetAllocCount() const
 {
-#if DEBUG_ALLOCATORS
 	return m_allocCount;
-#else
-	return 0;
-#endif
 }
 
 size_t MainAllocator::GetAllocSize() const
 {
-#if DEBUG_ALLOCATORS
 	return m_allocSize;
-#else
-	return 0;
-#endif
 }
+
+#endif
 
 
 // ---------------- HEAP ALLOCATOR ----------------
@@ -356,24 +368,13 @@ void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 	ScopeLock<SpinLock> lock(m_lock);
 
 #if DEBUG_ALLOCATORS
-	m_allocSize += size - m_source.GetSize(ptr);
-#endif
-
-	void* data = m_source.Reallocate(ptr, size, alignment);
-
-#if DEBUG_ALLOCATORS
-	if (ptr == nullptr)
-	{
-		ArrayCheckSize(m_allocations, m_source);
-		ArrayAddOrdered(m_allocations, data);
-	}
-	else
-	{
-		ArrayReplace(m_allocations, ptr, data);
-	}
-
 	if (ptr != nullptr)
 	{
+		m_allocCount--;
+		m_allocSize -= m_source.GetSize(ptr);
+
+		ArrayEraseOrdered(m_allocations, ptr);
+
 		void* oldPagePtr = (void*)(((uintptr)ptr / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);
 		size_t oldArrPageIdx;
 		if (ArrayFind(m_pages, oldPagePtr, oldArrPageIdx))
@@ -394,9 +395,20 @@ void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 			ASSERT2(false, "There must be record of page for given allocation");
 		}
 	}
+#endif
+
+	void* data = m_source.Reallocate(ptr, size, alignment);
+
+#if DEBUG_ALLOCATORS
 
 	if (data != nullptr)
 	{
+		m_allocCount++;
+		m_allocSize += size;
+
+		ArrayCheckSize(m_allocations, m_source);
+		ArrayAddOrdered(m_allocations, data);
+
 		void* pagePtr = (void*)(((uintptr)data / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);
 		size_t arrPageIdx;
 		if (ArrayFind(m_pages, pagePtr, arrPageIdx))
@@ -457,27 +469,31 @@ size_t HeapAllocator::GetSize(void* ptr) const
 	return m_source.GetSize(ptr);
 }
 
-void HeapAllocator::SetName(const char* name) { m_name = name; }
 
-const char* HeapAllocator::GetName() const { return m_name; }
+#if DEBUG_ALLOCATORS
+
+void HeapAllocator::SetDebugName(const char* name) { m_name = name; }
+
+const char* HeapAllocator::GetDebugName() const { return m_name; }
 
 i64 HeapAllocator::GetAllocCount() const
 {
-#if DEBUG_ALLOCATORS
 	return m_allocCount;
-#else
-	return 0;
-#endif
 }
 
 size_t HeapAllocator::GetAllocSize() const
 {
-#if DEBUG_ALLOCATORS
 	return m_allocSize;
-#else
-	return 0;
-#endif
 }
+
+size_t HeapAllocator::GetAllocationsSize() const { return m_allocations.size; }
+void** HeapAllocator::GetAllocations() const { return m_allocations.data; }
+size_t HeapAllocator::GetBlocksSize() const { return m_pages.size; }
+void** HeapAllocator::GetBlocks() const { return m_pages.data; }
+size_t HeapAllocator::GetBlockSize() const { return GetAllocInfo().pageSize; }
+
+
+#endif
 
 
 }

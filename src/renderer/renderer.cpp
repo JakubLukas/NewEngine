@@ -186,6 +186,8 @@ public:
 		: m_allocator(engine.GetAllocator())
 		, m_engine(engine)
 	{
+		m_allocator.SetDebugName("Renderer");
+
 		m_shaderInternalManager = static_cast<ShaderInternalManager*>(m_engine.GetResourceManager(ResourceType::ShaderInternal));
 		m_shaderManager = static_cast<ShaderManager*>(m_engine.GetResourceManager(ResourceType::Shader));
 		m_materialManager = static_cast<MaterialManager*>(m_engine.GetResourceManager(ResourceType::Material));

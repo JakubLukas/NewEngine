@@ -50,6 +50,7 @@ TextureManager::TextureManager(IAllocator& allocator, FileSystem& fileSystem, De
 	: ResourceManager(allocator, fileSystem, depManager)
 {
 	stbImageAllocator = NEW_OBJECT(m_allocator, HeapAllocator)(m_allocator);
+	stbImageAllocator->SetDebugName("stb image");
 }
 
 

@@ -22,17 +22,7 @@ struct AllocArray
 };
 
 
-struct AllocInfo
-{
-	void* minAddress;
-	void* maxAddress;
-	size_t allocationGranularity;
-	size_t pageSize;
-};
-
-const AllocInfo& GetAllocInfo();
-
-const class IAllocator* GetAllocators();
+const class IAllocator** GetAllocators();
 size_t GetAllocatorsSize();
 
 #endif
@@ -53,9 +43,29 @@ public:
 	virtual void Deallocate(void* ptr) = 0;
 	virtual size_t GetSize(void* ptr) const = 0;
 
-	virtual const char* GetName() const = 0;
+#if DEBUG_ALLOCATORS
+	virtual void SetDebugName(const char* name) = 0;
+	virtual const char* GetDebugName() const = 0;
 	virtual i64 GetAllocCount() const = 0;
 	virtual size_t GetAllocSize() const = 0;
+
+	virtual size_t GetAllocationsSize() const = 0;
+	virtual void** GetAllocations() const = 0;
+	virtual size_t GetBlocksSize() const = 0;
+	virtual void** GetBlocks() const = 0;
+	virtual size_t GetBlockSize() const = 0;
+#else
+	void SetDebugName(const char* name) {};
+	const char* GetDebugName() const { "" };
+	i64 GetAllocCount() const { return 0; };
+	size_t GetAllocSize() const { return 0; };
+
+	size_t GetAllocationsSize() const { return 0; }
+	void** GetAllocations() const { return nullptr; }
+	size_t GetBlocksSize() const { return 0; }
+	void** GetBlocks() const { return nullptr; }
+	size_t GetBlockSize() const { return 0 };
+#endif
 };
 
 
@@ -63,6 +73,10 @@ class MainAllocator : public IAllocator
 {
 public:
 	MainAllocator();
+	MainAllocator(MainAllocator&) = delete;
+	MainAllocator(MainAllocator&&) = delete;
+	MainAllocator& operator=(MainAllocator&) = delete;
+	MainAllocator& operator=(MainAllocator&&) = delete;
 	~MainAllocator() override;
 
 	void* Allocate(size_t size, size_t alignment) override;
@@ -70,13 +84,22 @@ public:
 	void Deallocate(void* ptr) override;
 	size_t GetSize(void* ptr) const override;
 
-	const char* GetName() const override;
+#if DEBUG_ALLOCATORS
+	void SetDebugName(const char* name) override {}
+	const char* GetDebugName() const override { return "Main"; };
 	i64 GetAllocCount() const override;
 	size_t GetAllocSize() const override;
 
-#if DEBUG_ALLOCATORS
+	size_t GetAllocationsSize() const override { return 0; };
+	void** GetAllocations() const override { return nullptr; };
+	size_t GetBlocksSize() const override { return 0; }
+	void** GetBlocks() const override { return nullptr; }
+	size_t GetBlockSize() const override { return 0; }
+#endif
+
 private:
 	SpinLock m_lock;
+#if DEBUG_ALLOCATORS
 	i64 m_allocCount = 0;
 	size_t m_allocSize = 0;
 #endif
@@ -87,6 +110,10 @@ class HeapAllocator : public IAllocator
 {
 public:
 	HeapAllocator(IAllocator& allocator, bool debug = false);
+	HeapAllocator(HeapAllocator&) = delete;
+	HeapAllocator(HeapAllocator&&) = delete;
+	HeapAllocator& operator=(HeapAllocator&) = delete;
+	HeapAllocator& operator=(HeapAllocator&&) = delete;
 	~HeapAllocator() override;
 
 	void* Allocate(size_t size, size_t alignment) override;
@@ -94,28 +121,24 @@ public:
 	void Deallocate(void* ptr) override;
 	size_t GetSize(void* ptr) const override;
 
-	void SetName(const char* name);
-	const char* GetName() const override;
+#if DEBUG_ALLOCATORS
+	void SetDebugName(const char* name) override;
+	const char* GetDebugName() const override;
 	i64 GetAllocCount() const override;
 	size_t GetAllocSize() const override;
 
-#if DEBUG_ALLOCATORS
-	size_t GetAllocationsSize() const { return m_allocations.size; }
-	void** GetAllocations() const { return m_allocations.data; }
-	size_t GetPagesSize() const { return m_pages.size; }
-	void** GetPages() const { return m_pages.data; }
-#else
-	size_t GetAllocationsSize() const { return 0; }
-	void** GetAllocations() const { return nullptr; }
-	size_t GetPagesSize() const { return 0; }
-	void** GetPages() const { return nullptr; }
+	size_t GetAllocationsSize() const override;
+	void** GetAllocations() const override;
+	size_t GetBlocksSize() const override;
+	void** GetBlocks() const override;
+	size_t GetBlockSize() const override;
 #endif
 
 private:
 	IAllocator& m_source;
 	SpinLock m_lock;
-	const char* m_name = "Heap";
 #if DEBUG_ALLOCATORS
+	const char* m_name = "Heap";
 	i32 m_allocCount = 0;
 	size_t m_allocSize = 0;
 
@@ -130,6 +153,11 @@ template<int maxSize>
 class StackAllocator : public IAllocator
 {
 public:
+	StackAllocator();
+	StackAllocator(StackAllocator&) = delete;
+	StackAllocator(StackAllocator&&) = delete;
+	StackAllocator& operator=(StackAllocator&) = delete;
+	StackAllocator& operator=(StackAllocator&&) = delete;
 	~StackAllocator() override;
 
 	void* Allocate(size_t size, size_t alignment) override;
@@ -137,9 +165,18 @@ public:
 	void Deallocate(void* ptr) override;
 	size_t GetSize(void* ptr) const override { return 0; }
 
-	const char* GetName() const override { return "Stack"; }
+#if DEBUG_ALLOCATORS
+	void SetDebugName(const char* name) override {}
+	const char* GetDebugName() const override { return "Stack"; }
 	i64 GetAllocCount() const override { return 0; }
 	size_t GetAllocSize() const override { return maxSize; }
+
+	size_t GetAllocationsSize() const override { return 0; };
+	void** GetAllocations() const override { return nullptr; };
+	size_t GetBlocksSize() const override { return 0; }
+	void** GetBlocks() const override { return nullptr; }
+	size_t GetBlockSize() const override { return 0; }
+#endif
 
 private:
 	SpinLock m_lock;
@@ -147,6 +184,10 @@ private:
 	u8* m_ptr = m_memory;
 };
 
+
+template<int maxSize>
+StackAllocator<maxSize>::StackAllocator()
+{}
 
 template<int maxSize>
 StackAllocator<maxSize>::~StackAllocator()
@@ -157,10 +198,10 @@ void* StackAllocator<maxSize>::Allocate(size_t size, size_t alignment)
 {
 	ScopeLock<SpinLock> lock(m_lock);
 
-	u8* ptr = (u8*)AlignPointer(m_ptr, alignment);
-	ASSERT2(ptr + size <= m_memory + maxSize, "Not enough memory");
-	m_ptr = ptr + size;
-	return ptr;
+	u8* data = (u8*)AlignPointer(m_ptr, alignment);
+	ASSERT2(data + size <= m_memory + maxSize, "Not enough memory");
+	m_ptr = data + size;
+	return data;
 }
 
 template<int maxSize>

@@ -354,11 +354,14 @@ public:
 	EditorAppImpl(IAllocator& allocator, App& app)
 		: m_allocator(allocator)
 		, m_app(app)
+		, m_engineAllocator(m_allocator)
 		, m_bgfxAllocator(m_allocator)
 		, m_imguiAllocator(m_allocator, true)
 		, m_inputKeyboardFilter(m_allocator)
 	{
-		m_imguiAllocator.SetName("ImGui");
+		m_allocator.SetDebugName("Editor");
+		m_engineAllocator.SetDebugName("Engine");
+		m_imguiAllocator.SetDebugName("ImGui");
 	}
 
 	void Init() override
@@ -598,7 +601,7 @@ public:
 
 	void InitEngine()
 	{
-		m_engine = Engine::Create(m_allocator);
+		m_engine = Engine::Create(m_engineAllocator);
 		InitSystems();
 		m_worldsWidget.SetEngine(m_engine);
 		m_entityWidget.SetEngine(m_engine);
@@ -608,7 +611,7 @@ public:
 	void DeinitEngine()
 	{
 		DeinitSystems();
-		Engine::Destroy(m_engine, m_allocator);
+		Engine::Destroy(m_engine, m_engineAllocator);
 	}
 
 	void InitSystems()
@@ -799,12 +802,12 @@ public:
 			ImVec2 size = ImGui::GetContentRegionAvail();
 			ImDrawList* list = ImGui::GetWindowDrawList();
 			list->AddRectFilled(pos, pos + size, ImColor(120, 120, 255, 255), 0);
-			size_t pageSize = GetAllocInfo().pageSize;
+			size_t pageSize = m_imguiAllocator.GetBlockSize();
 
 			size_t allocIdx = 0;
-			for (size_t i = 0, c = m_imguiAllocator.GetPagesSize(); i < c; ++i)
+			for (size_t i = 0, c = m_imguiAllocator.GetBlocksSize(); i < c; ++i)
 			{
-				uintptr page = (uintptr)m_imguiAllocator.GetPages()[i];
+				uintptr page = (uintptr)m_imguiAllocator.GetBlocks()[i];
 				uintptr allocStart = (uintptr)m_imguiAllocator.GetAllocations()[allocIdx];
 				while (page <= allocStart && allocStart < page + pageSize && allocIdx < m_imguiAllocator.GetAllocationsSize())
 				{
@@ -819,6 +822,11 @@ public:
 					allocStart = (uintptr)m_imguiAllocator.GetAllocations()[++allocIdx];
 				}
 			}
+		}
+		for (size_t i = 0; i < GetAllocatorsSize(); ++i)
+		{
+			const IAllocator* a = GetAllocators()[i];
+			ImGui::Text("Allocator #%d %s (c:%d , s:%d)", i, a->GetDebugName(), a->GetAllocCount(), a->GetAllocSize());
 		}
 		ImGui::EndDock();
 
@@ -1019,6 +1027,7 @@ public:
 private:
 	IAllocator& m_allocator;
 	App& m_app;
+	HeapAllocator m_engineAllocator;
 	Engine* m_engine = nullptr;
 	bool m_inputEnabled = false;
 	AssociativeArray<inputDeviceHandle, InputKeyboardFiltering> m_inputKeyboardFilter;
