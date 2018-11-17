@@ -305,7 +305,10 @@ bool OpenFileSync(nativeFileHandle& fileHandle, const Path& path, const FileMode
 		NULL);
 
 	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		DWORD err = GetLastError();
 		return false;
+	}
 
 	fileHandle = hFile;
 	return true;

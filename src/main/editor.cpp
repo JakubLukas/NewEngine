@@ -40,6 +40,7 @@
 #include "editor/widgets/entities_widget.h"
 #include "editor/widgets/entity_widget.h"
 #include "editor/widgets/renderer_widget.h"
+#include "editor/widgets/memory_widget.h"
 //#include "editor/widgets/resource_manager_widget.h"
 
 #include <windows.h>
@@ -796,39 +797,7 @@ public:
 
 		//m_resourceManagerWidget.Render();
 
-		if (ImGui::BeginDock("Allocations"))
-		{
-			ImVec2 pos = ImGui::GetCurrentWindow()->DC.CursorPos;
-			ImVec2 size = ImGui::GetContentRegionAvail();
-			ImDrawList* list = ImGui::GetWindowDrawList();
-			list->AddRectFilled(pos, pos + size, ImColor(120, 120, 255, 255), 0);
-			size_t pageSize = m_imguiAllocator.GetBlockSize();
-
-			size_t allocIdx = 0;
-			for (size_t i = 0, c = m_imguiAllocator.GetBlocksSize(); i < c; ++i)
-			{
-				uintptr page = (uintptr)m_imguiAllocator.GetBlocks()[i];
-				uintptr allocStart = (uintptr)m_imguiAllocator.GetAllocations()[allocIdx];
-				while (page <= allocStart && allocStart < page + pageSize && allocIdx < m_imguiAllocator.GetAllocationsSize())
-				{
-					size_t allocSize = m_imguiAllocator.GetSize((void*)allocStart);
-					float start = (float)(allocStart - page) / pageSize * size.x;
-					float end = (float)(allocStart + allocSize - page) / pageSize * size.x;
-
-					ImGui::PushID((void*)allocStart);
-					list->AddRectFilled(pos + ImVec2(start, (float)i / c * size.y), pos + ImVec2(end, (float)(i + 1) / c * size.y), ImColor(255, 120, 120, 255), 0);
-					ImGui::PopID();
-
-					allocStart = (uintptr)m_imguiAllocator.GetAllocations()[++allocIdx];
-				}
-			}
-		}
-		for (size_t i = 0; i < GetAllocatorsSize(); ++i)
-		{
-			const IAllocator* a = GetAllocators()[i];
-			ImGui::Text("Allocator #%d %s (c:%d , s:%d)", i, a->GetDebugName(), a->GetAllocCount(), a->GetAllocSize());
-		}
-		ImGui::EndDock();
+		m_memoryWidget.Render();
 
 		m_rendererWidget.Render();
 
@@ -1044,6 +1013,7 @@ private:
 	Editor::EntitiesWidget m_entitiesWidget;
 	Editor::EntityWidget m_entityWidget;
 	Editor::RendererWidget m_rendererWidget;
+	Editor::MemoryWidget m_memoryWidget;
 	//Editor::ResourceManagerWidget m_resourceManagerWidget;
 
 	//bgfx for imgui
