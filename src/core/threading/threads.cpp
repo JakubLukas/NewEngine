@@ -1,13 +1,13 @@
 #include "threads.h"
 
-#include <windows.h>
+#include "os_utils.h"
 
 
 namespace Veng
 {
 
-const long FREE = 0;
-const long LOCKED = 1;
+const i32 FREE = 0;
+const i32 LOCKED = 1;
 
 
 SpinLock::SpinLock()
@@ -19,8 +19,12 @@ SpinLock::~SpinLock()
 
 void SpinLock::Lock()
 {
-	while (InterlockedCompareExchange(&m_lock, LOCKED, FREE) != FREE)
-		;
+	for (;;)
+	{
+		if (m_lock == FREE && AtomicCompareExchange(&m_lock, LOCKED, FREE) == FREE)
+			break;
+		CpuRelax();
+	}
 }
 
 void SpinLock::Unlock()

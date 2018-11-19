@@ -1,8 +1,6 @@
 #include "input_win.h"
 
-#define NOMINMAX
-#define VC_EXTRALEAN
-#include <windows.h>
+#include <core/os/win/simple_windows.h>
 
 #include "core\asserts.h"
 

@@ -1,9 +1,6 @@
 #include "../os_utils.h"
 
-#define NOMINMAX
-#define VC_EXTRALEAN
-#include <windows.h>
-#define PROCESSOR_ARCHITECTURE_ARM64 12
+#include <core/os/win/simple_windows.h>
 
 #include "core/asserts.h"
 

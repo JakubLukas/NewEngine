@@ -43,7 +43,7 @@
 #include "editor/widgets/memory_widget.h"
 //#include "editor/widgets/resource_manager_widget.h"
 
-#include <windows.h>
+#include <core/os/win/simple_windows.h>
 
 
 

@@ -1,8 +1,6 @@
 #include "app.h"
 
-#define NOMINMAX
-#define VC_EXTRALEAN
-#include <windows.h>
+#include <core/os/win/simple_windows.h>
 #include <hidsdi.h>
 
 #include "core/allocators.h"

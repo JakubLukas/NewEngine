@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/int.h"
+
 
 namespace Veng
 {
@@ -19,7 +21,7 @@ public:
 	void Unlock();
 
 private:
-	volatile long m_lock;
+	volatile i32 m_lock;
 };
 
 

@@ -3,7 +3,7 @@
 #include "int.h"
 #include "memory.h"
 #include "asserts.h"
-#include "threads.h"
+#include "threading/threads.h"
 
 #define DEBUG_ALLOCATORS 1
 
