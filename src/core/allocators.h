@@ -7,6 +7,10 @@
 
 #define DEBUG_ALLOCATORS 1
 
+#if DEBUG_ALLOCATORS
+#	include "containers/array.h"
+#endif
+
 
 namespace Veng
 {
@@ -14,16 +18,15 @@ namespace Veng
 
 #if DEBUG_ALLOCATORS
 
-struct AllocArray
+class IAllocator;
+
+struct AllocatorDebugData
 {
-	void** data;
-	size_t size;
-	size_t capacity;
+	IAllocator* parent = nullptr;
+	IAllocator* allocator = nullptr;
 };
 
-
-const class IAllocator** GetAllocators();
-size_t GetAllocatorsSize();
+const Array<AllocatorDebugData>& GetAllocators();
 
 #endif
 
@@ -142,9 +145,9 @@ private:
 	i32 m_allocCount = 0;
 	size_t m_allocSize = 0;
 
-	AllocArray m_allocations;
-	AllocArray m_pages;
-	AllocArray m_pagesCounts;
+	Array<void*> m_allocations;
+	Array<void*> m_pages;
+	Array<size_t> m_pagesUseCounts;
 #endif
 };
 

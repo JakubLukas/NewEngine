@@ -75,6 +75,17 @@ const Type* Array<Type>::End() const { return m_data + m_size; }
 
 
 template<class Type>
+Type& Array<Type>::PushBack()
+{
+	if (m_size == m_capacity)
+		Enlarge();
+
+	NEW_PLACEMENT(m_data + m_size, Type)();
+
+	return m_data[m_size++];
+}
+
+template<class Type>
 Type& Array<Type>::PushBack(const Type& value)
 {
 	if (m_size == m_capacity)
@@ -86,15 +97,41 @@ Type& Array<Type>::PushBack(const Type& value)
 }
 
 template<class Type>
-Type& Array<Type>::PushBack()
+Type& Array<Type>::AddOrdered(const Type& value)
 {
 	if (m_size == m_capacity)
 		Enlarge();
 
-	NEW_PLACEMENT(m_data + m_size, Type)();
-
-	return m_data[m_size++];
+	for (size_t i = 0; i < m_size; ++i)
+	{
+		if (m_data[i] > value)
+		{
+			memory::Move(m_data + i + 1, m_data + i, (m_size - i) * sizeof(void*));
+			m_data[i] = value;
+			m_size++;
+			return m_data[i];
+		}
+	}
+	m_data[m_size++] = value;
+	return m_data[size - 1];
 }
+
+template<class Type>
+Type& Array<Type>::AddOrdered(const Type& value, size_t& idx)
+{
+	if (m_size == m_capacity)
+		Enlarge();
+
+	ASSERT(index <= m_size);
+
+	if (idx < m_size)
+		memory::Move(m_data + idx + 1, m_data + idx, (m_size - idx) * sizeof(Type));
+	m_data[idx] = value;
+	m_size++;
+
+	return m_data[idx];
+}
+
 
 template<class Type>
 template<class... Args>
@@ -108,6 +145,7 @@ Type& Array<Type>::EmplaceBack(Args&&... args)
 	return m_data[m_size++];
 }
 
+
 template<class Type>
 Type Array<Type>::PopBack()
 {
@@ -116,18 +154,6 @@ Type Array<Type>::PopBack()
 	Type result(m_data[m_size]);
 	DELETE_PLACEMENT(m_data + m_size);
 	return result;
-}
-
-template<class Type>
-void Array<Type>::Erase(size_t idx)
-{
-	ASSERT(idx < m_size);
-	DELETE_PLACEMENT(m_data + idx);
-
-	m_size--;
-
-	NEW_PLACEMENT(m_data + idx, Type)(Utils::Move(m_data[m_size]));
-	//DELETE_PLACEMENT(m_data + m_size);
 }
 
 template<class Type>
@@ -144,11 +170,63 @@ bool Array<Type>::Erase(Type& value)
 	return false;
 }
 
+template<class Type>
+void Array<Type>::Erase(size_t idx)
+{
+	ASSERT2(idx < m_size, "Index out of bounds");
+	DELETE_PLACEMENT(m_data + idx);
+
+	m_size--;
+
+	NEW_PLACEMENT(m_data + idx, Type)(Utils::Move(m_data[m_size]));
+	//DELETE_PLACEMENT(m_data + m_size);
+}
+
+template<class Type>
+void Array<Type>::EraseOrdered(const Type& value)
+{
+	for (size_t i = 0; i < m_size; ++i)
+	{
+		if (m_data[i] == value)
+		{
+			if (i < m_size - 1)
+				memory::Move(m_data + i, m_data + i + 1, (m_size - i) * sizeof(Type));
+			m_size--;
+			return true;
+		}
+	}
+	return false;
+}
+
+template<class Type>
+void Array<Type>::EraseOrdered(size_t idx)
+{
+	ASSERT2(idx < m_size, "Index out of bounds");
+
+	if (idx < m_size - 1)
+		memory::Move(m_data + idx, m_data + idx + 1, (m_size - idx) * sizeof(void*));
+	m_size--;
+}
+
+
+template<class Type>
+bool Array<Type>::Find(const Type& value, size_t& idx)
+{
+	for (size_t i = 0; i < m_size; ++i)
+	{
+		if (m_data[i] == value)
+		{
+			idx = i;
+			return true;
+		}
+	}
+	return false;
+}
 
 template<class Type>
 const Type& Array<Type>::operator[](size_t index) const
 {
-	ASSERT(index < m_size);
+	ASSERT2(idx < m_size, "Index out of bounds");
 	return m_data[index];
 }
 
@@ -156,7 +234,7 @@ const Type& Array<Type>::operator[](size_t index) const
 template<class Type>
 Type& Array<Type>::operator[](size_t index)
 {
-	ASSERT(index < m_size);
+	ASSERT2(idx < m_size, "Index out of bounds");
 	return m_data[index];
 }
 

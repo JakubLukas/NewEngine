@@ -27,23 +27,36 @@ public:
 	const Type* Begin() const;
 	const Type* End() const;
 
-	Type& PushBack(const Type& value);
+
 	Type& PushBack();
+	Type& PushBack(const Type& value);
+
+	Type& AddOrdered(const Type& value);
+	Type& AddOrdered(const Type& value, size_t& idx);
 
 	template<class... Args>
 	Type& EmplaceBack(Args&&... args);
 
+
 	Type PopBack();
 
-	void Erase(size_t idx);
 	bool Erase(Type& value);
+	void Erase(size_t idx);
+
+	bool EraseOrdered(const Type& value);
+	void EraseOrdered(size_t idx);
+
+
+	bool Find(const Type& value, size_t& idx);
 
 	const Type& operator[](size_t index) const;
 	Type& operator[](size_t index);
 
+
 	void Reserve(size_t capacity);
 	void Resize(size_t size);
 	void Compact();
+
 
 	size_t GetSize() const;
 	size_t GetCapacity() const;

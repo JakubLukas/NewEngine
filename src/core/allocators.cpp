@@ -46,6 +46,7 @@ const AllocInfo& GetAllocInfo()
 }
 
 
+/*
 void ArrayInit(AllocArray& arr, class IAllocator& allocator)
 {
 	arr.capacity = 64;
@@ -133,21 +134,16 @@ bool ArrayFind(AllocArray& arr, void* elem, size_t& elemIdx)
 		}
 	}
 	return false;
-}
+}*/
 
 
 static const size_t MAX_ALLOCATORS = 1000;
-static HeapAllocator* s_allocatorsData[MAX_ALLOCATORS] = { nullptr };
-static AllocArray s_allocators{ (void**)&s_allocatorsData, 0, MAX_ALLOCATORS };
+static StackAllocator<1000 * sizeof(AllocatorDebugData)> s_allocatorsAllocator;
+static Array<AllocatorDebugData> s_allocators(s_allocatorsAllocator);
 
-const IAllocator** GetAllocators()
+const Array<AllocatorDebugData>& GetAllocators()
 {
-	return (const IAllocator**)s_allocators.data;
-}
-
-size_t GetAllocatorsSize()
-{
-	return s_allocators.size;
+	return s_allocators;
 }
 
 
@@ -166,7 +162,10 @@ void* AlignPointer(void* ptr, size_t alignment)
 MainAllocator::MainAllocator()
 {
 #if DEBUG_ALLOCATORS
-	ArrayAddOrdered(s_allocators, this);
+	s_allocators.Reserve(MAX_ALLOCATORS);
+	AllocatorDebugData data;
+	data.allocator = this;
+	s_allocators.PushBack(data);
 #endif
 }
 
@@ -176,7 +175,9 @@ MainAllocator::~MainAllocator()
 	ASSERT2(m_allocCount == 0, "Memory leak");
 	ASSERT2(m_allocSize == 0, "Memory leak");
 
-	ArrayEraseOrdered(s_allocators, this);
+	AllocatorDebugData data;
+	data.allocator = this;
+	s_allocators.Erase(data);
 #endif
 }
 
@@ -306,30 +307,32 @@ size_t MainAllocator::GetAllocSize() const
 
 HeapAllocator::HeapAllocator(IAllocator& allocator, bool debug)
 	: m_source(allocator)
+	, m_allocations(allocator)
+	, m_pages(allocator)
+	,m_pagesUseCounts(allocator)
 {
 #if DEBUG_ALLOCATORS
-	ArrayAddOrdered(s_allocators, this);
-
-	ArrayInit(m_allocations, m_source);
-	ArrayInit(m_pages, m_source);
-	ArrayInit(m_pagesCounts, m_source);
+	AllocatorDebugData data;
+	data.parent = &allocator;
+	data.allocator = this;
+	s_allocators.PushBack(data);
 #endif
 }
 
 HeapAllocator::~HeapAllocator()
 {
 #if DEBUG_ALLOCATORS
-	ASSERT2(m_pages.size == 0, "Memory leak");
-	ASSERT2(m_pagesCounts.size == 0, "Memory leak");
-	ASSERT2(m_allocations.size == 0, "Memory leak");
-	ArrayDeinit(m_pages, m_source);
-	ArrayDeinit(m_pagesCounts, m_source);
-	ArrayDeinit(m_allocations, m_source);
+	ASSERT2(m_pages.GetSize() == 0, "Memory leak");
+	ASSERT2(m_pagesUseCounts.GetSize() == 0, "Memory leak");
+	ASSERT2(m_allocations.GetSize() == 0, "Memory leak");
 
 	ASSERT2(m_allocCount == 0, "Memory leak");
 	ASSERT2(m_allocSize == 0, "Memory leak");
 
-	ArrayEraseOrdered(s_allocators, this);
+	AllocatorDebugData data;
+	data.parent = &m_source;
+	data.allocator = this;
+	s_allocators.Erase(data);
 #endif
 }
 
@@ -342,22 +345,17 @@ void* HeapAllocator::Allocate(size_t size, size_t alignment)
 	m_allocCount++;
 	m_allocSize += size;
 
-	ArrayCheckSize(m_allocations, m_source);
-	ArrayAddOrdered(m_allocations, data);
-
 	void* pagePtr = (void*)(((uintptr)data / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);//TODO: bit operations
 	size_t arrPageIdx;
-	if (ArrayFind(m_pages, pagePtr, arrPageIdx))
+	if (m_pages.Find(pagePtr, arrPageIdx))
 	{
-		uintptr count = (uintptr)m_pagesCounts.data[arrPageIdx] + 1;
-		m_pagesCounts.data[arrPageIdx] = (void*)count;
+		m_pagesUseCounts[arrPageIdx]++;
 	}
 	else
 	{
-		ArrayCheckSize(m_pages, m_source);
-		size_t addIdx = ArrayAddOrdered(m_pages, pagePtr);
-		ArrayCheckSize(m_pagesCounts, m_source);
-		ArrayAddOrdered(m_pagesCounts, (void*)1, addIdx);
+		size_t addIdx;
+		m_pages.AddOrdered(pagePtr, addIdx);
+		m_pagesUseCounts.AddOrdered(1, addIdx);
 	}
 #endif
 	return data;
@@ -373,17 +371,18 @@ void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 		m_allocCount--;
 		m_allocSize -= m_source.GetSize(ptr);
 
-		ArrayEraseOrdered(m_allocations, ptr);
+		m_allocations.EraseOrdered(ptr);
 
 		void* oldPagePtr = (void*)(((uintptr)ptr / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);
 		size_t oldArrPageIdx;
-		if (ArrayFind(m_pages, oldPagePtr, oldArrPageIdx))
+		if (m_pages.Find(oldPagePtr, oldArrPageIdx))
 		{
-			uintptr count = (uintptr)m_pagesCounts.data[oldArrPageIdx] - 1;
+			size_t count = m_pagesUseCounts[oldArrPageIdx];
+			count--;
 			if (count == 0)
 			{
-				ArrayEraseOrdered(m_pages, oldArrPageIdx);
-				ArrayEraseOrdered(m_pagesCounts, oldArrPageIdx);
+				m_pages.EraseOrdered(oldArrPageIdx);
+				m_pagesUseCounts.EraseOrdered(oldArrPageIdx);
 			}
 			else
 			{
