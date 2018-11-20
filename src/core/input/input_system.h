@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/int.h"
-#include "core/allocators.h"
+#include "core/iallocator.h"
 #include "core/math/vector.h"
 #include "core/containers/array.h"
 #include "core/string.h"

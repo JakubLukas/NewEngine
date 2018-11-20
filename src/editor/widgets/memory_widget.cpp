@@ -23,19 +23,19 @@ void MemoryWidget::RenderInternal()
 		return;
 	}
 
-	for (int i = 0; i < GetAllocatorsSize(); ++i)
+	for (int i = 0; i < GetAllocators().GetSize(); ++i)
 	{
-		const IAllocator* allocator = GetAllocators()[i];
+		const AllocatorDebugData& allocData = GetAllocators()[i];
 
-		const bool item_selected = (allocator == m_selected);
+		const bool item_selected = (allocData.allocator == m_selected);
 
 		char item_text[128] = { '\0' };
 		ImFormatString(item_text, 128, "Allocator #%d %s (count:%d , size:%d)",
-			i, allocator->GetDebugName(), allocator->GetAllocCount(), allocator->GetAllocSize());
+			i, allocData.allocator->GetDebugName(), allocData.allocator->GetAllocCount(), allocData.allocator->GetAllocSize());
 
 		ImGui::PushID(i);
 		if (ImGui::Selectable(item_text, item_selected))
-			m_selected = allocator;
+			m_selected = allocData.allocator;
 
 		if (item_selected)
 			ImGui::SetItemDefaultFocus();

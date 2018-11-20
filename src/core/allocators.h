@@ -1,14 +1,14 @@
 #pragma once
 
-#include "int.h"
+#include "iallocator.h"
 #include "memory.h"
 #include "asserts.h"
 #include "threading/threads.h"
 
-#define DEBUG_ALLOCATORS 1
 
 #if DEBUG_ALLOCATORS
-#	include "containers/array.h"
+#	include "core/containers/array.h"
+#	include "core/containers/associative_array.h"
 #endif
 
 
@@ -18,12 +18,18 @@ namespace Veng
 
 #if DEBUG_ALLOCATORS
 
-class IAllocator;
-
 struct AllocatorDebugData
 {
 	IAllocator* parent = nullptr;
 	IAllocator* allocator = nullptr;
+	bool operator==(const AllocatorDebugData& other) const
+	{
+		return parent == other.parent && allocator == other.allocator;
+	}
+	bool operator!=(const AllocatorDebugData& other) const
+	{
+		return !operator==(other);
+	}
 };
 
 const Array<AllocatorDebugData>& GetAllocators();
@@ -35,41 +41,6 @@ const Array<AllocatorDebugData>& GetAllocators();
 void* AlignPointer(void* ptr, size_t alignment);
 
 //-----------------------------------------------
-
-class IAllocator
-{
-public:
-	virtual ~IAllocator() {}
-
-	virtual void* Allocate(size_t size, size_t alignment) = 0;
-	virtual void* Reallocate(void* ptr, size_t size, size_t alignment) = 0;
-	virtual void Deallocate(void* ptr) = 0;
-	virtual size_t GetSize(void* ptr) const = 0;
-
-#if DEBUG_ALLOCATORS
-	virtual void SetDebugName(const char* name) = 0;
-	virtual const char* GetDebugName() const = 0;
-	virtual i64 GetAllocCount() const = 0;
-	virtual size_t GetAllocSize() const = 0;
-
-	virtual size_t GetAllocationsSize() const = 0;
-	virtual void** GetAllocations() const = 0;
-	virtual size_t GetBlocksSize() const = 0;
-	virtual void** GetBlocks() const = 0;
-	virtual size_t GetBlockSize() const = 0;
-#else
-	void SetDebugName(const char* name) {};
-	const char* GetDebugName() const { "" };
-	i64 GetAllocCount() const { return 0; };
-	size_t GetAllocSize() const { return 0; };
-
-	size_t GetAllocationsSize() const { return 0; }
-	void** GetAllocations() const { return nullptr; }
-	size_t GetBlocksSize() const { return 0; }
-	void** GetBlocks() const { return nullptr; }
-	size_t GetBlockSize() const { return 0 };
-#endif
-};
 
 
 class MainAllocator : public IAllocator
@@ -90,13 +61,13 @@ public:
 #if DEBUG_ALLOCATORS
 	void SetDebugName(const char* name) override {}
 	const char* GetDebugName() const override { return "Main"; };
-	i64 GetAllocCount() const override;
+	size_t GetAllocCount() const override;
 	size_t GetAllocSize() const override;
 
 	size_t GetAllocationsSize() const override { return 0; };
-	void** GetAllocations() const override { return nullptr; };
+	void* const* GetAllocations() const override { return nullptr; };
 	size_t GetBlocksSize() const override { return 0; }
-	void** GetBlocks() const override { return nullptr; }
+	void* const* GetBlocks() const override { return nullptr; }
 	size_t GetBlockSize() const override { return 0; }
 #endif
 
@@ -127,13 +98,13 @@ public:
 #if DEBUG_ALLOCATORS
 	void SetDebugName(const char* name) override;
 	const char* GetDebugName() const override;
-	i64 GetAllocCount() const override;
+	size_t GetAllocCount() const override;
 	size_t GetAllocSize() const override;
 
 	size_t GetAllocationsSize() const override;
-	void** GetAllocations() const override;
+	void* const* GetAllocations() const override;
 	size_t GetBlocksSize() const override;
-	void** GetBlocks() const override;
+	void* const* GetBlocks() const override;
 	size_t GetBlockSize() const override;
 #endif
 
@@ -146,8 +117,7 @@ private:
 	size_t m_allocSize = 0;
 
 	Array<void*> m_allocations;
-	Array<void*> m_pages;
-	Array<size_t> m_pagesUseCounts;
+	AssociativeArray<void*, size_t> m_pages;
 #endif
 };
 
@@ -171,13 +141,13 @@ public:
 #if DEBUG_ALLOCATORS
 	void SetDebugName(const char* name) override {}
 	const char* GetDebugName() const override { return "Stack"; }
-	i64 GetAllocCount() const override { return 0; }
+	size_t GetAllocCount() const override { return 0; }
 	size_t GetAllocSize() const override { return maxSize; }
 
 	size_t GetAllocationsSize() const override { return 0; };
-	void** GetAllocations() const override { return nullptr; };
+	void* const* GetAllocations() const override { return nullptr; };
 	size_t GetBlocksSize() const override { return 0; }
-	void** GetBlocks() const override { return nullptr; }
+	void* const* GetBlocks() const override { return nullptr; }
 	size_t GetBlockSize() const override { return 0; }
 #endif
 
@@ -238,43 +208,3 @@ void StackAllocator<maxSize>::Deallocate(void* ptr)
 
 
 }
-
-
-namespace Veng
-{
-
-struct NewPlaceholder { };
-
-}
-
-void* operator new(size_t size, Veng::NewPlaceholder, void* where);
-
-void* operator new(size_t size, Veng::IAllocator& allocator, size_t alignment);
-
-
-template<class Type>
-void DeleteObject(Type* ptr)
-{
-	if (ptr != nullptr)
-	{
-		ptr->~Type();
-	}
-}
-
-template<class Type>
-void DeleteObject(Veng::IAllocator& allocator, Type* ptr)
-{
-	if (ptr != nullptr)
-	{
-		ptr->~Type();
-		allocator.Deallocate(ptr);
-	}
-}
-
-#define ALLOCATE(allocator, size, alignment)
-
-#define NEW_OBJECT(allocator, Type) new (allocator, alignof(Type)) Type
-#define DELETE_OBJECT(allocator, object) DeleteObject(allocator, object);
-
-#define NEW_PLACEMENT(ptr, Type) new (Veng::NewPlaceholder(), static_cast<void*>(ptr)) Type
-#define DELETE_PLACEMENT(ptr) DeleteObject(ptr);

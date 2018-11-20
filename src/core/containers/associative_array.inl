@@ -214,10 +214,10 @@ template<class KeyType, class ValueType>
 size_t AssociativeArray<KeyType, ValueType>::GetCapacity() const { return m_capacity; }
 
 template<class KeyType, class ValueType>
-KeyType* AssociativeArray<KeyType, ValueType>::GetKeys() const { return m_keys; }
+const KeyType* AssociativeArray<KeyType, ValueType>::GetKeys() const { return m_keys; }
 
 template<class KeyType, class ValueType>
-ValueType* AssociativeArray<KeyType, ValueType>::GetValues() const { return m_values; }
+const ValueType* AssociativeArray<KeyType, ValueType>::GetValues() const { return m_values; }
 
 
 template<class KeyType, class ValueType>

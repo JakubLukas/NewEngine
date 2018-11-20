@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/allocators.h"
+#include "core/iallocator.h"
 #include "core/asserts.h"
 #include "core/utility.h"
 
@@ -32,7 +32,6 @@ public:
 	Type& PushBack(const Type& value);
 
 	Type& AddOrdered(const Type& value);
-	Type& AddOrdered(const Type& value, size_t& idx);
 
 	template<class... Args>
 	Type& EmplaceBack(Args&&... args);
@@ -44,7 +43,6 @@ public:
 	void Erase(size_t idx);
 
 	bool EraseOrdered(const Type& value);
-	void EraseOrdered(size_t idx);
 
 
 	bool Find(const Type& value, size_t& idx);

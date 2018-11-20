@@ -1,7 +1,7 @@
 #include "script.h"
 
 #include "core/engine.h"
-#include "core/allocators.h"
+#include "core/iallocator.h"
 
 #include "core/world/world.h"//////////////
 #include "renderer/renderer.h"////////////

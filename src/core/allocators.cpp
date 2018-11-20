@@ -289,7 +289,7 @@ size_t MainAllocator::GetSize(void* ptr) const
 
 #if DEBUG_ALLOCATORS
 
-i64 MainAllocator::GetAllocCount() const
+size_t MainAllocator::GetAllocCount() const
 {
 	return m_allocCount;
 }
@@ -309,7 +309,6 @@ HeapAllocator::HeapAllocator(IAllocator& allocator, bool debug)
 	: m_source(allocator)
 	, m_allocations(allocator)
 	, m_pages(allocator)
-	,m_pagesUseCounts(allocator)
 {
 #if DEBUG_ALLOCATORS
 	AllocatorDebugData data;
@@ -323,7 +322,6 @@ HeapAllocator::~HeapAllocator()
 {
 #if DEBUG_ALLOCATORS
 	ASSERT2(m_pages.GetSize() == 0, "Memory leak");
-	ASSERT2(m_pagesUseCounts.GetSize() == 0, "Memory leak");
 	ASSERT2(m_allocations.GetSize() == 0, "Memory leak");
 
 	ASSERT2(m_allocCount == 0, "Memory leak");
@@ -346,16 +344,14 @@ void* HeapAllocator::Allocate(size_t size, size_t alignment)
 	m_allocSize += size;
 
 	void* pagePtr = (void*)(((uintptr)data / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);//TODO: bit operations
-	size_t arrPageIdx;
-	if (m_pages.Find(pagePtr, arrPageIdx))
+	size_t* count;
+	if (m_pages.Find(pagePtr, count))
 	{
-		m_pagesUseCounts[arrPageIdx]++;
+		(*count)++;
 	}
 	else
 	{
-		size_t addIdx;
-		m_pages.AddOrdered(pagePtr, addIdx);
-		m_pagesUseCounts.AddOrdered(1, addIdx);
+		m_pages.Insert(pagePtr, 1);
 	}
 #endif
 	return data;
@@ -374,20 +370,12 @@ void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 		m_allocations.EraseOrdered(ptr);
 
 		void* oldPagePtr = (void*)(((uintptr)ptr / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);
-		size_t oldArrPageIdx;
-		if (m_pages.Find(oldPagePtr, oldArrPageIdx))
+		size_t* oldCount;
+		if (m_pages.Find(oldPagePtr, oldCount))
 		{
-			size_t count = m_pagesUseCounts[oldArrPageIdx];
-			count--;
-			if (count == 0)
-			{
-				m_pages.EraseOrdered(oldArrPageIdx);
-				m_pagesUseCounts.EraseOrdered(oldArrPageIdx);
-			}
-			else
-			{
-				m_pagesCounts.data[oldArrPageIdx] = (void*)count;
-			}
+			oldCount--;
+			if (*oldCount == 0)
+				m_pages.Erase(oldPagePtr);
 		}
 		else
 		{
@@ -405,22 +393,15 @@ void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 		m_allocCount++;
 		m_allocSize += size;
 
-		ArrayCheckSize(m_allocations, m_source);
-		ArrayAddOrdered(m_allocations, data);
-
 		void* pagePtr = (void*)(((uintptr)data / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);
-		size_t arrPageIdx;
-		if (ArrayFind(m_pages, pagePtr, arrPageIdx))
+		size_t* count;
+		if (m_pages.Find(pagePtr, count))
 		{
-			uintptr count = (uintptr)m_pagesCounts.data[arrPageIdx] + 1;
-			m_pagesCounts.data[arrPageIdx] = (void*)count;
+			(*count)++;
 		}
 		else
 		{
-			ArrayCheckSize(m_pages, m_source);
-			size_t addIdx = ArrayAddOrdered(m_pages, pagePtr);
-			ArrayCheckSize(m_pagesCounts, m_source);
-			ArrayAddOrdered(m_pagesCounts, (void*)1, addIdx);
+			m_pages.Insert(pagePtr, 1);
 		}
 	}
 #endif
@@ -438,22 +419,15 @@ void HeapAllocator::Deallocate(void* ptr)
 	m_allocCount--;
 	m_allocSize -= m_source.GetSize(ptr);
 
-	ArrayEraseOrdered(m_allocations, ptr);
+	m_allocations.EraseOrdered(ptr);
 
 	void* pagePtr = (void*)(((uintptr)ptr / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);
-	size_t arrPageIdx;
-	if (ArrayFind(m_pages, pagePtr, arrPageIdx))
+	size_t* count;
+	if (m_pages.Find(pagePtr, count))
 	{
-		uintptr count = (uintptr)m_pagesCounts.data[arrPageIdx] - 1;
-		if (count == 0)
-		{
-			ArrayEraseOrdered(m_pages, arrPageIdx);
-			ArrayEraseOrdered(m_pagesCounts, arrPageIdx);
-		}
-		else
-		{
-			m_pagesCounts.data[arrPageIdx] = (void*)count;
-		}
+		(*count)--;
+		if (*count == 0)
+			m_pages.Erase(pagePtr);
 	}
 	else
 	{
@@ -472,23 +446,15 @@ size_t HeapAllocator::GetSize(void* ptr) const
 #if DEBUG_ALLOCATORS
 
 void HeapAllocator::SetDebugName(const char* name) { m_name = name; }
-
 const char* HeapAllocator::GetDebugName() const { return m_name; }
 
-i64 HeapAllocator::GetAllocCount() const
-{
-	return m_allocCount;
-}
+size_t HeapAllocator::GetAllocCount() const { return m_allocCount; }
+size_t HeapAllocator::GetAllocSize() const { return m_allocSize; }
 
-size_t HeapAllocator::GetAllocSize() const
-{
-	return m_allocSize;
-}
-
-size_t HeapAllocator::GetAllocationsSize() const { return m_allocations.size; }
-void** HeapAllocator::GetAllocations() const { return m_allocations.data; }
-size_t HeapAllocator::GetBlocksSize() const { return m_pages.size; }
-void** HeapAllocator::GetBlocks() const { return m_pages.data; }
+size_t HeapAllocator::GetAllocationsSize() const { return m_allocations.GetSize(); }
+void* const* HeapAllocator::GetAllocations() const { return m_allocations.Begin(); }
+size_t HeapAllocator::GetBlocksSize() const { return m_pages.GetSize(); }
+void* const* HeapAllocator::GetBlocks() const { return m_pages.GetKeys(); }
 size_t HeapAllocator::GetBlockSize() const { return GetAllocInfo().pageSize; }
 
 

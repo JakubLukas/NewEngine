@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/allocators.h"
+#include "core/iallocator.h"
 #include "core/asserts.h"
 
 
@@ -41,8 +41,8 @@ public:
 	size_t GetSize() const;
 	size_t GetCapacity() const;
 
-	KeyType* GetKeys() const;
-	ValueType* GetValues() const;
+	const KeyType* GetKeys() const;
+	const ValueType* GetValues() const;
 
 private:
 	enum

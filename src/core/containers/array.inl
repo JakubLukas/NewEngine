@@ -116,7 +116,7 @@ Type& Array<Type>::AddOrdered(const Type& value)
 	return m_data[size - 1];
 }
 
-template<class Type>
+/*template<class Type>
 Type& Array<Type>::AddOrdered(const Type& value, size_t& idx)
 {
 	if (m_size == m_capacity)
@@ -130,7 +130,7 @@ Type& Array<Type>::AddOrdered(const Type& value, size_t& idx)
 	m_size++;
 
 	return m_data[idx];
-}
+}*/
 
 
 template<class Type>
@@ -171,19 +171,19 @@ bool Array<Type>::Erase(Type& value)
 }
 
 template<class Type>
-void Array<Type>::Erase(size_t idx)
+void Array<Type>::Erase(size_t index)
 {
-	ASSERT2(idx < m_size, "Index out of bounds");
-	DELETE_PLACEMENT(m_data + idx);
+	ASSERT2(index < m_size, "Index out of bounds");
+	DELETE_PLACEMENT(m_data + index);
 
 	m_size--;
 
-	NEW_PLACEMENT(m_data + idx, Type)(Utils::Move(m_data[m_size]));
+	NEW_PLACEMENT(m_data + index, Type)(Utils::Move(m_data[m_size]));
 	//DELETE_PLACEMENT(m_data + m_size);
 }
 
 template<class Type>
-void Array<Type>::EraseOrdered(const Type& value)
+bool Array<Type>::EraseOrdered(const Type& value)
 {
 	for (size_t i = 0; i < m_size; ++i)
 	{
@@ -198,25 +198,25 @@ void Array<Type>::EraseOrdered(const Type& value)
 	return false;
 }
 
-template<class Type>
-void Array<Type>::EraseOrdered(size_t idx)
+/*template<class Type>
+void Array<Type>::EraseOrdered(size_t index)
 {
 	ASSERT2(idx < m_size, "Index out of bounds");
 
-	if (idx < m_size - 1)
+	if (index < m_size - 1)
 		memory::Move(m_data + idx, m_data + idx + 1, (m_size - idx) * sizeof(void*));
 	m_size--;
-}
+}*/
 
 
 template<class Type>
-bool Array<Type>::Find(const Type& value, size_t& idx)
+bool Array<Type>::Find(const Type& value, size_t& index)
 {
 	for (size_t i = 0; i < m_size; ++i)
 	{
 		if (m_data[i] == value)
 		{
-			idx = i;
+			index = i;
 			return true;
 		}
 	}
@@ -226,7 +226,7 @@ bool Array<Type>::Find(const Type& value, size_t& idx)
 template<class Type>
 const Type& Array<Type>::operator[](size_t index) const
 {
-	ASSERT2(idx < m_size, "Index out of bounds");
+	ASSERT2(index < m_size, "Index out of bounds");
 	return m_data[index];
 }
 
@@ -234,7 +234,7 @@ const Type& Array<Type>::operator[](size_t index) const
 template<class Type>
 Type& Array<Type>::operator[](size_t index)
 {
-	ASSERT2(idx < m_size, "Index out of bounds");
+	ASSERT2(index < m_size, "Index out of bounds");
 	return m_data[index];
 }
 

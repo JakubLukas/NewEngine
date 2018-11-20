@@ -1,7 +1,8 @@
 #include "clob.h"
 
 #include "core/memory.h"
-#include "core/allocators.h"
+#include "core/iallocator.h"
+#include "core/asserts.h"
 #include "core/file/blob.h"
 
 #include <cstdlib>
