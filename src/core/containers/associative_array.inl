@@ -134,14 +134,14 @@ bool AssociativeArray<KeyType, ValueType>::Erase(const KeyType& key)
 		DELETE_PLACEMENT(m_keys + idx);
 		DELETE_PLACEMENT(m_values + idx);
 
-		for (size_t i = idx; i < m_size - 1; ++i)
+		for (size_t i = idx; i < m_size; ++i)
 		{
 			NEW_PLACEMENT(m_keys + i, KeyType)(m_keys[i + 1]);
 			DELETE_PLACEMENT(m_keys + i + 1);
 			NEW_PLACEMENT(m_values + i, ValueType)(m_values[i + 1]);
 			DELETE_PLACEMENT(m_values + i + 1);
 		}
-		--m_size;
+		m_size--;
 		return true;
 	}
 

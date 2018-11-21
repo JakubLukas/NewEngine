@@ -113,7 +113,7 @@ Type& Array<Type>::AddOrdered(const Type& value)
 		}
 	}
 	m_data[m_size++] = value;
-	return m_data[size - 1];
+	return m_data[m_size - 1];
 }
 
 /*template<class Type>

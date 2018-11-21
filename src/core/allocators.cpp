@@ -138,7 +138,7 @@ bool ArrayFind(AllocArray& arr, void* elem, size_t& elemIdx)
 
 
 static const size_t MAX_ALLOCATORS = 1000;
-static StackAllocator<1000 * sizeof(AllocatorDebugData)> s_allocatorsAllocator;
+static StackAllocator<(1000 + 1) * sizeof(AllocatorDebugData)> s_allocatorsAllocator;
 static Array<AllocatorDebugData> s_allocators(s_allocatorsAllocator);
 
 const Array<AllocatorDebugData>& GetAllocators()
@@ -343,6 +343,8 @@ void* HeapAllocator::Allocate(size_t size, size_t alignment)
 	m_allocCount++;
 	m_allocSize += size;
 
+	m_allocations.AddOrdered(data);
+
 	void* pagePtr = (void*)(((uintptr)data / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);//TODO: bit operations
 	size_t* count;
 	if (m_pages.Find(pagePtr, count))
@@ -373,7 +375,7 @@ void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 		size_t* oldCount;
 		if (m_pages.Find(oldPagePtr, oldCount))
 		{
-			oldCount--;
+			(*oldCount)--;
 			if (*oldCount == 0)
 				m_pages.Erase(oldPagePtr);
 		}
@@ -392,6 +394,8 @@ void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 	{
 		m_allocCount++;
 		m_allocSize += size;
+
+		m_allocations.AddOrdered(data);
 
 		void* pagePtr = (void*)(((uintptr)data / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);
 		size_t* count;
