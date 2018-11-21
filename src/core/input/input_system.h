@@ -3,8 +3,6 @@
 #include "core/int.h"
 #include "core/iallocator.h"
 #include "core/math/vector.h"
-#include "core/containers/array.h"
-#include "core/string.h"
 
 #include "core/input/devices/input_device_mouse.h"
 #include "core/input/devices/input_device_keyboard.h"
@@ -13,6 +11,9 @@
 
 namespace Veng
 {
+
+template<class Type> class Array;
+class String;
 
 
 typedef uintptr inputDeviceID;

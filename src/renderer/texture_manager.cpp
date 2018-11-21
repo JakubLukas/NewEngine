@@ -2,7 +2,7 @@
 
 #include "core/file/blob.h"
 #include "core/memory.h"
-#include "core/iallocator.h"
+#include "core/allocators.h"
 
 
 static Veng::HeapAllocator* stbImageAllocator = nullptr;

@@ -2,6 +2,7 @@
 
 #include "resource_manager.h"
 
+#include "core/allocators.h"
 #include "core/containers/array.h"
 
 

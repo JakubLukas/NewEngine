@@ -14,16 +14,39 @@ namespace Editor
 {
 
 
+void BuildAllocatorTree(const Array<AllocatorDebugData>& allocators, const IAllocator* parent)
+{
+	for (int i = 0; i < allocators.GetSize(); ++i)
+	{
+		const AllocatorDebugData& allocData = allocators[i];
+
+		if (allocData.parent != parent)
+			continue;
+
+		//const bool item_selected = (allocData.allocator == m_selected);
+
+		char item_text[128] = { '\0' };
+		ImFormatString(item_text, 128, "Allocator #%d %s (count:%d , size:%d)",
+			i, allocData.allocator->GetDebugName(), allocData.allocator->GetAllocCount(), allocData.allocator->GetAllocSize());
+
+		if (ImGui::TreeNode(item_text))
+		{
+			BuildAllocatorTree(allocators, allocData.allocator);
+			ImGui::TreePop();
+		}
+	}
+}
+
 void MemoryWidget::RenderInternal()
 {
-	if (!ImGui::ListBoxHeader("##empty"))
+	/*if (!ImGui::ListBoxHeader("##empty"))
 	{
 		ImGui::Text("Error: ListBoxHeader wasn't created");
 		ImGui::PopItemWidth();
 		return;
-	}
+	}*/
 
-	for (int i = 0; i < GetAllocators().GetSize(); ++i)
+	/*for (int i = 0; i < GetAllocators().GetSize(); ++i)
 	{
 		const AllocatorDebugData& allocData = GetAllocators()[i];
 
@@ -33,16 +56,22 @@ void MemoryWidget::RenderInternal()
 		ImFormatString(item_text, 128, "Allocator #%d %s (count:%d , size:%d)",
 			i, allocData.allocator->GetDebugName(), allocData.allocator->GetAllocCount(), allocData.allocator->GetAllocSize());
 
-		ImGui::PushID(i);
-		if (ImGui::Selectable(item_text, item_selected))
-			m_selected = allocData.allocator;
+		//ImGui::PushID(i);
+		//if (ImGui::Selectable(item_text, item_selected))
+		//	m_selected = allocData.allocator;
+		//
+		//if (item_selected)
+		//	ImGui::SetItemDefaultFocus();
+		//ImGui::PopID();
+		if (ImGui::TreeNode(item_text))
+		{
+			ImGui::TreePop();
+		}
+	}*/
 
-		if (item_selected)
-			ImGui::SetItemDefaultFocus();
-		ImGui::PopID();
-	}
+	//ImGui::ListBoxFooter();
 
-	ImGui::ListBoxFooter();
+	BuildAllocatorTree(GetAllocators(), nullptr);
 
 	if (m_selected != nullptr)
 	{

@@ -1,6 +1,6 @@
 #include "renderer.h"
 
-#include "core/iallocator.h"
+#include "core/allocators.h"
 #include "core/engine.h"
 #include "core/containers/associative_array.h"
 #include "core/logs.h"

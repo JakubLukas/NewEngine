@@ -1,9 +1,9 @@
 #pragma once
 
-#include "core\allocators.h"
-#include "core\file\path.h"
-#include "core\file\file_system.h"
-#include "core\function.h"
+#include "core/iallocator.h"
+#include "core/file/path.h"
+#include "core/file/file_system.h"
+#include "core/function.h"
 
 
 namespace Veng

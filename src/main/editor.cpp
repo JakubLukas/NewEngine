@@ -2,7 +2,7 @@
 
 #include <bgfx/bgfx.h>
 
-#include "core/iallocator.h"
+#include "core/allocators.h"
 #include "core/engine.h"
 #include "core/logs.h"
 #include "core/asserts.h"

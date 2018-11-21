@@ -1,7 +1,6 @@
 #pragma once
 
 #include "iallocator.h"
-#include "memory.h"
 #include "asserts.h"
 #include "threading/threads.h"
 
@@ -22,23 +21,17 @@ struct AllocatorDebugData
 {
 	IAllocator* parent = nullptr;
 	IAllocator* allocator = nullptr;
-	bool operator==(const AllocatorDebugData& other) const
-	{
-		return parent == other.parent && allocator == other.allocator;
-	}
-	bool operator!=(const AllocatorDebugData& other) const
-	{
-		return !operator==(other);
-	}
+	bool operator==(const AllocatorDebugData& other) const { return allocator == other.allocator; }
+	bool operator!=(const AllocatorDebugData& other) const { return !operator==(other); }
+	bool operator<(const AllocatorDebugData& other) const { return allocator < other.allocator; }
+	bool operator<=(const AllocatorDebugData& other) const { return allocator <= other.allocator; }
+	bool operator>(const AllocatorDebugData& other) const { return allocator > other.allocator; }
+	bool operator>=(const AllocatorDebugData& other) const { return allocator >= other.allocator; }
 };
 
 const Array<AllocatorDebugData>& GetAllocators();
 
 #endif
-
-//-----------------------------------------------
-
-void* AlignPointer(void* ptr, size_t alignment);
 
 //-----------------------------------------------
 

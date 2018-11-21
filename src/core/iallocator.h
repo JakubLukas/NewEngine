@@ -9,6 +9,9 @@ namespace Veng
 {
 
 
+void* AlignPointer(void* ptr, size_t alignment);
+
+
 class IAllocator
 {
 public:

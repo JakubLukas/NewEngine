@@ -1,6 +1,9 @@
 #include "input_system.h"
 
 #include "core/containers/associative_array.h"
+#include "core/memory.h"
+#include "core/containers/array.h"
+#include "core/string.h"
 
 
 namespace Veng

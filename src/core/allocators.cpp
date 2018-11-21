@@ -45,98 +45,6 @@ const AllocInfo& GetAllocInfo()
 	return s_allocInfo;
 }
 
-
-/*
-void ArrayInit(AllocArray& arr, class IAllocator& allocator)
-{
-	arr.capacity = 64;
-	arr.data = (void**)allocator.Allocate(arr.capacity * sizeof(void*), alignof(void*));
-	arr.size = 0;
-}
-
-void ArrayDeinit(AllocArray& arr, class IAllocator& allocator)
-{
-	allocator.Deallocate(arr.data);
-	arr.data = nullptr;
-	arr.size = 0;
-	arr.capacity = 0;
-}
-
-void ArrayCheckSize(AllocArray& arr, class IAllocator& allocator)
-{
-	if (arr.size == arr.capacity)
-	{
-		arr.capacity *= 2;
-		arr.data = (void**)allocator.Reallocate(arr.data, arr.capacity * sizeof(void*), alignof(void*));
-	}
-}
-
-size_t ArrayAddOrdered(AllocArray& arr, void* elem)
-{
-	ASSERT2(arr.size < arr.capacity, "Not enough memory in array");
-
-	for (size_t i = 0; i < arr.size; ++i)
-	{
-		if (arr.data[i] > elem)
-		{
-			memory::Move(arr.data + i + 1, arr.data + i, (arr.size - i) * sizeof(void*));
-			arr.data[i] = elem;
-			arr.size++;
-			return i;
-		}
-	}
-	arr.data[arr.size++] = elem;
-	return arr.size - 1;
-}
-
-void ArrayAddOrdered(AllocArray& arr, void* elem, size_t elemIdx)
-{
-	ASSERT2(arr.size < arr.capacity, "Not enough memory in array");
-
-	if (elemIdx < arr.size)
-		memory::Move(arr.data + elemIdx + 1, arr.data + elemIdx, (arr.size - elemIdx) * sizeof(void*));
-	arr.data[elemIdx] = elem;
-	arr.size++;
-}
-
-void ArrayEraseOrdered(AllocArray& arr, void* elem)
-{
-	for (size_t i = 0; i < arr.size; ++i)
-	{
-		if (arr.data[i] == elem)
-		{
-			if (i < arr.size - 1)
-				memory::Move(arr.data + i, arr.data + i + 1, (arr.size - i) * sizeof(void*));
-			arr.size--;
-			return;
-		}
-	}
-	ASSERT2(false, "Nothing removed");
-}
-
-void ArrayEraseOrdered(AllocArray& arr, size_t elemIdx)
-{
-	ASSERT2(elemIdx < arr.size, "Index out of bounds");
-
-	if (elemIdx < arr.size - 1)
-		memory::Move(arr.data + elemIdx, arr.data + elemIdx + 1, (arr.size - elemIdx) * sizeof(void*));
-	arr.size--;
-}
-
-bool ArrayFind(AllocArray& arr, void* elem, size_t& elemIdx)
-{
-	for (size_t i = 0; i < arr.size; ++i)
-	{
-		if (arr.data[i] == elem)
-		{
-			elemIdx = i;
-			return true;
-		}
-	}
-	return false;
-}*/
-
-
 static const size_t MAX_ALLOCATORS = 1000;
 static StackAllocator<(1000 + 1) * sizeof(AllocatorDebugData)> s_allocatorsAllocator;
 static Array<AllocatorDebugData> s_allocators(s_allocatorsAllocator);
@@ -328,7 +236,6 @@ HeapAllocator::~HeapAllocator()
 	ASSERT2(m_allocSize == 0, "Memory leak");
 
 	AllocatorDebugData data;
-	data.parent = &m_source;
 	data.allocator = this;
 	s_allocators.Erase(data);
 #endif

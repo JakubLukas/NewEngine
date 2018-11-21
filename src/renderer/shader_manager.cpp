@@ -1,5 +1,6 @@
 #include "shader_manager.h"
 
+#include "core/memory.h"
 #include "core/file/blob.h"
 #include "core/file/clob.h"
 #include "core/file/file_system.h"
