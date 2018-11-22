@@ -73,15 +73,15 @@ private:
 };
 
 
-class HeapAllocator : public IAllocator
+class ProxyAllocator : public IAllocator
 {
 public:
-	HeapAllocator(IAllocator& allocator, bool debug = false);
-	HeapAllocator(HeapAllocator&) = delete;
-	HeapAllocator(HeapAllocator&&) = delete;
-	HeapAllocator& operator=(HeapAllocator&) = delete;
-	HeapAllocator& operator=(HeapAllocator&&) = delete;
-	~HeapAllocator() override;
+	ProxyAllocator(IAllocator& allocator, bool debug = false);
+	ProxyAllocator(ProxyAllocator&) = delete;
+	ProxyAllocator(ProxyAllocator&&) = delete;
+	ProxyAllocator& operator=(ProxyAllocator&) = delete;
+	ProxyAllocator& operator=(ProxyAllocator&&) = delete;
+	~ProxyAllocator() override;
 
 	void* Allocate(size_t size, size_t alignment) override;
 	void* Reallocate(void* ptr, size_t size, size_t alignment) override;
@@ -191,7 +191,7 @@ void StackAllocator<maxSize>::Deallocate(void* ptr)
 //PageAllocator
 
 
-//ProxyAllocator
+//HeapAllocator
 
 
 //TraceAllocator

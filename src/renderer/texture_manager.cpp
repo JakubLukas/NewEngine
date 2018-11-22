@@ -5,7 +5,7 @@
 #include "core/allocators.h"
 
 
-static Veng::HeapAllocator* stbImageAllocator = nullptr;
+static Veng::ProxyAllocator* stbImageAllocator = nullptr;
 
 static void* stbImageAlloc(size_t size)
 {
@@ -49,7 +49,7 @@ inline static resourceHandle MaterialToGenericHandle(textureHandle handle)
 TextureManager::TextureManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
 	: ResourceManager(allocator, fileSystem, depManager)
 {
-	stbImageAllocator = NEW_OBJECT(m_allocator, HeapAllocator)(m_allocator);
+	stbImageAllocator = NEW_OBJECT(m_allocator, ProxyAllocator)(m_allocator);
 	stbImageAllocator->SetDebugName("stb image");
 }
 

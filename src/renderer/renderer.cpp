@@ -303,7 +303,7 @@ public:
 	Engine& GetEngine() const override { return m_engine; }
 
 private:
-	HeapAllocator m_allocator;//must be first
+	ProxyAllocator m_allocator;//must be first
 	Engine& m_engine;
 	RenderSceneImpl* m_scene;
 

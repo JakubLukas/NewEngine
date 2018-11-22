@@ -706,7 +706,7 @@ private:
 
 private:
 	MainAllocator m_mainAllocator;
-	HeapAllocator m_allocator;
+	ProxyAllocator m_allocator;
 	HWND m_hwnd = nullptr;
 
 	Editor::EditorApp* m_editor = nullptr;

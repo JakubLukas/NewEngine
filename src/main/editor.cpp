@@ -996,7 +996,7 @@ public:
 private:
 	IAllocator& m_allocator;
 	App& m_app;
-	HeapAllocator m_engineAllocator;
+	ProxyAllocator m_engineAllocator;
 	Engine* m_engine = nullptr;
 	bool m_inputEnabled = false;
 	AssociativeArray<inputDeviceHandle, InputKeyboardFiltering> m_inputKeyboardFilter;
@@ -1005,7 +1005,7 @@ private:
 	Entity m_camera = INVALID_ENTITY;
 
 	//imgui
-	HeapAllocator m_imguiAllocator;
+	ProxyAllocator m_imguiAllocator;
 	Input m_inputBuffer;
 	ImGuiContext* m_imgui;
 	//widgets

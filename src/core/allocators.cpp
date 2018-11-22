@@ -131,23 +131,23 @@ void* MainAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 
 	size_t allocAlign = Max(alignment, alignof(AllocHeader));
 	size_t allocSize = allocAlign + sizeof(AllocHeader) + alignment + size;
-	void* newptr = realloc(ptr, allocSize);
+	void* newPtr = realloc(ptr, allocSize);
 	//if realloc returns memory pointer with different alignment as malloc, whole universe will explode (data pointer would points to wrong memory)
 	
-	if (newptr != nullptr)
+	if (newPtr != nullptr)
 	{
-		void* data = AlignPointer((char*)newptr + sizeof(AllocHeader), allocAlign);
+		void* data = AlignPointer((char*)newPtr + sizeof(AllocHeader), allocAlign);
 		ASSERT2((uintptr)data % alignment == 0, "Invalid alignment");
 		AllocHeader* header = static_cast<AllocHeader*>((void*)((char*)data - sizeof(AllocHeader)));
 		ASSERT2((uintptr)header % alignof(AllocHeader) == 0, "Invalid alignment");
 		header->size = size;
 		header->allSize = allocSize;
-		header->ptr = newptr;
+		header->ptr = newPtr;
 
 		m_allocCount++;
 		m_allocSize += allocSize;
 
-		newptr = data;
+		newPtr = data;
 	}
 #else
 	if (ptr != nullptr)
@@ -157,7 +157,7 @@ void* MainAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 	}
 	void* newPtr = realloc(ptr, alignment + size);
 	//if realloc returns memory pointer with different alignment as malloc, whole universe will explode (data pointer would points to wrong memory)
-	if (newptr != nullptr)
+	if (newPtr != nullptr)
 	{
 		void* data = AlignPointer((char*)newPtr + 1, alignment);
 		*((char*)data - 1) = (char)((ptrdiff_t)data - (ptrdiff_t)newPtr);
@@ -165,7 +165,7 @@ void* MainAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 	}
 #endif
 
-	return newptr;
+	return newPtr;
 }
 
 void MainAllocator::Deallocate(void* ptr)
@@ -213,10 +213,12 @@ size_t MainAllocator::GetAllocSize() const
 // ---------------- HEAP ALLOCATOR ----------------
 
 
-HeapAllocator::HeapAllocator(IAllocator& allocator, bool debug)
+ProxyAllocator::ProxyAllocator(IAllocator& allocator, bool debug)
 	: m_source(allocator)
+#if DEBUG_ALLOCATORS
 	, m_allocations(allocator)
 	, m_pages(allocator)
+#endif
 {
 #if DEBUG_ALLOCATORS
 	AllocatorDebugData data;
@@ -226,7 +228,7 @@ HeapAllocator::HeapAllocator(IAllocator& allocator, bool debug)
 #endif
 }
 
-HeapAllocator::~HeapAllocator()
+ProxyAllocator::~ProxyAllocator()
 {
 #if DEBUG_ALLOCATORS
 	ASSERT2(m_pages.GetSize() == 0, "Memory leak");
@@ -241,7 +243,7 @@ HeapAllocator::~HeapAllocator()
 #endif
 }
 
-void* HeapAllocator::Allocate(size_t size, size_t alignment)
+void* ProxyAllocator::Allocate(size_t size, size_t alignment)
 {
 	ScopeLock<SpinLock> lock(m_lock);
 
@@ -266,7 +268,7 @@ void* HeapAllocator::Allocate(size_t size, size_t alignment)
 	return data;
 }
 
-void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
+void* ProxyAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 {
 	ScopeLock<SpinLock> lock(m_lock);
 
@@ -320,7 +322,7 @@ void* HeapAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 	return data;
 }
 
-void HeapAllocator::Deallocate(void* ptr)
+void ProxyAllocator::Deallocate(void* ptr)
 {
 	ASSERT(ptr != nullptr);
 
@@ -348,7 +350,7 @@ void HeapAllocator::Deallocate(void* ptr)
 	m_source.Deallocate(ptr);
 }
 
-size_t HeapAllocator::GetSize(void* ptr) const
+size_t ProxyAllocator::GetSize(void* ptr) const
 {
 	return m_source.GetSize(ptr);
 }
@@ -356,17 +358,17 @@ size_t HeapAllocator::GetSize(void* ptr) const
 
 #if DEBUG_ALLOCATORS
 
-void HeapAllocator::SetDebugName(const char* name) { m_name = name; }
-const char* HeapAllocator::GetDebugName() const { return m_name; }
+void ProxyAllocator::SetDebugName(const char* name) { m_name = name; }
+const char* ProxyAllocator::GetDebugName() const { return m_name; }
 
-size_t HeapAllocator::GetAllocCount() const { return m_allocCount; }
-size_t HeapAllocator::GetAllocSize() const { return m_allocSize; }
+size_t ProxyAllocator::GetAllocCount() const { return m_allocCount; }
+size_t ProxyAllocator::GetAllocSize() const { return m_allocSize; }
 
-size_t HeapAllocator::GetAllocationsSize() const { return m_allocations.GetSize(); }
-void* const* HeapAllocator::GetAllocations() const { return m_allocations.Begin(); }
-size_t HeapAllocator::GetBlocksSize() const { return m_pages.GetSize(); }
-void* const* HeapAllocator::GetBlocks() const { return m_pages.GetKeys(); }
-size_t HeapAllocator::GetBlockSize() const { return GetAllocInfo().pageSize; }
+size_t ProxyAllocator::GetAllocationsSize() const { return m_allocations.GetSize(); }
+void* const* ProxyAllocator::GetAllocations() const { return m_allocations.Begin(); }
+size_t ProxyAllocator::GetBlocksSize() const { return m_pages.GetSize(); }
+void* const* ProxyAllocator::GetBlocks() const { return m_pages.GetKeys(); }
+size_t ProxyAllocator::GetBlockSize() const { return GetAllocInfo().pageSize; }
 
 
 #endif

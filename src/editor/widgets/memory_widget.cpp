@@ -14,7 +14,7 @@ namespace Editor
 {
 
 
-void BuildAllocatorTree(const Array<AllocatorDebugData>& allocators, const IAllocator* parent)
+void BuildAllocatorTree(const Array<AllocatorDebugData>& allocators, const IAllocator* parent, const IAllocator*& selected)
 {
 	for (int i = 0; i < allocators.GetSize(); ++i)
 	{
@@ -23,62 +23,52 @@ void BuildAllocatorTree(const Array<AllocatorDebugData>& allocators, const IAllo
 		if (allocData.parent != parent)
 			continue;
 
-		//const bool item_selected = (allocData.allocator == m_selected);
+		const bool isSelected = (allocData.allocator == selected);
 
-		char item_text[128] = { '\0' };
-		ImFormatString(item_text, 128, "Allocator #%d %s (count:%d , size:%d)",
+		bool isLeaf = true;
+		for (int j = 0; j < allocators.GetSize(); ++j)
+		{
+			if (allocData.allocator == allocators[j].parent)
+			{
+				isLeaf = false;
+				break;
+			}
+		}
+
+		ImGuiTreeNodeFlags treeNodeFlags =
+			ImGuiTreeNodeFlags_OpenOnArrow |
+			ImGuiTreeNodeFlags_OpenOnDoubleClick;
+		if (isSelected)
+			treeNodeFlags |= ImGuiTreeNodeFlags_Selected;
+		if (isLeaf)
+			treeNodeFlags |= ImGuiTreeNodeFlags_Leaf;
+
+		bool opened = ImGui::TreeNodeEx(allocData.allocator, treeNodeFlags, "Allocator #%d %s (count:%d , size:%d)",
 			i, allocData.allocator->GetDebugName(), allocData.allocator->GetAllocCount(), allocData.allocator->GetAllocSize());
 
-		if (ImGui::TreeNode(item_text))
-		{
-			BuildAllocatorTree(allocators, allocData.allocator);
-			ImGui::TreePop();
-		}
+		if (ImGui::IsItemClicked())
+			selected = allocData.allocator;
+
+		if (!opened)
+			continue;
+		
+		BuildAllocatorTree(allocators, allocData.allocator, selected);
+		
+		ImGui::TreePop();
 	}
 }
 
 void MemoryWidget::RenderInternal()
 {
-	/*if (!ImGui::ListBoxHeader("##empty"))
-	{
-		ImGui::Text("Error: ListBoxHeader wasn't created");
-		ImGui::PopItemWidth();
-		return;
-	}*/
-
-	/*for (int i = 0; i < GetAllocators().GetSize(); ++i)
-	{
-		const AllocatorDebugData& allocData = GetAllocators()[i];
-
-		const bool item_selected = (allocData.allocator == m_selected);
-
-		char item_text[128] = { '\0' };
-		ImFormatString(item_text, 128, "Allocator #%d %s (count:%d , size:%d)",
-			i, allocData.allocator->GetDebugName(), allocData.allocator->GetAllocCount(), allocData.allocator->GetAllocSize());
-
-		//ImGui::PushID(i);
-		//if (ImGui::Selectable(item_text, item_selected))
-		//	m_selected = allocData.allocator;
-		//
-		//if (item_selected)
-		//	ImGui::SetItemDefaultFocus();
-		//ImGui::PopID();
-		if (ImGui::TreeNode(item_text))
-		{
-			ImGui::TreePop();
-		}
-	}*/
-
-	//ImGui::ListBoxFooter();
-
-	BuildAllocatorTree(GetAllocators(), nullptr);
+	BuildAllocatorTree(GetAllocators(), nullptr, m_selected);
 
 	if (m_selected != nullptr)
 	{
-		ImVec2 pos = ImGui::GetCurrentWindow()->DC.CursorPos;
+		ImVec2 pos = ImGui::GetCursorPos();
+		ImVec2 posDraw = pos + ImVec2(0, 2 * ImGui::GetTextLineHeight());
 		ImVec2 size = ImGui::GetContentRegionAvail();
 		ImDrawList* list = ImGui::GetWindowDrawList();
-		list->AddRectFilled(pos, pos + size, ImColor(120, 120, 255, 255), 0);
+		list->AddRectFilled(posDraw, posDraw + size, ImColor(120, 120, 255, 255), 0);
 		size_t pageSize = m_selected->GetBlockSize();
 
 		size_t allocIdx = 0;
@@ -93,7 +83,12 @@ void MemoryWidget::RenderInternal()
 				float end = (float)(allocStart + allocSize - page) / pageSize * size.x;
 
 				ImGui::PushID((void*)allocStart);
-				list->AddRectFilled(pos + ImVec2(start, (float)i / c * size.y), pos + ImVec2(end, (float)(i + 1) / c * size.y), ImColor(255, 120, 120, 255), 0);
+				list->AddRectFilled(posDraw + ImVec2(start, (float)i / c * size.y), posDraw + ImVec2(end, (float)(i + 1) / c * size.y), ImColor(255, 120, 120, 255), 0);
+				ImGui::SetCursorPos(pos + ImVec2(start, (float)i / c * size.y));
+				ImGui::InvisibleButton("##tooltip", ImVec2(end - start, 1.0f / c * size.y));
+				if(ImGui::IsItemHovered())
+					ImGui::SetTooltip("address: %p, size: %d", allocStart, allocSize);
+				ImGui::SetCursorPos(pos);
 				ImGui::PopID();
 
 				allocStart = (uintptr)m_selected->GetAllocations()[++allocIdx];

@@ -34,16 +34,16 @@ public:
 	virtual void* const* GetBlocks() const = 0;
 	virtual size_t GetBlockSize() const = 0;
 	#else
-	void SetDebugName(const char* name) {};
-	const char* GetDebugName() const { "" };
-	size_t GetAllocCount() const { return 0; };
-	size_t GetAllocSize() const { return 0; };
+	void SetDebugName(const char* name) {}
+	const char* GetDebugName() const { return ""; }
+	size_t GetAllocCount() const { return 0; }
+	size_t GetAllocSize() const { return 0; }
 
 	size_t GetAllocationsSize() const { return 0; }
 	void* const* GetAllocations() const { return nullptr; }
 	size_t GetBlocksSize() const { return 0; }
 	void* const* GetBlocks() const { return nullptr; }
-	size_t GetBlockSize() const { return 0 };
+	size_t GetBlockSize() const { return 0; }
 	#endif
 };
 
