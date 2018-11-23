@@ -11,22 +11,29 @@ namespace Veng
 {
 
 
-inline u32 HashU32(const u32& key)
+inline u32 HashU32(u32 const& key)
 {
 	//TODO: just dummy value to test
 	return key;
 }
 
-inline u32 HashChar(const char*& key)
+inline u32 HashChar(char* const& key)
 {
+	const char* k = key;
 	//TODO: just dummy value to test
 	u32 result = 1;
-	while (*key != '\0')
+	while (*k != '\0')
 	{
-		result *= *key;
-		key++;
+		result *= *k;
+		k++;
 	}
 	return result;
+}
+
+inline u32 HashPointer(void* const& ptr)
+{
+	uintptr p = (uintptr)ptr;
+	return (u32)(p >> 32) * (u32)(p);
 }
 
 
@@ -35,7 +42,7 @@ class HashMap final
 {
 public:
 	using Map = HashMap<KeyType, ValueType>;
-	using HashFunction = u32(*)(const KeyType&);
+	using HashFunction = u32(*)(KeyType const&);
 
 	struct HashNode
 	{

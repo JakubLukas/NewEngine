@@ -359,6 +359,7 @@ public:
 		, m_bgfxAllocator(m_allocator)
 		, m_imguiAllocator(m_allocator, true)
 		, m_inputKeyboardFilter(m_allocator)
+		, m_memoryWidget(m_allocator)
 	{
 		m_allocator.SetDebugName("Editor");
 		m_engineAllocator.SetDebugName("Engine");

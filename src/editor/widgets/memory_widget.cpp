@@ -5,6 +5,8 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "../external/imgui/imgui_internal.h"
 
+#include "core/containers/hash_map.h"
+
 
 namespace Veng
 {
@@ -12,6 +14,40 @@ namespace Veng
 
 namespace Editor
 {
+
+
+struct MemoryWidgetAllocData
+{
+	ImColor color;
+};
+
+struct MemoryWidgetData
+{
+	MemoryWidgetData(IAllocator& allocator)
+		: allocData(allocator, &HashPointer)
+	{}
+
+	HashMap<void*, MemoryWidgetAllocData> allocData;
+	ImColor colors[4] = {
+		ImColor(60, 120, 120, 255),
+		ImColor(120, 120, 120, 255),
+		ImColor(200, 120, 120, 255),
+		ImColor(200, 240, 120, 255)
+	};
+};
+
+
+MemoryWidget::MemoryWidget(IAllocator& allocator)
+	: m_allocator(allocator)
+{
+	m_data = NEW_OBJECT(allocator, MemoryWidgetData)(m_allocator);
+}
+
+
+MemoryWidget::~MemoryWidget()
+{
+	DELETE_OBJECT(m_allocator, m_data);
+}
 
 
 void BuildAllocatorTree(const Array<AllocatorDebugData>& allocators, const IAllocator* parent, const IAllocator*& selected)
@@ -76,14 +112,16 @@ void MemoryWidget::RenderInternal()
 		{
 			uintptr page = (uintptr)m_selected->GetBlocks()[i];
 			uintptr allocStart = (uintptr)m_selected->GetAllocations()[allocIdx];
+
 			while (page <= allocStart && allocStart < page + pageSize && allocIdx < m_selected->GetAllocationsSize())
 			{
 				size_t allocSize = m_selected->GetSize((void*)allocStart);
 				float start = (float)(allocStart - page) / pageSize * size.x;
 				float end = (float)(allocStart + allocSize - page) / pageSize * size.x;
 
+				const ImColor& color = m_data->colors[(i % 2) * 2 + allocIdx % 2];
 				ImGui::PushID((void*)allocStart);
-				list->AddRectFilled(posDraw + ImVec2(start, (float)i / c * size.y), posDraw + ImVec2(end, (float)(i + 1) / c * size.y), ImColor(255, 120, 120, 255), 0);
+				list->AddRectFilled(posDraw + ImVec2(start, (float)i / c * size.y), posDraw + ImVec2(end, (float)(i + 1) / c * size.y), color, 0);
 				ImGui::SetCursorPos(pos + ImVec2(start, (float)i / c * size.y));
 				ImGui::InvisibleButton("##tooltip", ImVec2(end - start, 1.0f / c * size.y));
 				if(ImGui::IsItemHovered())
