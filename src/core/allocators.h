@@ -19,14 +19,15 @@ namespace Veng
 
 struct AllocatorDebugData
 {
-	IAllocator* parent = nullptr;
-	IAllocator* allocator = nullptr;
 	bool operator==(const AllocatorDebugData& other) const { return allocator == other.allocator; }
-	bool operator!=(const AllocatorDebugData& other) const { return !operator==(other); }
+	bool operator!=(const AllocatorDebugData& other) const { return allocator != other.allocator; }
 	bool operator<(const AllocatorDebugData& other) const { return allocator < other.allocator; }
 	bool operator<=(const AllocatorDebugData& other) const { return allocator <= other.allocator; }
 	bool operator>(const AllocatorDebugData& other) const { return allocator > other.allocator; }
 	bool operator>=(const AllocatorDebugData& other) const { return allocator >= other.allocator; }
+
+	IAllocator* parent = nullptr;
+	IAllocator* allocator = nullptr;
 };
 
 const Array<AllocatorDebugData>& GetAllocators();
@@ -58,7 +59,7 @@ public:
 	size_t GetAllocSize() const override;
 
 	size_t GetAllocationsSize() const override { return 0; };
-	void* const* GetAllocations() const override { return nullptr; };
+	AllocationDebugData const* GetAllocations() const override { return nullptr; };
 	size_t GetBlocksSize() const override { return 0; }
 	void* const* GetBlocks() const override { return nullptr; }
 	size_t GetBlockSize() const override { return 0; }
@@ -95,7 +96,7 @@ public:
 	size_t GetAllocSize() const override;
 
 	size_t GetAllocationsSize() const override;
-	void* const* GetAllocations() const override;
+	AllocationDebugData const* GetAllocations() const override;
 	size_t GetBlocksSize() const override;
 	void* const* GetBlocks() const override;
 	size_t GetBlockSize() const override;
@@ -109,7 +110,7 @@ private:
 	i32 m_allocCount = 0;
 	size_t m_allocSize = 0;
 
-	Array<void*> m_allocations;
+	Array<AllocationDebugData> m_allocations;
 	AssociativeArray<void*, size_t> m_pages;
 #endif
 };
@@ -138,7 +139,7 @@ public:
 	size_t GetAllocSize() const override { return maxSize; }
 
 	size_t GetAllocationsSize() const override { return 0; };
-	void* const* GetAllocations() const override { return nullptr; };
+	AllocationDebugData const* GetAllocations() const override { return nullptr; };
 	size_t GetBlocksSize() const override { return 0; }
 	void* const* GetBlocks() const override { return nullptr; }
 	size_t GetBlockSize() const override { return 0; }

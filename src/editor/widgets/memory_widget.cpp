@@ -29,10 +29,10 @@ struct MemoryWidgetData
 
 	HashMap<void*, MemoryWidgetAllocData> allocData;
 	ImColor colors[4] = {
-		ImColor(60, 120, 120, 255),
-		ImColor(120, 120, 120, 255),
-		ImColor(200, 120, 120, 255),
-		ImColor(200, 240, 120, 255)
+		ImColor(240, 120, 120, 255),
+		ImColor(180, 120, 120, 255),
+		ImColor(120, 240, 120, 255),
+		ImColor(120, 180, 120, 255),
 	};
 };
 
@@ -105,21 +105,23 @@ void MemoryWidget::RenderInternal()
 		ImVec2 size = ImGui::GetContentRegionAvail();
 		ImDrawList* list = ImGui::GetWindowDrawList();
 		list->AddRectFilled(posDraw, posDraw + size, ImColor(120, 120, 255, 255), 0);
-		size_t pageSize = m_selected->GetBlockSize();
+		size_t blockSize = m_selected->GetBlockSize();
 
 		size_t allocIdx = 0;
 		for (size_t i = 0, c = m_selected->GetBlocksSize(); i < c; ++i)
 		{
-			uintptr page = (uintptr)m_selected->GetBlocks()[i];
-			uintptr allocStart = (uintptr)m_selected->GetAllocations()[allocIdx];
+			uintptr block = (uintptr)m_selected->GetBlocks()[i];
+			const AllocationDebugData* allocData = &m_selected->GetAllocations()[allocIdx];
+			uintptr allocStart = (uintptr)allocData->allocation;
 
-			while (page <= allocStart && allocStart < page + pageSize && allocIdx < m_selected->GetAllocationsSize())
+			size_t allocIdxPerBlock = 0;
+			while (block <= allocStart && allocStart < block + blockSize && allocIdx < m_selected->GetAllocationsSize())
 			{
 				size_t allocSize = m_selected->GetSize((void*)allocStart);
-				float start = (float)(allocStart - page) / pageSize * size.x;
-				float end = (float)(allocStart + allocSize - page) / pageSize * size.x;
+				float start = (float)(allocStart - block) / blockSize * size.x;
+				float end = (float)(allocStart + allocSize - block) / blockSize * size.x;
 
-				const ImColor& color = m_data->colors[(i % 2) * 2 + allocIdx % 2];
+				const ImColor& color = m_data->colors[((i % 2) * 2) + (allocIdxPerBlock % 2)];
 				ImGui::PushID((void*)allocStart);
 				list->AddRectFilled(posDraw + ImVec2(start, (float)i / c * size.y), posDraw + ImVec2(end, (float)(i + 1) / c * size.y), color, 0);
 				ImGui::SetCursorPos(pos + ImVec2(start, (float)i / c * size.y));
@@ -129,7 +131,9 @@ void MemoryWidget::RenderInternal()
 				ImGui::SetCursorPos(pos);
 				ImGui::PopID();
 
-				allocStart = (uintptr)m_selected->GetAllocations()[++allocIdx];
+				allocData = &m_selected->GetAllocations()[++allocIdx];
+				allocIdxPerBlock++;
+				allocStart = (uintptr)allocData->allocation;
 			}
 		}
 	}

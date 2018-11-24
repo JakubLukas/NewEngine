@@ -252,7 +252,9 @@ void* ProxyAllocator::Allocate(size_t size, size_t alignment)
 	m_allocCount++;
 	m_allocSize += size;
 
-	m_allocations.AddOrdered(data);
+	AllocationDebugData allocData;
+	allocData.allocation = data;
+	m_allocations.AddOrdered(allocData);
 
 	void* pagePtr = (void*)(((uintptr)data / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);//TODO: bit operations
 	size_t* count;
@@ -278,7 +280,9 @@ void* ProxyAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 		m_allocCount--;
 		m_allocSize -= m_source.GetSize(ptr);
 
-		m_allocations.EraseOrdered(ptr);
+		AllocationDebugData allocData;
+		allocData.allocation = ptr;
+		m_allocations.EraseOrdered(allocData);
 
 		void* oldPagePtr = (void*)(((uintptr)ptr / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);
 		size_t* oldCount;
@@ -304,7 +308,9 @@ void* ProxyAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 		m_allocCount++;
 		m_allocSize += size;
 
-		m_allocations.AddOrdered(data);
+		AllocationDebugData allocData;
+		allocData.allocation = data;
+		m_allocations.AddOrdered(allocData);
 
 		void* pagePtr = (void*)(((uintptr)data / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);
 		size_t* count;
@@ -332,7 +338,9 @@ void ProxyAllocator::Deallocate(void* ptr)
 	m_allocCount--;
 	m_allocSize -= m_source.GetSize(ptr);
 
-	m_allocations.EraseOrdered(ptr);
+	AllocationDebugData allocData;
+	allocData.allocation = ptr;
+	m_allocations.EraseOrdered(allocData);
 
 	void* pagePtr = (void*)(((uintptr)ptr / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);
 	size_t* count;
@@ -365,7 +373,7 @@ size_t ProxyAllocator::GetAllocCount() const { return m_allocCount; }
 size_t ProxyAllocator::GetAllocSize() const { return m_allocSize; }
 
 size_t ProxyAllocator::GetAllocationsSize() const { return m_allocations.GetSize(); }
-void* const* ProxyAllocator::GetAllocations() const { return m_allocations.Begin(); }
+AllocationDebugData const* ProxyAllocator::GetAllocations() const { return m_allocations.Begin(); }
 size_t ProxyAllocator::GetBlocksSize() const { return m_pages.GetSize(); }
 void* const* ProxyAllocator::GetBlocks() const { return m_pages.GetKeys(); }
 size_t ProxyAllocator::GetBlockSize() const { return GetAllocInfo().pageSize; }

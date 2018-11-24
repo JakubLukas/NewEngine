@@ -106,7 +106,7 @@ Type& Array<Type>::AddOrdered(const Type& value)
 	{
 		if (m_data[i] > value)
 		{
-			memory::Move(m_data + i + 1, m_data + i, (m_size - i) * sizeof(void*));
+			memory::Move(m_data + i + 1, m_data + i, (m_size - i) * sizeof(Type));
 			m_data[i] = value;
 			m_size++;
 			return m_data[i];

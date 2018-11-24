@@ -9,6 +9,26 @@ namespace Veng
 {
 
 
+#if DEBUG_ALLOCATORS
+
+struct AllocationDebugData
+{
+	static const size_t CALLSTACK_SIZE = 16;
+
+	bool operator==(const AllocationDebugData& other) const { return allocation == other.allocation; }
+	bool operator!=(const AllocationDebugData& other) const { return allocation != other.allocation; }
+	bool operator<(const AllocationDebugData& other) const { return allocation < other.allocation; }
+	bool operator<=(const AllocationDebugData& other) const { return allocation <= other.allocation; }
+	bool operator>(const AllocationDebugData& other) const { return allocation > other.allocation; }
+	bool operator>=(const AllocationDebugData& other) const { return allocation >= other.allocation; }
+
+	void* allocation = nullptr;
+	void* callstack[CALLSTACK_SIZE] = { 0 };
+};
+
+#endif
+
+
 void* AlignPointer(void* ptr, size_t alignment);
 
 
@@ -29,7 +49,7 @@ public:
 	virtual size_t GetAllocSize() const = 0;
 
 	virtual size_t GetAllocationsSize() const = 0;
-	virtual void* const* GetAllocations() const = 0;
+	virtual AllocationDebugData const* GetAllocations() const = 0;
 	virtual size_t GetBlocksSize() const = 0;
 	virtual void* const* GetBlocks() const = 0;
 	virtual size_t GetBlockSize() const = 0;
@@ -40,7 +60,7 @@ public:
 	size_t GetAllocSize() const { return 0; }
 
 	size_t GetAllocationsSize() const { return 0; }
-	void* const* GetAllocations() const { return nullptr; }
+	AllocationDebugData const* GetAllocations() const { return nullptr; }
 	size_t GetBlocksSize() const { return 0; }
 	void* const* GetBlocks() const { return nullptr; }
 	size_t GetBlockSize() const { return 0; }
