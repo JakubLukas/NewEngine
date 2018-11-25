@@ -1186,9 +1186,10 @@ struct DockContext
 	void deserialize(Veng::InputBlob& blob)
 	{
 		int size;
-		blob.Read(size);
+		IM_ASSERT(blob.Read(size));
+		m_docks.reserve(size);
 		m_docks.resize(size);
-		blob.Read(m_docks.begin(), size * sizeof(Dock));
+		IM_ASSERT(blob.Read(m_docks.begin(), size * sizeof(Dock)));
 		for(int i = 0; i < size; ++i)
 		{
 			static const size_t MAX_LABEL_SIZE = 256;

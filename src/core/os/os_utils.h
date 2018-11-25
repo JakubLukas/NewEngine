@@ -10,6 +10,8 @@ namespace Veng
 namespace os
 {
 
+typedef void* osHandle;
+
 
 struct SystemInfo
 {
@@ -40,6 +42,15 @@ void LogDebugString(const char* str);
 int CallProcess(const char* appPath, char* args);
 
 SystemInfo GetSystemInfo();
+
+
+u32 GetCallStack(u32 framesToSkip, u32 framesToCapture, void** callstack);
+
+//osHandle GetCurrentProcessHandle();
+//
+//bool InitSymbols(osHandle process);
+//
+//bool LoadSymbols(osHandle process/*ImageName, ModuleName, BaseOfDll, SizeOfDll*/);
 
 
 }

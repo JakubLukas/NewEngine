@@ -25,7 +25,7 @@ bool InputBlob::Read(void* data, size_t size)
 {
 	if(m_position + size <= m_size)
 	{
-		memory::Copy(data, m_data + m_position, m_size);
+		memory::Copy(data, m_data + m_position, size);
 		m_position += size;
 		return true;
 	}

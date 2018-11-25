@@ -182,7 +182,7 @@ void Array<Type>::Erase(size_t index)
 	//DELETE_PLACEMENT(m_data + m_size);
 }
 
-template<class Type>
+/*template<class Type>
 bool Array<Type>::EraseOrdered(const Type& value)
 {
 	for (size_t i = 0; i < m_size; ++i)
@@ -196,17 +196,17 @@ bool Array<Type>::EraseOrdered(const Type& value)
 		}
 	}
 	return false;
-}
+}*/
 
-/*template<class Type>
+template<class Type>
 void Array<Type>::EraseOrdered(size_t index)
 {
-	ASSERT2(idx < m_size, "Index out of bounds");
+	ASSERT2(index < m_size, "Index out of bounds");
 
 	if (index < m_size - 1)
-		memory::Move(m_data + idx, m_data + idx + 1, (m_size - idx) * sizeof(void*));
+		memory::Move(m_data + index, m_data + index + 1, (m_size - index) * sizeof(Type));
 	m_size--;
-}*/
+}
 
 
 template<class Type>

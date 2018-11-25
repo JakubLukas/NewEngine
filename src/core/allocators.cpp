@@ -254,6 +254,7 @@ void* ProxyAllocator::Allocate(size_t size, size_t alignment)
 
 	AllocationDebugData allocData;
 	allocData.allocation = data;
+	os::GetCallStack(0, 16, allocData.callstack);
 	m_allocations.AddOrdered(allocData);
 
 	void* pagePtr = (void*)(((uintptr)data / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);//TODO: bit operations
@@ -282,7 +283,11 @@ void* ProxyAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 
 		AllocationDebugData allocData;
 		allocData.allocation = ptr;
-		m_allocations.EraseOrdered(allocData);
+		size_t idx;
+		ASSERT(m_allocations.Find(allocData, idx));
+		allocData = m_allocations[idx];
+
+		m_allocations.EraseOrdered(idx);
 
 		void* oldPagePtr = (void*)(((uintptr)ptr / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);
 		size_t* oldCount;
@@ -302,7 +307,6 @@ void* ProxyAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 	void* data = m_source.Reallocate(ptr, size, alignment);
 
 #if DEBUG_ALLOCATORS
-
 	if (data != nullptr)
 	{
 		m_allocCount++;
@@ -340,7 +344,15 @@ void ProxyAllocator::Deallocate(void* ptr)
 
 	AllocationDebugData allocData;
 	allocData.allocation = ptr;
-	m_allocations.EraseOrdered(allocData);
+	size_t idx;
+	ASSERT(m_allocations.Find(allocData, idx));
+	allocData = m_allocations[idx];
+#endif
+
+	m_source.Deallocate(ptr);
+
+#if DEBUG_ALLOCATORS
+	m_allocations.EraseOrdered(idx);
 
 	void* pagePtr = (void*)(((uintptr)ptr / GetAllocInfo().pageSize) * GetAllocInfo().pageSize);
 	size_t* count;
@@ -355,7 +367,6 @@ void ProxyAllocator::Deallocate(void* ptr)
 		ASSERT2(false, "There must be record of page for given allocation");
 	}
 #endif
-	m_source.Deallocate(ptr);
 }
 
 size_t ProxyAllocator::GetSize(void* ptr) const

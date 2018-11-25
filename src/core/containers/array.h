@@ -43,7 +43,7 @@ public:
 	bool Erase(Type& value);
 	void Erase(size_t idx);
 
-	bool EraseOrdered(const Type& value);
+	void EraseOrdered(size_t index);
 
 
 	bool Find(const Type& value, size_t& idx);

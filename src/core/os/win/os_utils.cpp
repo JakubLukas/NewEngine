@@ -1,6 +1,7 @@
 #include "../os_utils.h"
 
 #include <core/os/win/simple_windows.h>
+//#include <dbghelp.h>
 
 #include "core/asserts.h"
 
@@ -147,6 +148,56 @@ SystemInfo GetSystemInfo()
 		sysInfo.dwAllocationGranularity
 	};
 }
+
+
+
+u32 GetCallStack(u32 framesToSkip, u32 framesToCapture, void** callstack)
+{
+	return ::RtlCaptureStackBackTrace(
+		(ULONG)framesToSkip,
+		(ULONG)framesToCapture,
+		(PVOID*)callstack,
+		NULL
+	);
+}
+
+/*osHandle GetCurrentProcessHandle()
+{
+	return ::GetCurrentProcess();
+}
+
+bool InitSymbols(osHandle process)
+{
+	if(::SymInitialize(process, NULL, true) == TRUE)
+	{
+		return true;
+	}
+	else
+	{
+		ASSERT2(false, "Function call failed, call GetLastError");
+		return false;
+	}
+}
+
+bool LoadSymbols(osHandle process/*ImageName, ModuleName, BaseOfDll, SizeOfDll/)
+{
+	if(SymLoadModule(
+		process,
+		NULL,
+		"",
+		NULL,
+		0,
+		0
+	) != 0)
+	{
+		return true;
+	}
+	else
+	{
+		ASSERT2(false, "Function call failed, call GetLastError");
+		return false;
+	}
+}*/
 
 
 }
