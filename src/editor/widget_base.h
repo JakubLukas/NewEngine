@@ -3,6 +3,10 @@
 namespace Veng
 {
 
+class IAllocator;
+class Engine;
+
+
 namespace Editor
 {
 
@@ -10,6 +14,8 @@ namespace Editor
 class WidgetBase
 {
 public:
+	virtual ~WidgetBase() {}
+	virtual void Init(IAllocator& allocator, Engine& engine) = 0;
 	void Render();
 
 protected:

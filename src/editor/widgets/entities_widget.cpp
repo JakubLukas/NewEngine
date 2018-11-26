@@ -11,6 +11,10 @@ namespace Editor
 {
 
 
+void EntitiesWidget::Init(IAllocator& allocator, Engine& engine)
+{}
+
+
 void EntitiesWidget::SetWorld(World* world)
 {
 	m_world = world;

@@ -18,7 +18,10 @@ namespace Editor
 {
 
 
-void EntityWidget::SetEngine(Engine* engine) { m_engine = engine; }
+void EntityWidget::Init(IAllocator& allocator, Engine& engine)
+{
+	m_engine = &engine;
+}
 
 void EntityWidget::SetEntity(Entity entity) { m_entity = entity; }
 

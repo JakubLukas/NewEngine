@@ -16,6 +16,8 @@ namespace Editor
 class EntitiesWidget : public WidgetBase
 {
 public:
+	void Init(IAllocator& allocator, Engine& engine) override;
+
 	void SetWorld(World* world);
 	Entity GetSelected() const;
 

@@ -19,7 +19,6 @@ class ShaderManager;
 class ModelManager;
 class TextureManager;
 enum class modelHandle : u64;
-struct Camera;
 
 
 class RenderScene : public IScene

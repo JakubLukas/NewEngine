@@ -37,16 +37,16 @@ struct MemoryWidgetData
 };
 
 
-MemoryWidget::MemoryWidget(IAllocator& allocator)
-	: m_allocator(allocator)
+MemoryWidget::~MemoryWidget()
 {
-	m_data = NEW_OBJECT(allocator, MemoryWidgetData)(m_allocator);
+	DELETE_OBJECT(*m_allocator, m_data);
 }
 
 
-MemoryWidget::~MemoryWidget()
+void MemoryWidget::Init(IAllocator& allocator, Engine& engine)
 {
-	DELETE_OBJECT(m_allocator, m_data);
+	m_allocator = &allocator;
+	m_data = NEW_OBJECT(allocator, MemoryWidgetData)(*m_allocator);
 }
 
 

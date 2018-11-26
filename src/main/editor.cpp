@@ -831,7 +831,7 @@ public:
 			}
 		}
 
-		memory::Set(io.KeysDown, 0, 512 * sizeof(bool));
+		memory::Set(io.KeysDown, 0, sizeof(io.KeysDown));
 		for (int i = 0; i < m_inputBuffer.keyboardBufferPos; ++i)
 		{
 			io.KeysDown[m_inputBuffer.keyboardBuffer[i]] = true;
