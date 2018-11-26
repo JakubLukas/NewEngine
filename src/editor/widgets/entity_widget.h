@@ -17,8 +17,9 @@ class EntityWidget : public WidgetBase
 {
 public:
 	void Init(IAllocator& allocator, Engine& engine) override;
+	void Deinit() override;
 
-	void SetEntity(Entity entity);
+	void SetEntity(Entity entity);//TODO: event
 
 protected:
 	void RenderInternal() override;

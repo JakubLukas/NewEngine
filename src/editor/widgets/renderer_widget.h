@@ -19,11 +19,12 @@ namespace Editor
 class RendererWidget : public WidgetBase
 {
 public:
-	void Init(bgfx::ViewId viewId);
-	void Deinit();
-	void SetRenderSystem(RenderSystem* system);
-	bool SizeChanged() const { return m_changedSize; }
-	ImVec2 GetSize() const { return m_size; }
+	~RendererWidget() override;
+	void Init(IAllocator& allocator, Engine& engine) override;
+	void Deinit() override;
+	void Init(bgfx::ViewId viewId);//TODO: event
+	bool SizeChanged() const { return m_changedSize; }//TODO: event
+	ImVec2 GetSize() const { return m_size; }//TODO: event
 
 protected:
 	void RenderInternal() override;

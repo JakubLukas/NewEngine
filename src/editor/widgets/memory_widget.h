@@ -20,6 +20,7 @@ class MemoryWidget : public WidgetBase
 public:
 	~MemoryWidget() override;
 	void Init(IAllocator& allocator, Engine& engine) override;
+	void Deinit() override;
 
 protected:
 	void RenderInternal() override;

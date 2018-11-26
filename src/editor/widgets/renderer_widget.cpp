@@ -1,5 +1,6 @@
 #include "renderer_widget.h"
 
+#include "core/engine.h"
 #include "renderer/renderer.h"
 
 
@@ -9,6 +10,22 @@ namespace Veng
 
 namespace Editor
 {
+
+
+RendererWidget::~RendererWidget()
+{}
+
+
+void RendererWidget::Init(IAllocator& allocator, Engine& engine)
+{
+	m_renderer = static_cast<RenderSystem*>(engine.GetSystem("renderer"));
+}
+
+
+void RendererWidget::Deinit()
+{
+	bgfx::destroy(m_fbh);
+}
 
 
 void RendererWidget::Init(bgfx::ViewId viewId)
@@ -25,17 +42,6 @@ void RendererWidget::Init(bgfx::ViewId viewId)
 		, 1.0f
 		, 0
 	);
-}
-
-void RendererWidget::Deinit()
-{
-	bgfx::destroy(m_fbh);
-}
-
-
-void RendererWidget::SetRenderSystem(RenderSystem* system)
-{
-	m_renderer = system;
 }
 
 

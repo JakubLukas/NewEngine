@@ -15,8 +15,11 @@ namespace Editor
 class WorldsWidget : public WidgetBase
 {
 public:
-	void SetEngine(Engine* engine);
-	worldId GetSelected() const;
+	~WorldsWidget() override;
+	void Init(IAllocator& allocator, Engine& engine) override;
+	void Deinit() override;
+
+	worldId GetSelected() const;//TODO: event
 
 protected:
 	void RenderInternal() override;

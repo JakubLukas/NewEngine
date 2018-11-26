@@ -46,6 +46,7 @@ SystemInfo GetSystemInfo();
 
 u32 GetCallStack(u32 framesToSkip, u32 framesToCapture, void** callstack);
 
+//http://www.debuginfo.com/examples/src/SymLoadPdb.cpp
 //osHandle GetCurrentProcessHandle();
 //
 //bool InitSymbols(osHandle process);

@@ -36,11 +36,11 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "../external/imgui/imgui_internal.h"
 
-#include "editor/widgets/worlds_widget.h"
-#include "editor/widgets/entities_widget.h"
-#include "editor/widgets/entity_widget.h"
-#include "editor/widgets/renderer_widget.h"
-#include "editor/widgets/memory_widget.h"
+#include "editor/widgets/worlds_widget.h"////////////////////////////////////
+#include "editor/widgets/entities_widget.h"////////////////////////////////////
+#include "editor/widgets/entity_widget.h"////////////////////////////////////
+#include "editor/widgets/renderer_widget.h"////////////////////////////////////
+#include "editor/widgets/memory_widget.h"////////////////////////////////////
 //#include "editor/widgets/resource_manager_widget.h"
 
 #include <core/os/win/simple_windows.h>
@@ -359,7 +359,6 @@ public:
 		, m_bgfxAllocator(m_allocator)
 		, m_imguiAllocator(m_allocator, true)
 		, m_inputKeyboardFilter(m_allocator)
-		, m_memoryWidget(m_allocator)
 	{
 		m_allocator.SetDebugName("Editor");
 		m_engineAllocator.SetDebugName("Engine");
@@ -370,8 +369,10 @@ public:
 	{
 		InitRender();
 		InitImgui();
-		m_rendererWidget.Init(1);//////////////////////////
 		InitEngine();
+
+		InitWidgets();
+		m_rendererWidget.Init(1);//////////////////////////
 
 		RenderScene* renderScene = static_cast<RenderScene*>(m_renderSystem->GetScene());
 		for (size_t i = 0; i < m_engine->GetWorldCount(); ++i)
@@ -386,9 +387,9 @@ public:
 
 	void Deinit() override
 	{
+		DeinitWidgets();
 		DeinitEngine();//TODO: shut down engine gracefully
 
-		m_rendererWidget.Deinit();
 		DeinitImgui();
 		DeinitRender();
 	}
@@ -599,15 +600,32 @@ public:
 		}
 	}
 
+	// WIDGETS
+
+	void InitWidgets()
+	{
+		m_worldsWidget.Init(m_allocator, *m_engine);
+		m_entitiesWidget.Init(m_allocator, *m_engine);
+		m_entityWidget.Init(m_allocator, *m_engine);
+		m_rendererWidget.Init(m_allocator, *m_engine);
+		m_memoryWidget.Init(m_allocator, *m_engine);
+	}
+
+	void DeinitWidgets()
+	{
+		m_worldsWidget.Deinit();
+		m_entitiesWidget.Deinit();
+		m_entityWidget.Deinit();
+		m_rendererWidget.Deinit();
+		m_memoryWidget.Deinit();
+	}
+
 	// ENGINE
 
 	void InitEngine()
 	{
 		m_engine = Engine::Create(m_engineAllocator);
 		InitSystems();
-		m_worldsWidget.SetEngine(m_engine);
-		m_entityWidget.SetEngine(m_engine);
-		m_rendererWidget.SetRenderSystem(m_renderSystem);
 	}
 
 	void DeinitEngine()

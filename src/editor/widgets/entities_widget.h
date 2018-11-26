@@ -17,8 +17,9 @@ class EntitiesWidget : public WidgetBase
 {
 public:
 	void Init(IAllocator& allocator, Engine& engine) override;
+	void Deinit() override;
 
-	void SetWorld(World* world);
+	void SetWorld(World* world);//TODO: event
 	Entity GetSelected() const;
 
 protected:

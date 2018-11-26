@@ -23,6 +23,11 @@ void EntityWidget::Init(IAllocator& allocator, Engine& engine)
 	m_engine = &engine;
 }
 
+
+void EntityWidget::Deinit()
+{}
+
+
 void EntityWidget::SetEntity(Entity entity) { m_entity = entity; }
 
 

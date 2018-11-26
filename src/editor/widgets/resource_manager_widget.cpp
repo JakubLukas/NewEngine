@@ -1,6 +1,7 @@
 #include "resource_manager_widget.h"
 
 #include "../external/imgui/imgui.h"
+#include "core/engine.h"
 
 
 namespace Veng
@@ -11,9 +12,18 @@ namespace Editor
 {
 
 
-void ResourceManagerWidget::SetResourceManager(ResourceManagement& manager)
+ResourceManagerWidget::~ResourceManagerWidget()
+{}
+
+
+void ResourceManagerWidget::Init(IAllocator& allocator, Engine& engine)
 {
+	m_manager = engine.GetResourceManagement();
 }
+
+
+void ResourceManagerWidget::Deinit()
+{}
 
 
 void ResourceManagerWidget::RenderInternal()

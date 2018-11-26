@@ -16,7 +16,9 @@ namespace Editor
 class ResourceManagerWidget : public WidgetBase
 {
 public:
-	void SetResourceManager(ResourceManagement& manager);
+	~ResourceManagerWidget() override;
+	void Init(IAllocator& allocator, Engine& engine) override;
+	void Deinit() override;
 
 protected:
 	void RenderInternal() override;

@@ -15,6 +15,10 @@ void EntitiesWidget::Init(IAllocator& allocator, Engine& engine)
 {}
 
 
+void EntitiesWidget::Deinit()
+{}
+
+
 void EntitiesWidget::SetWorld(World* world)
 {
 	m_world = world;

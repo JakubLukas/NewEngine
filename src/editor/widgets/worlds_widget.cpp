@@ -12,10 +12,21 @@ namespace Veng
 namespace Editor
 {
 
-void WorldsWidget::SetEngine(Engine* engine)
+
+WorldsWidget::~WorldsWidget()
 {
-	m_engine = engine;
+
 }
+
+
+void WorldsWidget::Init(IAllocator& allocator, Engine& engine)
+{
+	m_engine = &engine;
+}
+
+
+void WorldsWidget::Deinit()
+{}
 
 
 worldId WorldsWidget::GetSelected() const

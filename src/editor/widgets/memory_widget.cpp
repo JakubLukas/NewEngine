@@ -50,6 +50,12 @@ void MemoryWidget::Init(IAllocator& allocator, Engine& engine)
 }
 
 
+void MemoryWidget::Deinit()
+{
+
+}
+
+
 void BuildAllocatorTree(const Array<AllocatorDebugData>& allocators, const IAllocator* parent, const IAllocator*& selected)
 {
 	for (int i = 0; i < allocators.GetSize(); ++i)
