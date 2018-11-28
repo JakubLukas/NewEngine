@@ -64,7 +64,7 @@ public:
 private:
 	enum
 	{
-		INITIAL_SIZE = 4,
+		INITIAL_SIZE = 8,
 		ENLARGE_MULTIPLIER = 2,
 	};
 

@@ -1,7 +1,5 @@
 #include "widget_register.h"
 
-#include "main/editor.h"
-
 
 namespace Veng
 {
@@ -10,7 +8,21 @@ namespace Editor
 {
 
 
+static WidgetRegistry* s_registriesList = nullptr;
 
+
+WidgetRegistry::WidgetRegistry(createFunction creator)
+	: creator(creator)
+{
+	next = s_registriesList;
+	s_registriesList = this;
+}
+
+
+WidgetRegistry* GetRegistries()
+{
+	return s_registriesList;
+}
 
 
 }

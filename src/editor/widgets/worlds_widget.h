@@ -22,7 +22,7 @@ public:
 	worldId GetSelected() const;//TODO: event
 
 protected:
-	void RenderInternal() override;
+	void RenderInternal(EventQueue& queue) override;
 	const char* GetName() const override { return "Worlds"; };
 
 private:

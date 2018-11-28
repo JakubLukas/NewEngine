@@ -21,7 +21,7 @@ public:
 	void Deinit() override;
 
 protected:
-	void RenderInternal() override;
+	void RenderInternal(EventQueue& queue) override;
 	const char* GetName() const override { return "ResourceManager"; };
 
 private:

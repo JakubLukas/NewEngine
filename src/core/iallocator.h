@@ -2,7 +2,9 @@
 
 #include "int.h"
 
-#define DEBUG_ALLOCATORS 1
+#if !defined(DEBUG_ALLOCATORS)
+#	define DEBUG_ALLOCATORS 1
+#endif
 
 
 namespace Veng

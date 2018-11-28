@@ -1,7 +1,9 @@
 #include "entities_widget.h"
 
+#include "../widget_register.h"
 #include "../external/imgui/imgui.h"
 #include "../external/imgui/imgui_internal.h"
+#include "core/engine.h"
 #include "core/world/world.h"
 
 namespace Veng
@@ -12,27 +14,27 @@ namespace Editor
 
 
 void EntitiesWidget::Init(IAllocator& allocator, Engine& engine)
-{}
+{
+	m_engine = &engine;
+}
 
 
 void EntitiesWidget::Deinit()
 {}
 
 
-void EntitiesWidget::SetWorld(World* world)
+void EntitiesWidget::RenderInternal(EventQueue& queue)
 {
-	m_world = world;
-}
+	for (size_t i = 0; i < queue.GetPullEventsSize(); ++i)
+	{
+		const Event* event = queue.PullEvents()[i];
+		if (event->type == EventType::SelectWorld)
+		{
+			const EventSelectWorld* eventWorld = (EventSelectWorld*)event;
+			m_world = m_engine->GetWorld(eventWorld->id);
+		}
+	}
 
-
-Entity EntitiesWidget::GetSelected() const
-{
-	return m_selected;
-}
-
-
-void EntitiesWidget::RenderInternal()
-{
 	if (nullptr == m_world)
 	{
 		ImGui::Text("No world selected");
@@ -63,6 +65,9 @@ void EntitiesWidget::RenderInternal()
 		if(ImGui::Selectable(item_text, item_selected))
 		{
 			m_selected = entity;
+			EventSelectEntity event;
+			event.entity = m_selected;
+			queue.PushEvent(event);
 		}
 		if(item_selected)
 			ImGui::SetItemDefaultFocus();
@@ -71,6 +76,12 @@ void EntitiesWidget::RenderInternal()
 
 	ImGui::ListBoxFooter();
 	ImGui::PopItemWidth();
+}
+
+
+REGISTER_WIDGET(entities)
+{
+	return NEW_OBJECT(allocator, EntitiesWidget)();
 }
 
 

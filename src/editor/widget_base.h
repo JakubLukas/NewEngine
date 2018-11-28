@@ -1,5 +1,7 @@
 #pragma once
 
+#include "event_queue.h"
+
 namespace Veng
 {
 
@@ -17,10 +19,10 @@ public:
 	virtual ~WidgetBase() {}
 	virtual void Init(IAllocator& allocator, Engine& engine) = 0;
 	virtual void Deinit() = 0;
-	void Render();
+	void Render(EventQueue& queue);
 
 protected:
-	virtual void RenderInternal() = 0;
+	virtual void RenderInternal(EventQueue& queue) = 0;
 	virtual const char* GetName() const = 0;
 };
 

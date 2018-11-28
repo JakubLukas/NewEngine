@@ -19,14 +19,12 @@ public:
 	void Init(IAllocator& allocator, Engine& engine) override;
 	void Deinit() override;
 
-	void SetWorld(World* world);//TODO: event
-	Entity GetSelected() const;
-
 protected:
-	void RenderInternal() override;
+	void RenderInternal(EventQueue& queue) override;
 	const char* GetName() const override { return "Entities"; };
 
 private:
+	Engine* m_engine = nullptr;
 	World* m_world = nullptr;
 	Entity m_selected = INVALID_ENTITY;
 };

@@ -1,5 +1,6 @@
 #include "resource_manager_widget.h"
 
+#include "../widget_register.h"
 #include "../external/imgui/imgui.h"
 #include "core/engine.h"
 
@@ -26,7 +27,7 @@ void ResourceManagerWidget::Deinit()
 {}
 
 
-void ResourceManagerWidget::RenderInternal()
+void ResourceManagerWidget::RenderInternal(EventQueue& queue)
 {
 	if (nullptr == m_manager)
 	{
@@ -35,6 +36,12 @@ void ResourceManagerWidget::RenderInternal()
 	}
 
 	ImGui::Text("Resource manager ok");
+}
+
+
+REGISTER_WIDGET(resource_manager)
+{
+	return NEW_OBJECT(allocator, ResourceManagerWidget)();
 }
 
 

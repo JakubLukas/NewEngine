@@ -1,5 +1,6 @@
 #include "memory_widget.h"
 
+#include "../widget_register.h"
 #include "core/allocators.h"
 #include "../external/imgui/imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -100,7 +101,7 @@ void BuildAllocatorTree(const Array<AllocatorDebugData>& allocators, const IAllo
 	}
 }
 
-void MemoryWidget::RenderInternal()
+void MemoryWidget::RenderInternal(EventQueue& queue)
 {
 	BuildAllocatorTree(GetAllocators(), nullptr, m_selected);
 
@@ -143,6 +144,12 @@ void MemoryWidget::RenderInternal()
 			}
 		}
 	}
+}
+
+
+REGISTER_WIDGET(memory)
+{
+	return NEW_OBJECT(allocator, MemoryWidget)();
 }
 
 

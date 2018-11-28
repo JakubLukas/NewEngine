@@ -36,12 +36,9 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "../external/imgui/imgui_internal.h"
 
-#include "editor/widgets/worlds_widget.h"////////////////////////////////////
-#include "editor/widgets/entities_widget.h"////////////////////////////////////
-#include "editor/widgets/entity_widget.h"////////////////////////////////////
-#include "editor/widgets/renderer_widget.h"////////////////////////////////////
-#include "editor/widgets/memory_widget.h"////////////////////////////////////
-//#include "editor/widgets/resource_manager_widget.h"
+#include "editor/event_queue.h"
+#include "editor/widget_base.h"
+#include "editor/widget_register.h"
 
 #include <core/os/win/simple_windows.h>
 
@@ -359,6 +356,8 @@ public:
 		, m_bgfxAllocator(m_allocator)
 		, m_imguiAllocator(m_allocator, true)
 		, m_inputKeyboardFilter(m_allocator)
+		, m_eventQueue(m_allocator)
+		, m_widgets(m_allocator)
 	{
 		m_allocator.SetDebugName("Editor");
 		m_engineAllocator.SetDebugName("Engine");
@@ -372,7 +371,6 @@ public:
 		InitEngine();
 
 		InitWidgets();
-		m_rendererWidget.Init(1);//////////////////////////
 
 		RenderScene* renderScene = static_cast<RenderScene*>(m_renderSystem->GetScene());
 		for (size_t i = 0; i < m_engine->GetWorldCount(); ++i)
@@ -399,16 +397,17 @@ public:
 		UpdateImguiInput(deltaTime);
 
 		m_engine->Update(deltaTime);
+		m_eventQueue.FrameUpdate();
 		
 		UpdateImgui();
 		RenderImgui();
 
-		if(m_rendererWidget.SizeChanged())
-		{
-			RenderScene* renderScene = static_cast<RenderScene*>(m_renderSystem->GetScene());
-			ImVec2 newSize = m_rendererWidget.GetSize();
-			renderScene->SetCameraScreenSize(m_camera, newSize.x, newSize.y);
-		}
+		//if(m_rendererWidget.SizeChanged())
+		//{
+		//	RenderScene* renderScene = static_cast<RenderScene*>(m_renderSystem->GetScene());
+		//	ImVec2 newSize = m_rendererWidget.GetSize();
+		//	renderScene->SetCameraScreenSize(m_camera, newSize.x, newSize.y);
+		//}
 
 		bgfx::frame();//flip buffers
 	}
@@ -604,20 +603,24 @@ public:
 
 	void InitWidgets()
 	{
-		m_worldsWidget.Init(m_allocator, *m_engine);
-		m_entitiesWidget.Init(m_allocator, *m_engine);
-		m_entityWidget.Init(m_allocator, *m_engine);
-		m_rendererWidget.Init(m_allocator, *m_engine);
-		m_memoryWidget.Init(m_allocator, *m_engine);
+		WidgetRegistry* registry = GetRegistries();
+
+		while (registry != nullptr)
+		{
+			WidgetBase* widget = registry->creator(m_allocator);
+			widget->Init(m_allocator, *m_engine);
+			m_widgets.PushBack(widget);
+			registry = registry->next;
+		}
 	}
 
 	void DeinitWidgets()
 	{
-		m_worldsWidget.Deinit();
-		m_entitiesWidget.Deinit();
-		m_entityWidget.Deinit();
-		m_rendererWidget.Deinit();
-		m_memoryWidget.Deinit();
+		for (WidgetBase* widget : m_widgets)
+		{
+			widget->Deinit();
+			DELETE_OBJECT(m_allocator, widget);
+		}
 	}
 
 	// ENGINE
@@ -814,24 +817,29 @@ public:
 
 		ImGui::RootDock(ImVec2(0, 0), ImGui::GetIO().DisplaySize);
 
+		for (WidgetBase* widget : m_widgets)
+		{
+			widget->Render(m_eventQueue);
+		}
+
 		//m_resourceManagerWidget.Render();
 
-		m_memoryWidget.Render();
-
-		m_rendererWidget.Render();
-
-		m_worldsWidget.Render();
-
-		World* world = m_engine->GetWorld(m_worldsWidget.GetSelected());
-		if (nullptr != world)
-			m_entitiesWidget.SetWorld(world);
-
-		m_entitiesWidget.Render();
-
-		if(m_entitiesWidget.GetSelected() != INVALID_ENTITY)
-			m_entityWidget.SetEntity(m_entitiesWidget.GetSelected());
-
-		m_entityWidget.Render();
+		//m_memoryWidget.Render();
+		//
+		//m_rendererWidget.Render();
+		//
+		//m_worldsWidget.Render();
+		//
+		//World* world = m_engine->GetWorld(m_worldsWidget.GetSelected());
+		//if (nullptr != world)
+		//	m_entitiesWidget.SetWorld(world);
+		//
+		//m_entitiesWidget.Render();
+		//
+		//if(m_entitiesWidget.GetSelected() != INVALID_ENTITY)
+		//	m_entityWidget.SetEntity(m_entitiesWidget.GetSelected());
+		//
+		//m_entityWidget.Render();
 
 		ImGui::Render();
 	}
@@ -1028,12 +1036,9 @@ private:
 	Input m_inputBuffer;
 	ImGuiContext* m_imgui;
 	//widgets
-	Editor::WorldsWidget m_worldsWidget;
-	Editor::EntitiesWidget m_entitiesWidget;
-	Editor::EntityWidget m_entityWidget;
-	Editor::RendererWidget m_rendererWidget;
-	Editor::MemoryWidget m_memoryWidget;
-	//Editor::ResourceManagerWidget m_resourceManagerWidget;
+
+	EventQueue m_eventQueue;
+	Array<WidgetBase*> m_widgets;
 
 	//bgfx for imgui
 	ImguiBgfxData m_imguiBgfxData;

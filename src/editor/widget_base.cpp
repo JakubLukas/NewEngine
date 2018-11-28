@@ -10,11 +10,11 @@ namespace Editor
 {
 
 
-void WidgetBase::Render()
+void WidgetBase::Render(EventQueue& queue)
 {
 	if (ImGui::BeginDock(GetName()))
 	{
-		RenderInternal();
+		RenderInternal(queue);
 	}
 	ImGui::EndDock();
 }

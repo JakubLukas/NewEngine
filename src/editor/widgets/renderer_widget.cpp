@@ -1,5 +1,6 @@
 #include "renderer_widget.h"
 
+#include "../widget_register.h"
 #include "core/engine.h"
 #include "renderer/renderer.h"
 
@@ -19,6 +20,7 @@ RendererWidget::~RendererWidget()
 void RendererWidget::Init(IAllocator& allocator, Engine& engine)
 {
 	m_renderer = static_cast<RenderSystem*>(engine.GetSystem("renderer"));
+	Init(1);//TODO
 }
 
 
@@ -45,7 +47,7 @@ void RendererWidget::Init(bgfx::ViewId viewId)
 }
 
 
-void RendererWidget::RenderInternal()
+void RendererWidget::RenderInternal(EventQueue& queue)
 {
 	if (nullptr == m_renderer)
 	{
@@ -77,6 +79,16 @@ void RendererWidget::OnResize()
 	bgfx::setViewRect(m_viewId, 0, 0, uint16_t(m_size.x), uint16_t(m_size.y));
 
 	m_renderer->Resize((i32)m_size.x, (i32)m_size.y);
+
+	//RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene());
+	//ImVec2 newSize = m_rendererWidget.GetSize();
+	//renderScene->SetCameraScreenSize(m_camera, newSize.x, newSize.y);
+}
+
+
+REGISTER_WIDGET(renderer)
+{
+	return NEW_OBJECT(allocator, RendererWidget)();
 }
 
 

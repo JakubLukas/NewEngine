@@ -1,7 +1,9 @@
 #include "entity_widget.h"
 
+#include "../widget_register.h"
 #include "../external/imgui/imgui.h"
 #include "core/engine.h"
+#include "core/world/world.h"
 #include "core/math/matrix.h"
 
 #include "renderer/renderer.h"///////////////
@@ -28,17 +30,35 @@ void EntityWidget::Deinit()
 {}
 
 
-void EntityWidget::SetEntity(Entity entity) { m_entity = entity; }
-
-
-void EntityWidget::RenderInternal()
+void EntityWidget::RenderInternal(EventQueue& queue)
 {
-	if(m_entity == INVALID_ENTITY)
+	for (size_t i = 0; i < queue.GetPullEventsSize(); ++i)
+	{
+		const Event* event = queue.PullEvents()[i];
+		if (event->type == EventType::SelectWorld)
+		{
+			const EventSelectWorld* eventWorld = (EventSelectWorld*)event;
+			m_world = m_engine->GetWorld(eventWorld->id);
+		}
+		else if (event->type == EventType::SelectEntity)
+		{
+			const EventSelectEntity* eventEntity = (EventSelectEntity*)event;
+			m_entity = eventEntity->entity;
+		}
+	}
+
+	if (m_world == nullptr)
+	{
+		ImGui::Text("No World selected");
 		return;
+	}
+	if (m_entity == INVALID_ENTITY)
+	{
+		ImGui::Text("No Entity selected");
+		return;
+	}
 
-	worldId world = (worldId)0;///////////////////////////////////
-
-	Transform& entityTrans = m_engine->GetWorld(world)->GetEntityTransform(m_entity);
+	Transform& entityTrans = m_world->GetEntityTransform(m_entity);
 	ImGui::Text("Transform");
 	ImGui::InputFloat3("position", &entityTrans.position.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
 	ImGui::InputFloat4("rotation", &entityTrans.rotation.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
@@ -46,9 +66,9 @@ void EntityWidget::RenderInternal()
 	
 	RenderSystem* renderer = static_cast<RenderSystem*>(m_engine->GetSystem("renderer"));
 	RenderScene* renderScene = static_cast<RenderScene*>(renderer->GetScene());
-	if(renderScene->HasCameraComponent(m_entity, world))
+	if(renderScene->HasCameraComponent(m_entity, m_world->GetId()))
 	{
-		const RenderScene::CameraItem* cameraItem = renderScene->GetCameraComponent(m_entity, world);
+		const RenderScene::CameraItem* cameraItem = renderScene->GetCameraComponent(m_entity, m_world->GetId());
 		const Camera& camera = cameraItem->camera;
 		ImGui::Text("Camera");
 		float near = camera.nearPlane;
@@ -60,9 +80,9 @@ void EntityWidget::RenderInternal()
 		ImGui::Separator();
 	}
 
-	if(renderScene->HasModelComponent(m_entity, world))
+	if(renderScene->HasModelComponent(m_entity, m_world->GetId()))
 	{
-		const RenderScene::ModelItem* modelItem = renderScene->GetModelComponent(m_entity, world);
+		const RenderScene::ModelItem* modelItem = renderScene->GetModelComponent(m_entity, m_world->GetId());
 		ImGui::Text("Model");
 		ModelManager& modelManager = renderer->GetModelManager();
 		MaterialManager& materialManager = renderer->GetMaterialManager();
@@ -76,6 +96,12 @@ void EntityWidget::RenderInternal()
 			ImGui::Text("Material %d", i);
 		}
 	}
+}
+
+
+REGISTER_WIDGET(entity)
+{
+	return NEW_OBJECT(allocator, EntityWidget)();
 }
 
 

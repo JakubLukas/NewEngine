@@ -1,5 +1,6 @@
 #include "worlds_widget.h"
 
+#include "../widget_register.h"
 #include "../external/imgui/imgui.h"
 #include "../external/imgui/imgui_internal.h"
 #include "core/engine.h"
@@ -35,7 +36,7 @@ worldId WorldsWidget::GetSelected() const
 }
 
 
-void WorldsWidget::RenderInternal()
+void WorldsWidget::RenderInternal(EventQueue& queue)
 {
 	size_t worldsCount = m_engine->GetWorldCount();
 	const World* worlds = m_engine->GetWorlds();
@@ -62,6 +63,9 @@ void WorldsWidget::RenderInternal()
 			if (ImGui::Selectable(item_text, item_selected))
 			{
 				m_selected = worlds[i].GetId();
+				EventSelectWorld event;
+				event.id = m_selected;
+				queue.PushEvent(event);
 			}
 			if (item_selected)
 				ImGui::SetItemDefaultFocus();
@@ -71,6 +75,12 @@ void WorldsWidget::RenderInternal()
 
 	ImGui::ListBoxFooter();
 	ImGui::PopItemWidth();
+}
+
+
+REGISTER_WIDGET(worlds)
+{
+	return NEW_OBJECT(allocator, WorldsWidget)();
 }
 
 

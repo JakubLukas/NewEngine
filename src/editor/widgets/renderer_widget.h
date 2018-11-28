@@ -27,7 +27,7 @@ public:
 	ImVec2 GetSize() const { return m_size; }//TODO: event
 
 protected:
-	void RenderInternal() override;
+	void RenderInternal(EventQueue& queue) override;
 	const char* GetName() const override { return "Renderer"; };
 
 private:
