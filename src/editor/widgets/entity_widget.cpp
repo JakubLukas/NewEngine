@@ -30,23 +30,27 @@ void EntityWidget::Deinit()
 {}
 
 
-void EntityWidget::RenderInternal(EventQueue& queue)
+void EntityWidget::Update(EventQueue& queue)
 {
-	for (size_t i = 0; i < queue.GetPullEventsSize(); ++i)
+	for(size_t i = 0; i < queue.GetPullEventsSize(); ++i)
 	{
 		const Event* event = queue.PullEvents()[i];
-		if (event->type == EventType::SelectWorld)
+		if(event->type == EventType::SelectWorld)
 		{
 			const EventSelectWorld* eventWorld = (EventSelectWorld*)event;
 			m_world = m_engine->GetWorld(eventWorld->id);
 		}
-		else if (event->type == EventType::SelectEntity)
+		else if(event->type == EventType::SelectEntity)
 		{
 			const EventSelectEntity* eventEntity = (EventSelectEntity*)event;
 			m_entity = eventEntity->entity;
 		}
 	}
+}
 
+
+void EntityWidget::RenderInternal(EventQueue& queue)
+{
 	if (m_world == nullptr)
 	{
 		ImGui::Text("No World selected");

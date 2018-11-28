@@ -19,6 +19,8 @@ public:
 	virtual ~WidgetBase() {}
 	virtual void Init(IAllocator& allocator, Engine& engine) = 0;
 	virtual void Deinit() = 0;
+
+	virtual void Update(EventQueue& queue) = 0;
 	void Render(EventQueue& queue);
 
 protected:

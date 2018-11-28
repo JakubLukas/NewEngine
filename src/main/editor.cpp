@@ -398,6 +398,11 @@ public:
 
 		m_engine->Update(deltaTime);
 		m_eventQueue.FrameUpdate();
+
+		for(WidgetBase* widget : m_widgets)
+		{
+			widget->Update(m_eventQueue);
+		}
 		
 		UpdateImgui();
 		RenderImgui();
@@ -821,25 +826,6 @@ public:
 		{
 			widget->Render(m_eventQueue);
 		}
-
-		//m_resourceManagerWidget.Render();
-
-		//m_memoryWidget.Render();
-		//
-		//m_rendererWidget.Render();
-		//
-		//m_worldsWidget.Render();
-		//
-		//World* world = m_engine->GetWorld(m_worldsWidget.GetSelected());
-		//if (nullptr != world)
-		//	m_entitiesWidget.SetWorld(world);
-		//
-		//m_entitiesWidget.Render();
-		//
-		//if(m_entitiesWidget.GetSelected() != INVALID_ENTITY)
-		//	m_entityWidget.SetEntity(m_entitiesWidget.GetSelected());
-		//
-		//m_entityWidget.Render();
 
 		ImGui::Render();
 	}

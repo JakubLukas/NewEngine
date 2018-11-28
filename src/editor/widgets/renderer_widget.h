@@ -22,6 +22,9 @@ public:
 	~RendererWidget() override;
 	void Init(IAllocator& allocator, Engine& engine) override;
 	void Deinit() override;
+
+	void Update(EventQueue& queue) override;
+
 	void Init(bgfx::ViewId viewId);//TODO: event
 	bool SizeChanged() const { return m_changedSize; }//TODO: event
 	ImVec2 GetSize() const { return m_size; }//TODO: event

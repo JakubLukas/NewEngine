@@ -52,9 +52,11 @@ void MemoryWidget::Init(IAllocator& allocator, Engine& engine)
 
 
 void MemoryWidget::Deinit()
-{
+{}
 
-}
+
+void MemoryWidget::Update(EventQueue& queue)
+{}
 
 
 void BuildAllocatorTree(const Array<AllocatorDebugData>& allocators, const IAllocator* parent, const IAllocator*& selected)

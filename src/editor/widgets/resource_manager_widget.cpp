@@ -27,6 +27,10 @@ void ResourceManagerWidget::Deinit()
 {}
 
 
+void ResourceManagerWidget::Update(EventQueue& queue)
+{}
+
+
 void ResourceManagerWidget::RenderInternal(EventQueue& queue)
 {
 	if (nullptr == m_manager)

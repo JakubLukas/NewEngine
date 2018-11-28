@@ -30,10 +30,8 @@ void WorldsWidget::Deinit()
 {}
 
 
-worldId WorldsWidget::GetSelected() const
-{
-	return m_selected;
-}
+void WorldsWidget::Update(EventQueue& queue)
+{}
 
 
 void WorldsWidget::RenderInternal(EventQueue& queue)

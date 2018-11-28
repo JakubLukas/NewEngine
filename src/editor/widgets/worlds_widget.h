@@ -19,7 +19,7 @@ public:
 	void Init(IAllocator& allocator, Engine& engine) override;
 	void Deinit() override;
 
-	worldId GetSelected() const;//TODO: event
+	void Update(EventQueue& queue) override;
 
 protected:
 	void RenderInternal(EventQueue& queue) override;

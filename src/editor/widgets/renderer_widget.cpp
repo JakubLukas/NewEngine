@@ -30,6 +30,10 @@ void RendererWidget::Deinit()
 }
 
 
+void RendererWidget::Update(EventQueue& queue)
+{}
+
+
 void RendererWidget::Init(bgfx::ViewId viewId)
 {
 	m_viewId = viewId;

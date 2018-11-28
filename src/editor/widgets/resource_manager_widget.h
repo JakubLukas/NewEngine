@@ -20,6 +20,8 @@ public:
 	void Init(IAllocator& allocator, Engine& engine) override;
 	void Deinit() override;
 
+	void Update(EventQueue& queue) override;
+
 protected:
 	void RenderInternal(EventQueue& queue) override;
 	const char* GetName() const override { return "ResourceManager"; };
