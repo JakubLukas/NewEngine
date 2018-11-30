@@ -371,16 +371,6 @@ public:
 		InitEngine();
 
 		InitWidgets();
-
-		RenderScene* renderScene = static_cast<RenderScene*>(m_renderSystem->GetScene());
-		for (size_t i = 0; i < m_engine->GetWorldCount(); ++i)
-		{
-			World& world = m_engine->GetWorlds()[i];
-			m_camera = world.CreateEntity();
-			Transform& camTrans = world.GetEntityTransform(m_camera);
-			camTrans.position = Vector3(0, 0, 35);
-			renderScene->AddCameraComponent(m_camera, world.GetId(), 60.0_deg, 0.001f, 100.0f);
-		}
 	}
 
 	void Deinit() override
@@ -406,13 +396,6 @@ public:
 		
 		UpdateImgui();
 		RenderImgui();
-
-		//if(m_rendererWidget.SizeChanged())
-		//{
-		//	RenderScene* renderScene = static_cast<RenderScene*>(m_renderSystem->GetScene());
-		//	ImVec2 newSize = m_rendererWidget.GetSize();
-		//	renderScene->SetCameraScreenSize(m_camera, newSize.x, newSize.y);
-		//}
 
 		bgfx::frame();//flip buffers
 	}
@@ -444,7 +427,7 @@ public:
 
 	void SetFocus(windowHandle handle, bool hasFocus) override
 	{
-		handle;///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		handle;///////////////////////////////////////////////////////////////////////
 		if (hasFocus)
 			m_inputEnabled = true;
 		else
@@ -722,11 +705,6 @@ public:
 		m_imgui = ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO();
 		io.IniFilename = nullptr;
-
-		io.KeyMap[ImGuiKey_Tab] = (int)KeyboardDevice::Button::Tab;
-		//io.KeyMap[ImGuiKey_LeftArrow]
-		io.KeyMap[ImGuiKey_Backspace] = 0x08;
-		io.KeyMap[ImGuiKey_Enter] = 0x0A;
 
 		io.KeyMap[ImGuiKey_Tab] = (int)KeyboardDevice::Button::Tab;
 		io.KeyMap[ImGuiKey_LeftArrow] = (int)KeyboardDevice::Button::ArrowLeft;
@@ -1013,9 +991,6 @@ private:
 	Engine* m_engine = nullptr;
 	bool m_inputEnabled = false;
 	AssociativeArray<inputDeviceHandle, InputKeyboardFiltering> m_inputKeyboardFilter;
-
-	//gameplay
-	Entity m_camera = INVALID_ENTITY;
 
 	//imgui
 	ProxyAllocator m_imguiAllocator;

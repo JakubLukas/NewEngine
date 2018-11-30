@@ -10,6 +10,7 @@
 namespace Veng
 {
 
+class Engine;
 class RenderSystem;
 
 
@@ -24,10 +25,6 @@ public:
 	void Deinit() override;
 
 	void Update(EventQueue& queue) override;
-
-	void Init(bgfx::ViewId viewId);//TODO: event
-	bool SizeChanged() const { return m_changedSize; }//TODO: event
-	ImVec2 GetSize() const { return m_size; }//TODO: event
 
 protected:
 	void RenderInternal(EventQueue& queue) override;
@@ -44,6 +41,9 @@ private:
 	bgfx::FrameBufferHandle m_fbh = BGFX_INVALID_HANDLE;
 	ImVec2 m_size = { 20, 20 };
 	bool m_changedSize = false;
+
+	Engine* m_engine = nullptr;
+	Entity m_camera = INVALID_ENTITY;
 };
 
 }

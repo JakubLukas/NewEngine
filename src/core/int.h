@@ -50,7 +50,7 @@ typedef u32 uintptr;
 #endif
 
 
-#define MIN_U32 0x0ull
+#define MIN_U32 0x0ul
 #define MAX_U32 0xFFFFffffu
 
 #define MIN_U64 0x0ull

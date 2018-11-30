@@ -1,13 +1,13 @@
 #pragma once
 
 #include "core/int.h"
+#include "core/entity.h"
 
 
 namespace Veng
 {
 
 enum class worldId : u32;
-enum class Entity : u64;
 
 class IAllocator;
 
@@ -21,6 +21,7 @@ enum EventType : u32
 {
 	SelectWorld,
 	SelectEntity,
+	SelectCamera,
 	ChangedSize,
 
 	Created,
@@ -53,6 +54,13 @@ struct EventSelectEntity : public Event
 	EventSelectEntity() : Event(EventType::SelectEntity, sizeof(EventSelectEntity)) {}
 
 	Entity entity;
+};
+
+struct EventSelectCamera : public Event
+{
+	EventSelectCamera() : Event(EventType::SelectCamera, sizeof(EventSelectCamera)) {}
+
+	Entity camera;
 };
 
 struct EventChangedSize : public Event

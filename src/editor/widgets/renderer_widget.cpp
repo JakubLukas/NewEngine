@@ -3,6 +3,8 @@
 #include "../widget_register.h"
 #include "core/engine.h"
 #include "renderer/renderer.h"
+#include "core/math/math.h"
+#include "core/math/matrix.h"
 
 
 namespace Veng
@@ -19,24 +21,9 @@ RendererWidget::~RendererWidget()
 
 void RendererWidget::Init(IAllocator& allocator, Engine& engine)
 {
+	m_engine = &engine;
 	m_renderer = static_cast<RenderSystem*>(engine.GetSystem("renderer"));
-	Init(1);//TODO
-}
-
-
-void RendererWidget::Deinit()
-{
-	bgfx::destroy(m_fbh);
-}
-
-
-void RendererWidget::Update(EventQueue& queue)
-{}
-
-
-void RendererWidget::Init(bgfx::ViewId viewId)
-{
-	m_viewId = viewId;
+	m_viewId = 1;
 
 	m_fbh = bgfx::createFrameBuffer(0, 0, bgfx::TextureFormat::Enum::RGB8);
 	bgfx::setViewFrameBuffer(m_viewId, m_fbh);
@@ -48,6 +35,36 @@ void RendererWidget::Init(bgfx::ViewId viewId)
 		, 1.0f
 		, 0
 	);
+
+	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene());
+	for (size_t i = 0; i < m_engine->GetWorldCount(); ++i)
+	{
+		World& world = m_engine->GetWorlds()[i];
+		m_camera = world.CreateEntity();
+		Transform& camTrans = world.GetEntityTransform(m_camera);
+		camTrans.position = Vector3(0, 0, 35);
+		renderScene->AddCameraComponent(m_camera, world.GetId(), 60.0_deg, 0.001f, 100.0f);
+	}
+}
+
+
+void RendererWidget::Deinit()
+{
+	bgfx::destroy(m_fbh);
+}
+
+
+void RendererWidget::Update(EventQueue& queue)
+{
+	for (size_t i = 0; i < queue.GetPullEventsSize(); ++i)
+	{
+		const Event* event = queue.PullEvents()[i];
+		if (event->type == EventType::SelectCamera)
+		{
+			const EventSelectCamera* eventCamera = (EventSelectCamera*)event;
+			m_camera = eventCamera->camera;
+		}
+	}
 }
 
 
@@ -83,10 +100,8 @@ void RendererWidget::OnResize()
 	bgfx::setViewRect(m_viewId, 0, 0, uint16_t(m_size.x), uint16_t(m_size.y));
 
 	m_renderer->Resize((i32)m_size.x, (i32)m_size.y);
-
-	//RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene());
-	//ImVec2 newSize = m_rendererWidget.GetSize();
-	//renderScene->SetCameraScreenSize(m_camera, newSize.x, newSize.y);
+	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene());
+	renderScene->SetCameraScreenSize(m_camera, m_size.x, m_size.y);
 }
 
 
