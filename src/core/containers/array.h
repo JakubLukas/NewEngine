@@ -82,4 +82,4 @@ private:
 }
 
 
-#include "array.inl"
+#include "internal/array.inl"
