@@ -33,8 +33,12 @@ public:
 		, m_renderSystem(renderSystem)
 		, m_models(m_allocator)
 		, m_cameras(m_allocator)
+		, m_componentInfos(m_allocator)
 	{
-
+		ComponentInfo& compInfoModel = m_componentInfos.PushBack();
+		compInfoModel.handle = componentHandle(m_componentInfos.GetSize() - 1);
+		compInfoModel.name = "model";
+		//compInfoModel.values
 	}
 
 	~RenderSceneImpl() override
@@ -50,6 +54,39 @@ public:
 	{
 
 	}
+
+
+
+
+	size_t GetComponentCount() const override { return m_componentInfos.GetSize(); }
+
+	const ComponentInfo* GetComponents() const override { return m_componentInfos.Begin(); }
+
+	const ComponentInfo* GetComponentInfo(componentHandle handle) const override { return &m_componentInfos[(size_t)handle]; }
+
+
+	void AddComponent(componentHandle handle, Entity entity, worldId world) override
+	{
+		u8 type = (u8)handle;
+		switch (type)
+		{
+		case 0: //model
+			break;
+		case 1: //camera
+			break;
+		default:
+			ASSERT2(false, "Unrecognized componentHandle");
+			break;
+		}
+	}
+
+	void RemoveComponent(componentHandle handle, Entity entity, worldId world) override = 0;
+	void HasComponent(componentHandle handle, Entity entity, worldId world) const override = 0;
+	void* GetComponentData(componentHandle handle, Entity entity, worldId world) const override = 0;
+	void SetComponentData(componentHandle handle, Entity entity, worldId world, void* data) override = 0;
+
+
+
 
 
 	void AddModelComponent(Entity entity, worldId world, const Path& path) override
@@ -170,6 +207,7 @@ public:
 private:
 	IAllocator& m_allocator;
 	RenderSystem& m_renderSystem;
+	Array<ComponentInfo> m_componentInfos;
 
 	AssociativeArray<Entity, ModelItem> m_models;
 	AssociativeArray<Entity, CameraItem> m_cameras;

@@ -29,7 +29,8 @@ struct Mesh
 struct Model : public Resource
 {
 	Model(IAllocator& allocator)
-		: meshes(allocator)
+		: Resource(ResourceType::Model)
+		, meshes(allocator)
 	{}
 	~Model()
 	{}

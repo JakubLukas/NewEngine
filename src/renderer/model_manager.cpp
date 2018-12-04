@@ -71,7 +71,8 @@ const Model* ModelManager::GetResource(modelHandle handle) const
 
 Resource* ModelManager::CreateResource()
 {
-	return NEW_OBJECT(m_allocator, Model)(m_allocator);
+	Resource* res = NEW_OBJECT(m_allocator, Model)(m_allocator);
+	return res;
 }
 
 

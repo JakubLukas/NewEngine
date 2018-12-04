@@ -41,6 +41,21 @@ public:
 
 	virtual void Update(float deltaTime) override = 0;
 
+
+
+	virtual size_t GetComponentCount() const override = 0;
+	virtual const ComponentInfo* GetComponents() const override = 0;
+	virtual const ComponentInfo* GetComponentInfo(componentHandle handle) const override = 0;
+
+	virtual void AddComponent(componentHandle handle, Entity entity, worldId world) override = 0;
+	virtual void RemoveComponent(componentHandle handle, Entity entity, worldId world) override = 0;
+	virtual void HasComponent(componentHandle handle, Entity entity, worldId world) const override = 0;
+	virtual void* GetComponentData(componentHandle handle, Entity entity, worldId world) const override = 0;
+	virtual void SetComponentData(componentHandle handle, Entity entity, worldId world, void* data) override = 0;
+
+
+
+
 	virtual void AddModelComponent(Entity entity, worldId world, const Path& path) = 0;
 	virtual void RemoveModelComponent(Entity entity, worldId world) = 0;
 	virtual bool HasModelComponent(Entity entity, worldId world) const = 0;

@@ -15,9 +15,11 @@ struct ComponentInfo
 {
 	enum class ValueType : u8
 	{
+		ResourceHandle,
 		Int,
 		Float,
-		String
+		String,
+		Text,
 	};
 
 	struct Value
@@ -46,8 +48,8 @@ public:
 	virtual void AddComponent(componentHandle handle, Entity entity, worldId world) = 0;
 	virtual void RemoveComponent(componentHandle handle, Entity entity, worldId world) = 0;
 	virtual void HasComponent(componentHandle handle, Entity entity, worldId world) const = 0;
-	virtual void* GetComponentData(componentHandle handle, Entity entity, worldId world) const = 0; //serialize
-	virtual void SetComponentData(componentHandle handle, Entity entity, worldId world, void* data) = 0; //deserialize
+	virtual void* GetComponentData(componentHandle handle, Entity entity, worldId world) const = 0;
+	virtual void SetComponentData(componentHandle handle, Entity entity, worldId world, void* data) = 0;
 };
 
 

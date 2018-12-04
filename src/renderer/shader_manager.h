@@ -17,6 +17,8 @@ enum class shaderInternalHandle : u64 {};
 
 struct ShaderInternal : public Resource
 {
+	ShaderInternal() : Resource(ResourceType::ShaderInternal) {}
+
 	bgfx::ShaderHandle handle = BGFX_INVALID_HANDLE;
 };
 
@@ -30,6 +32,8 @@ struct ShaderProgramInternal
 
 struct Shader : public Resource
 {
+	Shader() : Resource(ResourceType::Shader) {}
+
 	//char* fileContent = nullptr;
 	shaderInternalHandle vsHandle;
 	shaderInternalHandle fsHandle;
