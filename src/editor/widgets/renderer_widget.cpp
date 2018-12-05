@@ -43,7 +43,16 @@ void RendererWidget::Init(IAllocator& allocator, Engine& engine)
 		m_camera = world.CreateEntity();
 		Transform& camTrans = world.GetEntityTransform(m_camera);
 		camTrans.position = Vector3(0, 0, 35);
-		renderScene->AddCameraComponent(m_camera, world.GetId(), 60.0_deg, 0.001f, 100.0f);
+		Camera cam
+		{
+			60.0_deg,
+			0.001f,
+			100.0f,
+			800.0f,
+			600.0f,
+		};
+		renderScene->AddComponent(componentHandle(1), m_camera, world.GetId());
+		renderScene->SetComponentData(componentHandle(1), m_camera, world.GetId(), &cam);
 	}
 }
 
@@ -101,7 +110,10 @@ void RendererWidget::OnResize()
 
 	m_renderer->Resize((i32)m_size.x, (i32)m_size.y);
 	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene());
-	renderScene->SetCameraScreenSize(m_camera, m_size.x, m_size.y);
+	Camera* cam = (Camera*)renderScene->GetComponentData(componentHandle(1), m_camera, worldId(0));
+	cam->screenWidth = m_size.x;
+	cam->screenHeight = m_size.y;
+	renderScene->SetComponentData(componentHandle(1), m_camera, worldId(0), &cam);
 }
 
 

@@ -11,6 +11,7 @@ namespace Veng
 
 
 enum class textureHandle : u64 {};
+const textureHandle INVALID_TEXTURE_HANDLE = (textureHandle)0;
 
 
 struct Texture : public Resource

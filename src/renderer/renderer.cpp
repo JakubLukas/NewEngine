@@ -28,6 +28,13 @@ static const unsigned short VIEW_ID = 1;
 class RenderSceneImpl : public RenderScene
 {
 public:
+	enum : u8
+	{
+		COMPONENT_MODEL = 0,
+		COMPONENT_CAMERA = 1,
+	};
+
+public:
 	RenderSceneImpl(IAllocator& allocator, RenderSystem& renderSystem)
 		: m_allocator(allocator)
 		, m_renderSystem(renderSystem)
@@ -35,10 +42,21 @@ public:
 		, m_cameras(m_allocator)
 		, m_componentInfos(m_allocator)
 	{
-		ComponentInfo& compInfoModel = m_componentInfos.PushBack();
-		compInfoModel.handle = componentHandle(m_componentInfos.GetSize() - 1);
-		compInfoModel.name = "model";
-		//compInfoModel.values
+		ComponentInfo* compInfoModel;
+
+		compInfoModel = &m_componentInfos.EmplaceBack(m_allocator);
+		compInfoModel->handle = (componentHandle)COMPONENT_MODEL;
+		compInfoModel->name = "model";
+		compInfoModel->values.PushBack({ ComponentInfo::ValueType::ResourceHandle, "model handle" });
+
+		compInfoModel = &m_componentInfos.EmplaceBack(m_allocator);
+		compInfoModel->handle = (componentHandle)COMPONENT_CAMERA;
+		compInfoModel->name = "camera";
+		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "fov" });
+		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "near plane" });
+		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "far plane" });
+		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "screen width" });
+		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "screen height" });
 	}
 
 	~RenderSceneImpl() override
@@ -67,29 +85,93 @@ public:
 
 	void AddComponent(componentHandle handle, Entity entity, worldId world) override
 	{
-		u8 type = (u8)handle;
-		switch (type)
+		switch ((u8)handle)
 		{
-		case 0: //model
+		case COMPONENT_MODEL:
+			m_models.Insert(entity, { entity, INVALID_MODEL_HANDLE });
 			break;
-		case 1: //camera
+		case COMPONENT_CAMERA:
+			m_cameras.Insert(entity, { entity, Camera() });
 			break;
 		default:
 			ASSERT2(false, "Unrecognized componentHandle");
-			break;
 		}
 	}
 
-	void RemoveComponent(componentHandle handle, Entity entity, worldId world) override = 0;
-	void HasComponent(componentHandle handle, Entity entity, worldId world) const override = 0;
-	void* GetComponentData(componentHandle handle, Entity entity, worldId world) const override = 0;
-	void SetComponentData(componentHandle handle, Entity entity, worldId world, void* data) override = 0;
+	void RemoveComponent(componentHandle handle, Entity entity, worldId world) override
+	{
+		switch ((u8)handle)
+		{
+		case COMPONENT_MODEL:
+			m_models.Erase(entity);
+			break;
+		case COMPONENT_CAMERA:
+			m_cameras.Erase(entity);
+			break;
+		default:
+			ASSERT2(false, "Unrecognized componentHandle");
+		}
+	}
+
+	bool HasComponent(componentHandle handle, Entity entity, worldId world) const override
+	{
+		switch ((u8)handle)
+		{
+		case COMPONENT_MODEL:
+			ModelItem* model;
+			return m_models.Find(entity, model);
+		case COMPONENT_CAMERA:
+			CameraItem* cam;
+			return m_cameras.Find(entity, cam);
+		default:
+			ASSERT2(false, "Unrecognized componentHandle");
+			return false;
+		}
+	}
+
+	void* GetComponentData(componentHandle handle, Entity entity, worldId world) const override
+	{
+		switch ((u8)handle)
+		{
+		case COMPONENT_MODEL:
+			ModelItem* model;
+			ASSERT2(m_models.Find(entity, model), "Component not found");
+			return &model->handle;
+		case COMPONENT_CAMERA:
+			CameraItem* cam;
+			ASSERT2(m_cameras.Find(entity, cam), "Component not found");
+			return &cam->camera;
+		default:
+			ASSERT2(false, "Unrecognized componentHandle");
+			return nullptr;
+		}
+	}
+
+	void SetComponentData(componentHandle handle, Entity entity, worldId world, void* data) override
+	{
+		switch ((u8)handle)
+		{
+		case COMPONENT_MODEL:
+			ModelItem* model;
+			ASSERT2(m_models.Find(entity, model), "Component not found");
+			model->handle = *(modelHandle*)data;
+			break;
+		case COMPONENT_CAMERA:
+			CameraItem* cam;
+			ASSERT2(m_cameras.Find(entity, cam), "Component not found");
+			memory::Move(&cam->camera, data, sizeof(Camera));
+			cam->camera.aspect = cam->camera.screenWidth / cam->camera.screenHeight;
+			break;
+		default:
+			ASSERT2(false, "Unrecognized componentHandle");
+		}
+	}
 
 
 
 
 
-	void AddModelComponent(Entity entity, worldId world, const Path& path) override
+	/*void AddModelComponent(Entity entity, worldId world, const Path& path) override
 	{
 		modelHandle handle = m_renderSystem.GetModelManager().Load(path);
 		m_models.Insert(entity, { entity, handle });
@@ -113,7 +195,7 @@ public:
 			return model;
 		else
 			return nullptr;
-	}
+	}*/
 
 	size_t GetModelsCount(worldId world) const override
 	{
@@ -126,7 +208,7 @@ public:
 	}
 
 
-	void AddCameraComponent(Entity entity, worldId world, float fovY, float near, float far) override
+	/*void AddCameraComponent(Entity entity, worldId world, float fovY, float near, float far) override
 	{
 		Camera cam;
 		cam.fov = fovY;
@@ -184,7 +266,7 @@ public:
 			cam->camera.screenHeight = height;
 			cam->camera.aspect = width / height;
 		}
-	}
+	}*/
 
 	size_t GetCamerasCount(worldId world) const override
 	{

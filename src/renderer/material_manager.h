@@ -14,6 +14,7 @@ namespace Veng
 
 
 enum class materialHandle : u64 {};
+const materialHandle INVALID_MATERIAL_HANDLE = (materialHandle)0;
 
 
 struct Material : public Resource

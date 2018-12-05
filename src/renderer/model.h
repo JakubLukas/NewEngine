@@ -4,7 +4,7 @@
 #include "core/resource/resource.h"
 #include "material_manager.h"
 
-#include <bgfx/bgfx.h>
+#include <../external/bgfx/include/bgfx/bgfx.h>//should be just <bgfx/bgfx.h> but this header is used in script system, and that doesn't include ../../external/bgfx/include
 
 
 namespace Veng

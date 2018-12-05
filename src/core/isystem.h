@@ -1,6 +1,7 @@
 #pragma once
 
 #include "int.h"
+#include "iallocator.h"
 #include "containers/array.h"
 
 #include "core/world/world.h"
@@ -28,6 +29,8 @@ struct ComponentInfo
 		const char* name;
 	};
 
+	ComponentInfo(IAllocator& allocator) : values(allocator) {}
+
 	componentHandle handle;
 	const char* name;
 	Array<Value> values;
@@ -47,7 +50,7 @@ public:
 
 	virtual void AddComponent(componentHandle handle, Entity entity, worldId world) = 0;
 	virtual void RemoveComponent(componentHandle handle, Entity entity, worldId world) = 0;
-	virtual void HasComponent(componentHandle handle, Entity entity, worldId world) const = 0;
+	virtual bool HasComponent(componentHandle handle, Entity entity, worldId world) const = 0;
 	virtual void* GetComponentData(componentHandle handle, Entity entity, worldId world) const = 0;
 	virtual void SetComponentData(componentHandle handle, Entity entity, worldId world, void* data) = 0;
 };

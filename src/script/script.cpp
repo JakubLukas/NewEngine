@@ -5,6 +5,7 @@
 
 #include "core/world/world.h"//////////////
 #include "renderer/renderer.h"////////////
+#include "renderer/model_manager.h"/////////////////////////////
 #include "core/math/math.h"///////////////////
 #include "core/file/path.h"/////////////
 #include "core/math/quaternion.h"///////////
@@ -32,6 +33,7 @@ public:
 	{
 		m_world = m_engine.AddWorld();
 		World* world = m_engine.GetWorld(m_world);
+		RenderSystem* renderSystem = (RenderSystem*)m_engine.GetSystem("renderer");
 		RenderScene* renderScene = static_cast<RenderScene*>(m_engine.GetSystem("renderer")->GetScene());
 
 		int i = 0;
@@ -41,10 +43,18 @@ public:
 			{
 				m_entities[i] = world->CreateEntity();
 				Transform& trans = world->GetEntityTransform(m_entities[i]);
-				if(i % 2 == 0)
-					renderScene->AddModelComponent(m_entities[i], m_world, "models/cubes.model");
+				if (i % 2 == 0)
+				{
+					renderScene->AddComponent(componentHandle(0), m_entities[i], m_world);
+					modelHandle handle = renderSystem->GetModelManager().Load("models/cubes.model");
+					renderScene->SetComponentData(componentHandle(0), m_entities[i], m_world, &handle);
+				}
 				else
-					renderScene->AddModelComponent(m_entities[i], m_world, "models/pyramid.model");
+				{
+					renderScene->AddComponent(componentHandle(0), m_entities[i], m_world);
+					modelHandle handle = renderSystem->GetModelManager().Load("models/pyramid.model");
+					renderScene->SetComponentData(componentHandle(0), m_entities[i], m_world, &handle);
+				}
 
 				Quaternion rot = Quaternion::IDENTITY;
 				rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);

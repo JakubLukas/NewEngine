@@ -12,6 +12,7 @@ namespace Veng
 
 
 enum class modelHandle : u64 {};
+const modelHandle INVALID_MODEL_HANDLE = (modelHandle)0;
 
 
 class ModelManager final : public ResourceManager

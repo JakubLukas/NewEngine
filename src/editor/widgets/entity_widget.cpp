@@ -49,6 +49,19 @@ void EntityWidget::Update(EventQueue& queue)
 }
 
 
+/*void RenderValue(ComponentInfo::Value value, void* data)
+{
+	switch (value.type)
+	{
+	ComponentInfo::ValueType::ResourceHandle:
+		ImGui::Text("Resource handle: %s %d", value.name);
+		break;
+	default:
+		break;
+	}
+}*/
+
+
 void EntityWidget::RenderInternal(EventQueue& queue)
 {
 	if (m_world == nullptr)
@@ -70,10 +83,16 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 	
 	RenderSystem* renderer = static_cast<RenderSystem*>(m_engine->GetSystem("renderer"));
 	RenderScene* renderScene = static_cast<RenderScene*>(renderer->GetScene());
-	if(renderScene->HasCameraComponent(m_entity, m_world->GetId()))
+
+	for (int i = 0; i < renderScene->GetComponentCount(); ++i)
 	{
-		const RenderScene::CameraItem* cameraItem = renderScene->GetCameraComponent(m_entity, m_world->GetId());
-		const Camera& camera = cameraItem->camera;
+		const ComponentInfo& info = renderScene->GetComponents()[i];
+	}
+
+	if(renderScene->HasComponent(componentHandle(1), m_entity, m_world->GetId()))
+	{
+		void* cameraData = renderScene->GetComponentData(componentHandle(1), m_entity, m_world->GetId());
+		const Camera& camera = *(Camera*)cameraData;
 		ImGui::Text("Camera");
 		float near = camera.nearPlane;
 		ImGui::InputFloat("near plane", &near, 0.1f, 1.0f, "%.3f");
@@ -84,13 +103,13 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 		ImGui::Separator();
 	}
 
-	if(renderScene->HasModelComponent(m_entity, m_world->GetId()))
+	if(renderScene->HasComponent(componentHandle(0), m_entity, m_world->GetId()))
 	{
-		const RenderScene::ModelItem* modelItem = renderScene->GetModelComponent(m_entity, m_world->GetId());
+		void* modelData = renderScene->GetComponentData(componentHandle(0), m_entity, m_world->GetId());
 		ImGui::Text("Model");
 		ModelManager& modelManager = renderer->GetModelManager();
 		MaterialManager& materialManager = renderer->GetMaterialManager();
-		const Model* model = modelManager.GetResource(modelItem->handle);
+		const Model* model = modelManager.GetResource(*(modelHandle*)modelData);
 
 		for(int i = 0; i < model->meshes.GetSize(); ++i)
 		{
