@@ -1,10 +1,7 @@
 #pragma once
 
-#include "core/resource/resource.h"
 #include "core/resource/resource_manager.h"
-
-#include "shader_manager.h"
-#include "texture_manager.h"
+#include "material.h"
 
 #include "core/containers/array.h"
 
@@ -13,43 +10,22 @@ namespace Veng
 {
 
 
-enum class materialHandle : u64 {};
-const materialHandle INVALID_MATERIAL_HANDLE = (materialHandle)0;
-
-
-struct Material : public Resource
-{
-	Material()
-		: Resource(ResourceType::Material)
-	{
-		for (size_t i = 0; i < Material::MAX_TEXTURES; ++i)
-			textures[i] = (textureHandle)INVALID_HANDLE;
-	}
-
-	shaderHandle shader;
-	static const size_t MAX_TEXTURES = 4;
-	textureHandle textures[MAX_TEXTURES];
-	//Uniforms?
-	//commandBuffer*
-};
-
-
 class MaterialManager final : public ResourceManager
 {
 private:
 	struct MaterialLoadingOp
 	{
-		materialHandle material;
-		shaderHandle shader;
-		bool shaderLoaded = false;
-		textureHandle textures[Material::MAX_TEXTURES];
-		bool texturesLoaded[Material::MAX_TEXTURES] = { false };//use bitfields
-
 		MaterialLoadingOp()
 		{
 			for (size_t i = 0; i < Material::MAX_TEXTURES; ++i)
 				textures[i] = (textureHandle)INVALID_HANDLE;
 		}
+
+		materialHandle material;
+		shaderHandle shader;
+		textureHandle textures[Material::MAX_TEXTURES];
+		u8 shaderLoaded = 0;
+		u8 texturesLoaded = 0;
 	};
 
 public:

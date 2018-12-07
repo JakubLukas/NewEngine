@@ -3,7 +3,7 @@
 #include "core/file/blob.h"
 #include "core/file/clob.h"
 
-#include <bgfx/bgfx.h>
+#include "renderer.h"
 
 
 namespace Veng
@@ -21,28 +21,14 @@ inline static resourceHandle ModelToGenericHandle(modelHandle handle)
 }
 
 
-struct PosColorVertex
-{
-	float x;
-	float y;
-	float z;
-	u32 abgr;
-	float u0;
-	float v0;
-};
-
-
-ModelManager::ModelManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
+ModelManager::ModelManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager, RenderSystem* renderSystem)
 	: ResourceManager(allocator, fileSystem, depManager)
-{
-
-}
+	, m_renderSystem(renderSystem)
+{}
 
 
 ModelManager::~ModelManager()
-{
-
-}
+{}
 
 
 modelHandle ModelManager::Load(const Path& path)
@@ -82,8 +68,7 @@ void ModelManager::DestroyResource(Resource* resource)
 
 	for (Mesh& mesh : model->meshes)
 	{
-		bgfx::destroy(mesh.vertexBufferHandle);
-		bgfx::destroy(mesh.indexBufferHandle);
+		m_renderSystem->DestroyMeshData(mesh.renderDataHandle);
 		m_depManager->UnloadResource(ResourceType::Material, static_cast<resourceHandle>(mesh.material));
 	}
 
@@ -100,61 +85,16 @@ void ModelManager::ReloadResource(Resource* resource)
 void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
 	Model* model = static_cast<Model*>(ResourceManager::GetResource(handle));
+	
+	Mesh mesh = model->meshes.PushBack();
+
+	mesh.renderDataHandle = m_renderSystem->CreateMeshData(data);
+
 	InputClob dataText(data);
-
-	Mesh mesh;
-
-	mesh.m_vertex_decl
-		.begin()
-		.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-		.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
-		.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
-		.end();
-
-	int verticesCount;
-	ASSERT(dataText.Read(verticesCount));
-
-	u32 verticesBufferSize = verticesCount * sizeof(PosColorVertex);
-	PosColorVertex* vertices = (PosColorVertex*)m_allocator.Allocate(verticesBufferSize, alignof(PosColorVertex));
-	for(int i = 0; i < verticesCount; ++i)
-	{
-		ASSERT(dataText.Read(vertices[i].x));
-		dataText.Skip(1);
-		ASSERT(dataText.Read(vertices[i].y));
-		dataText.Skip(1);
-		ASSERT(dataText.Read(vertices[i].z));
-		dataText.Skip(1);
-		ASSERT(dataText.Read(vertices[i].abgr));
-		dataText.Skip(1);
-		ASSERT(dataText.Read(vertices[i].u0));
-		dataText.Skip(1);
-		ASSERT(dataText.Read(vertices[i].v0));
-	}
-
-	int indicesCount;
-	ASSERT(dataText.Read(indicesCount));
-	indicesCount *= 3;
-
-	u32 indicesBufferSize = indicesCount * sizeof(u16);
-	u16* indices = (u16*)m_allocator.Allocate(indicesBufferSize, alignof(u16));
-	for(int i = 0; i < indicesCount; ++i)
-	{
-		int num;
-		ASSERT(dataText.Read(num));
-		indices[i] = (u16)num;
-	}
-
-	mesh.vertexBufferHandle = bgfx::createVertexBuffer(bgfx::copy(vertices, verticesBufferSize), mesh.m_vertex_decl);
-	mesh.indexBufferHandle = bgfx::createIndexBuffer(bgfx::copy(indices, indicesBufferSize));
-
-	m_allocator.Deallocate(vertices);
-	m_allocator.Deallocate(indices);
 
 	char materialPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(dataText.ReadLine(materialPath, Path::MAX_LENGTH));
 	mesh.material = static_cast<materialHandle>(m_depManager->LoadResource(ResourceType::Model, ResourceType::Material, Path(materialPath)));
-
-	model->meshes.PushBack(mesh);
 }
 
 

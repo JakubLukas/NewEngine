@@ -3,6 +3,7 @@
 #include "core/file/blob.h"
 #include "core/memory.h"
 #include "core/allocators.h"
+#include "core/asserts.h"
 
 
 static Veng::ProxyAllocator* stbImageAllocator = nullptr;
@@ -25,6 +26,7 @@ static void stbImageDealloc(void* ptr)
 #define STBI_MALLOC stbImageAlloc
 #define STBI_REALLOC stbImageRealloc
 #define STBI_FREE stbImageDealloc
+#define STBI_ASSERT(x) ASSERT(x)
 #define STBI_NO_STDIO
 #define STB_IMAGE_STATIC
 #define STB_IMAGE_IMPLEMENTATION

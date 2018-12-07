@@ -15,6 +15,8 @@
 #include "texture_manager.h"
 
 #include <bgfx/bgfx.h>///////////////
+#include "core/file/blob.h"//////////////////////
+#include "core/file/clob.h"//////////////////////
 
 #include "core/math/math.h"
 #include "camera.h"
@@ -24,6 +26,26 @@ namespace Veng
 {
 
 static const unsigned short VIEW_ID = 1;
+
+
+struct MeshData
+{
+	bgfx::VertexDecl m_vertex_decl;
+	bgfx::VertexBufferHandle vertexBufferHandle;
+	bgfx::IndexBufferHandle indexBufferHandle;
+};
+
+
+struct PosColorVertex ///////////////////this must be dynamic in future
+{
+	float x;
+	float y;
+	float z;
+	u32 abgr;
+	float u0;
+	float v0;
+};
+
 
 class RenderSceneImpl : public RenderScene
 {
@@ -305,8 +327,13 @@ public:
 	RenderSystemImpl(Engine& engine)
 		: m_allocator(engine.GetAllocator())
 		, m_engine(engine)
+		, m_meshData(m_allocator)
 	{
 		m_allocator.SetDebugName("Renderer");
+
+		MeshData& invalidMeshData = m_meshData.PushBack();
+		invalidMeshData.vertexBufferHandle = BGFX_INVALID_HANDLE;
+		invalidMeshData.indexBufferHandle = BGFX_INVALID_HANDLE;
 
 		m_shaderInternalManager = static_cast<ShaderInternalManager*>(m_engine.GetResourceManager(ResourceType::ShaderInternal));
 		m_shaderManager = static_cast<ShaderManager*>(m_engine.GetResourceManager(ResourceType::Shader));
@@ -378,8 +405,9 @@ public:
 					const Material* material = m_materialManager->GetResource(mesh.material);
 					if(material->GetState() == Resource::State::Ready)
 					{
-						bgfx::setVertexBuffer(0, mesh.vertexBufferHandle);
-						bgfx::setIndexBuffer(mesh.indexBufferHandle);
+						MeshData& meshData = m_meshData[(size_t)mesh.renderDataHandle];
+						bgfx::setVertexBuffer(0, meshData.vertexBufferHandle);
+						bgfx::setIndexBuffer(meshData.indexBufferHandle);
 
 						const Texture* texture = m_textureManager->GetResource(material->textures[0]);
 						bgfx::setTexture(0, m_uniformTextureColor, texture->handle);
@@ -410,6 +438,69 @@ public:
 	TextureManager& GetTextureManager() const override { return *m_textureManager; }
 
 
+	meshRenderHandle CreateMeshData(InputBlob& data) override
+	{
+		InputClob dataText(data);
+
+		MeshData& meshData = m_meshData.PushBack();
+
+		meshData.m_vertex_decl
+			.begin()
+			.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
+			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
+			.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
+			.end();
+
+		int verticesCount;
+		ASSERT(dataText.Read(verticesCount));
+
+		u32 verticesBufferSize = verticesCount * sizeof(PosColorVertex);
+		PosColorVertex* vertices = (PosColorVertex*)m_allocator.Allocate(verticesBufferSize, alignof(PosColorVertex));
+		for (int i = 0; i < verticesCount; ++i)
+		{
+			ASSERT(dataText.Read(vertices[i].x));
+			dataText.Skip(1);
+			ASSERT(dataText.Read(vertices[i].y));
+			dataText.Skip(1);
+			ASSERT(dataText.Read(vertices[i].z));
+			dataText.Skip(1);
+			ASSERT(dataText.Read(vertices[i].abgr));
+			dataText.Skip(1);
+			ASSERT(dataText.Read(vertices[i].u0));
+			dataText.Skip(1);
+			ASSERT(dataText.Read(vertices[i].v0));
+		}
+
+		int indicesCount;
+		ASSERT(dataText.Read(indicesCount));
+		indicesCount *= 3;
+
+		u32 indicesBufferSize = indicesCount * sizeof(u16);
+		u16* indices = (u16*)m_allocator.Allocate(indicesBufferSize, alignof(u16));
+		for (int i = 0; i < indicesCount; ++i)
+		{
+			int num;
+			ASSERT(dataText.Read(num));
+			indices[i] = (u16)num;
+		}
+
+		meshData.vertexBufferHandle = bgfx::createVertexBuffer(bgfx::copy(vertices, verticesBufferSize), meshData.m_vertex_decl);
+		meshData.indexBufferHandle = bgfx::createIndexBuffer(bgfx::copy(indices, indicesBufferSize));
+
+		m_allocator.Deallocate(vertices);
+		m_allocator.Deallocate(indices);
+
+		return meshRenderHandle(m_meshData.GetSize() - 1);
+	}
+
+	void DestroyMeshData(meshRenderHandle handle) override
+	{
+		MeshData& data = m_meshData[(size_t)handle];
+		bgfx::destroy(data.vertexBufferHandle);
+		bgfx::destroy(data.indexBufferHandle);
+	}
+
+
 	void Resize(u32 width, u32 height) override
 	{
 		m_width = width;
@@ -426,6 +517,7 @@ private:
 	ProxyAllocator m_allocator;//must be first
 	Engine& m_engine;
 	RenderSceneImpl* m_scene;
+	Array<MeshData> m_meshData;
 
 	ShaderInternalManager* m_shaderInternalManager = nullptr;
 	ShaderManager* m_shaderManager = nullptr;

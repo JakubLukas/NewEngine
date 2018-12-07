@@ -3,7 +3,9 @@
 #include "core/int.h"
 #include "core/isystem.h"
 #include "core/world/world.h"
-#include "camera.h"////////////////////////////////
+#include "model.h"
+#include "camera.h"
+#include "texture.h"
 
 
 namespace Veng
@@ -12,13 +14,13 @@ namespace Veng
 class IAllocator;
 class Engine;
 struct Path;
+class InputBlob;
 
 class RenderSystem;
 class MaterialManager;
 class ShaderManager;
 class ModelManager;
 class TextureManager;
-enum class modelHandle : u64;
 
 
 class RenderScene : public IScene
@@ -41,8 +43,6 @@ public:
 
 	virtual void Update(float deltaTime) override = 0;
 
-
-
 	virtual size_t GetComponentCount() const override = 0;
 	virtual const ComponentInfo* GetComponents() const override = 0;
 	virtual const ComponentInfo* GetComponentInfo(componentHandle handle) const override = 0;
@@ -53,23 +53,9 @@ public:
 	virtual void* GetComponentData(componentHandle handle, Entity entity, worldId world) const override = 0;
 	virtual void SetComponentData(componentHandle handle, Entity entity, worldId world, void* data) override = 0;
 
-
-
-
-	//virtual void AddModelComponent(Entity entity, worldId world, const Path& path) = 0;
-	//virtual void RemoveModelComponent(Entity entity, worldId world) = 0;
-	//virtual bool HasModelComponent(Entity entity, worldId world) const = 0;
-	//virtual const ModelItem* GetModelComponent(Entity entity, worldId world) const = 0;
 	virtual size_t GetModelsCount(worldId world) const = 0;
 	virtual const ModelItem* GetModels(worldId world) const = 0;
 
-	//virtual void AddCameraComponent(Entity entity, worldId world, float fovY, float near, float far) = 0;
-	//virtual void RemoveCameraComponent(Entity entity, worldId world) = 0;
-	//virtual bool HasCameraComponent(Entity entity, worldId world) const = 0;
-	//virtual const CameraItem* GetCameraComponent(Entity entity, worldId world) const = 0;
-	//virtual void SetCameraFovY(Entity entity, float fovY) = 0;
-	//virtual void SetCameraNearFar(Entity entity, float near, float far) = 0;
-	//virtual void SetCameraScreenSize(Entity entity, float width, float height) = 0;
 	virtual size_t GetCamerasCount(worldId world) const = 0;
 	virtual const CameraItem* GetCameras(worldId world) const = 0;
 	virtual const CameraItem* GetDefaultCamera(worldId world) = 0;
@@ -96,6 +82,11 @@ public:
 	virtual ShaderManager& GetShaderManager() const = 0;
 	virtual ModelManager& GetModelManager() const = 0;
 	virtual TextureManager& GetTextureManager() const = 0;
+
+	virtual meshRenderHandle CreateMeshData(InputBlob& data) = 0;
+	virtual void DestroyMeshData(meshRenderHandle handle) = 0;
+
+	virtual 
 
 	virtual void Resize(u32 width, u32 height) = 0;
 	virtual u32 GetScreenWidth() const = 0;

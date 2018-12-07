@@ -112,19 +112,18 @@ void MaterialManager::ChildResourceLoaded(resourceHandle handle, ResourceType ty
 		if (type == ResourceType::Shader)
 		{
 			if (op.shader == static_cast<shaderHandle>(handle))
-			{
-				op.shaderLoaded = true;
-			}
+				op.shaderLoaded = 1;
 		}
-		if (type == ResourceType::Texture)
+		else if (type == ResourceType::Texture)
 		{
-			if (op.textures[0] == static_cast<textureHandle>(handle))
+			for (size_t i = 0; i < Material::MAX_TEXTURES; ++i)
 			{
-				op.texturesLoaded[0] = true;
+				if (op.textures[i] == static_cast<textureHandle>(handle))
+					op.texturesLoaded |= 1 << i;
 			}
 		}
 
-		if (op.shaderLoaded && op.texturesLoaded[0])
+		if (op.shaderLoaded && op.texturesLoaded > 0)
 		{
 			Material* material = static_cast<Material*>(ResourceManager::GetResource(MaterialToGenericHandle(op.material)));
 			FinalizeMaterial(material);

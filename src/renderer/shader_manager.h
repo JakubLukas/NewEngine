@@ -2,6 +2,7 @@
 
 #include "core/resource/resource.h"
 #include "core/resource/resource_manager.h"
+#include "shader.h"
 
 #include <../external/bgfx/include/bgfx/bgfx.h>//should be just <bgfx/bgfx.h> but this header is used in script system, and that doesn't include ../../external/bgfx/include
 
@@ -29,18 +30,6 @@ struct ShaderProgramInternal
 };
 
 //=============================================================================
-
-struct Shader : public Resource
-{
-	Shader() : Resource(ResourceType::Shader) {}
-
-	//char* fileContent = nullptr;
-	shaderInternalHandle vsHandle;
-	shaderInternalHandle fsHandle;
-	ShaderProgramInternal program;
-	bool vsLoaded = false;
-	bool fsLoaded = false;
-};
 
 
 //=============================================================================

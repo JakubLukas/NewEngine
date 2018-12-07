@@ -22,6 +22,7 @@ struct ComponentInfo
 		Angle,
 		String,
 		Text,
+		Array,
 	};
 
 	struct Value

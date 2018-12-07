@@ -1,28 +1,25 @@
 #pragma once
 
-#include "core/containers/array.h"
 #include "core/resource/resource.h"
-#include "material_manager.h"
+#include "core/containers/array.h"
 
-#include <../external/bgfx/include/bgfx/bgfx.h>//should be just <bgfx/bgfx.h> but this header is used in script system, and that doesn't include ../../external/bgfx/include
+#include "material.h"
 
 
 namespace Veng
 {
 
+enum class modelHandle : u64 {};
+const modelHandle INVALID_MODEL_HANDLE = (modelHandle)0;
 
-struct Shader;
-
-
-
+enum class meshRenderHandle : u64 {};
+const meshRenderHandle INVALID_MODEL_RENDER_HANDLE = (meshRenderHandle)0;
 
 
 struct Mesh
 {
-	bgfx::VertexDecl m_vertex_decl;
-	bgfx::VertexBufferHandle vertexBufferHandle;
-	bgfx::IndexBufferHandle indexBufferHandle;
 	materialHandle material;
+	meshRenderHandle renderDataHandle;
 };
 
 
@@ -31,8 +28,6 @@ struct Model : public Resource
 	Model(IAllocator& allocator)
 		: Resource(ResourceType::Model)
 		, meshes(allocator)
-	{}
-	~Model()
 	{}
 
 	Array<Mesh> meshes;
