@@ -5,6 +5,7 @@
 #include "core/engine.h"
 #include "core/world/world.h"
 #include "core/math/matrix.h"
+#include "core/math/math.h"
 
 #include "renderer/renderer.h"///////////////
 #include "renderer/camera.h"///////////////////
@@ -49,19 +50,6 @@ void EntityWidget::Update(EventQueue& queue)
 }
 
 
-/*void RenderValue(ComponentInfo::Value value, void* data)
-{
-	switch (value.type)
-	{
-	ComponentInfo::ValueType::ResourceHandle:
-		ImGui::Text("Resource handle: %s %d", value.name);
-		break;
-	default:
-		break;
-	}
-}*/
-
-
 void EntityWidget::RenderInternal(EventQueue& queue)
 {
 	if (m_world == nullptr)
@@ -80,44 +68,81 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 	ImGui::InputFloat3("position", &entityTrans.position.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
 	ImGui::InputFloat4("rotation", &entityTrans.rotation.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
 	ImGui::Separator();
-	
-	RenderSystem* renderer = static_cast<RenderSystem*>(m_engine->GetSystem("renderer"));
-	RenderScene* renderScene = static_cast<RenderScene*>(renderer->GetScene());
 
-	for (int i = 0; i < renderScene->GetComponentCount(); ++i)
+	ISystem* systems = m_engine->GetSystems();
+	for (size_t i = 0; i < m_engine->GetSystemCount(); ++i)
 	{
-		const ComponentInfo& info = renderScene->GetComponents()[i];
-	}
+		ISystem& system = systems[i];
+		IScene* scene = system.GetScene();
 
-	if(renderScene->HasComponent(componentHandle(1), m_entity, m_world->GetId()))
-	{
-		void* cameraData = renderScene->GetComponentData(componentHandle(1), m_entity, m_world->GetId());
-		const Camera& camera = *(Camera*)cameraData;
-		ImGui::Text("Camera");
-		float near = camera.nearPlane;
-		ImGui::InputFloat("near plane", &near, 0.1f, 1.0f, "%.3f");
-		float far = camera.farPlane;
-		ImGui::InputFloat("far plane", &far, 0.1f, 1.0f, "%.3f");
-		float fov = camera.fov;
-		ImGui::InputFloat("fov", &fov, 0.1f, 1.0f, "%.3f");
-		ImGui::Separator();
-	}
+		if (scene == nullptr)
+			continue;
 
-	if(renderScene->HasComponent(componentHandle(0), m_entity, m_world->GetId()))
-	{
-		void* modelData = renderScene->GetComponentData(componentHandle(0), m_entity, m_world->GetId());
-		ImGui::Text("Model");
-		ModelManager& modelManager = renderer->GetModelManager();
-		MaterialManager& materialManager = renderer->GetMaterialManager();
-		const Model* model = modelManager.GetResource(*(modelHandle*)modelData);
-
-		for(int i = 0; i < model->meshes.GetSize(); ++i)
+		const ComponentInfo* componentInfos = scene->GetComponents();
+		for (int i = 0; i < scene->GetComponentCount(); ++i)
 		{
-			const Mesh& mesh = model->meshes[i];
-			ImGui::Text("Mesh %d", i);
-			const Material* material = materialManager.GetResource(mesh.material);
-			ImGui::Text("Material %d", i);
+			const ComponentInfo& info = componentInfos[i];
+
+			if (!scene->HasComponent(info.handle, m_entity, m_world->GetId()))
+				continue;
+
+			void* data = scene->GetComponentData(info.handle, m_entity, m_world->GetId());
+
+			ImGui::Text("%s", info.name);
+
+			bool changed = false;
+			for (const ComponentInfo::Value& value : info.values)
+			{
+				switch (value.type)
+				{
+				case ComponentInfo::ValueType::ResourceHandle:
+				{
+					resourceHandle& handle = *(resourceHandle*)data;
+					if (ImGui::InputScalar(value.name, ImGuiDataType_U64, &handle))
+						changed = true;
+					data = (resourceHandle*)data + 1;
+					break;
+				}
+				case ComponentInfo::ValueType::Int:
+				{
+					int& val = *(int*)data;
+					if (ImGui::InputInt(value.name, &val))
+						changed = true;
+					data = (int*)data + 1;
+					break;
+				}
+				case ComponentInfo::ValueType::Float:
+				{
+					float& val = *(float*)data;
+					if (ImGui::InputFloat(value.name, &val))
+						changed = true;
+					data = (float*)data + 1;
+					break;
+				}
+				case ComponentInfo::ValueType::Angle:
+				{
+					float val = toDeg(*(float*)data);
+					if (ImGui::InputFloat(value.name, &val))
+						changed = true;
+					*(float*)data = toRad(val);
+					data = (float*)data + 1;
+					break;
+				}
+				case ComponentInfo::ValueType::String:
+				{
+					ASSERT2(false, "Not implemented yet");
+				}
+				case ComponentInfo::ValueType::Text:
+				{
+					ASSERT2(false, "Not implemented yet");
+					break;
+				}
+				default:
+					break;
+				}
+			}
 		}
+
 	}
 }
 

@@ -47,7 +47,7 @@ void RendererWidget::Init(IAllocator& allocator, Engine& engine)
 		{
 			60.0_deg,
 			0.001f,
-			100.0f,
+			1000.0f,
 			800.0f,
 			600.0f,
 		};
@@ -113,7 +113,7 @@ void RendererWidget::OnResize()
 	Camera* cam = (Camera*)renderScene->GetComponentData(componentHandle(1), m_camera, worldId(0));
 	cam->screenWidth = m_size.x;
 	cam->screenHeight = m_size.y;
-	renderScene->SetComponentData(componentHandle(1), m_camera, worldId(0), &cam);
+	renderScene->SetComponentData(componentHandle(1), m_camera, worldId(0), cam);
 }
 
 

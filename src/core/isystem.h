@@ -19,6 +19,7 @@ struct ComponentInfo
 		ResourceHandle,
 		Int,
 		Float,
+		Angle,
 		String,
 		Text,
 	};

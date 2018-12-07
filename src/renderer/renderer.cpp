@@ -52,7 +52,7 @@ public:
 		compInfoModel = &m_componentInfos.EmplaceBack(m_allocator);
 		compInfoModel->handle = (componentHandle)COMPONENT_CAMERA;
 		compInfoModel->name = "camera";
-		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "fov" });
+		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Angle, "fov" });
 		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "near plane" });
 		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "far plane" });
 		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "screen width" });
