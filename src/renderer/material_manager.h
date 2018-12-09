@@ -9,13 +9,15 @@
 namespace Veng
 {
 
+class RenderSystem;
+
 
 class MaterialManager final : public ResourceManager
 {
 private:
-	struct MaterialLoadingOp
+	struct LoadingOp
 	{
-		MaterialLoadingOp()
+		LoadingOp()
 		{
 			for (size_t i = 0; i < Material::MAX_TEXTURES; ++i)
 				textures[i] = (textureHandle)INVALID_HANDLE;
@@ -41,6 +43,7 @@ public:
 
 	const Material* GetResource(materialHandle handle) const;
 
+	void SetRenderSystem(RenderSystem* renderSystem);
 
 private:
 	Resource* CreateResource() override;
@@ -52,7 +55,8 @@ private:
 	void FinalizeMaterial(Material* material);
 
 private:
-	Array<MaterialLoadingOp> m_loadingOp;
+	RenderSystem* m_renderSystem;
+	Array<LoadingOp> m_loadingOp;
 };
 
 

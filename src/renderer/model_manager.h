@@ -13,7 +13,7 @@ class RenderSystem;
 class ModelManager final : public ResourceManager
 {
 public:
-	ModelManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager, RenderSystem* renderSystem);
+	ModelManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
 	~ModelManager() override;
 
 
@@ -25,6 +25,7 @@ public:
 
 	const Model* GetResource(modelHandle handle) const;
 
+	void SetRenderSystem(RenderSystem* renderSystem);
 
 private:
 	Resource* CreateResource() override;

@@ -10,6 +10,8 @@
 
 #include "core/string.h"
 
+#include "renderer.h"
+
 
 namespace Veng
 {
@@ -145,6 +147,12 @@ const ShaderInternal* ShaderInternalManager::GetResource(shaderInternalHandle ha
 }
 
 
+void ShaderInternalManager::SetRenderSystem(RenderSystem* renderSystem)
+{
+	m_renderSystem = renderSystem;
+}
+
+
 Resource* ShaderInternalManager::CreateResource()
 {
 	return NEW_OBJECT(m_allocator, ShaderInternal)();
@@ -155,7 +163,7 @@ void ShaderInternalManager::DestroyResource(Resource* resource)
 {
 	ShaderInternal* shaderInt = static_cast<ShaderInternal*>(resource);
 
-	bgfx::destroy(shaderInt->handle);
+	m_renderSystem->DestroyShaderInternalData(shaderInt->renderDataHandle);
 
 	DELETE_OBJECT(m_allocator, shaderInt);
 }
@@ -170,22 +178,9 @@ void ShaderInternalManager::ReloadResource(Resource* resource)
 void ShaderInternalManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
 	ShaderInternal* shaderInt = static_cast<ShaderInternal*>(ResourceManager::GetResource(handle));
-	InputClob dataText(data);
 
-	const bgfx::Memory* mem = bgfx::alloc((u32)dataText.GetSize() + 1);
-	memory::Copy(mem->data, dataText.GetData(), dataText.GetSize());
-	mem->data[mem->size - 1] = '\0';
+	shaderInt->renderDataHandle = m_renderSystem->CreateShaderInternalData(data);
 
-	shaderInt->handle = bgfx::createShader(mem);
-	if (bgfx::isValid(shaderInt->handle))
-	{
-		bgfx::setName(shaderInt->handle, shaderInt->GetPath().path);
-		shaderInt->SetState(Resource::State::Ready);
-	}
-	else
-	{
-		ASSERT2(false, "Shader was not created");
-	}
 	m_depManager->ResourceLoaded(ResourceType::ShaderInternal, handle);
 }
 
@@ -206,6 +201,7 @@ inline static resourceHandle ShaderToGenericHandle(shaderHandle handle)
 
 ShaderManager::ShaderManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
 	: ResourceManager(allocator, fileSystem, depManager)
+	, m_loadingOp(allocator)
 {
 
 }
@@ -240,6 +236,12 @@ const Shader* ShaderManager::GetResource(shaderHandle handle) const
 }
 
 
+void ShaderManager::SetRenderSystem(RenderSystem* renderSystem)
+{
+	m_renderSystem = renderSystem;
+}
+
+
 Resource* ShaderManager::CreateResource()
 {
 	return NEW_OBJECT(m_allocator, Shader)();
@@ -253,7 +255,7 @@ void ShaderManager::DestroyResource(Resource* resource)
 	m_depManager->UnloadResource(ResourceType::ShaderInternal, static_cast<resourceHandle>(shader->vsHandle));
 	m_depManager->UnloadResource(ResourceType::ShaderInternal, static_cast<resourceHandle>(shader->fsHandle));
 
-	bgfx::destroy(shader->program.handle);
+	m_renderSystem->DestroyShaderData(shader->renderDataHandle);
 
 	DELETE_OBJECT(m_allocator, shader);
 }
@@ -270,6 +272,9 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	Shader* shader = static_cast<Shader*>(ResourceManager::GetResource(handle));
 	InputClob dataText(data);
 
+	LoadingOp& op = m_loadingOp.PushBack();
+	op.shader = GenericToShaderHandle(handle);
+
 	char vsPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(dataText.ReadLine(vsPath, Path::MAX_LENGTH));
 
@@ -277,6 +282,7 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	ASSERT(CompileShader(GetFileSystem(), Path(vsPath), vOutPath));
 	resourceHandle vsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, vOutPath);
 	shader->vsHandle = static_cast<shaderInternalHandle>(vsHandle);
+	op.vsHandle = shader->vsHandle;
 
 	char fsPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(dataText.ReadLine(fsPath, Path::MAX_LENGTH));
@@ -285,6 +291,7 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	ASSERT(CompileShader(GetFileSystem(), Path(fsPath), fOutPath));
 	resourceHandle fsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, fOutPath);
 	shader->fsHandle = static_cast<shaderInternalHandle>(fsHandle);
+	op.fsHandle = shader->fsHandle;
 }
 
 
@@ -292,17 +299,22 @@ void ShaderManager::ChildResourceLoaded(resourceHandle handle, ResourceType type
 {
 	shaderInternalHandle childHandle = static_cast<shaderInternalHandle>(handle);
 
-	for (auto& res : m_resources)
+	for(size_t i = 0; i < m_loadingOp.GetSize(); ++i)
 	{
-		Shader* shader = static_cast<Shader*>(res.value);
+		LoadingOp& op = m_loadingOp[i];
 
-		if (shader->vsHandle == childHandle)
-			shader->vsLoaded = true;
-		else if (shader->fsHandle == childHandle)
-			shader->fsLoaded = true;
+		if(op.vsHandle == childHandle)
+			op.shadersIntLoaded |= 1;
+		else if(op.fsHandle == childHandle)
+			op.shadersIntLoaded |= 1 << 1;
 
-		if (shader->vsLoaded && shader->fsLoaded)
+
+		if(op.shadersIntLoaded == 3)
+		{
+			Shader* shader = static_cast<Shader*>(ResourceManager::GetResource(ShaderToGenericHandle(op.shader)));
 			FinalizeShader(shader);
+			m_loadingOp.Erase(i--);
+		}
 	}
 }
 
@@ -313,16 +325,9 @@ void ShaderManager::FinalizeShader(Shader* shader)
 	const Resource* fsRes = m_depManager->GetResource(ResourceType::ShaderInternal, static_cast<resourceHandle>(shader->fsHandle));
 	const ShaderInternal* vs = static_cast<const ShaderInternal*>(vsRes);
 	const ShaderInternal* fs = static_cast<const ShaderInternal*>(fsRes);
-	shader->program.handle = bgfx::createProgram(vs->handle, fs->handle, false);
+	
+	shader->renderDataHandle = m_renderSystem->CreateShaderData(vs->renderDataHandle, fs->renderDataHandle);
 
-	if (bgfx::isValid(shader->program.handle))
-	{
-		shader->SetState(Resource::State::Ready);
-	}
-	else
-	{
-		ASSERT(false);/////failed to load resource
-	}
 	m_depManager->ResourceLoaded(ResourceType::Shader, GetResourceHandle(shader));
 }
 

@@ -3,6 +3,8 @@
 #include "core/file/blob.h"
 #include "core/file/clob.h"
 
+#include "renderer.h"
+
 
 namespace Veng
 {
@@ -57,6 +59,12 @@ const Material* MaterialManager::GetResource(materialHandle handle) const
 }
 
 
+void MaterialManager::SetRenderSystem(RenderSystem* renderSystem)
+{
+	m_renderSystem = renderSystem;
+}
+
+
 Resource* MaterialManager::CreateResource()
 {
 	return NEW_OBJECT(m_allocator, Material)();
@@ -86,7 +94,7 @@ void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	Material* material = static_cast<Material*>(ResourceManager::GetResource(handle));
 	InputClob dataText(data);
 
-	MaterialLoadingOp& op = m_loadingOp.PushBack();
+	LoadingOp& op = m_loadingOp.PushBack();
 	op.material = GenericToMaterialHandle(handle);
 
 	char shaderPath[Path::MAX_LENGTH + 1] = { '\0' };
@@ -107,7 +115,7 @@ void MaterialManager::ChildResourceLoaded(resourceHandle handle, ResourceType ty
 {
 	for (size_t i = 0; i < m_loadingOp.GetSize(); ++i)
 	{
-		MaterialLoadingOp& op = m_loadingOp[i];
+		LoadingOp& op = m_loadingOp[i];
 
 		if (type == ResourceType::Shader)
 		{

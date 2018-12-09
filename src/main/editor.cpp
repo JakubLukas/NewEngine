@@ -628,7 +628,7 @@ public:
 	void InitSystems()
 	{
 		ASSERT(m_engine != nullptr);
-
+		
 		//resource managers
 		ResourceManagement* resourceManagement = m_engine->GetResourceManagement();
 		m_shaderInternalManager = NEW_OBJECT(m_allocator, ShaderInternalManager)(m_allocator, *m_engine->GetFileSystem(), resourceManagement);

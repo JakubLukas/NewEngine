@@ -30,9 +30,24 @@ static const unsigned short VIEW_ID = 1;
 
 struct MeshData
 {
-	bgfx::VertexDecl m_vertex_decl;
+	bgfx::VertexDecl vertex_decl;
 	bgfx::VertexBufferHandle vertexBufferHandle;
 	bgfx::IndexBufferHandle indexBufferHandle;
+};
+
+struct TextureData
+{
+	bgfx::TextureHandle handle;
+};
+
+struct ShaderInternalData
+{
+	bgfx::ShaderHandle handle;
+};
+
+struct ShaderData
+{
+	bgfx::ProgramHandle handle;
 };
 
 
@@ -91,11 +106,7 @@ public:
 
 
 	void Update(float deltaTime) override
-	{
-
-	}
-
-
+	{}
 
 
 	size_t GetComponentCount() const override { return m_componentInfos.GetSize(); }
@@ -190,35 +201,6 @@ public:
 	}
 
 
-
-
-
-	/*void AddModelComponent(Entity entity, worldId world, const Path& path) override
-	{
-		modelHandle handle = m_renderSystem.GetModelManager().Load(path);
-		m_models.Insert(entity, { entity, handle });
-	}
-
-	void RemoveModelComponent(Entity entity, worldId world) override
-	{
-		m_models.Erase(entity);
-	}
-
-	bool HasModelComponent(Entity entity, worldId world) const override
-	{
-		ModelItem* model;
-		return m_models.Find(entity, model);
-	}
-
-	ModelItem* GetModelComponent(Entity entity, worldId world) const override
-	{
-		ModelItem* model;
-		if(m_models.Find(entity, model))
-			return model;
-		else
-			return nullptr;
-	}*/
-
 	size_t GetModelsCount(worldId world) const override
 	{
 		return m_models.GetSize();
@@ -229,66 +211,6 @@ public:
 		return m_models.GetValues();
 	}
 
-
-	/*void AddCameraComponent(Entity entity, worldId world, float fovY, float near, float far) override
-	{
-		Camera cam;
-		cam.fov = fovY;
-		cam.nearPlane = near;
-		cam.farPlane = far;
-		cam.screenWidth = (float)m_renderSystem.GetScreenWidth();
-		cam.screenHeight = (float)m_renderSystem.GetScreenHeight();
-		cam.aspect = cam.screenWidth / cam.screenHeight;
-		m_cameras.Insert(entity, { entity, cam });
-	}
-
-	void RemoveCameraComponent(Entity entity, worldId world) override
-	{
-		m_cameras.Erase(entity);
-	}
-
-	bool HasCameraComponent(Entity entity, worldId world) const override
-	{
-		CameraItem* cam;
-		return m_cameras.Find(entity, cam);
-	}
-
-	const CameraItem* GetCameraComponent(Entity entity, worldId world) const override
-	{
-		CameraItem* cam;
-		if(m_cameras.Find(entity, cam))
-			return cam;
-		else
-			return nullptr;
-	}
-
-	void SetCameraFovY(Entity entity, float fovY) override
-	{
-		CameraItem* cam;
-		if (m_cameras.Find(entity, cam))
-			cam->camera.fov = fovY;
-	}
-
-	void SetCameraNearFar(Entity entity, float near, float far) override
-	{
-		CameraItem* cam;
-		if (m_cameras.Find(entity, cam))
-		{
-			cam->camera.nearPlane = near;
-			cam->camera.farPlane = far;
-		}
-	}
-
-	void SetCameraScreenSize(Entity entity, float width, float height) override
-	{
-		CameraItem* cam;
-		if (m_cameras.Find(entity, cam))
-		{
-			cam->camera.screenWidth = width;
-			cam->camera.screenHeight = height;
-			cam->camera.aspect = width / height;
-		}
-	}*/
 
 	size_t GetCamerasCount(worldId world) const override
 	{
@@ -328,6 +250,9 @@ public:
 		: m_allocator(engine.GetAllocator())
 		, m_engine(engine)
 		, m_meshData(m_allocator)
+		, m_textureData(m_allocator)
+		, m_shaderInternalData(m_allocator)
+		, m_shaderData(m_allocator)
 	{
 		m_allocator.SetDebugName("Renderer");
 
@@ -335,11 +260,25 @@ public:
 		invalidMeshData.vertexBufferHandle = BGFX_INVALID_HANDLE;
 		invalidMeshData.indexBufferHandle = BGFX_INVALID_HANDLE;
 
+		TextureData& invalidTextureData = m_textureData.PushBack();
+		invalidTextureData.handle = BGFX_INVALID_HANDLE;
+
+		ShaderInternalData& invalidshaderIntData = m_shaderInternalData.PushBack();
+		invalidshaderIntData.handle = BGFX_INVALID_HANDLE;
+
+		ShaderData& invalidshaderData = m_shaderData.PushBack();
+		invalidshaderData.handle = BGFX_INVALID_HANDLE;
+
 		m_shaderInternalManager = static_cast<ShaderInternalManager*>(m_engine.GetResourceManager(ResourceType::ShaderInternal));
+		m_shaderInternalManager->SetRenderSystem(this);
 		m_shaderManager = static_cast<ShaderManager*>(m_engine.GetResourceManager(ResourceType::Shader));
+		m_shaderManager->SetRenderSystem(this);
 		m_materialManager = static_cast<MaterialManager*>(m_engine.GetResourceManager(ResourceType::Material));
+		m_materialManager->SetRenderSystem(this);
 		m_modelManager = static_cast<ModelManager*>(m_engine.GetResourceManager(ResourceType::Model));
+		m_modelManager->SetRenderSystem(this);
 		m_textureManager = static_cast<TextureManager*>(m_engine.GetResourceManager(ResourceType::Texture));
+		m_textureManager->SetRenderSystem(this);
 	}
 
 
@@ -410,14 +349,17 @@ public:
 						bgfx::setIndexBuffer(meshData.indexBufferHandle);
 
 						const Texture* texture = m_textureManager->GetResource(material->textures[0]);
-						bgfx::setTexture(0, m_uniformTextureColor, texture->handle);
+						TextureData& texData = m_textureData[(size_t)texture->renderDataHandle];
+						bgfx::setTexture(0, m_uniformTextureColor, texData.handle);
+
 
 						// Set render states.
 						bgfx::setState(BGFX_STATE_DEFAULT);
 
 						// Submit primitive for rendering to view 0.
 						const Shader* shader = m_shaderManager->GetResource(material->shader);
-						bgfx::submit(VIEW_ID, shader->program.handle);
+						ShaderData& shaderData = m_shaderData[(size_t)shader->renderDataHandle];
+						bgfx::submit(VIEW_ID, shaderData.handle);
 					}
 				}
 			}
@@ -444,7 +386,7 @@ public:
 
 		MeshData& meshData = m_meshData.PushBack();
 
-		meshData.m_vertex_decl
+		meshData.vertex_decl
 			.begin()
 			.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
 			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
@@ -484,11 +426,13 @@ public:
 			indices[i] = (u16)num;
 		}
 
-		meshData.vertexBufferHandle = bgfx::createVertexBuffer(bgfx::copy(vertices, verticesBufferSize), meshData.m_vertex_decl);
+		meshData.vertexBufferHandle = bgfx::createVertexBuffer(bgfx::copy(vertices, verticesBufferSize), meshData.vertex_decl);
 		meshData.indexBufferHandle = bgfx::createIndexBuffer(bgfx::copy(indices, indicesBufferSize));
 
 		m_allocator.Deallocate(vertices);
 		m_allocator.Deallocate(indices);
+
+		data.SetPosition(data.GetPosition() + dataText.GetPosition());
 
 		return meshRenderHandle(m_meshData.GetSize() - 1);
 	}
@@ -498,6 +442,112 @@ public:
 		MeshData& data = m_meshData[(size_t)handle];
 		bgfx::destroy(data.vertexBufferHandle);
 		bgfx::destroy(data.indexBufferHandle);
+
+		//TODO: remove from m_meshData but do not corrupt handles
+		data.vertexBufferHandle = BGFX_INVALID_HANDLE;
+		data.indexBufferHandle = BGFX_INVALID_HANDLE;
+	}
+
+
+	textureRenderHandle CreateTextureData(const Texture& texture) override
+	{
+		TextureData texData;
+
+		const bgfx::Memory* mem = bgfx::makeRef(texture.data, texture.width * texture.height * texture.channels);
+
+		texData.handle = bgfx::createTexture2D(
+			uint16_t(texture.width)
+			, uint16_t(texture.height)
+			, false //hasMipMap
+			, 1
+			, bgfx::TextureFormat::Enum::RGBA8
+			, BGFX_TEXTURE_NONE
+			, mem
+		);
+
+		if(bgfx::isValid(texData.handle))
+		{
+			bgfx::setName(texData.handle, texture.GetPath().path);
+			m_textureData.PushBack(texData);
+			return textureRenderHandle(m_textureData.GetSize() - 1);
+		}
+		else
+		{
+			ASSERT2(false, "Texture was not created");
+			return INVALID_TEXTURE_RENDER_HANDLE;
+		}
+	}
+
+	void DestroyTextureData(textureRenderHandle handle) override
+	{
+		TextureData& data = m_textureData[(size_t)handle];
+		bgfx::destroy(data.handle);
+
+		//TODO: remove from m_textureData but do not corrupt handles
+		data.handle = BGFX_INVALID_HANDLE;
+	}
+
+
+	shaderInternalRenderHandle CreateShaderInternalData(InputBlob& data) override
+	{
+		InputClob dataText(data);
+
+		ShaderInternalData shaderIntData;
+
+		const bgfx::Memory* mem = bgfx::alloc((u32)dataText.GetSize() + 1);
+		memory::Copy(mem->data, dataText.GetData(), dataText.GetSize());
+		mem->data[mem->size - 1] = '\0';
+
+		shaderIntData.handle = bgfx::createShader(mem);
+		if(bgfx::isValid(shaderIntData.handle))
+		{
+			//bgfx::setName(shaderIntData.handle, shaderInt->GetPath().path);
+			m_shaderInternalData.PushBack(shaderIntData);
+			return shaderInternalRenderHandle(m_shaderInternalData.GetSize() - 1);
+		}
+		else
+		{
+			ASSERT2(false, "Shader Int was not created");
+			return INVALID_SHADER_INTERNAL_RENDER_HANDLE;
+		}
+	}
+
+	void DestroyShaderInternalData(shaderInternalRenderHandle handle) override
+	{
+		ShaderInternalData& data = m_shaderInternalData[(size_t)handle];
+		bgfx::destroy(data.handle);
+
+		//TODO: remove from m_shaderInternalData but do not corrupt handles
+		data.handle = BGFX_INVALID_HANDLE;
+	}
+
+
+	shaderRenderHandle CreateShaderData(shaderInternalRenderHandle vsHandle, shaderInternalRenderHandle fsHandle) override
+	{
+		ShaderData shaderData;
+
+		ShaderInternalData vs = m_shaderInternalData[(size_t)vsHandle];
+		ShaderInternalData fs = m_shaderInternalData[(size_t)fsHandle];
+
+		shaderData.handle = bgfx::createProgram(vs.handle, fs.handle, false);
+
+		if(bgfx::isValid(shaderData.handle))
+		{
+			m_shaderData.PushBack(shaderData);
+			return shaderRenderHandle(m_shaderData.GetSize() - 1);
+		}
+		else
+		{
+			ASSERT2(false, "Shader was not created");
+			return INVALID_SHADER_RENDER_HANDLE;
+		}
+	}
+
+	void DestroyShaderData(shaderRenderHandle handle) override
+	{
+		ShaderData& data = m_shaderData[(size_t)handle];
+
+		bgfx::destroy(data.handle);
 	}
 
 
@@ -518,6 +568,9 @@ private:
 	Engine& m_engine;
 	RenderSceneImpl* m_scene;
 	Array<MeshData> m_meshData;
+	Array<TextureData> m_textureData;
+	Array<ShaderInternalData> m_shaderInternalData;
+	Array<ShaderData> m_shaderData;
 
 	ShaderInternalManager* m_shaderInternalManager = nullptr;
 	ShaderManager* m_shaderManager = nullptr;

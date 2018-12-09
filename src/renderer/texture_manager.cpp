@@ -5,6 +5,8 @@
 #include "core/allocators.h"
 #include "core/asserts.h"
 
+#include "renderer.h"
+
 
 static Veng::ProxyAllocator* stbImageAllocator = nullptr;
 
@@ -86,6 +88,12 @@ const Texture* TextureManager::GetResource(textureHandle handle) const
 }
 
 
+void TextureManager::SetRenderSystem(RenderSystem* renderSystem)
+{
+	m_renderSystem = renderSystem;
+}
+
+
 Resource* TextureManager::CreateResource()
 {
 	return NEW_OBJECT(m_allocator, Texture)();
@@ -95,6 +103,8 @@ Resource* TextureManager::CreateResource()
 void TextureManager::DestroyResource(Resource* resource)
 {
 	Texture* texture = static_cast<Texture*>(resource);
+
+	m_renderSystem->DestroyTextureData(texture->renderDataHandle);
 
 	stbi_image_free(texture->data);
 
@@ -124,23 +134,7 @@ void TextureManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	texture->channels = (u32)channels;
 	texture->data = imageData;
 
-	const bgfx::Memory* mem = bgfx::makeRef(texture->data, texture->width * texture->height * texture->channels);
-
-	texture->handle = bgfx::createTexture2D(
-		uint16_t(texture->width)
-		, uint16_t(texture->height)
-		, false //hasMipMap
-		, 1
-		, bgfx::TextureFormat::Enum::RGBA8
-		, BGFX_TEXTURE_NONE
-		, mem
-	);
-
-	ASSERT(bgfx::isValid(texture->handle));
-	//if(bgfx::isValid(texture->handle))
-	{
-		//bgfx::setName(texture->handle, _filePath);
-	}
+	texture->renderDataHandle = m_renderSystem->CreateTextureData(*texture);
 
 	texture->SetState(Resource::State::Ready);
 	m_depManager->ResourceLoaded(ResourceType::Texture, GetResourceHandle(texture));

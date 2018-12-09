@@ -6,6 +6,7 @@
 #include "model.h"
 #include "camera.h"
 #include "texture.h"
+#include "shader.h"
 
 
 namespace Veng
@@ -86,7 +87,14 @@ public:
 	virtual meshRenderHandle CreateMeshData(InputBlob& data) = 0;
 	virtual void DestroyMeshData(meshRenderHandle handle) = 0;
 
-	virtual 
+	virtual textureRenderHandle CreateTextureData(const Texture& texture) = 0;
+	virtual void DestroyTextureData(textureRenderHandle handle) = 0;
+
+	virtual shaderInternalRenderHandle CreateShaderInternalData(InputBlob& data) = 0;
+	virtual void DestroyShaderInternalData(shaderInternalRenderHandle handle) = 0;
+
+	virtual shaderRenderHandle CreateShaderData(shaderInternalRenderHandle vsHandle, shaderInternalRenderHandle fsHandle) = 0;
+	virtual void DestroyShaderData(shaderRenderHandle handle) = 0;
 
 	virtual void Resize(u32 width, u32 height) = 0;
 	virtual u32 GetScreenWidth() const = 0;

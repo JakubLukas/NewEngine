@@ -7,6 +7,8 @@
 namespace Veng
 {
 
+class RenderSystem;
+
 
 class TextureManager final : public ResourceManager
 {
@@ -23,12 +25,16 @@ public:
 
 	const Texture* GetResource(textureHandle handle) const;
 
+	void SetRenderSystem(RenderSystem* renderSystem);
 
 private:
 	Resource* CreateResource() override;
 	void DestroyResource(Resource* resource) override;
 	void ReloadResource(Resource* resource) override;
 	void ResourceLoaded(resourceHandle handle, InputBlob& data) override;
+
+private:
+	RenderSystem* m_renderSystem;
 };
 
 

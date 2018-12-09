@@ -21,9 +21,8 @@ inline static resourceHandle ModelToGenericHandle(modelHandle handle)
 }
 
 
-ModelManager::ModelManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager, RenderSystem* renderSystem)
+ModelManager::ModelManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
 	: ResourceManager(allocator, fileSystem, depManager)
-	, m_renderSystem(renderSystem)
 {}
 
 
@@ -52,6 +51,12 @@ void ModelManager::Reload(modelHandle handle)
 const Model* ModelManager::GetResource(modelHandle handle) const
 {
 	return static_cast<const Model*>(ResourceManager::GetResource(ModelToGenericHandle(handle)));
+}
+
+
+void ModelManager::SetRenderSystem(RenderSystem* renderSystem)
+{
+	m_renderSystem = renderSystem;
 }
 
 
@@ -86,7 +91,7 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
 	Model* model = static_cast<Model*>(ResourceManager::GetResource(handle));
 	
-	Mesh mesh = model->meshes.PushBack();
+	Mesh& mesh = model->meshes.PushBack();
 
 	mesh.renderDataHandle = m_renderSystem->CreateMeshData(data);
 

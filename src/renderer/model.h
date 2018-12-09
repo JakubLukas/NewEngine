@@ -13,7 +13,7 @@ enum class modelHandle : u64 {};
 const modelHandle INVALID_MODEL_HANDLE = (modelHandle)0;
 
 enum class meshRenderHandle : u64 {};
-const meshRenderHandle INVALID_MODEL_RENDER_HANDLE = (meshRenderHandle)0;
+const meshRenderHandle INVALID_MESH_RENDER_HANDLE = (meshRenderHandle)0;
 
 
 struct Mesh
