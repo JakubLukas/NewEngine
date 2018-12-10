@@ -133,7 +133,7 @@ void* MainAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
 	size_t allocSize = allocAlign + sizeof(AllocHeader) + alignment + size;
 	void* newPtr = realloc(ptr, allocSize);
 	//if realloc returns memory pointer with different alignment as malloc, whole universe will explode (data pointer would points to wrong memory)
-	
+
 	if (newPtr != nullptr)
 	{
 		void* data = AlignPointer((char*)newPtr + sizeof(AllocHeader), allocAlign);
@@ -210,10 +210,10 @@ size_t MainAllocator::GetAllocSize() const
 #endif
 
 
-// ---------------- HEAP ALLOCATOR ----------------
+// ---------------- PROXY ALLOCATOR ----------------
 
 
-ProxyAllocator::ProxyAllocator(IAllocator& allocator, bool debug)
+ProxyAllocator::ProxyAllocator(IAllocator& allocator)
 	: m_source(allocator)
 #if DEBUG_ALLOCATORS
 	, m_allocations(allocator)
@@ -391,6 +391,82 @@ size_t ProxyAllocator::GetBlockSize() const { return GetAllocInfo().pageSize; }
 
 
 #endif
+
+
+// ---------------- FRAME ALLOCATOR ----------------
+
+
+/*FrameAllocator::FrameAllocator(IAllocator& allocator)
+	: m_source(allocator)
+{
+#if DEBUG_ALLOCATORS
+	AllocatorDebugData data;
+	data.parent = &allocator;
+	data.allocator = this;
+	s_allocators.PushBack(data);
+#endif
+}
+
+FrameAllocator::~FrameAllocator()
+{
+#if DEBUG_ALLOCATORS
+	ASSERT2(m_allocCount == 0, "Memory leak");
+	ASSERT2(m_allocSize == 0, "Memory leak");
+
+	AllocatorDebugData data;
+	data.allocator = this;
+	s_allocators.Erase(data);
+#endif
+}
+
+
+void* FrameAllocator::Allocate(size_t size, size_t alignment)
+{}
+
+void* FrameAllocator::Reallocate(void* ptr, size_t size, size_t alignment)
+{}
+
+void FrameAllocator::Deallocate(void* ptr)
+{}
+
+size_t FrameAllocator::GetSize(void* ptr) const
+{}
+
+void FrameAllocator::NewFrame()
+{}
+
+
+#if DEBUG_ALLOCATORS
+
+void FrameAllocator::SetDebugName(const char* name)
+{}
+
+const char* FrameAllocator::GetDebugName() const
+{}
+
+size_t FrameAllocator::GetAllocCount() const
+{}
+
+size_t FrameAllocator::GetAllocSize() const
+{}
+
+
+size_t FrameAllocator::GetAllocationsSize() const
+{}
+
+AllocationDebugData const* FrameAllocator::GetAllocations() const
+{}
+
+size_t FrameAllocator::GetBlocksSize() const
+{}
+
+void* const* FrameAllocator::GetBlocks() const
+{}
+
+size_t FrameAllocator::GetBlockSize() const
+{}
+
+#endif*/
 
 
 }

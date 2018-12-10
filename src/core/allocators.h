@@ -77,7 +77,7 @@ private:
 class ProxyAllocator : public IAllocator
 {
 public:
-	ProxyAllocator(IAllocator& allocator, bool debug = false);
+	ProxyAllocator(IAllocator& allocator);
 	ProxyAllocator(ProxyAllocator&) = delete;
 	ProxyAllocator(ProxyAllocator&&) = delete;
 	ProxyAllocator& operator=(ProxyAllocator&) = delete;
@@ -152,6 +152,53 @@ private:
 };
 
 
+/*class FrameAllocator : public IAllocator
+{
+public:
+	FrameAllocator(IAllocator& allocator);
+	FrameAllocator(FrameAllocator&) = delete;
+	FrameAllocator(FrameAllocator&&) = delete;
+	FrameAllocator& operator=(FrameAllocator&) = delete;
+	FrameAllocator& operator=(FrameAllocator&&) = delete;
+	~FrameAllocator() override;
+
+	void* Allocate(size_t size, size_t alignment) override;
+	void* Reallocate(void* ptr, size_t size, size_t alignment) override;
+	void Deallocate(void* ptr) override;
+	size_t GetSize(void* ptr) const override;
+
+	void NewFrame();
+
+#if DEBUG_ALLOCATORS
+	void SetDebugName(const char* name) override;
+	const char* GetDebugName() const override;
+	size_t GetAllocCount() const override;
+	size_t GetAllocSize() const override;
+
+	size_t GetAllocationsSize() const override;
+	AllocationDebugData const* GetAllocations() const override;
+	size_t GetBlocksSize() const override;
+	void* const* GetBlocks() const override;
+	size_t GetBlockSize() const override;
+#endif
+
+private:
+	static const size_t BLOCK_SIZE = 1'048'576;
+
+private:
+	IAllocator& m_source;
+	SpinLock m_lock;
+	void* m_buffer;
+#if DEBUG_ALLOCATORS
+	const char* m_name = "Heap";
+	i32 m_allocCount = 0;
+	size_t m_allocSize = 0;
+#endif
+};*/
+
+
+//-----------------------------------------------------------------------------
+
 template<int maxSize>
 StackAllocator<maxSize>::StackAllocator()
 {}
@@ -183,10 +230,8 @@ void StackAllocator<maxSize>::Deallocate(void* ptr)
 {}
 
 
+
 //PoolAllocator
-
-
-//FrameAllocator
 
 
 //PageAllocator

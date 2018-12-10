@@ -8,11 +8,10 @@
 #include "core/math/matrix.h"
 
 #include "core/resource/resource_management.h"
-#include "shader_manager.h"
-#include "material_manager.h"
-#include "model_manager.h"
-#include "model.h"
-#include "texture_manager.h"
+#include "resource_managers/shader_manager.h"
+#include "resource_managers/material_manager.h"
+#include "resource_managers/model_manager.h"
+#include "resource_managers/texture_manager.h"
 
 #include <bgfx/bgfx.h>///////////////
 #include "core/file/blob.h"//////////////////////

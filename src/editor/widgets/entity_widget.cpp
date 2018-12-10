@@ -9,7 +9,7 @@
 
 #include "renderer/renderer.h"///////////////
 #include "renderer/camera.h"///////////////////
-#include "renderer/model_manager.h"///////////
+//#include "renderer/resource_managers/model.h"///////////
 
 
 namespace Veng
@@ -98,6 +98,8 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 				case ComponentInfo::ValueType::ResourceHandle:
 				{
 					resourceHandle& handle = *(resourceHandle*)data;
+					Resource* res = m_engine->GetResourceManagement()->GetResource()
+					ImGui::InputText()
 					if (ImGui::InputScalar(value.name, ImGuiDataType_U64, &handle))
 						changed = true;
 					data = (resourceHandle*)data + 1;

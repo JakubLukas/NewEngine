@@ -10,7 +10,7 @@
 
 #include "core/string.h"
 
-#include "renderer.h"
+#include "../renderer.h"
 
 
 namespace Veng

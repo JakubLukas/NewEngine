@@ -3,10 +3,10 @@
 #include "core/int.h"
 #include "core/isystem.h"
 #include "core/world/world.h"
-#include "model.h"
+#include "resource_managers/model.h"
+#include "resource_managers/texture.h"
+#include "resource_managers/shader.h"
 #include "camera.h"
-#include "texture.h"
-#include "shader.h"
 
 
 namespace Veng

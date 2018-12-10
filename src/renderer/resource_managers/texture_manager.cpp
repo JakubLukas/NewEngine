@@ -5,7 +5,7 @@
 #include "core/allocators.h"
 #include "core/asserts.h"
 
-#include "renderer.h"
+#include "../renderer.h"
 
 
 static Veng::ProxyAllocator* stbImageAllocator = nullptr;

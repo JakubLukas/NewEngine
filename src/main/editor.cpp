@@ -23,11 +23,10 @@
 #include "core/resource/resource.h"
 #include "core/resource/resource_manager.h"
 #include "core/resource/resource_management.h"
-#include "renderer/shader_manager.h"
-#include "renderer/material_manager.h"
-#include "renderer/model_manager.h"
-#include "renderer/model.h"
-#include "renderer/texture_manager.h"
+#include "renderer/resource_managers/shader_manager.h"
+#include "renderer/resource_managers/material_manager.h"
+#include "renderer/resource_managers/model_manager.h"
+#include "renderer/resource_managers/texture_manager.h"
 
 #include "core/input/devices/input_device_keyboard.h"
 
