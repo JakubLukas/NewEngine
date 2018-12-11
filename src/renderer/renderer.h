@@ -51,7 +51,7 @@ public:
 	virtual void AddComponent(componentHandle handle, Entity entity, worldId world) override = 0;
 	virtual void RemoveComponent(componentHandle handle, Entity entity, worldId world) override = 0;
 	virtual bool HasComponent(componentHandle handle, Entity entity, worldId world) const override = 0;
-	virtual void* GetComponentData(componentHandle handle, Entity entity, worldId world) const override = 0;
+	virtual void GetComponentData(componentHandle handle, Entity entity, worldId world, void* buffer) const override = 0;
 	virtual void SetComponentData(componentHandle handle, Entity entity, worldId world, void* data) override = 0;
 
 	virtual size_t GetModelsCount(worldId world) const = 0;

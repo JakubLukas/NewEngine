@@ -353,7 +353,7 @@ public:
 		, m_app(app)
 		, m_engineAllocator(m_allocator)
 		, m_bgfxAllocator(m_allocator)
-		, m_imguiAllocator(m_allocator, true)
+		, m_imguiAllocator(m_allocator)
 		, m_inputKeyboardFilter(m_allocator)
 		, m_eventQueue(m_allocator)
 		, m_widgets(m_allocator)

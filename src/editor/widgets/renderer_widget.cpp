@@ -110,10 +110,11 @@ void RendererWidget::OnResize()
 
 	m_renderer->Resize((i32)m_size.x, (i32)m_size.y);
 	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene());
-	Camera* cam = (Camera*)renderScene->GetComponentData(componentHandle(1), m_camera, worldId(0));
-	cam->screenWidth = m_size.x;
-	cam->screenHeight = m_size.y;
-	renderScene->SetComponentData(componentHandle(1), m_camera, worldId(0), cam);
+	Camera cam;
+	renderScene->GetComponentData(componentHandle(1), m_camera, worldId(0), &cam);
+	cam.screenWidth = m_size.x;
+	cam.screenHeight = m_size.y;
+	renderScene->SetComponentData(componentHandle(1), m_camera, worldId(0), &cam);
 }
 
 

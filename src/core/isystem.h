@@ -36,6 +36,7 @@ struct ComponentInfo
 	componentHandle handle;
 	const char* name;
 	Array<Value> values;
+	size_t dataSize = 0;
 };
 
 
@@ -53,7 +54,7 @@ public:
 	virtual void AddComponent(componentHandle handle, Entity entity, worldId world) = 0;
 	virtual void RemoveComponent(componentHandle handle, Entity entity, worldId world) = 0;
 	virtual bool HasComponent(componentHandle handle, Entity entity, worldId world) const = 0;
-	virtual void* GetComponentData(componentHandle handle, Entity entity, worldId world) const = 0;
+	virtual void GetComponentData(componentHandle handle, Entity entity, worldId world, void* buffer) const = 0;
 	virtual void SetComponentData(componentHandle handle, Entity entity, worldId world, void* data) = 0;
 };
 

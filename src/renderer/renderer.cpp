@@ -84,6 +84,7 @@ public:
 		compInfoModel->handle = (componentHandle)COMPONENT_MODEL;
 		compInfoModel->name = "model";
 		compInfoModel->values.PushBack({ ComponentInfo::ValueType::ResourceHandle, "model handle" });
+		compInfoModel->dataSize = sizeof(ResourceType) + sizeof(resourceHandle);
 
 		compInfoModel = &m_componentInfos.EmplaceBack(m_allocator);
 		compInfoModel->handle = (componentHandle)COMPONENT_CAMERA;
@@ -93,6 +94,7 @@ public:
 		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "far plane" });
 		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "screen width" });
 		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "screen height" });
+		compInfoModel->dataSize = sizeof(Camera);
 	}
 
 	~RenderSceneImpl() override
@@ -161,21 +163,28 @@ public:
 		}
 	}
 
-	void* GetComponentData(componentHandle handle, Entity entity, worldId world) const override
+	void GetComponentData(componentHandle handle, Entity entity, worldId world, void* buffer) const override
 	{
 		switch ((u8)handle)
 		{
 		case COMPONENT_MODEL:
+		{
 			ModelItem* model;
 			ASSERT2(m_models.Find(entity, model), "Component not found");
-			return &model->handle;
+			*(ResourceType*)buffer = ResourceType::Model;
+			buffer = (ResourceType*)buffer + 1;
+			*(resourceHandle*)buffer = (resourceHandle)model->handle;
+			break;
+		}
 		case COMPONENT_CAMERA:
+		{
 			CameraItem* cam;
 			ASSERT2(m_cameras.Find(entity, cam), "Component not found");
-			return &cam->camera;
+			memory::Copy(buffer, &cam->camera, sizeof(Camera));
+			break;
+		}
 		default:
 			ASSERT2(false, "Unrecognized componentHandle");
-			return nullptr;
 		}
 	}
 

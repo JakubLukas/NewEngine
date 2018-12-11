@@ -9,7 +9,9 @@
 
 #include "renderer/renderer.h"///////////////
 #include "renderer/camera.h"///////////////////
-//#include "renderer/resource_managers/model.h"///////////
+
+#include "core/resource/resource_management.h"///////////
+#include "core/resource/resource_manager.h"
 
 
 namespace Veng
@@ -86,7 +88,10 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 			if (!scene->HasComponent(info.handle, m_entity, m_world->GetId()))
 				continue;
 
-			void* data = scene->GetComponentData(info.handle, m_entity, m_world->GetId());
+			char buffer[1024];
+			char* data = buffer;
+			ASSERT2(sizeof(buffer) >= info.dataSize, "Buffer is not large enough");
+			scene->GetComponentData(info.handle, m_entity, m_world->GetId(), data);
 
 			ImGui::Text("%s", info.name);
 
@@ -97,37 +102,40 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 				{
 				case ComponentInfo::ValueType::ResourceHandle:
 				{
-					resourceHandle& handle = *(resourceHandle*)data;
-					Resource* res = m_engine->GetResourceManagement()->GetResource()
-					ImGui::InputText()
+					ResourceType type = *(ResourceType*)data;
+					resourceHandle handle = *(resourceHandle*)(data + sizeof(ResourceType));
+					const Resource* res = m_engine->GetResourceManagement()->GetResource(type, handle);
+					char pathBuffer[Path::MAX_LENGTH+1];
+					memory::Copy(pathBuffer, res->GetPath().path, Path::MAX_LENGTH + 1);
+					ImGui::InputText("path", pathBuffer, Path::MAX_LENGTH + 1);
 					if (ImGui::InputScalar(value.name, ImGuiDataType_U64, &handle))
 						changed = true;
-					data = (resourceHandle*)data + 1;
+					data = data + sizeof(ResourceType) + sizeof(resourceHandle);
 					break;
 				}
 				case ComponentInfo::ValueType::Int:
 				{
 					int& val = *(int*)data;
-					if (ImGui::InputInt(value.name, &val))
+					if (ImGui::InputInt(value.name, &val, 1, 10, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
 						changed = true;
-					data = (int*)data + 1;
+					data = data + sizeof(int);
 					break;
 				}
 				case ComponentInfo::ValueType::Float:
 				{
 					float& val = *(float*)data;
-					if (ImGui::InputFloat(value.name, &val))
+					if (ImGui::InputFloat(value.name, &val, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
 						changed = true;
-					data = (float*)data + 1;
+					data = data + sizeof(float);
 					break;
 				}
 				case ComponentInfo::ValueType::Angle:
 				{
 					float val = toDeg(*(float*)data);
-					if (ImGui::InputFloat(value.name, &val))
+					if (ImGui::InputFloat(value.name, &val, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
 						changed = true;
 					*(float*)data = toRad(val);
-					data = (float*)data + 1;
+					data = data + sizeof(float);
 					break;
 				}
 				case ComponentInfo::ValueType::String:
@@ -143,6 +151,9 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 					break;
 				}
 			}
+
+			if(changed)
+				scene->SetComponentData(info.handle, m_entity, m_world->GetId(), buffer);
 		}
 
 	}
