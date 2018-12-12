@@ -4,6 +4,7 @@
 
 #include "../file_system.h"
 #include "core/asserts.h"
+#include "core/memory.h"
 
 
 namespace Veng
@@ -370,6 +371,26 @@ bool WriteFileSync(nativeFileHandle fileHandle, size_t filePosition, const void*
 	ASSERT(size == bytesWritten);
 
 	return (result != FALSE);
+}
+
+
+searchHandle FindFirstFile(const Path& path, SearchInfo& info)
+{
+	WIN32_FIND_DATA findData;
+	HANDLE handle = ::FindFirstFile(path.path, &findData);
+	memory::Copy(info.fileName, findData.cFileName, Path::MAX_LENGTH);
+	info.fileSize = ((size_t)findData.nFileSizeHigh << 32) + findData.nFileSizeLow;
+	return handle;
+}
+
+bool FindNextFile(searchHandle handle, SearchInfo& info)
+{
+	return false;
+}
+
+void FindClose(searchHandle handle)
+{
+
 }
 
 

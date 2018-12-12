@@ -50,6 +50,21 @@ bool OpenFileSync(nativeFileHandle& fileHandle, const Path& path, const FileMode
 bool CloseFileSync(nativeFileHandle fileHandle);
 bool ReadFileSync(nativeFileHandle fileHandle, size_t filePosition, void* buffer, size_t size, size_t& bytesRead);
 bool WriteFileSync(nativeFileHandle fileHandle, size_t filePosition, const void* data, size_t size);
+
+//---------- search ----------
+
+using searchHandle = void*;
+struct SearchInfo
+{
+	char fileName[Path::MAX_LENGTH];
+	size_t fileSize;
+
+};
+searchHandle FindFirstFile(const Path& path, SearchInfo& info);
+bool FindNextFile(searchHandle handle, SearchInfo& info);
+void FindClose(searchHandle handle);
+
+
 }
 
 
