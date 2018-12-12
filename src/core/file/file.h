@@ -54,6 +54,7 @@ bool WriteFileSync(nativeFileHandle fileHandle, size_t filePosition, const void*
 //---------- search ----------
 
 using searchHandle = void*;
+const searchHandle INVALID_SEARCH_HANDLE = nullptr;
 struct SearchInfo
 {
 	char fileName[Path::MAX_LENGTH];

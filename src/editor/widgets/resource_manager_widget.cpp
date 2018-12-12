@@ -31,6 +31,9 @@ void ResourceManagerWidget::Update(EventQueue& queue)
 {}
 
 
+//void BuildFileBrowser(fileinfo, )
+
+
 void ResourceManagerWidget::RenderInternal(EventQueue& queue)
 {
 	if (nullptr == m_manager)

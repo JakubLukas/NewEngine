@@ -378,6 +378,12 @@ searchHandle FindFirstFile(const Path& path, SearchInfo& info)
 {
 	WIN32_FIND_DATA findData;
 	HANDLE handle = ::FindFirstFile(path.path, &findData);
+	if(handle == INVALID_HANDLE_VALUE)
+	{
+		ASSERT2(false, "FindFirstFile failed");
+		DWORD err = GetLastError();
+		return INVALID_SEARCH_HANDLE;
+	}
 	memory::Copy(info.fileName, findData.cFileName, Path::MAX_LENGTH);
 	info.fileSize = ((size_t)findData.nFileSizeHigh << 32) + findData.nFileSizeLow;
 	return handle;
@@ -385,12 +391,25 @@ searchHandle FindFirstFile(const Path& path, SearchInfo& info)
 
 bool FindNextFile(searchHandle handle, SearchInfo& info)
 {
+	WIN32_FIND_DATA findData;
+	if(::FindNextFile(handle, &findData) != FALSE)
+	{
+		DWORD err = GetLastError();
+		if(err == ERROR_NO_MORE_FILES)
+			return true;
+
+		ASSERT2(false, "FindNextFile failed");
+	}
 	return false;
 }
 
 void FindClose(searchHandle handle)
 {
-
+	if(::FindClose(handle) == FALSE)
+	{
+		ASSERT2(false, "FindClose failed");
+		DWORD err = GetLastError();
+	}
 }
 
 
