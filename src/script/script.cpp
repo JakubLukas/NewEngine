@@ -46,13 +46,13 @@ public:
 				if (i % 2 == 0)
 				{
 					renderScene->AddComponent(componentHandle(0), m_entities[i], m_world);
-					modelHandle handle = renderSystem->GetModelManager().Load("models/cubes.model");
+					modelHandle handle = renderSystem->GetModelManager().Load(Path("models/cubes.model"));
 					renderScene->SetComponentData(componentHandle(0), m_entities[i], m_world, &handle);
 				}
 				else
 				{
 					renderScene->AddComponent(componentHandle(0), m_entities[i], m_world);
-					modelHandle handle = renderSystem->GetModelManager().Load("models/pyramid.model");
+					modelHandle handle = renderSystem->GetModelManager().Load(Path("models/pyramid.model"));
 					renderScene->SetComponentData(componentHandle(0), m_entities[i], m_world, &handle);
 				}
 

@@ -57,13 +57,30 @@ using searchHandle = void*;
 const searchHandle INVALID_SEARCH_HANDLE = nullptr;
 struct SearchInfo
 {
-	char fileName[Path::MAX_LENGTH];
+	enum class FileType : u8
+	{
+		Normal,
+		Directory,
+	};
+
+	typedef u8 FileModifiersFlags;
+	enum FileModifiersBits : FileModifiersFlags
+	{
+		None = 0,
+		Hidden = 1 << 0,
+		ReadOnly = 1 << 1,
+		SymLink = 1 << 2,
+	};
+
 	size_t fileSize;
+	FileType type;
+	FileModifiersFlags modifiers;
+	char fileName[Path::MAX_LENGTH] = { 0 };
 
 };
-searchHandle FindFirstFile(const Path& path, SearchInfo& info);
-bool FindNextFile(searchHandle handle, SearchInfo& info);
-void FindClose(searchHandle handle);
+searchHandle SearchFirstFile(const Path& path, SearchInfo& info);
+bool SearchNextFile(searchHandle handle, SearchInfo& info);
+void SearchClose(searchHandle handle);
 
 
 }

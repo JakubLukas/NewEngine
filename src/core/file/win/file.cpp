@@ -374,7 +374,7 @@ bool WriteFileSync(nativeFileHandle fileHandle, size_t filePosition, const void*
 }
 
 
-searchHandle FindFirstFile(const Path& path, SearchInfo& info)
+searchHandle SearchFirstFile(const Path& path, SearchInfo& info)
 {
 	WIN32_FIND_DATA findData;
 	HANDLE handle = ::FindFirstFile(path.path, &findData);
@@ -384,26 +384,64 @@ searchHandle FindFirstFile(const Path& path, SearchInfo& info)
 		DWORD err = GetLastError();
 		return INVALID_SEARCH_HANDLE;
 	}
-	memory::Copy(info.fileName, findData.cFileName, Path::MAX_LENGTH);
+
+	info.type = SearchInfo::FileType::Normal;
+	info.modifiers = SearchInfo::FileModifiersBits::None;
+	switch (findData.dwFileAttributes)
+	{
+	case FILE_ATTRIBUTE_DIRECTORY:
+		info.type = SearchInfo::FileType::Directory;
+		break;
+	case FILE_ATTRIBUTE_REPARSE_POINT:
+		if(findData.dwReserved0 == IO_REPARSE_TAG_SYMLINK)
+			info.type = SearchInfo::FileType::Directory;
+		break;
+	case FILE_ATTRIBUTE_HIDDEN:
+		info.modifiers |= SearchInfo::FileModifiersBits::Hidden;
+		break;
+	case FILE_ATTRIBUTE_READONLY:
+		info.modifiers |= SearchInfo::FileModifiersBits::ReadOnly;
+		break;
+	}
 	info.fileSize = ((size_t)findData.nFileSizeHigh << 32) + findData.nFileSizeLow;
+	memory::Copy(info.fileName, findData.cFileName, Path::MAX_LENGTH);
 	return handle;
 }
 
-bool FindNextFile(searchHandle handle, SearchInfo& info)
+bool SearchNextFile(searchHandle handle, SearchInfo& info)
 {
 	WIN32_FIND_DATA findData;
-	if(::FindNextFile(handle, &findData) != FALSE)
+	if(::FindNextFile(handle, &findData) == FALSE)
 	{
 		DWORD err = GetLastError();
-		if(err == ERROR_NO_MORE_FILES)
-			return true;
-
-		ASSERT2(false, "FindNextFile failed");
+		if (err != ERROR_NO_MORE_FILES)
+			ASSERT2(false, "FindNextFile failed");
+		
+		return false;
 	}
-	return false;
+
+	info.type = SearchInfo::FileType::Normal;
+	info.modifiers = SearchInfo::FileModifiersBits::None;
+	
+	if(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		info.type = SearchInfo::FileType::Directory;
+	if (findData.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+	{
+		if (findData.dwReserved0 == IO_REPARSE_TAG_SYMLINK)
+			info.modifiers |= SearchInfo::FileModifiersBits::SymLink;
+	}
+	if (findData.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN)
+		info.modifiers |= SearchInfo::FileModifiersBits::Hidden;
+	if (findData.dwFileAttributes & FILE_ATTRIBUTE_READONLY)
+		info.modifiers |= SearchInfo::FileModifiersBits::ReadOnly;
+
+	info.fileSize = ((size_t)findData.nFileSizeHigh << 32) + findData.nFileSizeLow;
+	memory::Copy(info.fileName, findData.cFileName, Path::MAX_LENGTH);
+
+	return true;
 }
 
-void FindClose(searchHandle handle)
+void SearchClose(searchHandle handle)
 {
 	if(::FindClose(handle) == FALSE)
 	{

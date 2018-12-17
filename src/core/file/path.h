@@ -12,7 +12,7 @@ struct Path
 	static const size_t MAX_LENGTH = 260;
 
 	Path();
-	Path(const char* str);
+	explicit Path(const char* str);
 	Path(const char* str, size_t length);
 	Path(const Path& other);
 

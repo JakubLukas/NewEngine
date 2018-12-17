@@ -266,7 +266,7 @@ TextureManager* m_textureManager = nullptr;////////////////////////////////
 namespace Editor
 {
 
-static const Path IMGUI_DOCK_DATA_PATH = "imgui_dock_data.bin";
+static const Path IMGUI_DOCK_DATA_PATH = Path("imgui_dock_data.bin");
 
 struct Input
 {

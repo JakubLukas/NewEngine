@@ -35,7 +35,9 @@ public:
 
 		m_callback.Bind<FileSystemImpl, &FileSystemImpl::Callback>(this);
 
-		os::GetCurrentDir(m_currentDir.path, Path::MAX_LENGTH);
+		char buffer[Path::MAX_LENGTH] = { 0 };
+		os::GetCurrentDir(buffer, Path::MAX_LENGTH);
+		m_currentDir = Path(buffer);
 	}
 
 
