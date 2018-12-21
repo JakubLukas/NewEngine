@@ -34,8 +34,10 @@ public:
 	MaterialManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
 	~MaterialManager() override;
 
-
 	ResourceType GetType() const override { return ResourceType::Material; };
+
+	const char* const * GetSupportedFileExt() const override;
+	size_t GetSupportedFileExtCount() const override;
 
 	materialHandle Load(const Path& path);
 	void Unload(materialHandle handle);

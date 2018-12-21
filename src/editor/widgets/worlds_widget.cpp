@@ -20,7 +20,7 @@ WorldsWidget::~WorldsWidget()
 }
 
 
-void WorldsWidget::Init(IAllocator& allocator, Engine& engine)
+void WorldsWidget::Init(Engine& engine)
 {
 	m_engine = &engine;
 }

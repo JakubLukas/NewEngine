@@ -35,6 +35,18 @@ MaterialManager::~MaterialManager()
 }
 
 
+const char* const * MaterialManager::GetSupportedFileExt() const
+{
+	static const char* buffer[] = { "tga" };
+	return buffer;
+}
+
+size_t MaterialManager::GetSupportedFileExtCount() const
+{
+	return 1;
+}
+
+
 materialHandle MaterialManager::Load(const Path& path)
 {
 	return GenericToMaterialHandle(ResourceManager::Load(path));

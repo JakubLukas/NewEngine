@@ -106,7 +106,7 @@ public:
 			}
 			else
 			{
-				ASSERT2(false, "Not enough memory");
+				ASSERT2(false, "Buffer overflow");
 				break;
 			}
 		}
@@ -132,7 +132,19 @@ public:
 		}
 		else
 		{
-			ASSERT2(false, "String argument is too long");
+			ASSERT2(false, "Buffer overflow");
+		}
+	}
+
+	void Sub(size_t len)
+	{
+		if (m_ptr - len >= m_data)
+		{
+			m_ptr = m_ptr - len;
+		}
+		else
+		{
+			ASSERT2(false, "Buffer underflow");
 		}
 	}
 

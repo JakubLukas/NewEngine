@@ -19,6 +19,9 @@ public:
 
 	ResourceType GetType() const override { return ResourceType::Texture; }
 
+	const char* const * GetSupportedFileExt() const override;
+	size_t GetSupportedFileExtCount() const override;
+
 	textureHandle Load(const Path& path);
 	void Unload(textureHandle handle);
 	void Reload(textureHandle handle);

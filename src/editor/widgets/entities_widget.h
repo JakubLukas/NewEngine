@@ -16,7 +16,7 @@ namespace Editor
 class EntitiesWidget : public WidgetBase
 {
 public:
-	void Init(IAllocator& allocator, Engine& engine) override;
+	void Init(Engine& engine) override;
 	void Deinit() override;
 
 	void Update(EventQueue& queue) override;

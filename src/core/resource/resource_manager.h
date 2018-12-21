@@ -31,6 +31,9 @@ public:
 
 	virtual ResourceType GetType() const = 0;
 
+	virtual const char* const * GetSupportedFileExt() const = 0;
+	virtual size_t GetSupportedFileExtCount() const = 0;
+
 protected:
 	resourceHandle Load(const Path& path);
 	void Unload(resourceHandle handle);

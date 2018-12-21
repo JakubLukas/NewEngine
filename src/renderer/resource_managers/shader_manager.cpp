@@ -16,6 +16,11 @@
 namespace Veng
 {
 
+const char* const SHADER_VERT_FILE_EXT = ".vsr";
+const char* const SHADER_FRAG_FILE_EXT = ".fsr";
+const char* const SHADER_VERT_FILE_EXT_RET = ".vs";
+const char* const SHADER_FRAG_FILE_EXT_RET = ".fs";
+
 
 static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& outPath)
 {
@@ -23,10 +28,6 @@ static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& 
 	static const char* ROOT_PATH = "shaders/";
 	static const char* OUT_PATH = "compiled/";
 	static const char* COMMON_PATH = "common/";
-	static const char* IN_VERTEX_EXT = "vsr";
-	static const char* IN_FRAGMENT_EXT = "fsr";
-	static const char* OUT_VERTEX_EXT = "vs";
-	static const char* OUT_FRAGMENT_EXT = "fs";
 
 	StaticInputBuffer<512> inPath;
 	inPath << path.path;
@@ -52,15 +53,15 @@ static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& 
 	extPtr++;
 
 	bool vertexShader;
-	if (string::Equal(extPtr, IN_VERTEX_EXT))
+	if (string::Equal(extPtr, SHADER_VERT_FILE_EXT + 1))
 	{
 		vertexShader = true;
-		outPathBuffer << "." << OUT_VERTEX_EXT;
+		outPathBuffer << SHADER_VERT_FILE_EXT_RET;
 	}
-	else if (string::Equal(extPtr, IN_FRAGMENT_EXT))
+	else if (string::Equal(extPtr, SHADER_FRAG_FILE_EXT + 1))
 	{
 		vertexShader = false;
-		outPathBuffer << "." << OUT_FRAGMENT_EXT;
+		outPathBuffer << SHADER_FRAG_FILE_EXT_RET;
 	}
 
 	StaticInputBuffer<512> includeDir;
@@ -120,6 +121,18 @@ ShaderInternalManager::ShaderInternalManager(IAllocator& allocator, FileSystem& 
 
 ShaderInternalManager::~ShaderInternalManager()
 {
+}
+
+
+const char* const * ShaderInternalManager::GetSupportedFileExt() const
+{
+	static const char* buffer[] = { "vs", "fs" };
+	return buffer;
+}
+
+size_t ShaderInternalManager::GetSupportedFileExtCount() const
+{
+	return 2;
 }
 
 
@@ -209,6 +222,18 @@ ShaderManager::ShaderManager(IAllocator& allocator, FileSystem& fileSystem, Depe
 
 ShaderManager::~ShaderManager()
 {
+}
+
+
+const char* const * ShaderManager::GetSupportedFileExt() const
+{
+	static const char* buffer[] = { "shader" };
+	return buffer;
+}
+
+size_t ShaderManager::GetSupportedFileExtCount() const
+{
+	return 1;
 }
 
 

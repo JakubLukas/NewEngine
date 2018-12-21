@@ -19,7 +19,7 @@ RendererWidget::~RendererWidget()
 {}
 
 
-void RendererWidget::Init(IAllocator& allocator, Engine& engine)
+void RendererWidget::Init(Engine& engine)
 {
 	m_engine = &engine;
 	m_renderer = static_cast<RenderSystem*>(engine.GetSystem("renderer"));

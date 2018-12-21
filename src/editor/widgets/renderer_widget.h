@@ -21,7 +21,7 @@ class RendererWidget : public WidgetBase
 {
 public:
 	~RendererWidget() override;
-	void Init(IAllocator& allocator, Engine& engine) override;
+	void Init(Engine& engine) override;
 	void Deinit() override;
 
 	void Update(EventQueue& queue) override;

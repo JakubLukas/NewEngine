@@ -595,7 +595,7 @@ public:
 		while (registry != nullptr)
 		{
 			WidgetBase* widget = registry->creator(m_allocator);
-			widget->Init(m_allocator, *m_engine);
+			widget->Init(*m_engine);
 			m_widgets.PushBack(widget);
 			registry = registry->next;
 		}

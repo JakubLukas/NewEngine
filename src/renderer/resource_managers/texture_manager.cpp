@@ -64,6 +64,18 @@ TextureManager::~TextureManager()
 }
 
 
+const char* const * TextureManager::GetSupportedFileExt() const
+{
+	static const char* buffer[] = { "tga" };
+	return buffer;
+}
+
+size_t TextureManager::GetSupportedFileExtCount() const
+{
+	return 1;
+}
+
+
 textureHandle TextureManager::Load(const Path& path)
 {
 	return GenericToMaterialHandle(ResourceManager::Load(path));

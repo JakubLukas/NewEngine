@@ -30,6 +30,18 @@ ModelManager::~ModelManager()
 {}
 
 
+const char* const * ModelManager::GetSupportedFileExt() const
+{
+	static const char* buffer[] = { "model" };
+	return buffer;
+}
+
+size_t ModelManager::GetSupportedFileExtCount() const
+{
+	return 1;
+}
+
+
 modelHandle ModelManager::Load(const Path& path)
 {
 	return GenericToModelHandle(ResourceManager::Load(path));

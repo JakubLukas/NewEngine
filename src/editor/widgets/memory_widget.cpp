@@ -6,7 +6,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "../external/imgui/imgui_internal.h"
 
-#include "core/containers/hash_map.h"
+
 
 
 namespace Veng
@@ -38,17 +38,20 @@ struct MemoryWidgetData
 };
 
 
+MemoryWidget::MemoryWidget(IAllocator& allocator)
+	: m_allocator(allocator)
+{
+	m_data = NEW_OBJECT(m_allocator, MemoryWidgetData)(m_allocator);
+}
+
 MemoryWidget::~MemoryWidget()
 {
-	DELETE_OBJECT(*m_allocator, m_data);
+	DELETE_OBJECT(m_allocator, m_data);
 }
 
 
-void MemoryWidget::Init(IAllocator& allocator, Engine& engine)
-{
-	m_allocator = &allocator;
-	m_data = NEW_OBJECT(allocator, MemoryWidgetData)(*m_allocator);
-}
+void MemoryWidget::Init(Engine& engine)
+{}
 
 
 void MemoryWidget::Deinit()
@@ -151,7 +154,7 @@ void MemoryWidget::RenderInternal(EventQueue& queue)
 
 REGISTER_WIDGET(memory)
 {
-	return NEW_OBJECT(allocator, MemoryWidget)();
+	return NEW_OBJECT(allocator, MemoryWidget)(allocator);
 }
 
 

@@ -21,6 +21,9 @@ public:
 
 	ResourceType GetType() const override { return ResourceType::ShaderInternal; };
 
+	const char* const * GetSupportedFileExt() const override;
+	size_t GetSupportedFileExtCount() const override;
+
 	shaderInternalHandle Load(const Path& path);
 
 	void Unload(shaderInternalHandle handle);
@@ -61,6 +64,9 @@ public:
 
 
 	ResourceType GetType() const override { return ResourceType::Shader; };
+
+	const char* const * GetSupportedFileExt() const override;
+	size_t GetSupportedFileExtCount() const override;
 
 	shaderHandle Load(const Path& path);
 	void Unload(shaderHandle handle);

@@ -4,7 +4,6 @@
 #include "core/iallocator.h"
 #include "core/asserts.h"
 #include "core/utility.h"
-#include "core/memory.h"
 
 
 namespace Veng

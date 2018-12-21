@@ -23,7 +23,7 @@ namespace Editor
 {
 
 
-void EntityWidget::Init(IAllocator& allocator, Engine& engine)
+void EntityWidget::Init(Engine& engine)
 {
 	m_engine = &engine;
 }
@@ -104,12 +104,21 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 				{
 					ResourceType type = *(ResourceType*)data;
 					resourceHandle handle = *(resourceHandle*)(data + sizeof(ResourceType));
-					const Resource* res = m_engine->GetResourceManagement()->GetResource(type, handle);
+					ResourceManager* manager = m_engine->GetResourceManagement()->GetManager(type);
+					const Resource* res = m_engine->GetResourceManagement()->GetResource(type, handle);////
 					char pathBuffer[Path::MAX_LENGTH+1];
 					memory::Copy(pathBuffer, res->GetPath().path, Path::MAX_LENGTH + 1);
 					ImGui::InputText("path", pathBuffer, Path::MAX_LENGTH + 1);
-					if (ImGui::InputScalar(value.name, ImGuiDataType_U64, &handle))
-						changed = true;
+					for (size_t i = 0; i < manager->GetSupportedFileExtCount(); ++i)
+					{
+						if (ImGui::BeginDragDropTarget())
+						{
+							const ImGuiPayload* data = ImGui::AcceptDragDropPayload(manager->GetSupportedFileExt()[i], ImGuiDragDropFlags_None);
+							//manager->
+							ImGui::EndDragDropTarget();
+						}
+					}
+					changed |= ImGui::InputScalar(value.name, ImGuiDataType_U64, &handle);
 					data = data + sizeof(ResourceType) + sizeof(resourceHandle);
 					break;
 				}

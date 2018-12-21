@@ -19,6 +19,9 @@ public:
 
 	ResourceType GetType() const override { return ResourceType::Model; };
 
+	const char* const * GetSupportedFileExt() const override;
+	size_t GetSupportedFileExtCount() const override;
+
 	modelHandle Load(const Path& path);
 	void Unload(modelHandle handle);
 	void Reload(modelHandle handle);

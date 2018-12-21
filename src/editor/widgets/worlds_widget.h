@@ -16,7 +16,7 @@ class WorldsWidget : public WidgetBase
 {
 public:
 	~WorldsWidget() override;
-	void Init(IAllocator& allocator, Engine& engine) override;
+	void Init(Engine& engine) override;
 	void Deinit() override;
 
 	void Update(EventQueue& queue) override;

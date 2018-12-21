@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../widget_base.h"
+#include "core/containers/hash_map.h"
 
 
 namespace Veng
@@ -18,8 +19,9 @@ struct MemoryWidgetData;
 class MemoryWidget : public WidgetBase
 {
 public:
+	MemoryWidget(IAllocator& allocator);
 	~MemoryWidget() override;
-	void Init(IAllocator& allocator, Engine& engine) override;
+	void Init(Engine& engine) override;
 	void Deinit() override;
 
 	void Update(EventQueue& queue) override;
@@ -29,7 +31,7 @@ protected:
 	const char* GetName() const override { return "MemoryManager"; };
 
 private:
-	IAllocator* m_allocator = nullptr;
+	IAllocator& m_allocator;
 	const IAllocator* m_selected = nullptr;
 	MemoryWidgetData* m_data = nullptr;
 };
