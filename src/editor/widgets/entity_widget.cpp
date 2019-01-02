@@ -103,22 +103,31 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 				case ComponentInfo::ValueType::ResourceHandle:
 				{
 					ResourceType type = *(ResourceType*)data;
-					resourceHandle handle = *(resourceHandle*)(data + sizeof(ResourceType));
+					resourceHandle* handle = (resourceHandle*)(data + sizeof(ResourceType));
 					ResourceManager* manager = m_engine->GetResourceManagement()->GetManager(type);
-					const Resource* res = m_engine->GetResourceManagement()->GetResource(type, handle);////
+					const Resource* resource = m_engine->GetResourceManagement()->GetResource(type, *handle);////
 					char pathBuffer[Path::MAX_LENGTH+1];
-					memory::Copy(pathBuffer, res->GetPath().path, Path::MAX_LENGTH + 1);
+					memory::Copy(pathBuffer, resource->GetPath().GetPath(), Path::MAX_LENGTH + 1);
 					ImGui::InputText("path", pathBuffer, Path::MAX_LENGTH + 1);
 					for (size_t i = 0; i < manager->GetSupportedFileExtCount(); ++i)
 					{
 						if (ImGui::BeginDragDropTarget())
 						{
 							const ImGuiPayload* data = ImGui::AcceptDragDropPayload(manager->GetSupportedFileExt()[i], ImGuiDragDropFlags_None);
-							//manager->
+							if (data != nullptr)
+							{
+								Path path((char*)data->Data);
+								if (resource->GetPath() != path)
+								{
+									resourceHandle newResource = manager->Load(path);
+									*handle = newResource;
+									changed = true;
+								}
+							}
 							ImGui::EndDragDropTarget();
 						}
 					}
-					changed |= ImGui::InputScalar(value.name, ImGuiDataType_U64, &handle);
+					//changed |= ImGui::InputScalar(value.name, ImGuiDataType_U64, handle);
 					data = data + sizeof(ResourceType) + sizeof(resourceHandle);
 					break;
 				}

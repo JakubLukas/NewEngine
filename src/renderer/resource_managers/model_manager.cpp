@@ -10,17 +10,6 @@ namespace Veng
 {
 
 
-inline static modelHandle GenericToModelHandle(resourceHandle handle)
-{
-	return static_cast<modelHandle>(handle);
-}
-
-inline static resourceHandle ModelToGenericHandle(modelHandle handle)
-{
-	return static_cast<resourceHandle>(handle);
-}
-
-
 ModelManager::ModelManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
 	: ResourceManager(allocator, fileSystem, depManager)
 {}
@@ -39,30 +28,6 @@ const char* const * ModelManager::GetSupportedFileExt() const
 size_t ModelManager::GetSupportedFileExtCount() const
 {
 	return 1;
-}
-
-
-modelHandle ModelManager::Load(const Path& path)
-{
-	return GenericToModelHandle(ResourceManager::Load(path));
-}
-
-
-void ModelManager::Unload(modelHandle handle)
-{
-	ResourceManager::Unload(ModelToGenericHandle(handle));
-}
-
-
-void ModelManager::Reload(modelHandle handle)
-{
-	ResourceManager::Reload(ModelToGenericHandle(handle));
-}
-
-
-const Model* ModelManager::GetResource(modelHandle handle) const
-{
-	return static_cast<const Model*>(ResourceManager::GetResource(ModelToGenericHandle(handle)));
 }
 
 
@@ -101,7 +66,7 @@ void ModelManager::ReloadResource(Resource* resource)
 
 void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
-	Model* model = static_cast<Model*>(ResourceManager::GetResource(handle));
+	Model* model = static_cast<Model*>(GetResource(handle));
 	
 	Mesh& mesh = model->meshes.PushBack();
 
@@ -111,18 +76,16 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 
 	char materialPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(dataText.ReadLine(materialPath, Path::MAX_LENGTH));
-	mesh.material = static_cast<materialHandle>(m_depManager->LoadResource(ResourceType::Model, ResourceType::Material, Path(materialPath)));
+	mesh.material = m_depManager->LoadResource(ResourceType::Model, ResourceType::Material, Path(materialPath));
 }
 
 
 void ModelManager::ChildResourceLoaded(resourceHandle handle, ResourceType type)
 {
-	materialHandle childHandle = static_cast<materialHandle>(handle);
-
 	for (auto& res : m_resources)
 	{
 		Model* model = static_cast<Model*>(res.value);
-		if (model->meshes[0].material == childHandle)
+		if (model->meshes[0].material == handle)
 		{
 			FinalizeModel(model);
 		}

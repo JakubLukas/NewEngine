@@ -63,7 +63,7 @@ public:
 		else
 		{
 			ASSERT2(false, "Resource manager of given type isn't registered");
-			return INVALID_HANDLE;
+			return INVALID_RESOURCE_HANDLE;
 		}
 	}
 

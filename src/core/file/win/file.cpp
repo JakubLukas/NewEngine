@@ -89,7 +89,7 @@ bool OpenFile(nativeFileHandle& fileHandle, nativeAsyncHandle asyncHandle, const
 		flags |= FILE_FLAG_WRITE_THROUGH;
 
 	HANDLE hFile = CreateFile(
-		path.path,
+		path.GetPath(),
 		(mode.access == FileMode::Access::Read) ? GENERIC_READ : GENERIC_WRITE,
 		shareModeTable[(unsigned)mode.shareMode],
 		NULL,
@@ -124,7 +124,7 @@ bool CloseFile(nativeFileHandle fileHandle)
 
 bool RemoveFile(const Path& path)
 {
-	return (DeleteFile(path.path) == TRUE);
+	return (DeleteFile(path.GetPath()) == TRUE);
 }
 
 
@@ -245,7 +245,7 @@ bool CreateDir(const Path& path)
 {
 	//SECURITY_ATTRIBUTES attr;
 	BOOL result = CreateDirectory(
-		path.path,
+		path.GetPath(),
 		NULL
 	);
 
@@ -271,7 +271,7 @@ bool CreateDir(const Path& path)
 bool RemoveDir(const Path& path)
 {
 	BOOL result = RemoveDirectory(
-		path.path
+		path.GetPath()
 	);
 
 	if(result == FALSE)
@@ -295,7 +295,7 @@ bool OpenFileSync(nativeFileHandle& fileHandle, const Path& path, const FileMode
 		flags |= FILE_FLAG_WRITE_THROUGH;
 
 	HANDLE hFile = CreateFile(
-		path.path,
+		path.GetPath(),
 		(mode.access == FileMode::Access::Read) ? GENERIC_READ : GENERIC_WRITE,
 		shareModeTable[(unsigned)mode.shareMode],
 		NULL,
@@ -377,7 +377,7 @@ bool WriteFileSync(nativeFileHandle fileHandle, size_t filePosition, const void*
 searchHandle SearchFirstFile(const Path& path, SearchInfo& info)
 {
 	WIN32_FIND_DATA findData;
-	HANDLE handle = ::FindFirstFile(path.path, &findData);
+	HANDLE handle = ::FindFirstFile(path.GetPath(), &findData);
 	if(handle == INVALID_HANDLE_VALUE)
 	{
 		ASSERT2(false, "FindFirstFile failed");

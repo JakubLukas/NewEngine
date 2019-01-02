@@ -57,8 +57,8 @@ void ResourceManagerWidget::ProcessDirFiles(const Path& searchPath)
 		if (!isLeaf)
 		{
 			StaticInputBuffer<Path::MAX_LENGTH> buffer;
-			size_t curPathLen = string::Length(searchPath.path);
-			buffer.Add(searchPath.path, curPathLen - 1);
+			size_t curPathLen = string::Length(searchPath.GetPath());
+			buffer.Add(searchPath.GetPath(), curPathLen - 1);
 			buffer << "/" << info.fileName << "/*";
 			Path path(buffer.Cstr());
 

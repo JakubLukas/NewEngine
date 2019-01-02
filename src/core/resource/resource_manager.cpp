@@ -29,10 +29,10 @@ ResourceManager::~ResourceManager()
 resourceHandle ResourceManager::Load(const Path& path)
 {
 	Resource** item;
-	if (!m_resources.Find(path.hash, item))
+	if (!m_resources.Find(path.GetHash(), item))
 	{
 		Resource* res = CreateResource();
-		item = m_resources.Insert(path.hash, res);
+		item = m_resources.Insert(path.GetHash(), res);
 		LoadResource(path, *item);
 	}
 
@@ -45,7 +45,7 @@ resourceHandle ResourceManager::Load(const Path& path)
 void ResourceManager::Unload(resourceHandle handle)
 {
 	Resource* resource = GetResource(handle);
-	u32 hash = resource->m_path.hash;
+	Path::Hash hash = resource->m_path.GetHash();
 	Resource** item;
 	if (m_resources.Find(hash, item))
 	{
@@ -67,7 +67,7 @@ void ResourceManager::Unload(resourceHandle handle)
 void ResourceManager::Reload(resourceHandle handle)
 {
 	Resource* resource = GetResource(handle);
-	u32 hash = resource->m_path.hash;
+	Path::Hash hash = resource->m_path.GetHash();
 	Resource** item;
 	if (m_resources.Find(hash, item))
 	{

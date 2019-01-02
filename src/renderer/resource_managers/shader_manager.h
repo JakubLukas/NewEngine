@@ -24,13 +24,6 @@ public:
 	const char* const * GetSupportedFileExt() const override;
 	size_t GetSupportedFileExtCount() const override;
 
-	shaderInternalHandle Load(const Path& path);
-
-	void Unload(shaderInternalHandle handle);
-	void Reload(shaderInternalHandle handle);
-
-	const ShaderInternal* GetResource(shaderInternalHandle handle) const;
-
 	void SetRenderSystem(RenderSystem* renderSystem);
 
 private:
@@ -52,9 +45,9 @@ class ShaderManager final : public ResourceManager
 private:
 	struct LoadingOp
 	{
-		shaderHandle shader;
-		shaderInternalHandle vsHandle;
-		shaderInternalHandle fsHandle;
+		resourceHandle shader;
+		resourceHandle vsHandle;
+		resourceHandle fsHandle;
 		u8 shadersIntLoaded = 0;
 	};
 
@@ -67,12 +60,6 @@ public:
 
 	const char* const * GetSupportedFileExt() const override;
 	size_t GetSupportedFileExtCount() const override;
-
-	shaderHandle Load(const Path& path);
-	void Unload(shaderHandle handle);
-	void Reload(shaderHandle handle);
-
-	const Shader* GetResource(shaderHandle handle) const;
 
 	void SetRenderSystem(RenderSystem* renderSystem);
 

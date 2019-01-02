@@ -39,17 +39,6 @@ namespace Veng
 {
 
 
-inline static textureHandle GenericToMaterialHandle(resourceHandle handle)
-{
-	return static_cast<textureHandle>(handle);
-}
-
-inline static resourceHandle MaterialToGenericHandle(textureHandle handle)
-{
-	return static_cast<resourceHandle>(handle);
-}
-
-
 TextureManager::TextureManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
 	: ResourceManager(allocator, fileSystem, depManager)
 {
@@ -73,30 +62,6 @@ const char* const * TextureManager::GetSupportedFileExt() const
 size_t TextureManager::GetSupportedFileExtCount() const
 {
 	return 1;
-}
-
-
-textureHandle TextureManager::Load(const Path& path)
-{
-	return GenericToMaterialHandle(ResourceManager::Load(path));
-}
-
-
-void TextureManager::Unload(textureHandle handle)
-{
-	ResourceManager::Unload(MaterialToGenericHandle(handle));
-}
-
-
-void TextureManager::Reload(textureHandle handle)
-{
-	ResourceManager::Reload(MaterialToGenericHandle(handle));
-}
-
-
-const Texture* TextureManager::GetResource(textureHandle handle) const
-{
-	return static_cast<const Texture*>(ResourceManager::GetResource(MaterialToGenericHandle(handle)));
 }
 
 
@@ -132,7 +97,7 @@ void TextureManager::ReloadResource(Resource* resource)
 
 void TextureManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
-	Texture* texture = static_cast<Texture*>(ResourceManager::GetResource(handle));
+	Texture* texture = static_cast<Texture*>(GetResource(handle));
 
 	int x;
 	int y;

@@ -30,12 +30,12 @@ static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& 
 	static const char* COMMON_PATH = "common/";
 
 	StaticInputBuffer<512> inPath;
-	inPath << path.path;
+	inPath << path.GetPath();
 
 	StaticInputBuffer<512> outPathBuffer;
 	outPathBuffer << ROOT_PATH << OUT_PATH;
 	fileSystem.CreateDirectory(Path(outPathBuffer.Cstr()));
-	const char* namePtr = string::FindStr(path.path, IN_DIR);
+	const char* namePtr = string::FindStr(path.GetPath(), IN_DIR);
 	ASSERT2(namePtr != nullptr, "Wrong shader path");
 	namePtr += 4;//move by raw/
 	const char* ptr = string::FindChar(namePtr, '/');
@@ -47,7 +47,7 @@ static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& 
 		namePtr = ptr;
 		ptr = string::FindChar(ptr, '/');
 	}
-	const char* extPtr = string::FindCharR(path.path, '.');
+	const char* extPtr = string::FindCharR(path.GetPath(), '.');
 	ASSERT2(extPtr != nullptr, "Wrong shader path");
 	outPathBuffer.Add(namePtr, extPtr - namePtr);
 	extPtr++;
@@ -103,17 +103,6 @@ static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& 
 
 
 
-inline static shaderInternalHandle GenericToShaderIntHandle(resourceHandle handle)
-{
-	return static_cast<shaderInternalHandle>(handle);
-}
-
-inline static resourceHandle ShaderIntToGenericHandle(shaderInternalHandle handle)
-{
-	return static_cast<resourceHandle>(handle);
-}
-
-
 ShaderInternalManager::ShaderInternalManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
 	: ResourceManager(allocator, fileSystem, depManager)
 {}
@@ -133,30 +122,6 @@ const char* const * ShaderInternalManager::GetSupportedFileExt() const
 size_t ShaderInternalManager::GetSupportedFileExtCount() const
 {
 	return 2;
-}
-
-
-shaderInternalHandle ShaderInternalManager::Load(const Path& path)
-{
-	return GenericToShaderIntHandle(ResourceManager::Load(path));
-}
-
-
-void ShaderInternalManager::Unload(shaderInternalHandle handle)
-{
-	ResourceManager::Unload(ShaderIntToGenericHandle(handle));
-}
-
-
-void ShaderInternalManager::Reload(shaderInternalHandle handle)
-{
-	ResourceManager::Reload(ShaderIntToGenericHandle(handle));
-}
-
-
-const ShaderInternal* ShaderInternalManager::GetResource(shaderInternalHandle handle) const
-{
-	return static_cast<const ShaderInternal*>(ResourceManager::GetResource(ShaderIntToGenericHandle(handle)));
 }
 
 
@@ -190,7 +155,7 @@ void ShaderInternalManager::ReloadResource(Resource* resource)
 
 void ShaderInternalManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
-	ShaderInternal* shaderInt = static_cast<ShaderInternal*>(ResourceManager::GetResource(handle));
+	ShaderInternal* shaderInt = static_cast<ShaderInternal*>(GetResource(handle));
 
 	shaderInt->renderDataHandle = m_renderSystem->CreateShaderInternalData(data);
 
@@ -199,17 +164,6 @@ void ShaderInternalManager::ResourceLoaded(resourceHandle handle, InputBlob& dat
 
 
 //=============================================================================
-
-
-inline static shaderHandle GenericToShaderHandle(resourceHandle handle)
-{
-	return static_cast<shaderHandle>(handle);
-}
-
-inline static resourceHandle ShaderToGenericHandle(shaderHandle handle)
-{
-	return static_cast<resourceHandle>(handle);
-}
 
 
 ShaderManager::ShaderManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
@@ -234,30 +188,6 @@ const char* const * ShaderManager::GetSupportedFileExt() const
 size_t ShaderManager::GetSupportedFileExtCount() const
 {
 	return 1;
-}
-
-
-shaderHandle ShaderManager::Load(const Path& path)
-{
-	return GenericToShaderHandle(ResourceManager::Load(path));
-}
-
-
-void ShaderManager::Unload(shaderHandle handle)
-{
-	ResourceManager::Unload(ShaderToGenericHandle(handle));
-}
-
-
-void ShaderManager::Reload(shaderHandle handle)
-{
-	ResourceManager::Reload(ShaderToGenericHandle(handle));
-}
-
-
-const Shader* ShaderManager::GetResource(shaderHandle handle) const
-{
-	return static_cast<const Shader*>(ResourceManager::GetResource(ShaderToGenericHandle(handle)));
 }
 
 
@@ -298,15 +228,14 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	InputClob dataText(data);
 
 	LoadingOp& op = m_loadingOp.PushBack();
-	op.shader = GenericToShaderHandle(handle);
+	op.shader = handle;
 
 	char vsPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(dataText.ReadLine(vsPath, Path::MAX_LENGTH));
 
 	Path vOutPath;
 	ASSERT(CompileShader(GetFileSystem(), Path(vsPath), vOutPath));
-	resourceHandle vsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, vOutPath);
-	shader->vsHandle = static_cast<shaderInternalHandle>(vsHandle);
+	shader->vsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, vOutPath);
 	op.vsHandle = shader->vsHandle;
 
 	char fsPath[Path::MAX_LENGTH + 1] = { '\0' };
@@ -314,29 +243,26 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 
 	Path fOutPath;
 	ASSERT(CompileShader(GetFileSystem(), Path(fsPath), fOutPath));
-	resourceHandle fsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, fOutPath);
-	shader->fsHandle = static_cast<shaderInternalHandle>(fsHandle);
+	shader->fsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, fOutPath);
 	op.fsHandle = shader->fsHandle;
 }
 
 
 void ShaderManager::ChildResourceLoaded(resourceHandle handle, ResourceType type)
 {
-	shaderInternalHandle childHandle = static_cast<shaderInternalHandle>(handle);
-
 	for(size_t i = 0; i < m_loadingOp.GetSize(); ++i)
 	{
 		LoadingOp& op = m_loadingOp[i];
 
-		if(op.vsHandle == childHandle)
+		if(op.vsHandle == handle)
 			op.shadersIntLoaded |= 1;
-		else if(op.fsHandle == childHandle)
+		else if(op.fsHandle == handle)
 			op.shadersIntLoaded |= 1 << 1;
 
 
 		if(op.shadersIntLoaded == 3)
 		{
-			Shader* shader = static_cast<Shader*>(ResourceManager::GetResource(ShaderToGenericHandle(op.shader)));
+			Shader* shader = static_cast<Shader*>(GetResource(op.shader));
 			FinalizeShader(shader);
 			m_loadingOp.Erase(i--);
 		}

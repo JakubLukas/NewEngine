@@ -6,9 +6,6 @@
 namespace Veng
 {
 
-enum class textureHandle : u64 {};
-const textureHandle INVALID_TEXTURE_HANDLE = (textureHandle)0;
-
 enum class textureRenderHandle : u64 {};
 const textureRenderHandle INVALID_TEXTURE_RENDER_HANDLE = (textureRenderHandle)0;
 

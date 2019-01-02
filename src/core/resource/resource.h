@@ -23,7 +23,7 @@ enum class ResourceType : u8
 
 
 enum class resourceHandle : u64 {};
-const resourceHandle INVALID_HANDLE = (resourceHandle)0;
+const resourceHandle INVALID_RESOURCE_HANDLE = (resourceHandle)0;
 
 
 class Resource

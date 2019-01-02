@@ -22,12 +22,6 @@ public:
 	const char* const * GetSupportedFileExt() const override;
 	size_t GetSupportedFileExtCount() const override;
 
-	modelHandle Load(const Path& path);
-	void Unload(modelHandle handle);
-	void Reload(modelHandle handle);
-
-	const Model* GetResource(modelHandle handle) const;
-
 	void SetRenderSystem(RenderSystem* renderSystem);
 
 private:

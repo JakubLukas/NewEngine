@@ -34,13 +34,12 @@ public:
 	virtual const char* const * GetSupportedFileExt() const = 0;
 	virtual size_t GetSupportedFileExtCount() const = 0;
 
-protected:
 	resourceHandle Load(const Path& path);
 	void Unload(resourceHandle handle);
 	void Reload(resourceHandle handle);
 
-	inline Resource* GetResource(resourceHandle handle) const;
-	inline resourceHandle GetResourceHandle(Resource* resource) const;
+	Resource* GetResource(resourceHandle handle) const;
+	resourceHandle GetResourceHandle(Resource* resource) const;
 
 protected:
 	virtual Resource* CreateResource() = 0;
@@ -58,7 +57,7 @@ private:
 
 protected:
 	IAllocator& m_allocator;
-	HashMap<u32, Resource*> m_resources;
+	HashMap<Path::Hash, Resource*> m_resources;
 	DependencyManager* m_depManager;
 	ResourceType m_type;
 

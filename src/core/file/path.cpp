@@ -12,52 +12,65 @@ namespace Veng
 
 Path::Path()
 {
-	path[0] = '\0';
+	m_path[0] = '\0';
 }
 
 Path::Path(const char* str)
 {
-	operator=(str);
+	SetPath(str);
 }
 
 Path::Path(const char* str, size_t length)
 {
-	string::Copy(path, str, length);
-	path[length] = '\0';
-	hash = crc32_string((u8*)path);
+	string::Copy(m_path, str, length);
+	m_path[length] = '\0';
+	m_hash = crc32_string((u8*)m_path);
 }
 
 Path::Path(const Path& other)
+	: m_hash(other.m_hash)
 {
-	string::Copy(path, other.path, MAX_LENGTH + 1);
-	hash = other.hash;
+	string::Copy(m_path, other.m_path, MAX_LENGTH + 1);
+}
+
+Path::Path(const Path&& other)
+	: m_hash(other.m_hash)
+{
+	string::Copy(m_path, other.m_path, MAX_LENGTH + 1);
+}
+
+
+void Path::SetPath(const char* str)
+{
+	size_t len = string::Length(str);
+	ASSERT(len <= MAX_LENGTH);
+	string::Copy(m_path, str, len);
+	m_path[len] = '\0';
+	m_hash = crc32_string((u8*)m_path);
 }
 
 
 Path& Path::operator=(const Path& other)
 {
-	string::Copy(path, other.path, MAX_LENGTH + 1);
-	hash = other.hash;
+	string::Copy(m_path, other.m_path, MAX_LENGTH + 1);
+	m_hash = other.m_hash;
 	return *this;
 }
 
-Path& Path::operator=(const char* str)
+Path& Path::operator=(const Path&& other)
 {
-	size_t len = string::Length(str);
-	ASSERT(len <= MAX_LENGTH);
-	string::Copy(path, str, len);
-	path[len] = '\0';
-	hash = crc32_string((u8*)path);
+	string::Copy(m_path, other.m_path, MAX_LENGTH + 1);
+	m_hash = other.m_hash;
 	return *this;
 }
 
 
-bool Path::operator==(const Path& other)
+bool Path::operator==(const Path& other) const
 {
-	return hash == other.hash;
+	return m_hash == other.m_hash;
 }
 
-bool Path::operator!=(const Path& other)
+bool Path::operator!=(const Path& other) const
 {
 	return !(operator==(other));
 }

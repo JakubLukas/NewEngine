@@ -101,7 +101,7 @@ public:
 	{
 		for (auto& modelItem : m_models)
 		{
-			m_renderSystem.GetModelManager().Unload(modelItem.handle);
+			m_renderSystem.GetModelManager().Unload(modelItem.model);
 		}
 	}
 
@@ -122,7 +122,7 @@ public:
 		switch ((u8)handle)
 		{
 		case COMPONENT_MODEL:
-			m_models.Insert(entity, { entity, INVALID_MODEL_HANDLE });
+			m_models.Insert(entity, { entity, INVALID_RESOURCE_HANDLE });
 			break;
 		case COMPONENT_CAMERA:
 			m_cameras.Insert(entity, { entity, Camera() });
@@ -173,7 +173,7 @@ public:
 			ASSERT2(m_models.Find(entity, model), "Component not found");
 			*(ResourceType*)buffer = ResourceType::Model;
 			buffer = (ResourceType*)buffer + 1;
-			*(resourceHandle*)buffer = (resourceHandle)model->handle;
+			*(resourceHandle*)buffer = model->model;
 			break;
 		}
 		case COMPONENT_CAMERA:
@@ -195,7 +195,8 @@ public:
 		case COMPONENT_MODEL:
 			ModelItem* model;
 			ASSERT2(m_models.Find(entity, model), "Component not found");
-			model->handle = *(modelHandle*)data;
+			m_renderSystem.GetModelManager().Unload(model->model);
+			model->model = *(resourceHandle*)data;
 			break;
 		case COMPONENT_CAMERA:
 			CameraItem* cam;
@@ -344,19 +345,19 @@ public:
 			bgfx::setTransform(&mtx.m11);
 
 
-			const Model* model = m_modelManager->GetResource(modelItems[i].handle);
+			const Model* model = (Model*)m_modelManager->GetResource(modelItems[i].model);
 			if(model->GetState() == Resource::State::Ready)
 			{
 				for(const Mesh& mesh : model->meshes)
 				{
-					const Material* material = m_materialManager->GetResource(mesh.material);
+					const Material* material = (Material*)m_materialManager->GetResource(mesh.material);
 					if(material->GetState() == Resource::State::Ready)
 					{
 						MeshData& meshData = m_meshData[(size_t)mesh.renderDataHandle];
 						bgfx::setVertexBuffer(0, meshData.vertexBufferHandle);
 						bgfx::setIndexBuffer(meshData.indexBufferHandle);
 
-						const Texture* texture = m_textureManager->GetResource(material->textures[0]);
+						const Texture* texture = (Texture*)m_textureManager->GetResource(material->textures[0]);
 						TextureData& texData = m_textureData[(size_t)texture->renderDataHandle];
 						bgfx::setTexture(0, m_uniformTextureColor, texData.handle);
 
@@ -365,7 +366,7 @@ public:
 						bgfx::setState(BGFX_STATE_DEFAULT);
 
 						// Submit primitive for rendering to view 0.
-						const Shader* shader = m_shaderManager->GetResource(material->shader);
+						const Shader* shader = (Shader*)m_shaderManager->GetResource(material->shader);
 						ShaderData& shaderData = m_shaderData[(size_t)shader->renderDataHandle];
 						bgfx::submit(VIEW_ID, shaderData.handle);
 					}
@@ -475,7 +476,7 @@ public:
 
 		if(bgfx::isValid(texData.handle))
 		{
-			bgfx::setName(texData.handle, texture.GetPath().path);
+			bgfx::setName(texData.handle, texture.GetPath().GetPath());
 			m_textureData.PushBack(texData);
 			return textureRenderHandle(m_textureData.GetSize() - 1);
 		}

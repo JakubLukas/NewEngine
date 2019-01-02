@@ -14,7 +14,7 @@ namespace Veng
 
 class IAllocator;
 class Engine;
-struct Path;
+class Path;
 class InputBlob;
 
 class RenderSystem;
@@ -30,7 +30,7 @@ public:
 	struct ModelItem
 	{
 		Entity entity;
-		modelHandle handle;
+		resourceHandle model;
 	};
 
 	struct CameraItem

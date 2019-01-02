@@ -10,17 +10,6 @@ namespace Veng
 {
 
 
-inline static materialHandle GenericToMaterialHandle(resourceHandle handle)
-{
-	return static_cast<materialHandle>(handle);
-}
-
-inline static resourceHandle MaterialToGenericHandle(materialHandle handle)
-{
-	return static_cast<resourceHandle>(handle);
-}
-
-
 MaterialManager::MaterialManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
 	: ResourceManager(allocator, fileSystem, depManager)
 	, m_loadingOp(m_allocator)
@@ -44,30 +33,6 @@ const char* const * MaterialManager::GetSupportedFileExt() const
 size_t MaterialManager::GetSupportedFileExtCount() const
 {
 	return 1;
-}
-
-
-materialHandle MaterialManager::Load(const Path& path)
-{
-	return GenericToMaterialHandle(ResourceManager::Load(path));
-}
-
-
-void MaterialManager::Unload(materialHandle handle)
-{
-	ResourceManager::Unload(MaterialToGenericHandle(handle));
-}
-
-
-void MaterialManager::Reload(materialHandle handle)
-{
-	ResourceManager::Reload(MaterialToGenericHandle(handle));
-}
-
-
-const Material* MaterialManager::GetResource(materialHandle handle) const
-{
-	return static_cast<const Material*>(ResourceManager::GetResource(MaterialToGenericHandle(handle)));
 }
 
 
@@ -103,11 +68,11 @@ void MaterialManager::ReloadResource(Resource* resource)
 
 void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
-	Material* material = static_cast<Material*>(ResourceManager::GetResource(handle));
+	Material* material = static_cast<Material*>(GetResource(handle));
 	InputClob dataText(data);
 
 	LoadingOp& op = m_loadingOp.PushBack();
-	op.material = GenericToMaterialHandle(handle);
+	op.material = handle;
 
 	char shaderPath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(dataText.ReadString(shaderPath, Path::MAX_LENGTH));
@@ -115,10 +80,10 @@ void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	char texturePath[Path::MAX_LENGTH + 1] = { '\0' };
 	ASSERT(dataText.ReadString(texturePath, Path::MAX_LENGTH));
 
-	material->shader = static_cast<shaderHandle>(m_depManager->LoadResource(ResourceType::Material, ResourceType::Shader, Path(shaderPath)));
+	material->shader = m_depManager->LoadResource(ResourceType::Material, ResourceType::Shader, Path(shaderPath));
 	op.shader = material->shader;
 
-	material->textures[0] = static_cast<textureHandle>(m_depManager->LoadResource(ResourceType::Material, ResourceType::Texture, Path(texturePath)));
+	material->textures[0] = m_depManager->LoadResource(ResourceType::Material, ResourceType::Texture, Path(texturePath));
 	op.textures[0] = material->textures[0];
 }
 
@@ -131,21 +96,21 @@ void MaterialManager::ChildResourceLoaded(resourceHandle handle, ResourceType ty
 
 		if (type == ResourceType::Shader)
 		{
-			if (op.shader == static_cast<shaderHandle>(handle))
+			if (op.shader == handle)
 				op.shaderLoaded = 1;
 		}
 		else if (type == ResourceType::Texture)
 		{
 			for (size_t i = 0; i < Material::MAX_TEXTURES; ++i)
 			{
-				if (op.textures[i] == static_cast<textureHandle>(handle))
+				if (op.textures[i] == handle)
 					op.texturesLoaded |= 1 << i;
 			}
 		}
 
 		if (op.shaderLoaded && op.texturesLoaded > 0)
 		{
-			Material* material = static_cast<Material*>(ResourceManager::GetResource(MaterialToGenericHandle(op.material)));
+			Material* material = static_cast<Material*>(GetResource(op.material));
 			FinalizeMaterial(material);
 			m_loadingOp.Erase(i--);
 		}

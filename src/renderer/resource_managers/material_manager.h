@@ -20,12 +20,12 @@ private:
 		LoadingOp()
 		{
 			for (size_t i = 0; i < Material::MAX_TEXTURES; ++i)
-				textures[i] = (textureHandle)INVALID_HANDLE;
+				textures[i] = INVALID_RESOURCE_HANDLE;
 		}
 
-		materialHandle material;
-		shaderHandle shader;
-		textureHandle textures[Material::MAX_TEXTURES];
+		resourceHandle material;
+		resourceHandle shader;
+		resourceHandle textures[Material::MAX_TEXTURES];
 		u8 shaderLoaded = 0;
 		u8 texturesLoaded = 0;
 	};
@@ -38,12 +38,6 @@ public:
 
 	const char* const * GetSupportedFileExt() const override;
 	size_t GetSupportedFileExtCount() const override;
-
-	materialHandle Load(const Path& path);
-	void Unload(materialHandle handle);
-	void Reload(materialHandle handle);
-
-	const Material* GetResource(materialHandle handle) const;
 
 	void SetRenderSystem(RenderSystem* renderSystem);
 
