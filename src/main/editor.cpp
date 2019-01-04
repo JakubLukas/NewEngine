@@ -493,7 +493,12 @@ public:
 				m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_SUPER_BIT) | (pressed << ImGui::MK_BO_SUPER); break;
 			default:
 				if (pressed)
-					m_inputBuffer.keyboardBuffer[m_inputBuffer.keyboardBufferPos++] = (u8)buttonId;
+				{
+					if(buttonId == KeyboardDevice::Button::NumpadEnter)
+						m_inputBuffer.keyboardBuffer[m_inputBuffer.keyboardBufferPos++] = (u8)KeyboardDevice::Button::Return;
+					else
+						m_inputBuffer.keyboardBuffer[m_inputBuffer.keyboardBufferPos++] = (u8)buttonId;
+				}
 			}
 		}
 		else

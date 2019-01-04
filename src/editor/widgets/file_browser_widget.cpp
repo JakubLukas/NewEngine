@@ -1,4 +1,4 @@
-#include "resource_manager_widget.h"
+#include "file_browser_widget.h"
 
 #include "../widget_register.h"
 #include "../external/imgui/imgui.h"
@@ -15,7 +15,7 @@ namespace Editor
 {
 
 
-ResourceManagerWidget::ResourceManagerWidget(IAllocator& allocator)
+FileBrowserWidget::FileBrowserWidget(IAllocator& allocator)
 	: m_allocator(allocator)
 	, m_workingDirFiles(m_allocator)
 {
@@ -24,10 +24,10 @@ ResourceManagerWidget::ResourceManagerWidget(IAllocator& allocator)
 	memory::Copy(invalidFile.name, "INVALID FILE", 12);
 }
 
-ResourceManagerWidget::~ResourceManagerWidget()
+FileBrowserWidget::~FileBrowserWidget()
 {}
 
-void ResourceManagerWidget::ProcessDirFiles(const Path& searchPath)
+void FileBrowserWidget::ProcessDirFiles(const Path& searchPath)
 {
 	FS::SearchInfo info;
 	FS::searchHandle handle = FS::SearchFirstFile(searchPath, info);
@@ -70,7 +70,7 @@ void ResourceManagerWidget::ProcessDirFiles(const Path& searchPath)
 	FS::SearchClose(handle);
 }
 
-void ResourceManagerWidget::Init(Engine& engine)
+void FileBrowserWidget::Init(Engine& engine)
 {
 	char buffer[Path::MAX_LENGTH] = { 0 };
 	os::GetCurrentDir(buffer, Path::MAX_LENGTH);
@@ -86,15 +86,15 @@ void ResourceManagerWidget::Init(Engine& engine)
 }
 
 
-void ResourceManagerWidget::Deinit()
+void FileBrowserWidget::Deinit()
 {}
 
 
-void ResourceManagerWidget::Update(EventQueue& queue)
+void FileBrowserWidget::Update(EventQueue& queue)
 {}
 
 
-void ResourceManagerWidget::BuildFileBrowser(StaticInputBuffer<Path::MAX_LENGTH>& path, size_t itemIdx)
+void FileBrowserWidget::BuildFileBrowser(StaticInputBuffer<Path::MAX_LENGTH>& path, size_t itemIdx)
 {
 	const File& item = m_workingDirFiles[itemIdx];
 
@@ -149,7 +149,7 @@ void ResourceManagerWidget::BuildFileBrowser(StaticInputBuffer<Path::MAX_LENGTH>
 }
 
 
-void ResourceManagerWidget::RenderInternal(EventQueue& queue)
+void FileBrowserWidget::RenderInternal(EventQueue& queue)
 {
 	if (m_workingDirFiles.GetSize() < 2)
 		return;
@@ -159,9 +159,9 @@ void ResourceManagerWidget::RenderInternal(EventQueue& queue)
 }
 
 
-REGISTER_WIDGET(resource_manager)
+REGISTER_WIDGET(file_browser)
 {
-	return NEW_OBJECT(allocator, ResourceManagerWidget)(allocator);
+	return NEW_OBJECT(allocator, FileBrowserWidget)(allocator);
 }
 
 

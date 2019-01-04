@@ -9,18 +9,16 @@
 namespace Veng
 {
 
-class ResourceManagement;
-
 
 namespace Editor
 {
 
 
-class ResourceManagerWidget : public WidgetBase
+class FileBrowserWidget : public WidgetBase
 {
 public:
-	ResourceManagerWidget(IAllocator& allocator);
-	~ResourceManagerWidget() override;
+	FileBrowserWidget(IAllocator& allocator);
+	~FileBrowserWidget() override;
 	void Init(Engine& engine) override;
 	void Deinit() override;
 

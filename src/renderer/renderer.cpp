@@ -195,8 +195,9 @@ public:
 		case COMPONENT_MODEL:
 			ModelItem* model;
 			ASSERT2(m_models.Find(entity, model), "Component not found");
-			m_renderSystem.GetModelManager().Unload(model->model);
-			model->model = *(resourceHandle*)data;
+			if(model->model != INVALID_RESOURCE_HANDLE)
+				m_renderSystem.GetModelManager().Unload(model->model);
+			model->model = *(resourceHandle*)((ResourceType*)data + 1);
 			break;
 		case COMPONENT_CAMERA:
 			CameraItem* cam;
@@ -309,6 +310,10 @@ public:
 
 	void Update(float deltaTime) override
 	{
+		//set worldid
+		//set camera
+		//render model
+
 		worldId worldHandle = (worldId)0;
 		World* world = m_engine.GetWorld(worldHandle);
 
@@ -572,6 +577,66 @@ public:
 
 	Engine& GetEngine() const override { return m_engine; }
 
+
+	ViewId CreateView() override
+	{
+
+	}
+
+	void SetView(ViewId view) override
+	{
+		m_current_view = view;
+	}
+
+	FramebufferId CreateFrameBuffer(int width, int height, bool autoResize) override
+	{
+
+	}
+
+	void SetFramebuffer(FramebufferId framebuffer) override
+	{
+
+	}
+
+	void SetCamera(Entity camera)
+	{
+		worldId worldHandle = (worldId)0;
+		World* world = m_engine.GetWorld(worldHandle);
+
+		static Matrix44 view;
+		static Matrix44 proj;
+		const RenderScene::CameraItem* cameraItem = m_scene->GetDefaultCamera(worldHandle);
+		if (cameraItem != nullptr)
+		{
+			const Camera& cam = cameraItem->camera;
+			proj.SetPerspective(cam.fov, cam.aspect, cam.nearPlane, cam.farPlane, bgfx::getCaps()->homogeneousDepth);
+			const Transform& camTrans = world->GetEntityTransform(cameraItem->entity);
+			Matrix44 camRot;
+			camRot.SetRotation(camTrans.rotation);
+			Vector4 eye = Vector4(camTrans.position, 1);
+			Vector4 at = camRot * Vector4(0, 0, -1, 0) + Vector4(camTrans.position, 1);
+			view.SetLookAt(eye, at, Vector4::AXIS_Y);
+		}
+
+		bgfx::setViewTransform(VIEW_ID, &view.m11, &proj.m11);
+	}
+
+	void Clear()
+	{
+		bgfx::setViewClear((bgfx::ViewId)m_current_view
+			, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
+			, 0x803030ff
+			, 1.0f
+			, 0
+		);
+	}
+
+	void RenderModels(RenderScene::ModelItem* models)
+	{
+
+	}
+
+
 private:
 	ProxyAllocator m_allocator;//must be first
 	Engine& m_engine;
@@ -591,6 +656,9 @@ private:
 	u32 m_width = 0;
 	u32 m_height = 0;
 	/////////////////////
+	Array<ViewId> m_views;
+	ViewId m_current_view;
+	Array<FramebufferId> m_framebuffers;
 
 	bgfx::UniformHandle m_uniformTextureColor;
 };

@@ -127,7 +127,7 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 							ImGui::EndDragDropTarget();
 						}
 					}
-					//changed |= ImGui::InputScalar(value.name, ImGuiDataType_U64, handle);
+					ImGui::InputScalar(value.name, ImGuiDataType_U64, handle, NULL, NULL, NULL, ImGuiInputTextFlags_ReadOnly);
 					data = data + sizeof(ResourceType) + sizeof(resourceHandle);
 					break;
 				}

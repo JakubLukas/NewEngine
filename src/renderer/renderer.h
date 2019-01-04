@@ -24,6 +24,10 @@ class ModelManager;
 class TextureManager;
 
 
+enum class ViewId : u16 {};
+enum class FramebufferId : u16 {};
+
+
 class RenderScene : public IScene
 {
 public:
@@ -61,6 +65,7 @@ public:
 	virtual const CameraItem* GetCameras(worldId world) const = 0;
 	virtual const CameraItem* GetDefaultCamera(worldId world) = 0;
 };
+
 
 
 class RenderSystem : public ISystem
@@ -101,6 +106,15 @@ public:
 	virtual u32 GetScreenHeight() const = 0;
 
 	virtual Engine& GetEngine() const = 0;
+
+	//render api
+	virtual ViewId CreateView() = 0;
+	virtual void SetView(ViewId view) = 0;
+	virtual FramebufferId CreateFrameBuffer(int width, int height, bool autoResize) = 0;//TODO: add: depth,stencil,formats
+	virtual void SetFramebuffer(FramebufferId framebuffer) = 0;
+	virtual void SetCamera(Entity camera) = 0;
+	virtual void Clear() = 0;
+	virtual void RenderModels(RenderScene::ModelItem* models) = 0;
 };
 
 
