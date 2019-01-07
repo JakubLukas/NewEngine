@@ -157,7 +157,7 @@ Type Array<Type>::PopBack()
 }
 
 template<class Type>
-bool Array<Type>::Erase(Type& value)
+bool Array<Type>::Erase(const Type& value)
 {
 	for (size_t i = 0; i < m_size; ++i)
 	{

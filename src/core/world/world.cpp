@@ -59,9 +59,9 @@ Entity World::CreateEntity()
 void World::DestroyEntity(Entity entity)
 {
 	size_t id = (size_t)entity;
-	ASSERT2(id < m_entities.GetSize(), "DestroyEntity: entity to destroy doesn't exist");
+	ASSERT2(id < m_entities.GetSize(), "Invalid entity");
 
-	ASSERT(m_entities[id].alive == false);
+	ASSERT2(m_entities[id].alive, "Entity has been already destroyed");
 
 	m_entities[id].alive = false;
 	m_entities[id].next = m_unusedEntity;
@@ -71,7 +71,7 @@ void World::DestroyEntity(Entity entity)
 Transform& World::GetEntityTransform(Entity entity)
 {
 	size_t id = (size_t)entity;
-	ASSERT(id < m_entities.GetSize())
+	ASSERT2(id < m_entities.GetSize(), "Invalid entity");
 	return m_entitiesTransform[id];
 }
 

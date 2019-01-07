@@ -271,6 +271,7 @@ public:
 		, m_textureData(m_allocator)
 		, m_shaderInternalData(m_allocator)
 		, m_shaderData(m_allocator)
+		, m_framebuffers(m_allocator)
 	{
 		m_allocator.SetDebugName("Renderer");
 

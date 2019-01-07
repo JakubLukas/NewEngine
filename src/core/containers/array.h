@@ -40,7 +40,7 @@ public:
 
 	Type PopBack();
 
-	bool Erase(Type& value);
+	bool Erase(const Type& value);
 	void Erase(size_t idx);
 
 	void EraseOrdered(size_t index);
