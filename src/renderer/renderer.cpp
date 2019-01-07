@@ -61,6 +61,14 @@ struct PosColorVertex ///////////////////this must be dynamic in future
 };
 
 
+struct FrameBuffer
+{
+	bgfx::FrameBufferHandle handle;
+	u16 width;
+	u16 height;
+};
+
+
 class RenderSceneImpl : public RenderScene
 {
 public:
@@ -379,6 +387,8 @@ public:
 			}
 		}
 
+		m_currentView = m_firstView - 1;//////
+
 	};
 
 
@@ -578,29 +588,31 @@ public:
 	Engine& GetEngine() const override { return m_engine; }
 
 
-	ViewId CreateView() override
-	{
-
-	}
-
-	void SetView(ViewId view) override
-	{
-		m_current_view = view;
-	}
-
 	FramebufferId CreateFrameBuffer(int width, int height, bool autoResize) override
 	{
+		return (FramebufferId)bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::Enum::RGB8).idx;
+	}
 
+	void DestroyFramebuffer(FramebufferId framebuffer) override
+	{
+		bgfx::FrameBufferHandle fbh{ (u16)framebuffer };
+		bgfx::destroy(fbh);
+	}
+
+	ViewId NewView() override
+	{
+		return (ViewId)++m_currentView;
 	}
 
 	void SetFramebuffer(FramebufferId framebuffer) override
 	{
-
+		bgfx::FrameBufferHandle fbh{ (u16)framebuffer };
+		bgfx::setViewFrameBuffer(m_currentView, fbh);
 	}
 
 	void SetCamera(Entity camera)
 	{
-		worldId worldHandle = (worldId)0;
+		worldId worldHandle = (worldId)0;//TODO
 		World* world = m_engine.GetWorld(worldHandle);
 
 		static Matrix44 view;
@@ -623,7 +635,7 @@ public:
 
 	void Clear()
 	{
-		bgfx::setViewClear((bgfx::ViewId)m_current_view
+		bgfx::setViewClear((bgfx::ViewId)m_currentView
 			, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
 			, 0x803030ff
 			, 1.0f
@@ -656,9 +668,9 @@ private:
 	u32 m_width = 0;
 	u32 m_height = 0;
 	/////////////////////
-	Array<ViewId> m_views;
-	ViewId m_current_view;
-	Array<FramebufferId> m_framebuffers;
+	bgfx::ViewId m_firstView = 1;//TODO
+	bgfx::ViewId m_currentView = m_firstView - 1;//TODO
+	Array<FrameBuffer> m_framebuffers;
 
 	bgfx::UniformHandle m_uniformTextureColor;
 };

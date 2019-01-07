@@ -108,10 +108,12 @@ public:
 	virtual Engine& GetEngine() const = 0;
 
 	//render api
-	virtual ViewId CreateView() = 0;
-	virtual void SetView(ViewId view) = 0;
 	virtual FramebufferId CreateFrameBuffer(int width, int height, bool autoResize) = 0;//TODO: add: depth,stencil,formats
+	virtual void DestroyFramebuffer(FramebufferId framebuffer) = 0;
+
+	virtual ViewId NewView() = 0;
 	virtual void SetFramebuffer(FramebufferId framebuffer) = 0;
+	virtual void SetViewRect()
 	virtual void SetCamera(Entity camera) = 0;
 	virtual void Clear() = 0;
 	virtual void RenderModels(RenderScene::ModelItem* models) = 0;
