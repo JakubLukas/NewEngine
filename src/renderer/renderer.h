@@ -24,8 +24,8 @@ class ModelManager;
 class TextureManager;
 
 
-enum class ViewId : u16 {};
-enum class FramebufferId : u16 {};
+enum class FramebufferHandle : u16 {};
+const FramebufferHandle INVALID_FRAMEBUFFER_HANDLE = (FramebufferHandle)0xffff;
 
 
 class RenderScene : public IScene
@@ -108,11 +108,11 @@ public:
 	virtual Engine& GetEngine() const = 0;
 
 	//render api
-	virtual FramebufferId CreateFrameBuffer(int width, int height, bool autoResize) = 0;//TODO: add: depth,stencil,formats
-	virtual void DestroyFramebuffer(FramebufferId framebuffer) = 0;
+	virtual FramebufferHandle CreateFrameBuffer(int width, int height, bool autoResize) = 0;//TODO: add: depth,stencil,formats
+	virtual void DestroyFramebuffer(FramebufferHandle handle) = 0;
 
-	virtual ViewId NewView() = 0;
-	virtual void SetFramebuffer(FramebufferId framebuffer) = 0;
+	virtual void NewView() = 0;
+	virtual void SetFramebuffer(FramebufferHandle handle) = 0;
 	//virtual void SetViewRect()
 	virtual void SetCamera(Entity camera) = 0;
 	virtual void Clear() = 0;

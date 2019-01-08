@@ -6,7 +6,7 @@
 #include "core/utility.h"
 
 
-#define DEBUG_HANDLE_ARRAY 1
+//#define DEBUG_HANDLE_ARRAY 1
 
 
 namespace Veng
@@ -25,24 +25,33 @@ public:
 	~HandleArray();
 
 	size_t Add(const Type& value);
+	size_t Add(const Type&& value);
 	void Remove(size_t handle);
+
+	Type& Get(size_t handle);
+	const Type& Get(size_t handle) const;
 
 	size_t GetSize() const;
 	size_t GetCapacity() const;
 
 private:
-	union DataType
+	static const size_t INITIAL_SIZE;
+	static const float ENLARGE_MULTIPLIER;
+
+	struct DataType
 	{
-		Type data;
-		UnusedType next;
-#		if DEBUG_HANDLE_ARRAY
+		union {
+			Type data;
+			UnusedType next;
+		};
+#		if defined(DEBUG_HANDLE_ARRAY)
 		bool alive;
 #		endif
 	};
 
 private:
 	template<class... Args>
-	Type& EmplaceBack(Args&&... args);
+	DataType& EmplaceBack(Args&&... args);
 	void Enlarge();
 
 private:
@@ -50,8 +59,8 @@ private:
 	size_t m_capacity = 0;
 	size_t m_size = 0;
 	DataType* m_data = nullptr;
-	UnusedType m_unused = -1;
-	size_t m_unusedCount = 0;
+	UnusedType m_unused = 0;
+	size_t m_unusedSize = 0;
 };
 
 

@@ -48,7 +48,6 @@ void EntitiesWidget::RenderInternal(EventQueue& queue)
 	ImGui::Text("WorldId: %i", m_world->GetId());
 	ImGui::Separator();
 
-	ImGui::PushItemWidth(-1);
 	if(!ImGui::ListBoxHeader("##empty", ImGui::GetContentRegionAvail()))
 	{
 		ImGui::Text("Error: ListBoxHeader wasn't created");
@@ -79,7 +78,6 @@ void EntitiesWidget::RenderInternal(EventQueue& queue)
 	}
 
 	ImGui::ListBoxFooter();
-	ImGui::PopItemWidth();
 }
 
 

@@ -2,6 +2,8 @@
 
 #include "core/allocators.h"
 #include "core/engine.h"
+#include "core/containers/array.h"
+#include "core/containers/handle_array.h"
 #include "core/containers/associative_array.h"
 #include "core/logs.h"
 #include "core/file/path.h"
@@ -66,6 +68,7 @@ struct FrameBuffer
 	bgfx::FrameBufferHandle handle;
 	u16 width;
 	u16 height;
+	bool updateSize;
 };
 
 
@@ -272,6 +275,7 @@ public:
 		, m_shaderInternalData(m_allocator)
 		, m_shaderData(m_allocator)
 		, m_framebuffers(m_allocator)
+		, m_dynamicFrameBuffers(m_allocator)
 	{
 		m_allocator.SetDebugName("Renderer");
 
@@ -580,6 +584,15 @@ public:
 	{
 		m_width = width;
 		m_height = height;
+
+		for (FramebufferHandle handle : m_dynamicFrameBuffers)
+		{
+			FrameBuffer& fb = m_framebuffers.Get((u16)handle);
+			fb.width = width;
+			fb.height = height;
+			bgfx::destroy(fb.handle);
+			fb.handle = bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::Enum::RGB8);
+		}
 	}
 
 	u32 GetScreenWidth() const override { return m_width; }
@@ -589,26 +602,39 @@ public:
 	Engine& GetEngine() const override { return m_engine; }
 
 
-	FramebufferId CreateFrameBuffer(int width, int height, bool autoResize) override
+	FramebufferHandle CreateFrameBuffer(int width, int height, bool autoResize) override
 	{
-		return (FramebufferId)bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::Enum::RGB8).idx;
+		FrameBuffer fb;
+		fb.handle = bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::Enum::RGB8);
+		fb.width = width;
+		fb.height = height;
+		fb.updateSize = autoResize;
+		FramebufferHandle handle = (FramebufferHandle)m_framebuffers.Add(Utils::Move(fb));
+		if (autoResize)
+			m_dynamicFrameBuffers.PushBack(handle);
+		return handle;
 	}
 
-	void DestroyFramebuffer(FramebufferId framebuffer) override
+	void DestroyFramebuffer(FramebufferHandle handle) override
 	{
-		bgfx::FrameBufferHandle fbh{ (u16)framebuffer };
-		bgfx::destroy(fbh);
+		FrameBuffer& fb = m_framebuffers.Get((u16)handle);
+		if (fb.updateSize)
+			m_dynamicFrameBuffers.Erase(handle);
+
+		bgfx::destroy(fb.handle);
+		m_framebuffers.Remove((u16)handle);
 	}
 
-	ViewId NewView() override
+	void NewView() override
 	{
-		return (ViewId)++m_currentView;
+		m_currentView++;
 	}
 
-	void SetFramebuffer(FramebufferId framebuffer) override
+	void SetFramebuffer(FramebufferHandle handle) override
 	{
-		bgfx::FrameBufferHandle fbh{ (u16)framebuffer };
-		bgfx::setViewFrameBuffer(m_currentView, fbh);
+		FrameBuffer& fb = m_framebuffers.Get((u16)handle);
+		bgfx::setViewFrameBuffer(m_currentView, fb.handle);
+		bgfx::setViewRect(m_currentView, 0, 0, uint16_t(fb.width), uint16_t(fb.height));
 	}
 
 	void SetCamera(Entity camera)
@@ -671,7 +697,8 @@ private:
 	/////////////////////
 	bgfx::ViewId m_firstView = 1;//TODO
 	bgfx::ViewId m_currentView = m_firstView - 1;//TODO
-	Array<FrameBuffer> m_framebuffers;
+	HandleArray<FrameBuffer, u16> m_framebuffers;
+	Array<FramebufferHandle> m_dynamicFrameBuffers;
 
 	bgfx::UniformHandle m_uniformTextureColor;
 };
