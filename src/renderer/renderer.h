@@ -108,7 +108,7 @@ public:
 	virtual Engine& GetEngine() const = 0;
 
 	//render api
-	virtual FramebufferHandle CreateFrameBuffer(int width, int height, bool autoResize) = 0;//TODO: add: depth,stencil,formats
+	virtual FramebufferHandle CreateFrameBuffer(int width, int height, bool screenSize) = 0;//TODO: add: depth,stencil,formats
 	virtual void DestroyFramebuffer(FramebufferHandle handle) = 0;
 
 	virtual void NewView() = 0;

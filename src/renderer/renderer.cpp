@@ -68,7 +68,7 @@ struct FrameBuffer
 	bgfx::FrameBufferHandle handle;
 	u16 width;
 	u16 height;
-	bool updateSize;
+	bool screenSize;
 };
 
 
@@ -275,7 +275,7 @@ public:
 		, m_shaderInternalData(m_allocator)
 		, m_shaderData(m_allocator)
 		, m_framebuffers(m_allocator)
-		, m_dynamicFrameBuffers(m_allocator)
+		, m_screenSizeFrameBuffers(m_allocator)
 	{
 		m_allocator.SetDebugName("Renderer");
 
@@ -585,7 +585,7 @@ public:
 		m_width = width;
 		m_height = height;
 
-		for (FramebufferHandle handle : m_dynamicFrameBuffers)
+		for (FramebufferHandle handle : m_screenSizeFrameBuffers)
 		{
 			FrameBuffer& fb = m_framebuffers.Get((u16)handle);
 			fb.width = width;
@@ -602,24 +602,24 @@ public:
 	Engine& GetEngine() const override { return m_engine; }
 
 
-	FramebufferHandle CreateFrameBuffer(int width, int height, bool autoResize) override
+	FramebufferHandle CreateFrameBuffer(int width, int height, bool screenSize) override
 	{
 		FrameBuffer fb;
 		fb.handle = bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::Enum::RGB8);
 		fb.width = width;
 		fb.height = height;
-		fb.updateSize = autoResize;
+		fb.screenSize = screenSize;
 		FramebufferHandle handle = (FramebufferHandle)m_framebuffers.Add(Utils::Move(fb));
-		if (autoResize)
-			m_dynamicFrameBuffers.PushBack(handle);
+		if (screenSize)
+			m_screenSizeFrameBuffers.PushBack(handle);
 		return handle;
 	}
 
 	void DestroyFramebuffer(FramebufferHandle handle) override
 	{
 		FrameBuffer& fb = m_framebuffers.Get((u16)handle);
-		if (fb.updateSize)
-			m_dynamicFrameBuffers.Erase(handle);
+		if (fb.screenSize)
+			m_screenSizeFrameBuffers.Erase(handle);
 
 		bgfx::destroy(fb.handle);
 		m_framebuffers.Remove((u16)handle);
@@ -698,7 +698,7 @@ private:
 	bgfx::ViewId m_firstView = 1;//TODO
 	bgfx::ViewId m_currentView = m_firstView - 1;//TODO
 	HandleArray<FrameBuffer, u16> m_framebuffers;
-	Array<FramebufferHandle> m_dynamicFrameBuffers;
+	Array<FramebufferHandle> m_screenSizeFrameBuffers;
 
 	bgfx::UniformHandle m_uniformTextureColor;
 };

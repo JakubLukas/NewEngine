@@ -60,10 +60,22 @@ HandleArray<Type, UnusedType>& HandleArray<Type, UnusedType>::operator =(const H
 template<class Type, class UnusedType>
 HandleArray<Type, UnusedType>::~HandleArray()
 {
+	bool alive;
+	UnusedType idx;
 	for (size_t i = 0; i < m_size; ++i)
 	{
+		alive = true;
+		idx = m_unused;
+		for (size_t j = 0; j < m_unusedSize; ++j)
+		{
+			if ((size_t)idx == i)
+			{
+				alive = false;
+				break;
+			}
+			idx = m_data[idx].next;
+		}
 		DELETE_PLACEMENT(m_data + i);
-		//what with holes
 	}
 	if(m_data != nullptr)
 		m_allocator.Deallocate(m_data);
