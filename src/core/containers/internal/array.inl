@@ -140,9 +140,7 @@ Type& Array<Type>::EmplaceBack(Args&&... args)
 	if (m_size == m_capacity)
 		Enlarge();
 
-	NEW_PLACEMENT(m_data + m_size, Type)(Utils::Forward<Args>(args)...);
-
-	return m_data[m_size++];
+	return *(Type*)NEW_PLACEMENT(m_data + m_size++, Type)(Utils::Forward<Args>(args)...);
 }
 
 

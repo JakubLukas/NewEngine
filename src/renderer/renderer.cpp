@@ -279,18 +279,22 @@ public:
 	{
 		m_allocator.SetDebugName("Renderer");
 
-		MeshData& invalidMeshData = m_meshData.PushBack();
+		MeshData invalidMeshData;
 		invalidMeshData.vertexBufferHandle = BGFX_INVALID_HANDLE;
 		invalidMeshData.indexBufferHandle = BGFX_INVALID_HANDLE;
+		m_meshData.Add(Utils::Move(invalidMeshData));
 
-		TextureData& invalidTextureData = m_textureData.PushBack();
+		TextureData invalidTextureData;
 		invalidTextureData.handle = BGFX_INVALID_HANDLE;
+		m_textureData.Add(Utils::Move(invalidTextureData));
 
-		ShaderInternalData& invalidshaderIntData = m_shaderInternalData.PushBack();
+		ShaderInternalData invalidshaderIntData;
 		invalidshaderIntData.handle = BGFX_INVALID_HANDLE;
+		m_shaderInternalData.Add(Utils::Move(invalidshaderIntData));
 
-		ShaderData& invalidshaderData = m_shaderData.PushBack();
+		ShaderData invalidshaderData;
 		invalidshaderData.handle = BGFX_INVALID_HANDLE;
+		m_shaderData.Add(Utils::Move(invalidshaderData));
 
 		m_shaderInternalManager = static_cast<ShaderInternalManager*>(m_engine.GetResourceManager(ResourceType::ShaderInternal));
 		m_shaderInternalManager->SetRenderSystem(this);
@@ -371,12 +375,12 @@ public:
 					const Material* material = (Material*)m_materialManager->GetResource(mesh.material);
 					if(material->GetState() == Resource::State::Ready)
 					{
-						MeshData& meshData = m_meshData[(size_t)mesh.renderDataHandle];
+						MeshData& meshData = m_meshData.Get((u64)mesh.renderDataHandle);
 						bgfx::setVertexBuffer(0, meshData.vertexBufferHandle);
 						bgfx::setIndexBuffer(meshData.indexBufferHandle);
 
 						const Texture* texture = (Texture*)m_textureManager->GetResource(material->textures[0]);
-						TextureData& texData = m_textureData[(size_t)texture->renderDataHandle];
+						TextureData& texData = m_textureData.Get((u64)texture->renderDataHandle);
 						bgfx::setTexture(0, m_uniformTextureColor, texData.handle);
 
 
@@ -385,7 +389,7 @@ public:
 
 						// Submit primitive for rendering to view 0.
 						const Shader* shader = (Shader*)m_shaderManager->GetResource(material->shader);
-						ShaderData& shaderData = m_shaderData[(size_t)shader->renderDataHandle];
+						ShaderData& shaderData = m_shaderData.Get((u64)shader->renderDataHandle);
 						bgfx::submit(VIEW_ID, shaderData.handle);
 					}
 				}
@@ -413,7 +417,7 @@ public:
 	{
 		InputClob dataText(data);
 
-		MeshData& meshData = m_meshData.PushBack();
+		MeshData meshData;
 
 		meshData.vertex_decl
 			.begin()
@@ -463,12 +467,12 @@ public:
 
 		data.SetPosition(data.GetPosition() + dataText.GetPosition());
 
-		return meshRenderHandle(m_meshData.GetSize() - 1);
+		return (meshRenderHandle)m_meshData.Add(Utils::Move(meshData));
 	}
 
 	void DestroyMeshData(meshRenderHandle handle) override
 	{
-		MeshData& data = m_meshData[(size_t)handle];
+		MeshData& data = m_meshData.Get((u64)handle);
 		bgfx::destroy(data.vertexBufferHandle);
 		bgfx::destroy(data.indexBufferHandle);
 
@@ -497,8 +501,7 @@ public:
 		if(bgfx::isValid(texData.handle))
 		{
 			bgfx::setName(texData.handle, texture.GetPath().GetPath());
-			m_textureData.PushBack(texData);
-			return textureRenderHandle(m_textureData.GetSize() - 1);
+			return (textureRenderHandle)m_textureData.Add(Utils::Move(texData));
 		}
 		else
 		{
@@ -509,7 +512,7 @@ public:
 
 	void DestroyTextureData(textureRenderHandle handle) override
 	{
-		TextureData& data = m_textureData[(size_t)handle];
+		TextureData& data = m_textureData.Get((u64)handle);
 		bgfx::destroy(data.handle);
 
 		//TODO: remove from m_textureData but do not corrupt handles
@@ -531,8 +534,7 @@ public:
 		if(bgfx::isValid(shaderIntData.handle))
 		{
 			//bgfx::setName(shaderIntData.handle, shaderInt->GetPath().path);
-			m_shaderInternalData.PushBack(shaderIntData);
-			return shaderInternalRenderHandle(m_shaderInternalData.GetSize() - 1);
+			return (shaderInternalRenderHandle)m_shaderInternalData.Add(Utils::Move(shaderIntData));
 		}
 		else
 		{
@@ -543,7 +545,7 @@ public:
 
 	void DestroyShaderInternalData(shaderInternalRenderHandle handle) override
 	{
-		ShaderInternalData& data = m_shaderInternalData[(size_t)handle];
+		ShaderInternalData& data = m_shaderInternalData.Get((u64)handle);
 		bgfx::destroy(data.handle);
 
 		//TODO: remove from m_shaderInternalData but do not corrupt handles
@@ -555,15 +557,14 @@ public:
 	{
 		ShaderData shaderData;
 
-		ShaderInternalData vs = m_shaderInternalData[(size_t)vsHandle];
-		ShaderInternalData fs = m_shaderInternalData[(size_t)fsHandle];
+		ShaderInternalData vs = m_shaderInternalData.Get((u64)vsHandle);
+		ShaderInternalData fs = m_shaderInternalData.Get((u64)fsHandle);
 
 		shaderData.handle = bgfx::createProgram(vs.handle, fs.handle, false);
 
 		if(bgfx::isValid(shaderData.handle))
 		{
-			m_shaderData.PushBack(shaderData);
-			return shaderRenderHandle(m_shaderData.GetSize() - 1);
+			return (shaderRenderHandle)m_shaderData.Add(Utils::Move(shaderData));
 		}
 		else
 		{
@@ -574,7 +575,7 @@ public:
 
 	void DestroyShaderData(shaderRenderHandle handle) override
 	{
-		ShaderData& data = m_shaderData[(size_t)handle];
+		ShaderData& data = m_shaderData.Get((u64)handle);
 
 		bgfx::destroy(data.handle);
 	}
@@ -680,10 +681,10 @@ private:
 	ProxyAllocator m_allocator;//must be first
 	Engine& m_engine;
 	RenderSceneImpl* m_scene;
-	Array<MeshData> m_meshData;
-	Array<TextureData> m_textureData;
-	Array<ShaderInternalData> m_shaderInternalData;
-	Array<ShaderData> m_shaderData;
+	HandleArray<MeshData, u64> m_meshData;
+	HandleArray<TextureData, u64> m_textureData;
+	HandleArray<ShaderInternalData, u64> m_shaderInternalData;
+	HandleArray<ShaderData, u64> m_shaderData;
 
 	ShaderInternalManager* m_shaderInternalManager = nullptr;
 	ShaderManager* m_shaderManager = nullptr;

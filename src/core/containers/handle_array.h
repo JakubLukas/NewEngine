@@ -6,7 +6,7 @@
 #include "core/utility.h"
 
 
-//#define DEBUG_HANDLE_ARRAY 1
+//#define DEBUG_HANDLE_ARRAY
 
 
 namespace Veng

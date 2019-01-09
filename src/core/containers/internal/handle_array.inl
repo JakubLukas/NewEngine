@@ -170,8 +170,7 @@ typename HandleArray<Type, UnusedType>::DataType& HandleArray<Type, UnusedType>:
 	if(m_size == m_capacity)
 		Enlarge();
 
-	m_size++;
-	return *(DataType*)NEW_PLACEMENT(m_data + m_size, Type)(Utils::Forward<Args>(args)...);
+	return *(DataType*)NEW_PLACEMENT(m_data + m_size++, Type)(Utils::Forward<Args>(args)...);
 }
 
 
