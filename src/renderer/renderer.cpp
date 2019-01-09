@@ -476,9 +476,7 @@ public:
 		bgfx::destroy(data.vertexBufferHandle);
 		bgfx::destroy(data.indexBufferHandle);
 
-		//TODO: remove from m_meshData but do not corrupt handles
-		data.vertexBufferHandle = BGFX_INVALID_HANDLE;
-		data.indexBufferHandle = BGFX_INVALID_HANDLE;
+		m_meshData.Remove((u64)handle);
 	}
 
 
@@ -515,8 +513,7 @@ public:
 		TextureData& data = m_textureData.Get((u64)handle);
 		bgfx::destroy(data.handle);
 
-		//TODO: remove from m_textureData but do not corrupt handles
-		data.handle = BGFX_INVALID_HANDLE;
+		m_textureData.Remove((u64)handle);
 	}
 
 
@@ -548,8 +545,7 @@ public:
 		ShaderInternalData& data = m_shaderInternalData.Get((u64)handle);
 		bgfx::destroy(data.handle);
 
-		//TODO: remove from m_shaderInternalData but do not corrupt handles
-		data.handle = BGFX_INVALID_HANDLE;
+		m_shaderInternalData.Remove((u64)handle);
 	}
 
 
