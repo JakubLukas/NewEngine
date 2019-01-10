@@ -10,6 +10,7 @@
 #include "core/containers/associative_array.h"
 
 
+#include "renderer/pipeline.h"
 #include "renderer/renderer.h"////////////////////////
 #include "script/script.h"////////////////////////////
 #include "core/file/path.h"////////////////////////////////
@@ -365,6 +366,7 @@ public:
 		InitRender();
 		InitImgui();
 		InitEngine();
+		m_pipeline = Pipeline::Create(m_allocator, *m_engine, *m_renderSystem);
 
 		InitWidgets();
 	}
@@ -372,6 +374,8 @@ public:
 	void Deinit() override
 	{
 		DeinitWidgets();
+
+		m_pipeline->Destroy(m_pipeline);
 		DeinitEngine();//TODO: shut down engine gracefully
 
 		DeinitImgui();
@@ -384,6 +388,8 @@ public:
 
 		m_engine->Update(deltaTime);
 		m_eventQueue.FrameUpdate();
+
+		m_pipeline->Render();
 
 		for(WidgetBase* widget : m_widgets)
 		{
@@ -990,6 +996,7 @@ private:
 	App& m_app;
 	ProxyAllocator m_engineAllocator;
 	Engine* m_engine = nullptr;
+	Pipeline* m_pipeline;
 	bool m_inputEnabled = false;
 	AssociativeArray<inputDeviceHandle, InputKeyboardFiltering> m_inputKeyboardFilter;
 
@@ -1005,7 +1012,7 @@ private:
 	//bgfx for imgui
 	ImguiBgfxData m_imguiBgfxData;
 
-	//bgfx stuff ////////////////////////////////////////////////
+	//bgfx stuff
 	BGFXAllocator m_bgfxAllocator;
 	BGFXCallback m_bgfxCallback;
 

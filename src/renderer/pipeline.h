@@ -5,13 +5,14 @@ namespace Veng
 {
 
 class IAllocator;
-class Renderer;
+class Engine;
+class RenderSystem;
 
 
 class Pipeline
 {
 public:
-	static Pipeline* Create(IAllocator& allocator, Renderer& renderer);
+	static Pipeline* Create(IAllocator& allocator, Engine& engine, RenderSystem& renderer);
 	static void Destroy(Pipeline* pipeline);
 
 public:

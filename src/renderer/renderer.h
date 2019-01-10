@@ -63,7 +63,7 @@ public:
 
 	virtual size_t GetCamerasCount(worldId world) const = 0;
 	virtual const CameraItem* GetCameras(worldId world) const = 0;
-	virtual const CameraItem* GetDefaultCamera(worldId world) = 0;
+	virtual const CameraItem* GetDefaultCamera(worldId world) const = 0;
 };
 
 
@@ -116,7 +116,8 @@ public:
 	//virtual void SetViewRect()
 	virtual void SetCamera(Entity camera) = 0;
 	virtual void Clear() = 0;
-	virtual void RenderModels(RenderScene::ModelItem* models) = 0;
+	virtual void RenderModels(World& world, const RenderScene::ModelItem* models, size_t count) = 0;
+	virtual void Frame() = 0;
 };
 
 

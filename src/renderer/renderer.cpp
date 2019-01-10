@@ -243,7 +243,7 @@ public:
 		return m_cameras.GetValues();
 	}
 
-	const CameraItem* GetDefaultCamera(worldId world) override
+	const CameraItem* GetDefaultCamera(worldId world) const override
 	{
 		if (m_cameras.GetSize() == 0)
 			return nullptr;
@@ -327,78 +327,7 @@ public:
 
 	void Update(float deltaTime) override
 	{
-		//set worldid
-		//set camera
-		//render model
-
-		worldId worldHandle = (worldId)0;
-		World* world = m_engine.GetWorld(worldHandle);
-
-		static Matrix44 view;
-		static Matrix44 proj;
-		const RenderScene::CameraItem* cameraItem = m_scene->GetDefaultCamera(worldHandle);
-		if(cameraItem != nullptr)
-		{
-			const Camera& cam = cameraItem->camera;
-			proj.SetPerspective(cam.fov, cam.aspect, cam.nearPlane, cam.farPlane, bgfx::getCaps()->homogeneousDepth);
-			const Transform& camTrans = world->GetEntityTransform(cameraItem->entity);
-			Matrix44 camRot;
-			camRot.SetRotation(camTrans.rotation);
-			Vector4 eye = Vector4(camTrans.position, 1);
-			Vector4 at = camRot * Vector4(0, 0, -1, 0) + Vector4(camTrans.position, 1);
-			view.SetLookAt(eye, at, Vector4::AXIS_Y);
-		}
-
-		bgfx::setViewTransform(VIEW_ID, &view.m11, &proj.m11);
-
-		bgfx::touch(VIEW_ID);//dummy draw call
-
-
-		// Set vertex and index buffer.
-		// TODO: DUMMY test
-		const RenderScene::ModelItem* modelItems = m_scene->GetModels(worldHandle);
-		for(size_t i = 0; i < m_scene->GetModelsCount(worldHandle); ++i)
-		{
-
-			Transform& trans = world->GetEntityTransform(modelItems[i].entity);
-			Matrix44 mtx = trans.ToMatrix44();
-			mtx.Transpose();
-			// Set model matrix for rendering.
-			bgfx::setTransform(&mtx.m11);
-
-
-			const Model* model = (Model*)m_modelManager->GetResource(modelItems[i].model);
-			if(model->GetState() == Resource::State::Ready)
-			{
-				for(const Mesh& mesh : model->meshes)
-				{
-					const Material* material = (Material*)m_materialManager->GetResource(mesh.material);
-					if(material->GetState() == Resource::State::Ready)
-					{
-						MeshData& meshData = m_meshData.Get((u64)mesh.renderDataHandle);
-						bgfx::setVertexBuffer(0, meshData.vertexBufferHandle);
-						bgfx::setIndexBuffer(meshData.indexBufferHandle);
-
-						const Texture* texture = (Texture*)m_textureManager->GetResource(material->textures[0]);
-						TextureData& texData = m_textureData.Get((u64)texture->renderDataHandle);
-						bgfx::setTexture(0, m_uniformTextureColor, texData.handle);
-
-
-						// Set render states.
-						bgfx::setState(BGFX_STATE_DEFAULT);
-
-						// Submit primitive for rendering to view 0.
-						const Shader* shader = (Shader*)m_shaderManager->GetResource(material->shader);
-						ShaderData& shaderData = m_shaderData.Get((u64)shader->renderDataHandle);
-						bgfx::submit(VIEW_ID, shaderData.handle);
-					}
-				}
-			}
-		}
-
-		m_currentView = m_firstView - 1;//////
-
-	};
+	}
 
 
 	const char* GetName() const override { return "renderer"; }
@@ -667,9 +596,52 @@ public:
 		);
 	}
 
-	void RenderModels(RenderScene::ModelItem* models)
+	void RenderModels(World& world, const RenderScene::ModelItem* models, size_t count)
 	{
+		for (size_t i = 0; i < count; ++i)
+		{
 
+			Transform& trans = world.GetEntityTransform(models[i].entity);
+			Matrix44 mtx = trans.ToMatrix44();
+			mtx.Transpose();
+			// Set model matrix for rendering.
+			bgfx::setTransform(&mtx.m11);
+
+
+			const Model* model = (Model*)m_modelManager->GetResource(models[i].model);
+			if (model->GetState() == Resource::State::Ready)
+			{
+				for (const Mesh& mesh : model->meshes)
+				{
+					const Material* material = (Material*)m_materialManager->GetResource(mesh.material);
+					if (material->GetState() == Resource::State::Ready)
+					{
+						MeshData& meshData = m_meshData.Get((u64)mesh.renderDataHandle);
+						bgfx::setVertexBuffer(0, meshData.vertexBufferHandle);
+						bgfx::setIndexBuffer(meshData.indexBufferHandle);
+
+						const Texture* texture = (Texture*)m_textureManager->GetResource(material->textures[0]);
+						TextureData& texData = m_textureData.Get((u64)texture->renderDataHandle);
+						bgfx::setTexture(0, m_uniformTextureColor, texData.handle);
+
+
+						// Set render states.
+						bgfx::setState(BGFX_STATE_DEFAULT);
+
+						// Submit primitive for rendering to view 0.
+						const Shader* shader = (Shader*)m_shaderManager->GetResource(material->shader);
+						ShaderData& shaderData = m_shaderData.Get((u64)shader->renderDataHandle);
+						bgfx::submit(VIEW_ID, shaderData.handle);
+					}
+				}
+			}
+		}
+	}
+
+
+	void Frame() override
+	{
+		m_currentView = m_firstView - 1;//////
 	}
 
 
