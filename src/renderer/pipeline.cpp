@@ -24,10 +24,18 @@ public:
 	}
 
 	~PipelineImpl()
-	{}
+	{
+	}
 
-	void Load() override
-	{}
+	void Init() override
+	{
+		m_mainFrameBuffer = m_renderer.CreateFrameBuffer(800, 600, true);
+	}
+
+	void Deinit() override
+	{
+		m_renderer.DestroyFramebuffer(m_mainFrameBuffer);
+	}
 
 	void Render() override
 	{
@@ -37,11 +45,13 @@ public:
 		World* world = m_engine.GetWorld(worldHandle);//////////////
 
 		const RenderScene::CameraItem* cameraItem = scene->GetDefaultCamera(worldHandle);
-		m_renderer.SetCamera(cameraItem->entity);
-
 		const RenderScene::ModelItem* modelItems = scene->GetModels(worldHandle);
+		
+		m_renderer.NewView();
+		m_renderer.Clear();
+		m_renderer.SetFramebuffer(m_mainFrameBuffer);
+		m_renderer.SetCamera(cameraItem->entity);
 		m_renderer.RenderModels(*world, modelItems, scene->GetModelsCount(worldHandle));
-
 		m_renderer.Frame();
 	}
 
@@ -53,7 +63,7 @@ private:
 	Engine& m_engine;
 	RenderSystem& m_renderer;
 
-	//FramebufferHandle 
+	FramebufferHandle m_mainFrameBuffer = INVALID_FRAMEBUFFER_HANDLE;
 };
 
 

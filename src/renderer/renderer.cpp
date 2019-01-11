@@ -20,7 +20,6 @@
 #include "core/file/clob.h"//////////////////////
 
 #include "core/math/math.h"
-#include "camera.h"
 
 
 namespace Veng
@@ -258,6 +257,7 @@ private:
 
 	AssociativeArray<Entity, ModelItem> m_models;
 	AssociativeArray<Entity, CameraItem> m_cameras;
+	AssociativeArray<Entity, DirectionalLight> m_directionalLights;
 };
 
 

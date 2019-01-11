@@ -25,16 +25,16 @@ void RendererWidget::Init(Engine& engine)
 	m_renderer = static_cast<RenderSystem*>(engine.GetSystem("renderer"));
 	m_viewId = 1;
 
-	m_fbh = bgfx::createFrameBuffer(0, 0, bgfx::TextureFormat::Enum::RGB8);
-	bgfx::setViewFrameBuffer(m_viewId, m_fbh);
-	bgfx::setViewRect(m_viewId, 0, 0, uint16_t(m_size.x), uint16_t(m_size.y));
+	//m_fbh = bgfx::createFrameBuffer(0, 0, bgfx::TextureFormat::Enum::RGB8);
+	//bgfx::setViewFrameBuffer(m_viewId, m_fbh);
+	//bgfx::setViewRect(m_viewId, 0, 0, uint16_t(m_size.x), uint16_t(m_size.y));
 
-	bgfx::setViewClear(m_viewId
+	/*bgfx::setViewClear(m_viewId
 		, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
 		, 0x803030ff
 		, 1.0f
 		, 0
-	);
+	);*/
 
 	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene());
 	for (size_t i = 0; i < m_engine->GetWorldCount(); ++i)
@@ -59,7 +59,7 @@ void RendererWidget::Init(Engine& engine)
 
 void RendererWidget::Deinit()
 {
-	bgfx::destroy(m_fbh);
+	//bgfx::destroy(m_fbh);
 }
 
 
@@ -103,10 +103,10 @@ void RendererWidget::RenderInternal(EventQueue& queue)
 
 void RendererWidget::OnResize()
 {
-	bgfx::destroy(m_fbh);
-	m_fbh = bgfx::createFrameBuffer(uint16_t(m_size.x), uint16_t(m_size.y), bgfx::TextureFormat::Enum::RGB8);
-	bgfx::setViewFrameBuffer(m_viewId, m_fbh);
-	bgfx::setViewRect(m_viewId, 0, 0, uint16_t(m_size.x), uint16_t(m_size.y));
+	//bgfx::destroy(m_fbh);
+	//m_fbh = bgfx::createFrameBuffer(uint16_t(m_size.x), uint16_t(m_size.y), bgfx::TextureFormat::Enum::RGB8);
+	//bgfx::setViewFrameBuffer(m_viewId, m_fbh);
+	//bgfx::setViewRect(m_viewId, 0, 0, uint16_t(m_size.x), uint16_t(m_size.y));
 
 	m_renderer->Resize((i32)m_size.x, (i32)m_size.y);
 	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene());

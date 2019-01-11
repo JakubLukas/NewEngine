@@ -37,8 +37,8 @@ private:
 	RenderSystem* m_renderer = nullptr;
 
 	windowHandle m_hwnd = INVALID_WINDOW_HANDLE;
-	bgfx::ViewId m_viewId = -1;
-	bgfx::FrameBufferHandle m_fbh = BGFX_INVALID_HANDLE;
+	//bgfx::ViewId m_viewId = -1;
+	//bgfx::FrameBufferHandle m_fbh = BGFX_INVALID_HANDLE;
 	ImVec2 m_size = { 20, 20 };
 	bool m_changedSize = false;
 

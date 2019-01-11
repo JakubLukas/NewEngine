@@ -7,6 +7,7 @@
 #include "resource_managers/texture.h"
 #include "resource_managers/shader.h"
 #include "camera.h"
+#include "light.h"
 
 
 namespace Veng
@@ -43,6 +44,11 @@ public:
 		Camera camera;
 	};
 
+	struct LightItem
+	{
+		Light light;
+	};
+
 public:
 	virtual ~RenderScene() override {}
 
@@ -64,6 +70,10 @@ public:
 	virtual size_t GetCamerasCount(worldId world) const = 0;
 	virtual const CameraItem* GetCameras(worldId world) const = 0;
 	virtual const CameraItem* GetDefaultCamera(worldId world) const = 0;
+
+	virtual size_t GetLightsCount(worldId world) const = 0;
+	virtual const LightItem* GetLights(worldId world) const = 0;
+
 };
 
 
