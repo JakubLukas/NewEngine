@@ -2,14 +2,14 @@
 
 #include "../widget_base.h"
 
-#include <bgfx/bgfx.h>
 #include "../external/imgui/imgui.h"
-#include "main/app.h"
+#include "renderer/pipeline.h"
 
 
 namespace Veng
 {
 
+class IAllocator;
 class Engine;
 class RenderSystem;
 
@@ -20,6 +20,7 @@ namespace Editor
 class RendererWidget : public WidgetBase
 {
 public:
+	explicit RendererWidget(IAllocator& allocator);
 	~RendererWidget() override;
 	void Init(Engine& engine) override;
 	void Deinit() override;
@@ -34,15 +35,14 @@ private:
 	void OnResize();
 
 private:
+	IAllocator& m_allocator;
+	Engine* m_engine = nullptr;
 	RenderSystem* m_renderer = nullptr;
+	Pipeline* m_pipeline = nullptr;
 
-	windowHandle m_hwnd = INVALID_WINDOW_HANDLE;
-	//bgfx::ViewId m_viewId = -1;
-	//bgfx::FrameBufferHandle m_fbh = BGFX_INVALID_HANDLE;
-	ImVec2 m_size = { 20, 20 };
+	ImVec2 m_size = { 0, 0 };
 	bool m_changedSize = false;
 
-	Engine* m_engine = nullptr;
 	Entity m_camera = INVALID_ENTITY;
 };
 

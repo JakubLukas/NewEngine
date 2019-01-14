@@ -160,9 +160,20 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 				{
 					ASSERT2(false, "Not implemented yet");
 				}
-				case ComponentInfo::ValueType::Text:
+				case ComponentInfo::ValueType::Vector3:
 				{
-					ASSERT2(false, "Not implemented yet");
+					Vector3& val = *(Vector3*)data;
+					if (ImGui::InputFloat3(value.name, &val.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
+						changed = true;
+					data = data + sizeof(Vector3);
+					break;
+				}
+				case ComponentInfo::ValueType::Color:
+				{
+					Color& val = *(Color*)data;
+					if (ImGui::InputScalar(value.name, ImGuiDataType_U32, &val.abgr, NULL, NULL, NULL, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
+						changed = true;
+					data = data + sizeof(Color);
 					break;
 				}
 				default:

@@ -32,6 +32,17 @@ const FramebufferHandle INVALID_FRAMEBUFFER_HANDLE = (FramebufferHandle)0xffff;
 class RenderScene : public IScene
 {
 public:
+	enum class Component : u8
+	{
+		Model = 0,
+		Camera = 1,
+		DirectionalLight = 2,
+
+		Count
+	};
+
+	static componentHandle GetComponentHandle(Component comp);
+
 	struct ModelItem
 	{
 		Entity entity;
@@ -44,9 +55,10 @@ public:
 		Camera camera;
 	};
 
-	struct LightItem
+	struct DirectionalLightItem
 	{
-		Light light;
+		Entity entity;
+		struct DirectionalLight light;
 	};
 
 public:
@@ -71,8 +83,8 @@ public:
 	virtual const CameraItem* GetCameras(worldId world) const = 0;
 	virtual const CameraItem* GetDefaultCamera(worldId world) const = 0;
 
-	virtual size_t GetLightsCount(worldId world) const = 0;
-	virtual const LightItem* GetLights(worldId world) const = 0;
+	virtual size_t GetDirectionalLightsCount(worldId world) const = 0;
+	virtual const DirectionalLightItem* GetDirectionalLights(worldId world) const = 0;
 
 };
 
@@ -123,11 +135,12 @@ public:
 
 	virtual void NewView() = 0;
 	virtual void SetFramebuffer(FramebufferHandle handle) = 0;
-	//virtual void SetViewRect()
 	virtual void SetCamera(Entity camera) = 0;
 	virtual void Clear() = 0;
 	virtual void RenderModels(World& world, const RenderScene::ModelItem* models, size_t count) = 0;
 	virtual void Frame() = 0;
+
+	virtual void* GetNativeFrameBufferHandle(FramebufferHandle handle) = 0;
 };
 
 

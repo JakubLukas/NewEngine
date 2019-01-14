@@ -21,8 +21,10 @@ struct ComponentInfo
 		Float,
 		Angle,
 		String,
-		Text,
-		Array,
+		Vector3,
+		Color,
+		//Text,
+		//Array,
 	};
 
 	struct Value

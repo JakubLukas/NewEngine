@@ -55,6 +55,11 @@ public:
 		m_renderer.Frame();
 	}
 
+	void* GetDefaultFrameBuffer() override
+	{
+		return m_renderer.GetNativeFrameBufferHandle(m_mainFrameBuffer);
+	}
+
 	IAllocator& GetSourceAllocator() { return m_sourceAllocator; }
 
 private:

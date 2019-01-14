@@ -22,6 +22,7 @@ public:
 	virtual void Deinit() = 0;
 	virtual void Render() = 0;
 
+	virtual void* GetDefaultFrameBuffer() = 0;
 };
 
 

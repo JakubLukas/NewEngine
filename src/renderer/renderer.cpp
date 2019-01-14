@@ -71,15 +71,14 @@ struct FrameBuffer
 };
 
 
+componentHandle RenderScene::GetComponentHandle(Component comp)
+{
+	return (componentHandle)comp;
+}
+
+
 class RenderSceneImpl : public RenderScene
 {
-public:
-	enum : u8
-	{
-		COMPONENT_MODEL = 0,
-		COMPONENT_CAMERA = 1,
-	};
-
 public:
 	RenderSceneImpl(IAllocator& allocator, RenderSystem& renderSystem)
 		: m_allocator(allocator)
@@ -87,17 +86,18 @@ public:
 		, m_models(m_allocator)
 		, m_cameras(m_allocator)
 		, m_componentInfos(m_allocator)
+		, m_directionalLights(m_allocator)
 	{
 		ComponentInfo* compInfoModel;
 
 		compInfoModel = &m_componentInfos.EmplaceBack(m_allocator);
-		compInfoModel->handle = (componentHandle)COMPONENT_MODEL;
+		compInfoModel->handle = GetComponentHandle(Component::Model);
 		compInfoModel->name = "model";
 		compInfoModel->values.PushBack({ ComponentInfo::ValueType::ResourceHandle, "model handle" });
 		compInfoModel->dataSize = sizeof(ResourceType) + sizeof(resourceHandle);
 
 		compInfoModel = &m_componentInfos.EmplaceBack(m_allocator);
-		compInfoModel->handle = (componentHandle)COMPONENT_CAMERA;
+		compInfoModel->handle = GetComponentHandle(Component::Camera);
 		compInfoModel->name = "camera";
 		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Angle, "fov" });
 		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "near plane" });
@@ -105,6 +105,11 @@ public:
 		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "screen width" });
 		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "screen height" });
 		compInfoModel->dataSize = sizeof(Camera);
+
+		compInfoModel = &m_componentInfos.EmplaceBack(m_allocator);
+		compInfoModel->handle = GetComponentHandle(Component::DirectionalLight);
+		compInfoModel->name = "directional light";
+		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Color, "color" });
 	}
 
 	~RenderSceneImpl() override
@@ -131,12 +136,21 @@ public:
 	{
 		switch ((u8)handle)
 		{
-		case COMPONENT_MODEL:
+		case (u8)RenderScene::Component::Model:
+		{
 			m_models.Insert(entity, { entity, INVALID_RESOURCE_HANDLE });
 			break;
-		case COMPONENT_CAMERA:
+		}
+		case (u8)RenderScene::Component::Camera:
+		{
 			m_cameras.Insert(entity, { entity, Camera() });
 			break;
+		}
+		case (u8)RenderScene::Component::DirectionalLight:
+		{
+			m_directionalLights.Insert(entity, { entity, DirectionalLight() });
+			break;
+		}
 		default:
 			ASSERT2(false, "Unrecognized componentHandle");
 		}
@@ -146,12 +160,21 @@ public:
 	{
 		switch ((u8)handle)
 		{
-		case COMPONENT_MODEL:
+		case (u8)RenderScene::Component::Model:
+		{
 			m_models.Erase(entity);
 			break;
-		case COMPONENT_CAMERA:
+		}
+		case (u8)RenderScene::Component::Camera:
+		{
 			m_cameras.Erase(entity);
 			break;
+		}
+		case (u8)RenderScene::Component::DirectionalLight:
+		{
+			m_directionalLights.Erase(entity);
+			break;
+		}
 		default:
 			ASSERT2(false, "Unrecognized componentHandle");
 		}
@@ -161,12 +184,21 @@ public:
 	{
 		switch ((u8)handle)
 		{
-		case COMPONENT_MODEL:
+		case (u8)RenderScene::Component::Model:
+		{
 			ModelItem* model;
 			return m_models.Find(entity, model);
-		case COMPONENT_CAMERA:
+		}
+		case (u8)RenderScene::Component::Camera:
+		{
 			CameraItem* cam;
 			return m_cameras.Find(entity, cam);
+		}
+		case (u8)RenderScene::Component::DirectionalLight:
+		{
+			DirectionalLightItem* light;
+			return m_directionalLights.Find(entity, light);
+		}
 		default:
 			ASSERT2(false, "Unrecognized componentHandle");
 			return false;
@@ -177,7 +209,7 @@ public:
 	{
 		switch ((u8)handle)
 		{
-		case COMPONENT_MODEL:
+		case (u8)RenderScene::Component::Model:
 		{
 			ModelItem* model;
 			ASSERT2(m_models.Find(entity, model), "Component not found");
@@ -186,11 +218,18 @@ public:
 			*(resourceHandle*)buffer = model->model;
 			break;
 		}
-		case COMPONENT_CAMERA:
+		case (u8)RenderScene::Component::Camera:
 		{
 			CameraItem* cam;
 			ASSERT2(m_cameras.Find(entity, cam), "Component not found");
 			memory::Copy(buffer, &cam->camera, sizeof(Camera));
+			break;
+		}
+		case (u8)RenderScene::Component::DirectionalLight:
+		{
+			DirectionalLightItem* light;
+			ASSERT2(m_directionalLights.Find(entity, light), "Component not found");
+			memory::Copy(buffer, &light->light, sizeof(DirectionalLight));
 			break;
 		}
 		default:
@@ -202,19 +241,30 @@ public:
 	{
 		switch ((u8)handle)
 		{
-		case COMPONENT_MODEL:
+		case (u8)RenderScene::Component::Model:
+		{
 			ModelItem* model;
 			ASSERT2(m_models.Find(entity, model), "Component not found");
-			if(model->model != INVALID_RESOURCE_HANDLE)
+			if (model->model != INVALID_RESOURCE_HANDLE)
 				m_renderSystem.GetModelManager().Unload(model->model);
 			model->model = *(resourceHandle*)((ResourceType*)data + 1);
 			break;
-		case COMPONENT_CAMERA:
+		}
+		case (u8)RenderScene::Component::Camera:
+		{
 			CameraItem* cam;
 			ASSERT2(m_cameras.Find(entity, cam), "Component not found");
 			memory::Move(&cam->camera, data, sizeof(Camera));
 			cam->camera.aspect = cam->camera.screenWidth / cam->camera.screenHeight;
 			break;
+		}
+		case (u8)RenderScene::Component::DirectionalLight:
+		{
+			DirectionalLightItem* light;
+			ASSERT2(m_directionalLights.Find(entity, light), "Component not found");
+			memory::Move(&light->light, data, sizeof(DirectionalLight));
+			break;
+		}
 		default:
 			ASSERT2(false, "Unrecognized componentHandle");
 		}
@@ -250,6 +300,16 @@ public:
 			return m_cameras.GetValues();
 	}
 
+
+	size_t GetDirectionalLightsCount(worldId world) const override
+	{
+		return m_directionalLights.GetSize();
+	}
+	const DirectionalLightItem* GetDirectionalLights(worldId world) const override
+	{
+		return m_directionalLights.GetValues();
+	}
+
 private:
 	IAllocator& m_allocator;
 	RenderSystem& m_renderSystem;
@@ -257,7 +317,7 @@ private:
 
 	AssociativeArray<Entity, ModelItem> m_models;
 	AssociativeArray<Entity, CameraItem> m_cameras;
-	AssociativeArray<Entity, DirectionalLight> m_directionalLights;
+	AssociativeArray<Entity, DirectionalLightItem> m_directionalLights;
 };
 
 
@@ -642,6 +702,12 @@ public:
 	void Frame() override
 	{
 		m_currentView = m_firstView - 1;//////
+	}
+
+
+	void* GetNativeFrameBufferHandle(FramebufferHandle handle) override
+	{
+		return (void*)&(m_framebuffers.Get((size_t)handle).handle);
 	}
 
 

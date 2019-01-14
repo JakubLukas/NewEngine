@@ -36,6 +36,16 @@ public:
 		RenderSystem* renderSystem = (RenderSystem*)m_engine.GetSystem("renderer");
 		RenderScene* renderScene = static_cast<RenderScene*>(m_engine.GetSystem("renderer")->GetScene());
 
+		Entity dirLight = world->CreateEntity();
+		Transform& camTrans = world->GetEntityTransform(dirLight);
+		camTrans.position = Vector3(0, 0, 35);
+
+		DirectionalLight dirLightData;
+		dirLightData.color = Color(255, 255, 255, 255);
+		renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::DirectionalLight), dirLight, m_world);
+		renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::DirectionalLight), dirLight, m_world, &dirLightData);
+
+
 		char* buffer[sizeof(ResourceType) + sizeof(resourceHandle)];
 		void* data = buffer;
 		*(ResourceType*)data = ResourceType::Model;
@@ -48,7 +58,7 @@ public:
 			{
 				m_entities[i] = world->CreateEntity();
 				Transform& trans = world->GetEntityTransform(m_entities[i]);
-				renderScene->AddComponent(componentHandle(0), m_entities[i], m_world);
+				renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Model), m_entities[i], m_world);
 
 				if (i % 2 == 0)
 				{
@@ -60,7 +70,7 @@ public:
 					resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/pyramid.model"));
 					*(resourceHandle*)data = modelHandle;
 				}
-				renderScene->SetComponentData(componentHandle(0), m_entities[i], m_world, buffer);
+				renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Model), m_entities[i], m_world, buffer);
 
 				Quaternion rot = Quaternion::IDENTITY;
 				rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);

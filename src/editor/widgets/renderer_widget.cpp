@@ -1,6 +1,7 @@
 #include "renderer_widget.h"
 
 #include "../widget_register.h"
+#include "core/iallocator.h"
 #include "core/engine.h"
 #include "renderer/renderer.h"
 #include "core/math/math.h"
@@ -15,6 +16,12 @@ namespace Editor
 {
 
 
+RendererWidget::RendererWidget(IAllocator& allocator)
+	: m_allocator(allocator)
+{
+
+}
+
 RendererWidget::~RendererWidget()
 {}
 
@@ -23,18 +30,8 @@ void RendererWidget::Init(Engine& engine)
 {
 	m_engine = &engine;
 	m_renderer = static_cast<RenderSystem*>(engine.GetSystem("renderer"));
-	m_viewId = 1;
-
-	//m_fbh = bgfx::createFrameBuffer(0, 0, bgfx::TextureFormat::Enum::RGB8);
-	//bgfx::setViewFrameBuffer(m_viewId, m_fbh);
-	//bgfx::setViewRect(m_viewId, 0, 0, uint16_t(m_size.x), uint16_t(m_size.y));
-
-	/*bgfx::setViewClear(m_viewId
-		, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
-		, 0x803030ff
-		, 1.0f
-		, 0
-	);*/
+	m_pipeline = Pipeline::Create(m_allocator, *m_engine, *m_renderer);
+	m_pipeline->Init();
 
 	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene());
 	for (size_t i = 0; i < m_engine->GetWorldCount(); ++i)
@@ -51,15 +48,15 @@ void RendererWidget::Init(Engine& engine)
 			800.0f,
 			600.0f,
 		};
-		renderScene->AddComponent(componentHandle(1), m_camera, world.GetId());
-		renderScene->SetComponentData(componentHandle(1), m_camera, world.GetId(), &cam);
+		renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Camera), m_camera, world.GetId());
+		renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Camera), m_camera, world.GetId(), &cam);
 	}
 }
 
 
 void RendererWidget::Deinit()
 {
-	//bgfx::destroy(m_fbh);
+	Pipeline::Destroy(m_pipeline);
 }
 
 
@@ -74,6 +71,8 @@ void RendererWidget::Update(EventQueue& queue)
 			m_camera = eventCamera->camera;
 		}
 	}
+
+	m_pipeline->Render();
 }
 
 
@@ -97,17 +96,12 @@ void RendererWidget::RenderInternal(EventQueue& queue)
 		m_changedSize = false;
 	}
 
-	ImGui::Image((void*)&m_fbh, windowSize);
+	ImGui::Image(m_pipeline->GetDefaultFrameBuffer(), windowSize);
 }
 
 
 void RendererWidget::OnResize()
 {
-	//bgfx::destroy(m_fbh);
-	//m_fbh = bgfx::createFrameBuffer(uint16_t(m_size.x), uint16_t(m_size.y), bgfx::TextureFormat::Enum::RGB8);
-	//bgfx::setViewFrameBuffer(m_viewId, m_fbh);
-	//bgfx::setViewRect(m_viewId, 0, 0, uint16_t(m_size.x), uint16_t(m_size.y));
-
 	m_renderer->Resize((i32)m_size.x, (i32)m_size.y);
 	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene());
 	Camera cam;
@@ -120,7 +114,7 @@ void RendererWidget::OnResize()
 
 REGISTER_WIDGET(renderer)
 {
-	return NEW_OBJECT(allocator, RendererWidget)();
+	return NEW_OBJECT(allocator, RendererWidget)(allocator);
 }
 
 
