@@ -12,6 +12,8 @@
 
 #include "../renderer.h"
 
+#include "core/parsing/json.h"
+
 
 namespace Veng
 {
@@ -20,6 +22,42 @@ const char* const SHADER_VERT_FILE_EXT = ".vsr";
 const char* const SHADER_FRAG_FILE_EXT = ".fsr";
 const char* const SHADER_VERT_FILE_EXT_RET = ".vs";
 const char* const SHADER_FRAG_FILE_EXT_RET = ".fs";
+
+
+static ShaderVaryingBits GetShaderVaryingFromString(const char* str)
+{
+	if (string::Compare(str, "position"))
+		return SV_POSITION_BIT;
+	else if (string::Compare(str, "color0"))
+		return SV_COLOR0_BIT;
+	else if (string::Compare(str, "texcoord0"))
+		return SV_TEXCOORDS0_BIT;
+	else if (string::Compare(str, "texcoord1"))
+		return SV_TEXCOORDS1_BIT;
+	else if (string::Compare(str, "normal"))
+		return SV_NORMAL_BIT;
+	else if (string::Compare(str, "tangent"))
+		return SV_TANGENT_BIT;
+	else if (string::Compare(str, "binormal"))
+		return SV_BINORMAL_BIT;
+	else
+		return SV_NONE;
+}
+
+static ShaderUniformBits GetShaderUniformFromString(const char* str)
+{
+	return SU_NONE;
+}
+
+static ShaderTextureBits GetShaderTextureFromString(const char* str)
+{
+	if (string::Compare(str, "diffuse"))
+		return ST_DIFF_TEXTURE_BIT;
+	else if (string::Compare(str, "normal"))
+		return ST_NORM_TEXTURE_BIT;
+	else
+		return ST_NONE;
+}
 
 
 static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& outPath)
@@ -225,24 +263,69 @@ void ShaderManager::ReloadResource(Resource* resource)
 void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
 	Shader* shader = static_cast<Shader*>(ResourceManager::GetResource(handle));
-	InputClob dataText(data);
+
+	char errorBuffer[64] = { 0 };
+	JsonValue parsedJson;
+	ASSERT(JsonParse((char*)data.GetData(), &m_allocator, &parsedJson, errorBuffer));
+	ASSERT(JsonIsObject(&parsedJson));
+
+	JsonKeyValue* varyings = JsonObjectFind(&parsedJson, "varyings");
+	if (varyings != nullptr)
+	{
+		ASSERT(JsonIsArray(&varyings->value));
+		for (size_t i = 0; i < JsonArrayCount(&varyings->value); ++i)
+		{
+			const JsonValue* val = JsonArrayCBegin(&varyings->value);
+			ASSERT(JsonIsString(val));
+			shader->varyings |= GetShaderVaryingFromString(JsonGetString(val));
+		}
+	}
+
+	JsonKeyValue* uniforms = JsonObjectFind(&parsedJson, "uniforms");
+	if (uniforms != nullptr)
+	{
+		ASSERT(JsonIsArray(&uniforms->value));
+		for (size_t i = 0; i < JsonArrayCount(&uniforms->value); ++i)
+		{
+			const JsonValue* val = JsonArrayCBegin(&uniforms->value);
+			ASSERT(JsonIsString(val));
+			shader->uniforms |= GetShaderUniformFromString(JsonGetString(val));
+		}
+	}
+
+	JsonKeyValue* textures = JsonObjectFind(&parsedJson, "textures");
+	if (textures != nullptr)
+	{
+		ASSERT(JsonIsArray(&textures->value));
+		for (size_t i = 0; i < JsonArrayCount(&textures->value); ++i)
+		{
+			const JsonValue* val = JsonArrayCBegin(&textures->value);
+			ASSERT(JsonIsString(val));
+			shader->textures |= GetShaderTextureFromString(JsonGetString(val));
+		}
+	}
+
+	JsonKeyValue* vShader = JsonObjectFind(&parsedJson, "vertexShader");
+	ASSERT(vShader != nullptr && JsonIsString(&vShader->value));
+	Path vsPath(JsonGetString(&vShader->value));
+	
+	JsonKeyValue* fShader = JsonObjectFind(&parsedJson, "fragmentShader");
+	ASSERT(fShader != nullptr && JsonIsString(&fShader->value));
+	Path fsPath(JsonGetString(&fShader->value));
+
+	JsonDeinit(&parsedJson);
+
 
 	LoadingOp& op = m_loadingOp.PushBack();
 	op.shader = handle;
 
-	char vsPath[Path::MAX_LENGTH + 1] = { '\0' };
-	ASSERT(dataText.ReadLine(vsPath, Path::MAX_LENGTH));
-
 	Path vOutPath;
-	ASSERT(CompileShader(GetFileSystem(), Path(vsPath), vOutPath));
+	ASSERT(CompileShader(GetFileSystem(), vsPath, vOutPath));
 	shader->vsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, vOutPath);
 	op.vsHandle = shader->vsHandle;
 
-	char fsPath[Path::MAX_LENGTH + 1] = { '\0' };
-	ASSERT(dataText.ReadLine(fsPath, Path::MAX_LENGTH));
-
 	Path fOutPath;
-	ASSERT(CompileShader(GetFileSystem(), Path(fsPath), fOutPath));
+	ASSERT(CompileShader(GetFileSystem(), fsPath, fOutPath));
 	shader->fsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, fOutPath);
 	op.fsHandle = shader->fsHandle;
 }

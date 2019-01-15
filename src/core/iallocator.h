@@ -103,7 +103,7 @@ void DeleteObject(Veng::IAllocator& allocator, Type* ptr)
 #define ALLOCATE(allocator, size, alignment)
 
 #define NEW_OBJECT(allocator, Type) new (allocator, alignof(Type)) Type
-#define DELETE_OBJECT(allocator, object) DeleteObject(allocator, object);
+#define DELETE_OBJECT(allocator, object) DeleteObject(allocator, object)
 
 #define NEW_PLACEMENT(ptr, Type) new (Veng::NewPlaceholder(), static_cast<void*>(ptr)) Type
-#define DELETE_PLACEMENT(ptr) DeleteObject(ptr);
+#define DELETE_PLACEMENT(ptr) DeleteObject(ptr)

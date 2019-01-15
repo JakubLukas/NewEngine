@@ -68,7 +68,7 @@ project "core"
 	files {
 		SRC_DIR .. "core/**.h",
 		SRC_DIR .. "core/**.inl",
-		SRC_DIR .. "core/**.cpp"
+		SRC_DIR .. "core/**.cpp",
 	}
 	
 	configuration {}
@@ -80,7 +80,7 @@ project "renderer"
 	links { "core" }
 	
 	includedirs {
-		"../external/bgfx/include"
+		"../external/bgfx/include",
 	}
 	
 	files {
