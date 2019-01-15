@@ -680,7 +680,7 @@ public:
 						bgfx::setVertexBuffer(0, meshData.vertexBufferHandle);
 						bgfx::setIndexBuffer(meshData.indexBufferHandle);
 
-						const Texture* texture = (Texture*)m_textureManager->GetResource(material->textures[0]);
+						const Texture* texture = (Texture*)m_textureManager->GetResource(material->textureHandles[0]);
 						TextureData& texData = m_textureData.Get((u64)texture->renderDataHandle);
 						bgfx::setTexture(0, m_uniformTextureColor, texData.handle);
 

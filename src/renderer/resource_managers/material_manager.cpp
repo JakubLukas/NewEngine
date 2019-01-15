@@ -4,6 +4,7 @@
 #include "core/file/clob.h"
 
 #include "../renderer.h"
+#include "core/parsing/json.h"
 
 
 namespace Veng
@@ -52,9 +53,13 @@ void MaterialManager::DestroyResource(Resource* resource)
 {
 	Material* material = static_cast<Material*>(resource);
 
-	m_depManager->UnloadResource(ResourceType::Shader, static_cast<resourceHandle>(material->shader));
+	m_depManager->UnloadResource(ResourceType::Shader, material->shader);
 
-	m_depManager->UnloadResource(ResourceType::Texture, static_cast<resourceHandle>(material->textures[0]));
+	for(int i = 0; i < Material::MAX_TEXTURES; ++i)
+	{
+		if(material->textureHandles[i] != INVALID_RESOURCE_HANDLE)
+			m_depManager->UnloadResource(ResourceType::Texture, material->textureHandles[i]);
+	}
 
 	DELETE_OBJECT(m_allocator, material);
 }
@@ -69,22 +74,47 @@ void MaterialManager::ReloadResource(Resource* resource)
 void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
 	Material* material = static_cast<Material*>(GetResource(handle));
-	InputClob dataText(data);
-
 	LoadingOp& op = m_loadingOp.PushBack();
 	op.material = handle;
 
-	char shaderPath[Path::MAX_LENGTH + 1] = { '\0' };
-	ASSERT(dataText.ReadString(shaderPath, Path::MAX_LENGTH));
+	char errorBuffer[64] = { 0 };
+	JsonValue parsedJson;
+	ASSERT(JsonParse((char*)data.GetData(), &m_allocator, &parsedJson, errorBuffer));
+	ASSERT(JsonIsObject(&parsedJson));
 
-	char texturePath[Path::MAX_LENGTH + 1] = { '\0' };
-	ASSERT(dataText.ReadString(texturePath, Path::MAX_LENGTH));
+	JsonKeyValue* shader = JsonObjectFind(&parsedJson, "shader");
+	ASSERT(shader != nullptr && JsonIsString(&shader->value));
+	Path shaderPath(JsonGetString(&shader->value));
 
-	material->shader = m_depManager->LoadResource(ResourceType::Material, ResourceType::Shader, Path(shaderPath));
+	material->shader = m_depManager->LoadResource(ResourceType::Material, ResourceType::Shader, shaderPath);
 	op.shader = material->shader;
 
-	material->textures[0] = m_depManager->LoadResource(ResourceType::Material, ResourceType::Texture, Path(texturePath));
-	op.textures[0] = material->textures[0];
+	JsonKeyValue* textures = JsonObjectFind(&parsedJson, "textures");
+	ASSERT(textures != nullptr && JsonIsObject(&textures->value));
+
+	JsonKeyValue* diffuseTex = JsonObjectFind(&textures->value, "diffuse");
+	if(diffuseTex != nullptr)
+	{
+		ASSERT(JsonIsString(&diffuseTex->value));
+		Path path(JsonGetString(&diffuseTex->value));
+		material->textures |= ST_DIFF_TEXTURE_BIT;
+		material->textureHandles[0] = m_depManager->LoadResource(ResourceType::Material, ResourceType::Texture, path);
+		op.textures[0] = material->textureHandles[0];
+		op.texturesToLoad |= ST_DIFF_TEXTURE_BIT;
+	}
+
+	JsonKeyValue* normalTex = JsonObjectFind(&textures->value, "normal");
+	if(normalTex != nullptr)
+	{
+		ASSERT(JsonIsString(&normalTex->value));
+		Path path(JsonGetString(&normalTex->value));
+		material->textures |= ST_NORM_TEXTURE_BIT;
+		material->textureHandles[1] = m_depManager->LoadResource(ResourceType::Material, ResourceType::Texture, path);
+		op.textures[1] = material->textureHandles[1];
+		op.texturesToLoad |= ST_NORM_TEXTURE_BIT;
+	}
+
+	JsonDeinit(&parsedJson);
 }
 
 
@@ -104,11 +134,11 @@ void MaterialManager::ChildResourceLoaded(resourceHandle handle, ResourceType ty
 			for (size_t i = 0; i < Material::MAX_TEXTURES; ++i)
 			{
 				if (op.textures[i] == handle)
-					op.texturesLoaded |= 1 << i;
+					op.texturesToLoad ^= 1 << i;
 			}
 		}
 
-		if (op.shaderLoaded && op.texturesLoaded > 0)
+		if (op.shaderLoaded && op.texturesToLoad == 0)
 		{
 			Material* material = static_cast<Material*>(GetResource(op.material));
 			FinalizeMaterial(material);

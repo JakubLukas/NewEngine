@@ -27,7 +27,7 @@ private:
 		resourceHandle shader;
 		resourceHandle textures[Material::MAX_TEXTURES];
 		u8 shaderLoaded = 0;
-		u8 texturesLoaded = 0;
+		u8 texturesToLoad = 0;
 	};
 
 public:

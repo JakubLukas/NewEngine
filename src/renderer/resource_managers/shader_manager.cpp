@@ -24,42 +24,6 @@ const char* const SHADER_VERT_FILE_EXT_RET = ".vs";
 const char* const SHADER_FRAG_FILE_EXT_RET = ".fs";
 
 
-static ShaderVaryingBits GetShaderVaryingFromString(const char* str)
-{
-	if (string::Compare(str, "position"))
-		return SV_POSITION_BIT;
-	else if (string::Compare(str, "color0"))
-		return SV_COLOR0_BIT;
-	else if (string::Compare(str, "texcoord0"))
-		return SV_TEXCOORDS0_BIT;
-	else if (string::Compare(str, "texcoord1"))
-		return SV_TEXCOORDS1_BIT;
-	else if (string::Compare(str, "normal"))
-		return SV_NORMAL_BIT;
-	else if (string::Compare(str, "tangent"))
-		return SV_TANGENT_BIT;
-	else if (string::Compare(str, "binormal"))
-		return SV_BINORMAL_BIT;
-	else
-		return SV_NONE;
-}
-
-static ShaderUniformBits GetShaderUniformFromString(const char* str)
-{
-	return SU_NONE;
-}
-
-static ShaderTextureBits GetShaderTextureFromString(const char* str)
-{
-	if (string::Compare(str, "diffuse"))
-		return ST_DIFF_TEXTURE_BIT;
-	else if (string::Compare(str, "normal"))
-		return ST_NORM_TEXTURE_BIT;
-	else
-		return ST_NONE;
-}
-
-
 static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& outPath)
 {
 	static const char* IN_DIR = "raw";
