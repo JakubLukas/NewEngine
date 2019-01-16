@@ -10,19 +10,19 @@ namespace Veng
 
 ShaderVaryingBits GetShaderVaryingFromString(const char* str)
 {
-	if(string::Compare(str, "position"))
+	if(string::Compare(str, "position") == 0)
 		return SV_POSITION_BIT;
-	else if(string::Compare(str, "color0"))
+	else if(string::Compare(str, "color0") == 0)
 		return SV_COLOR0_BIT;
-	else if(string::Compare(str, "texcoord0"))
+	else if(string::Compare(str, "texcoord0") == 0)
 		return SV_TEXCOORDS0_BIT;
-	else if(string::Compare(str, "texcoord1"))
+	else if(string::Compare(str, "texcoord1") == 0)
 		return SV_TEXCOORDS1_BIT;
-	else if(string::Compare(str, "normal"))
+	else if(string::Compare(str, "normal") == 0)
 		return SV_NORMAL_BIT;
-	else if(string::Compare(str, "tangent"))
+	else if(string::Compare(str, "tangent") == 0)
 		return SV_TANGENT_BIT;
-	else if(string::Compare(str, "binormal"))
+	else if(string::Compare(str, "binormal") == 0)
 		return SV_BINORMAL_BIT;
 	else
 	{
@@ -70,9 +70,9 @@ const char* GetShaderUniformName(ShaderUniformBits value)
 
 ShaderTextureBits GetShaderTextureFromString(const char* str)
 {
-	if(string::Compare(str, "diffuse"))
+	if(string::Compare(str, "diffuse") == 0)
 		return ST_DIFF_TEXTURE_BIT;
-	else if(string::Compare(str, "normal"))
+	else if(string::Compare(str, "normal") == 0)
 		return ST_NORM_TEXTURE_BIT;
 	else
 		return ST_NONE;

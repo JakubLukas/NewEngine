@@ -239,7 +239,7 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 		ASSERT(JsonIsArray(&varyings->value));
 		for (size_t i = 0; i < JsonArrayCount(&varyings->value); ++i)
 		{
-			const JsonValue* val = JsonArrayCBegin(&varyings->value);
+			const JsonValue* val = JsonArrayCBegin(&varyings->value) + i;
 			ASSERT(JsonIsString(val));
 			shader->varyings |= GetShaderVaryingFromString(JsonGetString(val));
 		}
@@ -251,7 +251,7 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 		ASSERT(JsonIsArray(&uniforms->value));
 		for (size_t i = 0; i < JsonArrayCount(&uniforms->value); ++i)
 		{
-			const JsonValue* val = JsonArrayCBegin(&uniforms->value);
+			const JsonValue* val = JsonArrayCBegin(&uniforms->value) + i;
 			ASSERT(JsonIsString(val));
 			shader->uniforms |= GetShaderUniformFromString(JsonGetString(val));
 		}
@@ -263,7 +263,7 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 		ASSERT(JsonIsArray(&textures->value));
 		for (size_t i = 0; i < JsonArrayCount(&textures->value); ++i)
 		{
-			const JsonValue* val = JsonArrayCBegin(&textures->value);
+			const JsonValue* val = JsonArrayCBegin(&textures->value) + i;
 			ASSERT(JsonIsString(val));
 			shader->textures |= GetShaderTextureFromString(JsonGetString(val));
 		}

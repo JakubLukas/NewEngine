@@ -27,7 +27,7 @@ public:
 	virtual resourceHandle LoadResource(ResourceType requestedType, ResourceType resourceType, const Path& path) override = 0;
 	virtual bool UnloadResource(ResourceType resourceType, resourceHandle handle) override = 0;
 	virtual void ResourceLoaded(ResourceType resourceType, resourceHandle handle) override = 0;
-	virtual const Resource* GetResource(ResourceType resourceType, resourceHandle handle) override = 0;
+	virtual Resource* GetResource(ResourceType resourceType, resourceHandle handle) override = 0;
 };
 
 

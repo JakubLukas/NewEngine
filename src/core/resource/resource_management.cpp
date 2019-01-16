@@ -105,7 +105,7 @@ public:
 	}
 
 
-	const Resource* GetResource(ResourceType resourceType, resourceHandle handle) override
+	Resource* GetResource(ResourceType resourceType, resourceHandle handle) override
 	{
 		ResourceManager* manager = m_managers[(size_t)resourceType];
 		if (manager != nullptr)

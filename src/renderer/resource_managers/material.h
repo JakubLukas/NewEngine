@@ -19,7 +19,7 @@ struct Material : public Resource
 			textureHandles[i] = INVALID_RESOURCE_HANDLE;
 	}
 
-	ShaderTextureFlags textures;
+	ShaderTextureFlags textures = ST_NONE;
 	//48b padding
 	resourceHandle shader;
 	static const size_t MAX_TEXTURES = 2;

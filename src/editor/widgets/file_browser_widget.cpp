@@ -106,9 +106,7 @@ void FileBrowserWidget::BuildFileBrowser(StaticInputBuffer<Path::MAX_LENGTH>& pa
 	if (isFile)
 		treeNodeFlags |= ImGuiTreeNodeFlags_Leaf;
 
-	bool opened = ImGui::TreeNodeEx(item.name, treeNodeFlags, "%s", item.name);
-
-	if (!opened)
+	if (!ImGui::TreeNodeEx(item.name, treeNodeFlags, "%s", item.name))
 		return;
 
 	if (isFile)

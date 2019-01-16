@@ -7,7 +7,7 @@ namespace Veng
 {
 
 
-typedef Veng::u32 ShaderVaryingFlags;
+typedef u32 ShaderVaryingFlags;
 enum ShaderVaryingBits : ShaderVaryingFlags
 {
 	SV_NONE = 0,
@@ -25,7 +25,7 @@ const char* GetShaderVaryingName(ShaderVaryingBits value);
 
 
 
-typedef Veng::u16 ShaderUniformFlags;
+typedef u16 ShaderUniformFlags;
 enum ShaderUniformBits : ShaderUniformFlags
 {
 	SU_NONE = 0,
@@ -36,7 +36,7 @@ const char* GetShaderUniformName(ShaderUniformBits value);
 
 
 
-typedef Veng::u8 ShaderTextureFlags;
+typedef u8 ShaderTextureFlags;
 enum ShaderTextureBits : ShaderTextureFlags
 {
 	ST_NONE = 0,

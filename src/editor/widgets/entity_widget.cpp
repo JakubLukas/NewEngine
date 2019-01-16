@@ -13,6 +13,8 @@
 #include "core/resource/resource_management.h"///////////
 #include "core/resource/resource_manager.h"
 
+#include "resource_widgets.h"
+
 
 namespace Veng
 {
@@ -65,11 +67,14 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 		return;
 	}
 
-	Transform& entityTrans = m_world->GetEntityTransform(m_entity);
-	ImGui::Text("Transform");
-	ImGui::InputFloat3("position", &entityTrans.position.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
-	ImGui::InputFloat4("rotation", &entityTrans.rotation.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
-	ImGui::Separator();
+	if (ImGui::TreeNodeEx("transform", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnDoubleClick))
+	{
+		Transform& entityTrans = m_world->GetEntityTransform(m_entity);
+		ImGui::InputFloat3("position", &entityTrans.position.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::InputFloat4("rotation", &entityTrans.rotation.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::Separator();
+		ImGui::TreePop();
+	}
 
 	ISystem* systems = m_engine->GetSystems();
 	for (size_t i = 0; i < m_engine->GetSystemCount(); ++i)
@@ -93,7 +98,8 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 			ASSERT2(sizeof(buffer) >= info.dataSize, "Buffer is not large enough");
 			scene->GetComponentData(info.handle, m_entity, m_world->GetId(), data);
 
-			ImGui::Text("%s", info.name);
+			if (!ImGui::TreeNodeEx(info.name, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnDoubleClick))
+				continue;
 
 			bool changed = false;
 			for (const ComponentInfo::Value& value : info.values)
@@ -104,30 +110,10 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 				{
 					ResourceType type = *(ResourceType*)data;
 					resourceHandle* handle = (resourceHandle*)(data + sizeof(ResourceType));
-					ResourceManager* manager = m_engine->GetResourceManagement()->GetManager(type);
-					const Resource* resource = m_engine->GetResourceManagement()->GetResource(type, *handle);////
-					char pathBuffer[Path::MAX_LENGTH+1];
-					memory::Copy(pathBuffer, resource->GetPath().GetPath(), Path::MAX_LENGTH + 1);
-					ImGui::InputText("path", pathBuffer, Path::MAX_LENGTH + 1);
-					for (size_t i = 0; i < manager->GetSupportedFileExtCount(); ++i)
-					{
-						if (ImGui::BeginDragDropTarget())
-						{
-							const ImGuiPayload* data = ImGui::AcceptDragDropPayload(manager->GetSupportedFileExt()[i], ImGuiDragDropFlags_None);
-							if (data != nullptr)
-							{
-								Path path((char*)data->Data);
-								if (resource->GetPath() != path)
-								{
-									resourceHandle newResource = manager->Load(path);
-									*handle = newResource;
-									changed = true;
-								}
-							}
-							ImGui::EndDragDropTarget();
-						}
-					}
+
 					ImGui::InputScalar(value.name, ImGuiDataType_U64, handle, NULL, NULL, NULL, ImGuiInputTextFlags_ReadOnly);
+					changed |= RenderResource(type, *handle, *m_engine->GetResourceManagement());
+
 					data = data + sizeof(ResourceType) + sizeof(resourceHandle);
 					break;
 				}
@@ -183,6 +169,8 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 
 			if(changed)
 				scene->SetComponentData(info.handle, m_entity, m_world->GetId(), buffer);
+
+			ImGui::TreePop();
 		}
 
 	}
