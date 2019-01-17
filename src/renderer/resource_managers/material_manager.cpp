@@ -27,7 +27,7 @@ MaterialManager::~MaterialManager()
 
 const char* const * MaterialManager::GetSupportedFileExt() const
 {
-	static const char* buffer[] = { "tga" };
+	static const char* buffer[] = { "material" };
 	return buffer;
 }
 
