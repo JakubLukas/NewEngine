@@ -1,10 +1,11 @@
 #include "resource_widgets.h"
 
-#include "core/resource/resource_management.h"
+/*#include "core/resource/resource_management.h"
 #include "core/resource/resource_manager.h"
 #include "renderer/resource_managers/texture.h"
 #include "renderer/resource_managers/material.h"
 #include "renderer/resource_managers/model.h"
+#include "editor/event_queue.h"
 
 #include "../external/imgui/imgui.h"
 
@@ -88,7 +89,7 @@ static bool RenderShader(resourceHandle& handle, ResourceManagement& resourceMan
 }
 
 
-static bool RenderTexture(resourceHandle& handle, ResourceManagement& resourceManagement)
+static bool RenderTexture(resourceHandle& handle, ResourceManagement& resourceManagement, EventQueue& queue)
 {
 	ResourceManager* manager = resourceManagement.GetManager(ResourceType::Texture);
 	Texture* texture = (Texture*)manager->GetResource(handle);
@@ -124,7 +125,7 @@ static bool RenderTexture(resourceHandle& handle, ResourceManagement& resourceMa
 }
 
 
-static bool RenderMaterial(resourceHandle& handle, ResourceManagement& resourceManagement)
+static bool RenderMaterial(resourceHandle& handle, ResourceManagement& resourceManagement, EventQueue& queue)
 {
 	ResourceManager* manager = resourceManagement.GetManager(ResourceType::Material);
 	Material* material = (Material*)manager->GetResource(handle);
@@ -178,7 +179,7 @@ static bool RenderMaterial(resourceHandle& handle, ResourceManagement& resourceM
 }
 
 
-static bool RenderModel(resourceHandle& handle, ResourceManagement& resourceManagement)
+static bool RenderModel(resourceHandle& handle, ResourceManagement& resourceManagement, EventQueue& queue)
 {
 	ResourceManager* manager = resourceManagement.GetManager(ResourceType::Model);
 	Model* model = (Model*)manager->GetResource(handle);
@@ -215,6 +216,7 @@ static bool RenderModel(resourceHandle& handle, ResourceManagement& resourceMana
 			Mesh& mesh = model->meshes[i];
 			ImGui::InputScalar("material", ImGuiDataType_U64, &mesh.material, NULL, NULL, NULL, ImGuiInputTextFlags_ReadOnly);
 			RenderMaterial(mesh.material, resourceManagement);
+			ImGui::TreePop();
 		}
 
 		ImGui::PopID();
@@ -224,7 +226,7 @@ static bool RenderModel(resourceHandle& handle, ResourceManagement& resourceMana
 }
 
 
-bool RenderResource(ResourceType type, resourceHandle& handle, ResourceManagement& resourceManagement)
+bool RenderResource(ResourceType type, resourceHandle& handle, ResourceManagement& resourceManagement, EventQueue& queue)
 {
 	switch (type)
 	{
@@ -233,11 +235,11 @@ bool RenderResource(ResourceType type, resourceHandle& handle, ResourceManagemen
 	case Veng::ResourceType::Shader:
 		return false;
 	case Veng::ResourceType::Material:
-		return RenderMaterial(handle, resourceManagement);
+		return RenderMaterial(handle, resourceManagement, queue);
 	case Veng::ResourceType::Model:
-		return RenderModel(handle, resourceManagement);
+		return RenderModel(handle, resourceManagement, queue);
 	case Veng::ResourceType::Texture:
-		return RenderTexture(handle, resourceManagement);
+		return RenderTexture(handle, resourceManagement, queue);
 	default:
 		ASSERT2(false, "Unrecognized type");
 		return false;
@@ -248,4 +250,4 @@ bool RenderResource(ResourceType type, resourceHandle& handle, ResourceManagemen
 }
 
 
-}
+}*/

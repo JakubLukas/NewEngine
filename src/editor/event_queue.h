@@ -2,6 +2,7 @@
 
 #include "core/int.h"
 #include "core/entity.h"
+#include "core/resource/resource.h"
 
 
 namespace Veng
@@ -22,6 +23,7 @@ enum EventType : u32
 	SelectWorld,
 	SelectEntity,
 	SelectCamera,
+	SelectResource,
 	ChangedSize,
 
 	Created,
@@ -69,6 +71,14 @@ struct EventChangedSize : public Event
 
 	u32 width;
 	u32 height;
+};
+
+struct EventSelectResource : public Event
+{
+	EventSelectResource() : Event(EventType::SelectResource, sizeof(EventSelectResource)) {}
+
+	ResourceType type;
+	resourceHandle resource;
 };
 
 // ----------------------------------------------
