@@ -43,6 +43,7 @@ public:
 		, m_engine(engine)
 		, m_renderer(renderer)
 		, m_frameBuffers(m_allocator, &HashU32)
+		, m_commands(m_allocator)
 	{
 		m_allocator.SetDebugName("Pipeline");
 	}
@@ -90,11 +91,11 @@ public:
 
 			const JsonKeyValue* fbWidth = JsonObjectCFind(&fb->value, "width");
 			ASSERT(fbWidth != nullptr && JsonIsInt(&fbWidth->value));
-			width = JsonGetInt(&fbWidth->value);
+			width = (int)JsonGetInt(&fbWidth->value);
 
 			const JsonKeyValue* fbHeight = JsonObjectCFind(&fb->value, "height");
 			ASSERT(fbHeight != nullptr && JsonIsInt(&fbHeight->value));
-			height = JsonGetInt(&fbHeight->value);
+			height = (int)JsonGetInt(&fbHeight->value);
 
 			const JsonKeyValue* fbScreenSize = JsonObjectCFind(&fb->value, "screen_size");
 			if (fbScreenSize != nullptr)
@@ -115,6 +116,7 @@ public:
 
 		size_t cmdCount = JsonObjectCount(&cmdArr->value);
 		const JsonKeyValue* cmd = JsonObjectCBegin(&cmdArr->value);
+		m_commands.Reserve(cmdCount);
 		for (size_t i = 0; i < fbCount; ++i)
 		{
 			ASSERT(JsonIsObject(&cmd->value));
@@ -154,6 +156,10 @@ public:
 				command.type = CommandType::RenderModels;
 				command.world = (worldId)JsonGetInt(&world->value);
 			}
+			else
+			{
+				ASSERT2(false, "Unrecognized command");
+			}
 
 			cmd++;
 		}
@@ -174,6 +180,20 @@ public:
 
 		const RenderScene::CameraItem* cameraItem = scene->GetDefaultCamera(worldHandle);
 		const RenderScene::ModelItem* modelItems = scene->GetModels(worldHandle);
+
+		for(const Command* cmd = m_commands.Begin(); cmd < m_commands.End(); cmd++)
+		{
+			switch(cmd->type)
+			{
+				case CommandType::NewView:
+					asd
+				case CommandType::SetFramebuffer:
+				case CommandType::Clear:
+				case CommandType::RenderModels:
+				default:
+					break;
+			}
+		}
 		
 		m_renderer.NewView();
 		m_renderer.Clear();
