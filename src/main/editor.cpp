@@ -296,7 +296,7 @@ struct ImguiBgfxData
 
 static bgfx::ProgramHandle LoadProgram(const Path& vertexPath, const Path& fragmentPath, IAllocator& allocator)
 {
-	static const FileMode fileMode{
+	const FileMode fileMode{
 		FileMode::Access::Read,
 		FileMode::ShareMode::ShareRead,
 		FileMode::CreationDisposition::OpenExisting,

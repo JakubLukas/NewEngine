@@ -1,14 +1,37 @@
 #include "pipeline.h"
 
 #include "core/allocators.h"
+#include "core/file/path.h"
 #include "core/engine.h"
 #include "renderer.h"
 
-#include "core/math/matrix.h"
+#include "core/containers/hash_map.h"
+#include "core/hashes.h"
+#include "core/parsing/json.h"
+#include "core/file/file.h"
+#include "core/string.h"
 
 
 namespace Veng
 {
+
+enum CommandType
+{
+	NewView,
+	SetFramebuffer,
+	Clear,
+	RenderModels,
+};
+
+struct Command
+{
+	CommandType type;
+	union
+	{
+		u32 fb;
+		worldId world;
+	};
+};
 
 
 class PipelineImpl : public Pipeline
@@ -19,6 +42,7 @@ public:
 		, m_allocator(allocator)
 		, m_engine(engine)
 		, m_renderer(renderer)
+		, m_frameBuffers(m_allocator, &HashU32)
 	{
 		m_allocator.SetDebugName("Pipeline");
 	}
@@ -27,14 +51,118 @@ public:
 	{
 	}
 
-	void Init() override
+	void Load(const Path& path) override
 	{
-		m_mainFrameBuffer = m_renderer.CreateFrameBuffer(800, 600, true);
+		const FileMode fileMode{
+			FileMode::Access::Read,
+			FileMode::ShareMode::ShareRead,
+			FileMode::CreationDisposition::OpenExisting,
+			FileMode::FlagNone
+		};
+
+		nativeFileHandle fHandle;
+		ASSERT(FS::OpenFileSync(fHandle, path, fileMode));
+		size_t fileSize = FS::GetFileSize(fHandle);
+		u8* data = (u8*)m_allocator.Allocate(fileSize, alignof(u8));
+		size_t fileSizeRead = 0;
+		ASSERT(FS::ReadFileSync(fHandle, 0, data, fileSize, fileSizeRead));
+		ASSERT(fileSize == fileSizeRead);
+		ASSERT(FS::CloseFileSync(fHandle));
+
+		char errorBuffer[64] = { 0 };
+		JsonValue parsedJson;
+		ASSERT(JsonParse((char*)data, (void*)&m_allocator, &parsedJson, errorBuffer));
+		ASSERT(JsonIsObject(&parsedJson));
+
+		const JsonKeyValue* fbObj = JsonObjectCFind(&parsedJson, "framebuffers");
+		ASSERT(fbObj != nullptr);
+		ASSERT(JsonIsObject(&fbObj->value));
+
+		size_t fbCount = JsonObjectCount(&fbObj->value);
+		const JsonKeyValue* fb = JsonObjectCBegin(&fbObj->value);
+		for (size_t i = 0; i < fbCount; ++i)
+		{
+			ASSERT(JsonIsObject(&fb->value));
+
+			int width = 0;
+			int height = 0;
+			bool screenSize = false;
+
+			const JsonKeyValue* fbWidth = JsonObjectCFind(&fb->value, "width");
+			ASSERT(fbWidth != nullptr && JsonIsInt(&fbWidth->value));
+			width = JsonGetInt(&fbWidth->value);
+
+			const JsonKeyValue* fbHeight = JsonObjectCFind(&fb->value, "height");
+			ASSERT(fbHeight != nullptr && JsonIsInt(&fbHeight->value));
+			height = JsonGetInt(&fbHeight->value);
+
+			const JsonKeyValue* fbScreenSize = JsonObjectCFind(&fb->value, "screen_size");
+			if (fbScreenSize != nullptr)
+			{
+				ASSERT(JsonIsBool(&fbScreenSize->value));
+				screenSize = JsonGetBool(&fbScreenSize->value);
+			}
+
+			FramebufferHandle fbh = m_renderer.CreateFrameBuffer(width, height, screenSize);
+			m_frameBuffers.Insert(crc32_string((const u8*)JsonGetString(&fb->key)), fbh);
+
+			fb++;
+		}
+
+		const JsonKeyValue* cmdArr = JsonObjectCFind(&parsedJson, "render");
+		ASSERT(cmdArr != nullptr);
+		ASSERT(JsonIsArray(&cmdArr->value));
+
+		size_t cmdCount = JsonObjectCount(&cmdArr->value);
+		const JsonKeyValue* cmd = JsonObjectCBegin(&cmdArr->value);
+		for (size_t i = 0; i < fbCount; ++i)
+		{
+			ASSERT(JsonIsObject(&cmd->value));
+
+			ASSERT(JsonObjectCount(&cmd->value) == 1);
+			const JsonKeyValue* cmdInt = JsonObjectCBegin(&cmd->value);
+			const char* cmdIntName = JsonGetString(&cmdInt->key);
+			if (string::Equal(cmdIntName, "new_view"))
+			{
+				Command command = m_commands.PushBack();
+				command.type = CommandType::NewView;
+			}
+			else if (string::Equal(cmdIntName, "set_frame_buffer"))
+			{
+				ASSERT(JsonIsObject(&cmdInt->value));
+				ASSERT(JsonObjectCount(&cmdInt->value) == 1);
+				const JsonKeyValue* fbName = JsonObjectCFind(&cmdInt->value, "name");
+				ASSERT(fbName != nullptr && JsonIsString(&fbName->value));
+
+				Command command = m_commands.PushBack();
+				command.type = CommandType::SetFramebuffer;
+				command.fb = crc32_string((const u8*)JsonGetString(&fbName->value));
+			}
+			else if (string::Equal(cmdIntName, "clear"))
+			{
+				Command command = m_commands.PushBack();
+				command.type = CommandType::Clear;
+			}
+			else if (string::Equal(cmdIntName, "render_models"))
+			{
+				ASSERT(JsonIsObject(&cmdInt->value));
+				ASSERT(JsonObjectCount(&cmdInt->value) == 1);
+				const JsonKeyValue* world = JsonObjectCFind(&cmdInt->value, "world");
+				ASSERT(world != nullptr && JsonIsInt(&world->value));
+
+				Command command = m_commands.PushBack();
+				command.type = CommandType::RenderModels;
+				command.world = (worldId)JsonGetInt(&world->value);
+			}
+
+			cmd++;
+		}
 	}
 
 	void Deinit() override
 	{
-		m_renderer.DestroyFramebuffer(m_mainFrameBuffer);
+		for (const HashMap<u32, FramebufferHandle>::HashNode& node : m_frameBuffers)
+			m_renderer.DestroyFramebuffer(node.value);
 	}
 
 	void Render() override
@@ -55,9 +183,11 @@ public:
 		m_renderer.Frame();
 	}
 
-	void* GetDefaultFrameBuffer() override
+	void* GetMainFrameBuffer() override
 	{
-		return m_renderer.GetNativeFrameBufferHandle(m_mainFrameBuffer);
+		FramebufferHandle* fbh;
+		ASSERT(m_frameBuffers.Find(crc32_string("main"), fbh));
+		return m_renderer.GetNativeFrameBufferHandle(*fbh);
 	}
 
 	IAllocator& GetSourceAllocator() { return m_sourceAllocator; }
@@ -68,7 +198,8 @@ private:
 	Engine& m_engine;
 	RenderSystem& m_renderer;
 
-	FramebufferHandle m_mainFrameBuffer = INVALID_FRAMEBUFFER_HANDLE;
+	HashMap<u32, FramebufferHandle> m_frameBuffers;
+	Array<Command> m_commands;
 };
 
 

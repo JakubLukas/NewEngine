@@ -7,6 +7,7 @@ namespace Veng
 class IAllocator;
 class Engine;
 class RenderSystem;
+class Path;
 
 
 class Pipeline
@@ -18,11 +19,11 @@ public:
 public:
 	virtual ~Pipeline() {}
 
-	virtual void Init() = 0;
+	virtual void Load(const Path& path) = 0;
 	virtual void Deinit() = 0;
 	virtual void Render() = 0;
 
-	virtual void* GetDefaultFrameBuffer() = 0;
+	virtual void* GetMainFrameBuffer() = 0;
 };
 
 

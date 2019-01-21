@@ -161,6 +161,7 @@ void JsonObjectRemove(JsonValue* object, JsonKeyValue* keyValue);
 
 // Returns iterator value or nullptr if not found
 JsonKeyValue* JsonObjectFind(JsonValue* object, const char* name);
+const JsonKeyValue* JsonObjectCFind(const JsonValue* object, const char* name);
 
 
 
@@ -504,6 +505,17 @@ void JsonObjectRemove(JsonValue* object, JsonKeyValue* keyValue) {
 JsonKeyValue* JsonObjectFind(JsonValue* object, const char* name) {
 	JsonKeyValue* it = JsonObjectBegin(object);
 	JsonKeyValue* end = it + JsonObjectCount(object);
+	for (; it < end; it++) {
+		if (strcmp(it->key._strVal, name) == 0)
+			return it;
+	}
+
+	return nullptr;
+}
+
+const JsonKeyValue* JsonObjectCFind(const JsonValue* object, const char* name) {
+	const JsonKeyValue* it = JsonObjectCBegin(object);
+	const JsonKeyValue* end = it + JsonObjectCount(object);
 	for (; it < end; it++) {
 		if (strcmp(it->key._strVal, name) == 0)
 			return it;
