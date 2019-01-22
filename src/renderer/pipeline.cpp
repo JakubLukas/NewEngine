@@ -28,7 +28,7 @@ struct Command
 	CommandType type;
 	union
 	{
-		u32 fb;
+		FramebufferHandle fbh;
 		worldId world;
 	};
 };
@@ -72,7 +72,7 @@ public:
 
 		char errorBuffer[64] = { 0 };
 		JsonValue parsedJson;
-		ASSERT(JsonParse((char*)data, (void*)&m_allocator, &parsedJson, errorBuffer));
+		ASSERT(JsonParse((char*)data, &m_allocator, &parsedJson, errorBuffer));
 		ASSERT(JsonIsObject(&parsedJson));
 
 		const JsonKeyValue* fbObj = JsonObjectCFind(&parsedJson, "framebuffers");
@@ -105,7 +105,7 @@ public:
 			}
 
 			FramebufferHandle fbh = m_renderer.CreateFrameBuffer(width, height, screenSize);
-			m_frameBuffers.Insert(crc32_string((const u8*)JsonGetString(&fb->key)), fbh);
+			m_frameBuffers.Insert(crc32_string(JsonGetString(&fb->key)), fbh);
 
 			fb++;
 		}
@@ -114,19 +114,19 @@ public:
 		ASSERT(cmdArr != nullptr);
 		ASSERT(JsonIsArray(&cmdArr->value));
 
-		size_t cmdCount = JsonObjectCount(&cmdArr->value);
-		const JsonKeyValue* cmd = JsonObjectCBegin(&cmdArr->value);
+		size_t cmdCount = JsonArrayCount(&cmdArr->value);
+		const JsonValue* cmd = JsonArrayCBegin(&cmdArr->value);
 		m_commands.Reserve(cmdCount);
-		for (size_t i = 0; i < fbCount; ++i)
+		for (size_t i = 0; i < cmdCount; ++i)
 		{
-			ASSERT(JsonIsObject(&cmd->value));
+			ASSERT(JsonIsObject(cmd));
 
-			ASSERT(JsonObjectCount(&cmd->value) == 1);
-			const JsonKeyValue* cmdInt = JsonObjectCBegin(&cmd->value);
+			ASSERT(JsonObjectCount(cmd) == 1);
+			const JsonKeyValue* cmdInt = JsonObjectCBegin(cmd);
 			const char* cmdIntName = JsonGetString(&cmdInt->key);
 			if (string::Equal(cmdIntName, "new_view"))
 			{
-				Command command = m_commands.PushBack();
+				Command& command = m_commands.PushBack();
 				command.type = CommandType::NewView;
 			}
 			else if (string::Equal(cmdIntName, "set_frame_buffer"))
@@ -136,13 +136,16 @@ public:
 				const JsonKeyValue* fbName = JsonObjectCFind(&cmdInt->value, "name");
 				ASSERT(fbName != nullptr && JsonIsString(&fbName->value));
 
-				Command command = m_commands.PushBack();
+				Command& command = m_commands.PushBack();
 				command.type = CommandType::SetFramebuffer;
-				command.fb = crc32_string((const u8*)JsonGetString(&fbName->value));
+				u32 fbKey = crc32_string(JsonGetString(&fbName->value));
+				FramebufferHandle* fbh;
+				ASSERT(m_frameBuffers.Find(fbKey, fbh));
+				command.fbh = *fbh;
 			}
 			else if (string::Equal(cmdIntName, "clear"))
 			{
-				Command command = m_commands.PushBack();
+				Command& command = m_commands.PushBack();
 				command.type = CommandType::Clear;
 			}
 			else if (string::Equal(cmdIntName, "render_models"))
@@ -152,7 +155,7 @@ public:
 				const JsonKeyValue* world = JsonObjectCFind(&cmdInt->value, "world");
 				ASSERT(world != nullptr && JsonIsInt(&world->value));
 
-				Command command = m_commands.PushBack();
+				Command& command = m_commands.PushBack();
 				command.type = CommandType::RenderModels;
 				command.world = (worldId)JsonGetInt(&world->value);
 			}
@@ -163,6 +166,9 @@ public:
 
 			cmd++;
 		}
+		JsonDeinit(&parsedJson);
+
+		m_allocator.Deallocate(data);
 	}
 
 	void Deinit() override
@@ -173,33 +179,39 @@ public:
 
 	void Render() override
 	{
-		const RenderScene* scene = (RenderScene*)m_renderer.GetScene();
-
-		worldId worldHandle = (worldId)0;
-		World* world = m_engine.GetWorld(worldHandle);//////////////
-
-		const RenderScene::CameraItem* cameraItem = scene->GetDefaultCamera(worldHandle);
-		const RenderScene::ModelItem* modelItems = scene->GetModels(worldHandle);
-
 		for(const Command* cmd = m_commands.Begin(); cmd < m_commands.End(); cmd++)
 		{
 			switch(cmd->type)
 			{
 				case CommandType::NewView:
-					asd
+				{
+					m_renderer.NewView();
+					break;
+				}
 				case CommandType::SetFramebuffer:
+				{
+					m_renderer.SetFramebuffer(cmd->fbh);
+					break;
+				}
 				case CommandType::Clear:
+				{
+					m_renderer.Clear();
+					break;
+				}
 				case CommandType::RenderModels:
+				{
+					const RenderScene* scene = (RenderScene*)m_renderer.GetScene();
+					World* world = m_engine.GetWorld(cmd->world);
+					const RenderScene::ModelItem* modelItems = scene->GetModels(cmd->world);
+					const RenderScene::CameraItem* cameraItem = scene->GetDefaultCamera(cmd->world);
+					m_renderer.SetCamera(cameraItem->entity);
+					m_renderer.RenderModels(*world, modelItems, scene->GetModelsCount(cmd->world));
+					break;
+				}
 				default:
 					break;
 			}
 		}
-		
-		m_renderer.NewView();
-		m_renderer.Clear();
-		m_renderer.SetFramebuffer(m_mainFrameBuffer);
-		m_renderer.SetCamera(cameraItem->entity);
-		m_renderer.RenderModels(*world, modelItems, scene->GetModelsCount(worldHandle));
 		m_renderer.Frame();
 	}
 

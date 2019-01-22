@@ -24,7 +24,7 @@ Path::Path(const char* str, size_t length)
 {
 	string::Copy(m_path, str, length);
 	m_path[length] = '\0';
-	m_hash = crc32_string((u8*)m_path);
+	m_hash = crc32_string(m_path);
 }
 
 Path::Path(const Path& other)
@@ -46,7 +46,7 @@ void Path::SetPath(const char* str)
 	ASSERT(len <= MAX_LENGTH);
 	string::Copy(m_path, str, len);
 	m_path[len] = '\0';
-	m_hash = crc32_string((u8*)m_path);
+	m_hash = crc32_string(m_path);
 }
 
 

@@ -31,7 +31,7 @@ void RendererWidget::Init(Engine& engine)
 	m_engine = &engine;
 	m_renderer = static_cast<RenderSystem*>(engine.GetSystem("renderer"));
 	m_pipeline = Pipeline::Create(m_allocator, *m_engine, *m_renderer);
-	m_pipeline->Init();
+	m_pipeline->Load(Path("pipelines/main.pipeline"));
 
 	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene());
 	for (size_t i = 0; i < m_engine->GetWorldCount(); ++i)
@@ -96,7 +96,7 @@ void RendererWidget::RenderInternal(EventQueue& queue)
 		m_changedSize = false;
 	}
 
-	ImGui::Image(m_pipeline->GetDefaultFrameBuffer(), windowSize);
+	ImGui::Image(m_pipeline->GetMainFrameBuffer(), windowSize);
 }
 
 

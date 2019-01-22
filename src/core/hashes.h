@@ -52,9 +52,9 @@ constexpr u32 crc32(const u8* data, size_t length)
 	return ~crc32_detail::crc32_impl(data, length, ~0);
 }
 
-constexpr u32 crc32_string(const u8* data)
+constexpr u32 crc32_string(const char* data)
 {
-	return ~crc32_detail::crc32_impl_string(data, ~0);
+	return ~crc32_detail::crc32_impl_string((u8*)data, ~0);
 }
 
 

@@ -236,6 +236,8 @@ struct Json_Array {
 	JsonValue values[1]; // tail [0]
 };
 
+static const char* Json_EMPTY_STRING = "";
+
 
 static void Json_LogError(Json_ParseContext* context, const char* fmt, ...);
 
@@ -879,7 +881,7 @@ static bool Json_MatchString(Json_ParseContext* context, JsonValue* outValue) {
 		outValue->_allocated = false;
 #else
 		if (context->token.valEnd - context->token.valBegin == 2) {
-			outValue->_strVal = nullptr;
+			outValue->_strVal = (char*)EMPTY_STRING;
 			outValue->_allocated = false;
 		}
 		else {
@@ -1008,32 +1010,23 @@ static void Json_PrintFormat(JsonPrintContext* context, const char* format, ...)
 }
 
 static void Json_ValuePrintPretty(JsonPrintContext* context, const JsonValue* value, unsigned int indentAll, unsigned int indentCur) {
-	const unsigned int MAX_INDENT = 64;
-	if (indentCur > MAX_INDENT)
-		indentCur = MAX_INDENT;
-
-	if (indentAll > MAX_INDENT)
-		indentAll = MAX_INDENT;
-
-	const char indentBuffer[MAX_INDENT] = "                                       ";
 	switch (value->type_) {
-	case JSON_VALUE_INVALID: Json_PrintFormat(context, "%.*sNONE", indentCur, indentBuffer); break;
 	case JSON_VALUE_ARRAY:
 	{
 		const JsonValue* it = JsonArrayCBegin(value);
 		const JsonValue* end = it + JsonArrayCount(value);
 		if (end - it > 0) {
-			Json_PrintFormat(context, "%.*s[\n", indentCur, indentBuffer);
+			Json_PrintFormat(context, "%*s[\n", indentCur, "");
 			indentAll += 2;
 			while (it < end - 1) {
 				Json_ValuePrintPretty(context, it++, indentAll, indentAll);
 				Json_PrintFormat(context, ",\n");
 			}
 			Json_ValuePrintPretty(context, it, indentAll, indentAll);
-			Json_PrintFormat(context, "\n%.*s]", indentAll - 2, indentBuffer);
+			Json_PrintFormat(context, "\n%*s]", indentAll - 2, "");
 		}
 		else {
-			Json_PrintFormat(context, "%.*s[]", indentCur, indentBuffer);
+			Json_PrintFormat(context, "%*s[]", indentCur, "");
 		}
 
 		break;
@@ -1043,36 +1036,35 @@ static void Json_ValuePrintPretty(JsonPrintContext* context, const JsonValue* va
 		const JsonKeyValue* it = JsonObjectCBegin(value);
 		const JsonKeyValue* end = it + JsonObjectCount(value);
 		if (end - it > 0) {
-			Json_PrintFormat(context, "%.*s{\n", indentCur, indentBuffer);
+			Json_PrintFormat(context, "%*s{\n", indentCur, "");
 			indentAll += 2;
 
 			while (it < end - 1) {
-				Json_PrintFormat(context, "%.*s\"%s\" : ", indentAll, indentBuffer, it->key._strVal);
+				Json_PrintFormat(context, "%*s\"%s\" : ", indentAll, "", it->key._strVal);
 				Json_ValuePrintPretty(context, &it->value, indentAll, 0);
 				Json_PrintFormat(context, ",\n");
 				++it;
 			}
-			Json_PrintFormat(context, "%.*s\"%s\" : ", indentAll, indentBuffer, it->key._strVal);
+			Json_PrintFormat(context, "%*s\"%s\" : ", indentAll, "", it->key._strVal);
 			Json_ValuePrintPretty(context, &it->value, indentAll, 0);
-			Json_PrintFormat(context, "\n%.*s}", indentAll - 2, indentBuffer);
+			Json_PrintFormat(context, "\n%*s}", indentAll - 2, "");
 		}
 		else {
-			Json_PrintFormat(context, "%.*s{}\n", indentCur, indentBuffer);
+			Json_PrintFormat(context, "%*s{}", indentCur, "");
 		}
 		break;
 	}
-	case JSON_VALUE_BOOL: Json_PrintFormat(context, value->_boolVal ? "%.*sTRUE" : "%.*sFALSE", indentCur, indentBuffer); break;
-	case JSON_VALUE_NULL: Json_PrintFormat(context, "%.*sNULL", indentCur, indentBuffer); break;
-	case JSON_VALUE_INT: Json_PrintFormat(context, "%.*s%lld", indentCur, indentBuffer, value->_intVal);break;
-	case JSON_VALUE_DOUBLE: Json_PrintFormat(context, "%.*s%f", indentCur, indentBuffer, value->_doubleVal); break;
-	case JSON_VALUE_STRING: Json_PrintFormat(context, "%.*s\"%s\"", indentCur, indentBuffer, value->_strVal); break;
+	case JSON_VALUE_BOOL: Json_PrintFormat(context, value->_boolVal ? "%*strue" : "%*sfalse", indentCur, ""); break;
+	case JSON_VALUE_NULL: Json_PrintFormat(context, "%*snull", indentCur, ""); break;
+	case JSON_VALUE_INT: Json_PrintFormat(context, "%*s%lld", indentCur, "", value->_intVal);break;
+	case JSON_VALUE_DOUBLE: Json_PrintFormat(context, "%*s%f", indentCur, "", value->_doubleVal); break;
+	case JSON_VALUE_STRING: Json_PrintFormat(context, "%*s\"%s\"", indentCur, "", (value->_strVal != nullptr) ? value->_strVal : ""); break;
 	default: break;
 	}
 }
 
 static void Json_ValuePrint(JsonPrintContext* context, const JsonValue* value) {
 	switch (value->type_) {
-	case JSON_VALUE_INVALID: Json_PrintFormat(context, "NONE"); break;
 	case JSON_VALUE_ARRAY:
 	{
 		const JsonValue* it = JsonArrayCBegin(value);
@@ -1113,8 +1105,8 @@ static void Json_ValuePrint(JsonPrintContext* context, const JsonValue* value) {
 		}
 		break;
 	}
-	case JSON_VALUE_BOOL: Json_PrintFormat(context, value->_boolVal ? "TRUE" : "FALSE"); break;
-	case JSON_VALUE_NULL: Json_PrintFormat(context, "NULL"); break;
+	case JSON_VALUE_BOOL: Json_PrintFormat(context, value->_boolVal ? "true" : "false"); break;
+	case JSON_VALUE_NULL: Json_PrintFormat(context, "null"); break;
 	case JSON_VALUE_INT: Json_PrintFormat(context, "%lld", value->_intVal); break;
 	case JSON_VALUE_DOUBLE: Json_PrintFormat(context, "%f", value->_doubleVal); break;
 	case JSON_VALUE_STRING: Json_PrintFormat(context, "\"%s\"", value->_strVal); break;
