@@ -3,7 +3,6 @@
 #include "../widget_base.h"
 
 #include "../external/imgui/imgui.h"
-#include "renderer/pipeline.h"
 
 
 namespace Veng
@@ -12,6 +11,7 @@ namespace Veng
 class IAllocator;
 class Engine;
 class RenderSystem;
+class Pipeline;
 
 
 namespace Editor

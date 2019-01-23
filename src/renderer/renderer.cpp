@@ -25,7 +25,11 @@
 namespace Veng
 {
 
-static const unsigned short VIEW_ID = 1;
+
+u32 HashWorldId(const worldId& world)
+{
+	return HashU32((u32)world);
+}
 
 
 struct MeshData
@@ -132,7 +136,7 @@ public:
 	const ComponentInfo* GetComponentInfo(componentHandle handle) const override { return &m_componentInfos[(size_t)handle]; }
 
 
-	void AddComponent(componentHandle handle, Entity entity, worldId world) override
+	void AddComponent(componentHandle handle, Entity entity) override
 	{
 		switch ((u8)handle)
 		{
@@ -156,7 +160,7 @@ public:
 		}
 	}
 
-	void RemoveComponent(componentHandle handle, Entity entity, worldId world) override
+	void RemoveComponent(componentHandle handle, Entity entity) override
 	{
 		switch ((u8)handle)
 		{
@@ -180,7 +184,7 @@ public:
 		}
 	}
 
-	bool HasComponent(componentHandle handle, Entity entity, worldId world) const override
+	bool HasComponent(componentHandle handle, Entity entity) const override
 	{
 		switch ((u8)handle)
 		{
@@ -205,7 +209,7 @@ public:
 		}
 	}
 
-	void GetComponentData(componentHandle handle, Entity entity, worldId world, void* buffer) const override
+	void GetComponentData(componentHandle handle, Entity entity, void* buffer) const override
 	{
 		switch ((u8)handle)
 		{
@@ -237,7 +241,7 @@ public:
 		}
 	}
 
-	void SetComponentData(componentHandle handle, Entity entity, worldId world, void* data) override
+	void SetComponentData(componentHandle handle, Entity entity, void* data) override
 	{
 		switch ((u8)handle)
 		{
@@ -271,28 +275,28 @@ public:
 	}
 
 
-	size_t GetModelsCount(worldId world) const override
+	size_t GetModelsCount() const override
 	{
 		return m_models.GetSize();
 	}
 
-	const ModelItem* GetModels(worldId world) const override
+	const ModelItem* GetModels() const override
 	{
 		return m_models.GetValues();
 	}
 
 
-	size_t GetCamerasCount(worldId world) const override
+	size_t GetCamerasCount() const override
 	{
 		return m_cameras.GetSize();
 	}
 
-	const CameraItem* GetCameras(worldId world) const override
+	const CameraItem* GetCameras() const override
 	{
 		return m_cameras.GetValues();
 	}
 
-	const CameraItem* GetDefaultCamera(worldId world) const override
+	const CameraItem* GetDefaultCamera() const override
 	{
 		if (m_cameras.GetSize() == 0)
 			return nullptr;
@@ -301,11 +305,11 @@ public:
 	}
 
 
-	size_t GetDirectionalLightsCount(worldId world) const override
+	size_t GetDirectionalLightsCount() const override
 	{
 		return m_directionalLights.GetSize();
 	}
-	const DirectionalLightItem* GetDirectionalLights(worldId world) const override
+	const DirectionalLightItem* GetDirectionalLights() const override
 	{
 		return m_directionalLights.GetValues();
 	}
@@ -336,6 +340,7 @@ public:
 		, m_shaderData(m_allocator)
 		, m_framebuffers(m_allocator)
 		, m_screenSizeFrameBuffers(m_allocator)
+		, m_scenes(m_allocator, &HashWorldId)
 	{
 		m_allocator.SetDebugName("Renderer");
 
@@ -371,17 +376,16 @@ public:
 
 	~RenderSystemImpl() override
 	{
-		DELETE_OBJECT(m_allocator, m_scene);
-
 		bgfx::destroy(m_uniformTextureColor);
+
+		for (const auto& scene : m_scenes)
+			DELETE_OBJECT(m_allocator, scene.value);
 	}
 
 
 	void Init() override
 	{
 		m_uniformTextureColor = bgfx::createUniform("s_texColor", bgfx::UniformType::Int1);
-
-		m_scene = NEW_OBJECT(m_allocator, RenderSceneImpl)(m_allocator, *this);
 	}
 
 
@@ -393,7 +397,26 @@ public:
 	const char* GetName() const override { return "renderer"; }
 
 
-	IScene* GetScene() const override { return m_scene; }
+	IScene* GetScene(worldId world) const override
+	{
+		RenderSceneImpl** scene;
+		if (m_scenes.Find(world, scene))
+			return *scene;
+		else
+			return nullptr;
+	}
+
+
+	void WorldAdded(worldId world) override
+	{
+		RenderSceneImpl* scene = NEW_OBJECT(m_allocator, RenderSceneImpl)(m_allocator, *this);
+		m_scenes.Insert(world, scene);
+	}
+
+	void WorldRemoved(worldId world) override
+	{
+		m_scenes.Erase(world);
+	}
 
 
 	MaterialManager& GetMaterialManager() const override { return *m_materialManager; }
@@ -623,19 +646,18 @@ public:
 		bgfx::setViewRect(m_currentView, 0, 0, uint16_t(fb.width), uint16_t(fb.height));
 	}
 
-	void SetCamera(Entity camera)
+	void SetCamera(World& world, Entity camera)
 	{
-		worldId worldHandle = (worldId)0;//TODO
-		World* world = m_engine.GetWorld(worldHandle);
-
-		static Matrix44 view;
-		static Matrix44 proj;
-		const RenderScene::CameraItem* cameraItem = m_scene->GetDefaultCamera(worldHandle);
+		Matrix44 view;
+		Matrix44 proj;
+		RenderSceneImpl* scene = (RenderSceneImpl*)GetScene(world.GetId());
+		//Camera* camera = scene->GetComponentData() ////////////////////////////////////////////////////////
+		const RenderScene::CameraItem* cameraItem = scene->GetDefaultCamera();
 		if (cameraItem != nullptr)
 		{
 			const Camera& cam = cameraItem->camera;
 			proj.SetPerspective(cam.fov, cam.aspect, cam.nearPlane, cam.farPlane, bgfx::getCaps()->homogeneousDepth);
-			const Transform& camTrans = world->GetEntityTransform(cameraItem->entity);
+			const Transform& camTrans = world.GetEntityTransform(cameraItem->entity);
 			Matrix44 camRot;
 			camRot.SetRotation(camTrans.rotation);
 			Vector4 eye = Vector4(camTrans.position, 1);
@@ -643,7 +665,7 @@ public:
 			view.SetLookAt(eye, at, Vector4::AXIS_Y);
 		}
 
-		bgfx::setViewTransform(VIEW_ID, &view.m11, &proj.m11);
+		bgfx::setViewTransform(m_currentView, &view.m11, &proj.m11);
 	}
 
 	void Clear()
@@ -691,7 +713,7 @@ public:
 						// Submit primitive for rendering to view 0.
 						const Shader* shader = (Shader*)m_shaderManager->GetResource(material->shader);
 						ShaderData& shaderData = m_shaderData.Get((u64)shader->renderDataHandle);
-						bgfx::submit(VIEW_ID, shaderData.handle);
+						bgfx::submit(m_currentView, shaderData.handle);
 					}
 				}
 			}
@@ -714,7 +736,7 @@ public:
 private:
 	ProxyAllocator m_allocator;//must be first
 	Engine& m_engine;
-	RenderSceneImpl* m_scene;
+	HashMap<worldId, RenderSceneImpl*> m_scenes;
 	HandleArray<MeshData, u64> m_meshData;
 	HandleArray<TextureData, u64> m_textureData;
 	HandleArray<ShaderInternalData, u64> m_shaderInternalData;

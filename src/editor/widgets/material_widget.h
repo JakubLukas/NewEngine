@@ -10,6 +10,7 @@ namespace Veng
 class IAllocator;
 class Engine;
 class ResourceManager;
+class Pipeline;
 
 
 namespace Editor
@@ -33,6 +34,7 @@ protected:
 private:
 	IAllocator& m_allocator;
 	ResourceManager* m_manager;
+	Pipeline* m_pipeline;
 	resourceHandle m_material = INVALID_RESOURCE_HANDLE;
 };
 

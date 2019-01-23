@@ -53,11 +53,11 @@ public:
 	virtual const ComponentInfo* GetComponents() const = 0;
 	virtual const ComponentInfo* GetComponentInfo(componentHandle handle) const = 0;
 
-	virtual void AddComponent(componentHandle handle, Entity entity, worldId world) = 0;
-	virtual void RemoveComponent(componentHandle handle, Entity entity, worldId world) = 0;
-	virtual bool HasComponent(componentHandle handle, Entity entity, worldId world) const = 0;
-	virtual void GetComponentData(componentHandle handle, Entity entity, worldId world, void* buffer) const = 0;
-	virtual void SetComponentData(componentHandle handle, Entity entity, worldId world, void* data) = 0;
+	virtual void AddComponent(componentHandle handle, Entity entity) = 0;
+	virtual void RemoveComponent(componentHandle handle, Entity entity) = 0;
+	virtual bool HasComponent(componentHandle handle, Entity entity) const = 0;
+	virtual void GetComponentData(componentHandle handle, Entity entity, void* buffer) const = 0;
+	virtual void SetComponentData(componentHandle handle, Entity entity, void* data) = 0;
 };
 
 
@@ -71,7 +71,10 @@ public:
 	virtual void Update(float deltaTime) = 0;
 	virtual const char* GetName() const = 0;
 
-	virtual IScene* GetScene() const = 0;
+	virtual IScene* GetScene(worldId world) const = 0;
+
+	virtual void WorldAdded(worldId world) = 0;
+	virtual void WorldRemoved(worldId world) = 0;
 };
 
 

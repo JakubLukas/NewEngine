@@ -200,12 +200,12 @@ public:
 				}
 				case CommandType::RenderModels:
 				{
-					const RenderScene* scene = (RenderScene*)m_renderer.GetScene();
+					const RenderScene* scene = (RenderScene*)m_renderer.GetScene(cmd->world);
 					World* world = m_engine.GetWorld(cmd->world);
-					const RenderScene::ModelItem* modelItems = scene->GetModels(cmd->world);
-					const RenderScene::CameraItem* cameraItem = scene->GetDefaultCamera(cmd->world);
-					m_renderer.SetCamera(cameraItem->entity);
-					m_renderer.RenderModels(*world, modelItems, scene->GetModelsCount(cmd->world));
+					const RenderScene::ModelItem* modelItems = scene->GetModels();
+					const RenderScene::CameraItem* cameraItem = scene->GetDefaultCamera();
+					m_renderer.SetCamera(*world, cameraItem->entity);
+					m_renderer.RenderModels(*world, modelItems, scene->GetModelsCount());
 					break;
 				}
 				default:

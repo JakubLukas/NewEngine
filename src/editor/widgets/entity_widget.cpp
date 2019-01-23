@@ -76,11 +76,11 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 		ImGui::TreePop();
 	}
 
-	ISystem* systems = m_engine->GetSystems();
+	ISystem* const* systems = m_engine->GetSystems();
 	for (size_t i = 0; i < m_engine->GetSystemCount(); ++i)
 	{
-		ISystem& system = systems[i];
-		IScene* scene = system.GetScene();
+		ISystem* system = systems[i];
+		IScene* scene = system->GetScene(m_world->GetId());
 
 		if (scene == nullptr)
 			continue;
@@ -90,13 +90,13 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 		{
 			const ComponentInfo& info = componentInfos[i];
 
-			if (!scene->HasComponent(info.handle, m_entity, m_world->GetId()))
+			if (!scene->HasComponent(info.handle, m_entity))
 				continue;
 
 			char buffer[1024];
 			char* data = buffer;
 			ASSERT2(sizeof(buffer) >= info.dataSize, "Buffer is not large enough");
-			scene->GetComponentData(info.handle, m_entity, m_world->GetId(), data);
+			scene->GetComponentData(info.handle, m_entity, data);
 
 			if (!ImGui::TreeNodeEx(info.name, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnDoubleClick))
 				continue;
@@ -199,7 +199,7 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 			}
 
 			if(changed)
-				scene->SetComponentData(info.handle, m_entity, m_world->GetId(), buffer);
+				scene->SetComponentData(info.handle, m_entity, buffer);
 
 			ImGui::TreePop();
 		}

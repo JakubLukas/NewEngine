@@ -35,7 +35,7 @@ public:
 	virtual bool RemoveSystem(const char* name) = 0;
 	virtual ISystem* GetSystem(const char* name) const = 0;
 	virtual size_t GetSystemCount() const = 0;
-	virtual ISystem* GetSystems() const = 0;
+	virtual ISystem* const* GetSystems() const = 0;
 
 	virtual bool AddResourceManager(ResourceManager& manager) = 0;
 	virtual bool RemoveResourceManager(ResourceType type) = 0;

@@ -70,21 +70,21 @@ public:
 	virtual const ComponentInfo* GetComponents() const override = 0;
 	virtual const ComponentInfo* GetComponentInfo(componentHandle handle) const override = 0;
 
-	virtual void AddComponent(componentHandle handle, Entity entity, worldId world) override = 0;
-	virtual void RemoveComponent(componentHandle handle, Entity entity, worldId world) override = 0;
-	virtual bool HasComponent(componentHandle handle, Entity entity, worldId world) const override = 0;
-	virtual void GetComponentData(componentHandle handle, Entity entity, worldId world, void* buffer) const override = 0;
-	virtual void SetComponentData(componentHandle handle, Entity entity, worldId world, void* data) override = 0;
+	virtual void AddComponent(componentHandle handle, Entity entity) override = 0;
+	virtual void RemoveComponent(componentHandle handle, Entity entity) override = 0;
+	virtual bool HasComponent(componentHandle handle, Entity entity) const override = 0;
+	virtual void GetComponentData(componentHandle handle, Entity entity, void* buffer) const override = 0;
+	virtual void SetComponentData(componentHandle handle, Entity entity, void* data) override = 0;
 
-	virtual size_t GetModelsCount(worldId world) const = 0;
-	virtual const ModelItem* GetModels(worldId world) const = 0;
+	virtual size_t GetModelsCount() const = 0;
+	virtual const ModelItem* GetModels() const = 0;
 
-	virtual size_t GetCamerasCount(worldId world) const = 0;
-	virtual const CameraItem* GetCameras(worldId world) const = 0;
-	virtual const CameraItem* GetDefaultCamera(worldId world) const = 0;
+	virtual size_t GetCamerasCount() const = 0;
+	virtual const CameraItem* GetCameras() const = 0;
+	virtual const CameraItem* GetDefaultCamera() const = 0;
 
-	virtual size_t GetDirectionalLightsCount(worldId world) const = 0;
-	virtual const DirectionalLightItem* GetDirectionalLights(worldId world) const = 0;
+	virtual size_t GetDirectionalLightsCount() const = 0;
+	virtual const DirectionalLightItem* GetDirectionalLights() const = 0;
 
 };
 
@@ -104,7 +104,10 @@ public:
 	virtual void Update(float deltaTime) override = 0;
 	virtual const char* GetName() const override = 0;
 
-	virtual IScene* GetScene() const override = 0;
+	virtual IScene* GetScene(worldId world) const override = 0;
+
+	virtual void WorldAdded(worldId world) override = 0;
+	virtual void WorldRemoved(worldId world) override = 0;
 
 	virtual MaterialManager& GetMaterialManager() const = 0;
 	virtual ShaderManager& GetShaderManager() const = 0;
@@ -135,7 +138,7 @@ public:
 
 	virtual void NewView() = 0;
 	virtual void SetFramebuffer(FramebufferHandle handle) = 0;
-	virtual void SetCamera(Entity camera) = 0;
+	virtual void SetCamera(World& world, Entity camera) = 0;
 	virtual void Clear() = 0;
 	virtual void RenderModels(World& world, const RenderScene::ModelItem* models, size_t count) = 0;
 	virtual void Frame() = 0;

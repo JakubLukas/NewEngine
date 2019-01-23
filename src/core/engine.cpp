@@ -35,6 +35,10 @@ public:
 	worldId AddWorld() override
 	{
 		World& world = m_worlds.EmplaceBack(m_allocator, (worldId)m_worlds.GetSize());
+
+		for (ISystem* system : m_systems)
+			system->WorldAdded(world.GetId());
+
 		return world.GetId();
 	}
 
@@ -48,7 +52,12 @@ public:
 		}
 
 		if (idx != m_worlds.GetSize())
+		{
+			for (ISystem* system : m_systems)
+				system->WorldRemoved(id);
+
 			m_worlds.Erase(idx);
+		}
 		else
 			ASSERT2(false, "World with given id doesn't exist");
 	}
@@ -111,9 +120,9 @@ public:
 		return m_systems.GetSize();
 	}
 
-	ISystem* GetSystems() const override
+	ISystem* const* GetSystems() const override
 	{
-		return *m_systems.Begin();
+		return m_systems.Begin();
 	}
 
 

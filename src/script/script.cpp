@@ -34,7 +34,7 @@ public:
 		m_world = m_engine.AddWorld();
 		World* world = m_engine.GetWorld(m_world);
 		RenderSystem* renderSystem = (RenderSystem*)m_engine.GetSystem("renderer");
-		RenderScene* renderScene = static_cast<RenderScene*>(m_engine.GetSystem("renderer")->GetScene());
+		RenderScene* renderScene = static_cast<RenderScene*>(renderSystem->GetScene(m_world));
 
 		Entity dirLight = world->CreateEntity();
 		Transform& camTrans = world->GetEntityTransform(dirLight);
@@ -42,8 +42,8 @@ public:
 
 		DirectionalLight dirLightData;
 		dirLightData.color = Color(255, 255, 255, 255);
-		renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::DirectionalLight), dirLight, m_world);
-		renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::DirectionalLight), dirLight, m_world, &dirLightData);
+		renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::DirectionalLight), dirLight);
+		renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::DirectionalLight), dirLight, &dirLightData);
 
 
 		char* buffer[sizeof(ResourceType) + sizeof(resourceHandle)];
@@ -58,11 +58,11 @@ public:
 			{
 				m_entities[i] = world->CreateEntity();
 				Transform& trans = world->GetEntityTransform(m_entities[i]);
-				renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Model), m_entities[i], m_world);
+				renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Model), m_entities[i]);
 
 				if (i % 2 == 0)
 				{
-					resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/cubes.model"));
+					resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/cube.model"));
 					*(resourceHandle*)data = modelHandle;
 				}
 				else
@@ -70,7 +70,7 @@ public:
 					resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/pyramid.model"));
 					*(resourceHandle*)data = modelHandle;
 				}
-				renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Model), m_entities[i], m_world, buffer);
+				renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Model), m_entities[i], buffer);
 
 				Quaternion rot = Quaternion::IDENTITY;
 				rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
@@ -103,7 +103,9 @@ public:
 
 	const char* GetName() const override { return "script"; }
 
-	IScene* GetScene() const override { return nullptr; }
+	IScene* GetScene(worldId world) const override { return nullptr; }
+	void WorldAdded(worldId world) override {}
+	void WorldRemoved(worldId world) override {}
 
 	Engine& GetEngine() const override { return m_engine; }
 

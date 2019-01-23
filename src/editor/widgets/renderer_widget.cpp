@@ -3,6 +3,7 @@
 #include "../widget_register.h"
 #include "core/iallocator.h"
 #include "core/engine.h"
+#include "renderer/pipeline.h"
 #include "renderer/renderer.h"
 #include "core/math/math.h"
 #include "core/math/matrix.h"
@@ -33,10 +34,10 @@ void RendererWidget::Init(Engine& engine)
 	m_pipeline = Pipeline::Create(m_allocator, *m_engine, *m_renderer);
 	m_pipeline->Load(Path("pipelines/main.pipeline"));
 
-	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene());
-	for (size_t i = 0; i < m_engine->GetWorldCount(); ++i)
+	for (size_t i = 0; i < /*m_engine->GetWorldCount()*/1; ++i)
 	{
 		World& world = m_engine->GetWorlds()[i];
+		RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene(world.GetId()));
 		m_camera = world.CreateEntity();
 		Transform& camTrans = world.GetEntityTransform(m_camera);
 		camTrans.position = Vector3(0, 0, 35);
@@ -48,8 +49,8 @@ void RendererWidget::Init(Engine& engine)
 			800.0f,
 			600.0f,
 		};
-		renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Camera), m_camera, world.GetId());
-		renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Camera), m_camera, world.GetId(), &cam);
+		renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Camera), m_camera);
+		renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Camera), m_camera, &cam);
 	}
 }
 
@@ -71,8 +72,6 @@ void RendererWidget::Update(EventQueue& queue)
 			m_camera = eventCamera->camera;
 		}
 	}
-
-	m_pipeline->Render();
 }
 
 
@@ -96,6 +95,7 @@ void RendererWidget::RenderInternal(EventQueue& queue)
 		m_changedSize = false;
 	}
 
+	m_pipeline->Render();
 	ImGui::Image(m_pipeline->GetMainFrameBuffer(), windowSize);
 }
 
@@ -103,12 +103,12 @@ void RendererWidget::RenderInternal(EventQueue& queue)
 void RendererWidget::OnResize()
 {
 	m_renderer->Resize((i32)m_size.x, (i32)m_size.y);
-	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene());
+	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene(worldId(0)));///////////////////////////////////////
 	Camera cam;
-	renderScene->GetComponentData(componentHandle(1), m_camera, worldId(0), &cam);
+	renderScene->GetComponentData(componentHandle(1), m_camera, &cam);
 	cam.screenWidth = m_size.x;
 	cam.screenHeight = m_size.y;
-	renderScene->SetComponentData(componentHandle(1), m_camera, worldId(0), &cam);
+	renderScene->SetComponentData(componentHandle(1), m_camera, &cam);
 }
 
 
