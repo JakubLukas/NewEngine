@@ -20,6 +20,7 @@
 #include "core/file/clob.h"//////////////////////
 
 #include "core/math/math.h"
+#include "core/parsing/json.h"
 
 
 namespace Veng
@@ -427,7 +428,13 @@ public:
 
 	meshRenderHandle CreateMeshData(InputBlob& data) override
 	{
-		InputClob dataText(data);
+		char errorBuffer[64] = { 0 };
+		JsonValue parsedJson;
+		ASSERT(JsonParse((char*)data.GetData(), &m_allocator, &parsedJson, errorBuffer));
+
+		bool hasPosition = false;
+		bool hasTexcoords = false;
+		bool hasColor = false;
 
 		MeshData meshData;
 

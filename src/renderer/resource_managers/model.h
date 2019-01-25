@@ -16,6 +16,9 @@ const meshRenderHandle INVALID_MESH_RENDER_HANDLE = (meshRenderHandle)0;
 struct Mesh
 {
 	resourceHandle material;
+	ShaderVaryingFlags varyings = SV_NONE;
+	u8* verticesData;
+	u8* indicesData;
 	meshRenderHandle renderDataHandle;
 };
 
