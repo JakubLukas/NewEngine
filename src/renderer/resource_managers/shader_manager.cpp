@@ -2,7 +2,6 @@
 
 #include "core/memory.h"
 #include "core/file/blob.h"
-#include "core/file/clob.h"
 #include "core/file/file_system.h"
 #include "core/asserts.h"
 #include "core/logs.h"

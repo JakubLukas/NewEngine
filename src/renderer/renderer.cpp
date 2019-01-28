@@ -17,7 +17,6 @@
 
 #include <bgfx/bgfx.h>///////////////
 #include "core/file/blob.h"//////////////////////
-#include "core/file/clob.h"//////////////////////
 
 #include "core/math/math.h"
 #include "core/parsing/json.h"
@@ -431,60 +430,114 @@ public:
 		char errorBuffer[64] = { 0 };
 		JsonValue parsedJson;
 		ASSERT(JsonParse((char*)data.GetData(), &m_allocator, &parsedJson, errorBuffer));
-
-		bool hasPosition = false;
-		bool hasTexcoords = false;
-		bool hasColor = false;
+		ASSERT(JsonIsObject(&parsedJson));
 
 		MeshData meshData;
 
-		meshData.vertex_decl
-			.begin()
-			.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
-			.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
-			.end();
-
-		int verticesCount;
-		ASSERT(dataText.Read(verticesCount));
-
-		u32 verticesBufferSize = verticesCount * sizeof(PosColorVertex);
-		PosColorVertex* vertices = (PosColorVertex*)m_allocator.Allocate(verticesBufferSize, alignof(PosColorVertex));
-		for (int i = 0; i < verticesCount; ++i)
+		JsonKeyValue* verticesData = JsonObjectFind(&parsedJson, "vertices");
+		if(verticesData != nullptr)
 		{
-			ASSERT(dataText.Read(vertices[i].x));
-			dataText.Skip(1);
-			ASSERT(dataText.Read(vertices[i].y));
-			dataText.Skip(1);
-			ASSERT(dataText.Read(vertices[i].z));
-			dataText.Skip(1);
-			ASSERT(dataText.Read(vertices[i].abgr));
-			dataText.Skip(1);
-			ASSERT(dataText.Read(vertices[i].u0));
-			dataText.Skip(1);
-			ASSERT(dataText.Read(vertices[i].v0));
+			ASSERT(JsonIsObject(&verticesData->value));
+
+			JsonKeyValue* countJson = JsonObjectFind(&verticesData->value, "count");
+			ASSERT(countJson != nullptr && JsonIsInt(&countJson->value));
+			size_t count = (size_t)JsonGetInt(&countJson->value);
+			JsonKeyValue* positions = JsonObjectFind(&verticesData->value, "positions");
+			JsonKeyValue* texCoords = JsonObjectFind(&verticesData->value, "uvs");
+			JsonKeyValue* colors = JsonObjectFind(&verticesData->value, "colors");
+			JsonValue* positionArr = nullptr;
+			JsonValue* texCoordArr = nullptr;
+			JsonValue* colorsArr = nullptr;
+
+			size_t bufferSize = 0;
+			meshData.vertex_decl.begin();
+			if(positions != nullptr)
+			{
+				ASSERT(JsonIsArray(&positions->value) && JsonArrayCount(&positions->value) == count * 3);
+				positionArr = JsonArrayBegin(&positions->value);
+				bufferSize += 3 * count * sizeof(float);
+				meshData.vertex_decl.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float);
+			}
+			if(texCoords != nullptr)
+			{
+				ASSERT(JsonIsArray(&texCoords->value) && JsonArrayCount(&texCoords->value) == count * 2);
+				texCoordArr = JsonArrayBegin(&texCoords->value);
+				bufferSize += 2 * count * sizeof(float);
+				meshData.vertex_decl.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float);
+			}
+			if(colors != nullptr)
+			{
+				ASSERT(JsonIsArray(&colors->value) && JsonArrayCount(&colors->value) == count);
+				colorsArr = JsonArrayBegin(&colors->value);
+				bufferSize += 4 * count * sizeof(u8);
+				meshData.vertex_decl.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true);
+			}
+			meshData.vertex_decl.end();
+
+			u8* dataBuffer = (u8*)m_allocator.Allocate(bufferSize, alignof(float));
+			for(size_t i = 0; i < count; ++i)
+			{
+				if(positionArr != nullptr)
+				{
+					float* posBuffer = (float*)dataBuffer;
+					*posBuffer = (float)JsonGetDouble(positionArr++);
+					*(posBuffer + 1) = (float)JsonGetDouble(positionArr++);
+					*(posBuffer + 2) = (float)JsonGetDouble(positionArr++);
+					dataBuffer = (u8*)(posBuffer + 3);
+				}
+				if(colorsArr != nullptr)
+				{
+					u32* colBuffer = (u32*)dataBuffer;
+					*colBuffer = (u32)JsonGetInt(colorsArr++);
+					dataBuffer = (u8*)(colBuffer + 1);
+				}
+				if(texCoordArr != nullptr)
+				{
+					float* uvBuffer = (float*)dataBuffer;
+					*uvBuffer = (float)JsonGetDouble(texCoordArr++);
+					*(uvBuffer + 1) = (float)JsonGetDouble(texCoordArr++);
+					dataBuffer = (u8*)(uvBuffer + 2);
+				}
+			}
+
+			meshData.vertexBufferHandle = bgfx::createVertexBuffer(bgfx::copy(dataBuffer, (uint32_t)bufferSize), meshData.vertex_decl);
+			m_allocator.Deallocate(dataBuffer);
+		}
+		else
+		{
+			ASSERT2(false, "Missing vertex data");
+			meshData.vertexBufferHandle = BGFX_INVALID_HANDLE;
 		}
 
-		int indicesCount;
-		ASSERT(dataText.Read(indicesCount));
-		indicesCount *= 3;
-
-		u32 indicesBufferSize = indicesCount * sizeof(u16);
-		u16* indices = (u16*)m_allocator.Allocate(indicesBufferSize, alignof(u16));
-		for (int i = 0; i < indicesCount; ++i)
+		JsonKeyValue* indicesData = JsonObjectFind(&parsedJson, "indices");
+		if(indicesData != nullptr)
 		{
-			int num;
-			ASSERT(dataText.Read(num));
-			indices[i] = (u16)num;
+			ASSERT(JsonIsObject(&indicesData->value));
+
+			JsonKeyValue* countJson = JsonObjectFind(&indicesData->value, "count");
+			ASSERT(countJson != nullptr && JsonIsInt(&countJson->value));
+			size_t count = (size_t)JsonGetInt(&countJson->value) * 3;//hardcoded triangles here
+			JsonKeyValue* indices = JsonObjectFind(&indicesData->value, "data");
+			ASSERT(JsonIsArray(&indices->value) && JsonArrayCount(&indices->value) == count);
+			JsonValue* indexArr = JsonArrayBegin(&indices->value);
+
+			u16* dataBuffer = (u16*)m_allocator.Allocate(count * sizeof(u16), alignof(float));
+			for(size_t i = 0; i < count; ++i)
+			{
+				*dataBuffer = (u16)JsonGetInt(indexArr++);
+				dataBuffer++;
+			}
+
+			meshData.indexBufferHandle = bgfx::createIndexBuffer(bgfx::copy(dataBuffer, (uint32_t)(count * sizeof(u16))));
+			m_allocator.Deallocate(dataBuffer);
+		}
+		else
+		{
+			ASSERT2(false, "Missing indices");
+			meshData.indexBufferHandle = BGFX_INVALID_HANDLE;
 		}
 
-		meshData.vertexBufferHandle = bgfx::createVertexBuffer(bgfx::copy(vertices, verticesBufferSize), meshData.vertex_decl);
-		meshData.indexBufferHandle = bgfx::createIndexBuffer(bgfx::copy(indices, indicesBufferSize));
-
-		m_allocator.Deallocate(vertices);
-		m_allocator.Deallocate(indices);
-
-		data.SetPosition(data.GetPosition() + dataText.GetPosition());
+		JsonDeinit(&parsedJson);
 
 		return (meshRenderHandle)m_meshData.Add(Utils::Move(meshData));
 	}
@@ -538,12 +591,10 @@ public:
 
 	shaderInternalRenderHandle CreateShaderInternalData(InputBlob& data) override
 	{
-		InputClob dataText(data);
-
 		ShaderInternalData shaderIntData;
 
-		const bgfx::Memory* mem = bgfx::alloc((u32)dataText.GetSize() + 1);
-		memory::Copy(mem->data, dataText.GetData(), dataText.GetSize());
+		const bgfx::Memory* mem = bgfx::alloc((u32)data.GetSize() + 1);
+		memory::Copy(mem->data, data.GetData(), data.GetSize());
 		mem->data[mem->size - 1] = '\0';
 
 		shaderIntData.handle = bgfx::createShader(mem);

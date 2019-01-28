@@ -1,7 +1,7 @@
 #include "model_manager.h"
 
 #include "core/file/blob.h"
-#include "core/file/clob.h"
+#include "core/parsing/json.h"
 
 #include "../renderer.h"
 
@@ -72,11 +72,21 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 
 	mesh.renderDataHandle = m_renderSystem->CreateMeshData(data);
 
-	InputClob dataText(data);
+	char errorBuffer[64] = { 0 };
+	JsonValue parsedJson;
+	ASSERT(JsonParse((char*)data.GetData(), &m_allocator, &parsedJson, errorBuffer));
+	ASSERT(JsonIsObject(&parsedJson));
 
-	char materialPath[Path::MAX_LENGTH + 1] = { '\0' };
-	ASSERT(dataText.ReadLine(materialPath, Path::MAX_LENGTH));
-	mesh.material = m_depManager->LoadResource(ResourceType::Model, ResourceType::Material, Path(materialPath));
+	JsonKeyValue* material = JsonObjectFind(&parsedJson, "material");
+	if(material != nullptr)
+	{
+		ASSERT(JsonIsString(&material->value));
+		const char* materialRawStr = JsonGetString(&material->value);
+		Path materialPath(materialRawStr);
+		mesh.material = m_depManager->LoadResource(ResourceType::Model, ResourceType::Material, materialPath);
+	}
+
+	JsonDeinit(&parsedJson);
 }
 
 
