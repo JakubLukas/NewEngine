@@ -18,7 +18,7 @@ struct Texture : public Resource
 	u32 height = 0;
 	u32 channels = 0;
 	u8* data = nullptr;
-	textureRenderHandle renderDataHandle;
+	textureRenderHandle renderDataHandle = INVALID_TEXTURE_RENDER_HANDLE;
 };
 
 

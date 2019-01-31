@@ -114,7 +114,7 @@ public:
 	virtual ModelManager& GetModelManager() const = 0;
 	virtual TextureManager& GetTextureManager() const = 0;
 
-	virtual meshRenderHandle CreateMeshData(InputBlob& data) = 0;
+	virtual meshRenderHandle CreateMeshData(Mesh& mesh) = 0;
 	virtual void DestroyMeshData(meshRenderHandle handle) = 0;
 
 	virtual textureRenderHandle CreateTextureData(const Texture& texture) = 0;
@@ -141,7 +141,6 @@ public:
 	virtual void SetCamera(World& world, Entity camera) = 0;
 	virtual void Clear() = 0;
 	virtual void RenderModels(World& world, const RenderScene::ModelItem* models, size_t count) = 0;
-	virtual void Frame() = 0;
 
 	virtual void* GetNativeFrameBufferHandle(FramebufferHandle handle) = 0;
 };

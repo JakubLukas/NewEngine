@@ -7,7 +7,7 @@ namespace Veng
 {
 
 
-typedef u32 ShaderVaryingFlags;//not so "shader", it is also used in mesh
+typedef u32 ShaderVaryingFlags;
 enum ShaderVaryingBits : ShaderVaryingFlags
 {
 	SV_NONE = 0,

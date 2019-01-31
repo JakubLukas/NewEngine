@@ -72,7 +72,7 @@ public:
 
 		char errorBuffer[64] = { 0 };
 		JsonValue parsedJson;
-		ASSERT(JsonParse((char*)data, &m_allocator, &parsedJson, errorBuffer));
+		ASSERT(JsonParseError((char*)data, &m_allocator, &parsedJson, errorBuffer));
 		ASSERT(JsonIsObject(&parsedJson));
 
 		const JsonKeyValue* fbObj = JsonObjectCFind(&parsedJson, "framebuffers");
@@ -212,7 +212,6 @@ public:
 					break;
 			}
 		}
-		m_renderer.Frame();
 	}
 
 	void* GetMainFrameBuffer() override

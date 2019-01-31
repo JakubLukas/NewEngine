@@ -78,7 +78,7 @@ void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 
 	char errorBuffer[64] = { 0 };
 	JsonValue parsedJson;
-	ASSERT(JsonParse((char*)data.GetData(), &m_allocator, &parsedJson, errorBuffer));
+	ASSERT(JsonParseError((char*)data.GetData(), &m_allocator, &parsedJson, errorBuffer));
 	ASSERT(JsonIsObject(&parsedJson));
 
 	JsonKeyValue* shader = JsonObjectFind(&parsedJson, "shader");

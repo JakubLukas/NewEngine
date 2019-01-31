@@ -44,6 +44,7 @@ void EntityWidget::Update(EventQueue& queue)
 		{
 			const EventSelectWorld* eventWorld = (EventSelectWorld*)event;
 			m_world = m_engine->GetWorld(eventWorld->id);
+			m_entity = INVALID_ENTITY;
 		}
 		else if(event->type == EventType::SelectEntity)
 		{

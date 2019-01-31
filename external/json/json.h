@@ -1,25 +1,31 @@
 /*
-	@author Ondrej Ritomsky
-	@version 0.4, 09.12.2018
+@author Ondrej Ritomsky
+@version 0.42, 29.01.2019
 
-	No warranty implied
+No warranty implied
 
-	USAGE:
-		#define JSON_IMPLEMENTATION 
-		before json.h include in one .cpp file
+// ASCI only
+// No escaped characters in string
 
-	OPTIONS:
-		Create error message if parsing failed
-		#define JSON_ERROR_MESSAGE
+USAGE:
+#define JSON_IMPLEMENTATION
+before json.h include in one .cpp file
 
-		Destructive parsing for strings, parsed string points to modified input buffer "str" -> "str\0 ...
-		#define JSON_INPUT_STRING_IS_STORAGE
+OPTIONS:
+Create error message if parsing failed
+#define JSON_ERROR_MESSAGE
 
-		Custom allocator
-		#define JSON_ALLOC(context, size) <alloc function call> // malloc(size) by default
-		#define JSON_FREE(context, data) <free function call>   // free(data) by default
+Destructive parsing for strings, parsed string points to modified input buffer "str" -> "str\0 ...
+#define JSON_INPUT_STRING_IS_STORAGE
+
+Custom allocator
+#define JSON_ALLOC(context, size) <alloc function call> // malloc(size) by default
+#define JSON_FREE(context, data) <free function call>   // free(data) by default
+
+Contributions, bug finding / fixing, improvements
+Jakub Lukasik
+
 */
-
 
 #ifndef JSON_INCLUDE_JSON_H
 #define JSON_INCLUDE_JSON_H
@@ -40,7 +46,7 @@ struct Json_Array;
 struct JsonValue {
 	// Can be safely read, if the JsonValue is properly initialized
 	JsonValueType type_;
-	
+
 	bool _allocated; // if array or object have any data allocated or if string is allocated or const
 
 	union {
@@ -67,101 +73,104 @@ struct JsonPrintContext {
 
 extern "C" {
 
-void JsonDeinit(JsonValue* value);
+	void JsonDeinit(JsonValue* value);
 
 
-// Stream will be modified used only if JSON_INPUT_STRING_IS_STORAGE is used
-bool JsonParse(char* stream, void* allocContext, JsonValue* outValue, char error[64]);
+	// Stream will be modified used only if JSON_INPUT_STRING_IS_STORAGE is used
+	bool JsonParse(char* stream, void* allocContext, JsonValue* outValue);
+
+	bool JsonParseError(char* stream, void* allocContext, JsonValue* outValue, char error[64]);
 
 
-JsonPrintContext JsonPrintContextInit(void* allocContext);
+	JsonPrintContext JsonPrintContextInit(void* allocContext);
 
-// The result data is owned by the context, deinit context after usage
-char* JsonValuePrint(JsonPrintContext* context, const JsonValue* value, bool pretty, unsigned int* optOutSize);
+	// The result data is owned by the context, deinit context after usage
+	char* JsonValuePrint(JsonPrintContext* context, const JsonValue* value, bool pretty, unsigned int* optOutSize);
 
-void JsonPrintContextDeinit(JsonPrintContext* context);
-
-
-
-bool JsonGetBool(const JsonValue* value);
-
-long long JsonGetInt(const JsonValue* value);
-
-double JsonGetDouble(const JsonValue* value);
-
-const char* JsonGetString(const JsonValue* value);
+	void JsonPrintContextDeinit(JsonPrintContext* context);
 
 
 
-void JsonSetInvalid(JsonValue* value);
+	bool JsonGetBool(const JsonValue* value);
 
-void JsonSetBool(JsonValue* value, bool b);
+	long long JsonGetInt(const JsonValue* value);
 
-void JsonSetNull(JsonValue* value);
+	double JsonGetDouble(const JsonValue* value);
 
-void JsonSetInt(JsonValue* value, long long number);
-
-void JsonSetDouble(JsonValue* value, double number);
-
-void JsonSetString(JsonValue* value, const char* str, void* allocContext);
-
-void JsonSetCString(JsonValue* value, const char* str);
-
-void JsonSetArray(JsonValue* value, void* allocContext);
-
-void JsonSetObject(JsonValue* value, void* allocContext);
+	const char* JsonGetString(const JsonValue* value);
 
 
 
-bool JsonIsType(const JsonValue* value, JsonValueType type);
+	void JsonSetInvalid(JsonValue* value);
 
-bool JsonIsInvalid(const JsonValue* value);
+	void JsonSetBool(JsonValue* value, bool b);
 
-bool JsonIsBool(const JsonValue* value);
+	void JsonSetNull(JsonValue* value);
 
-bool JsonIsNull(const JsonValue* value);
+	void JsonSetInt(JsonValue* value, long long number);
 
-bool JsonIsInt(const JsonValue* value);
+	void JsonSetDouble(JsonValue* value, double number);
 
-bool JsonIsDouble(const JsonValue* value);
+	void JsonSetString(JsonValue* value, const char* str, void* allocContext);
 
-bool JsonIsString(const JsonValue* value);
+	void JsonSetCString(JsonValue* value, const char* str);
 
-bool JsonIsArray(const JsonValue* value);
+	void JsonSetArray(JsonValue* value, void* allocContext);
 
-bool JsonIsObject(const JsonValue* value);
-
-
-void JsonArrayAdd(JsonValue* array, JsonValue* element);
-
-void JsonArrayReserve(JsonValue* array, unsigned int capacity);
-
-unsigned int JsonArrayCount(const JsonValue* array);
-
-JsonValue* JsonArrayBegin(JsonValue* array);
-
-const JsonValue* JsonArrayCBegin(const JsonValue* array);
-
-// Value is deallocated
-bool JsonArraySwapRemove(JsonValue* array, unsigned int index);
+	void JsonSetObject(JsonValue* value, void* allocContext);
 
 
 
-void JsonObjectAdd(JsonValue* object, JsonValue* name, JsonValue* namesValue);
+	bool JsonIsType(const JsonValue* value, JsonValueType type);
 
-unsigned int JsonObjectCount(const JsonValue* object);
+	bool JsonIsInvalid(const JsonValue* value);
 
-JsonKeyValue* JsonObjectBegin(JsonValue* object);
+	bool JsonIsBool(const JsonValue* value);
 
-const JsonKeyValue* JsonObjectCBegin(const JsonValue* object);
+	bool JsonIsNull(const JsonValue* value);
 
-// KeyValue must be valid iterator value from JsonObjectFind, no boundary check is made
-// KeyValue key and value are deallocated
-void JsonObjectRemove(JsonValue* object, JsonKeyValue* keyValue);
+	bool JsonIsInt(const JsonValue* value);
 
-// Returns iterator value or nullptr if not found
-JsonKeyValue* JsonObjectFind(JsonValue* object, const char* name);
-const JsonKeyValue* JsonObjectCFind(const JsonValue* object, const char* name);
+	bool JsonIsDouble(const JsonValue* value);
+
+	bool JsonIsString(const JsonValue* value);
+
+	bool JsonIsArray(const JsonValue* value);
+
+	bool JsonIsObject(const JsonValue* value);
+
+
+	void JsonArrayAdd(JsonValue* array, JsonValue* element);
+
+	void JsonArrayReserve(JsonValue* array, unsigned int capacity);
+
+	unsigned int JsonArrayCount(const JsonValue* array);
+
+	JsonValue* JsonArrayBegin(JsonValue* array);
+
+	const JsonValue* JsonArrayCBegin(const JsonValue* array);
+
+	// Value is deallocated
+	bool JsonArraySwapRemove(JsonValue* array, unsigned int index);
+
+
+
+	void JsonObjectAdd(JsonValue* object, JsonValue* name, JsonValue* namesValue);
+
+	unsigned int JsonObjectCount(const JsonValue* object);
+
+	JsonKeyValue* JsonObjectBegin(JsonValue* object);
+
+	const JsonKeyValue* JsonObjectCBegin(const JsonValue* object);
+
+	// KeyValue must be valid iterator value from JsonObjectFind, no boundary check is made
+	// KeyValue key and value are deallocated
+	void JsonObjectRemove(JsonValue* object, JsonKeyValue* keyValue);
+
+	// Returns iterator value or nullptr if not found
+	JsonKeyValue* JsonObjectFind(JsonValue* object, const char* name);
+
+	const JsonKeyValue* JsonObjectCFind(const JsonValue* object, const char* name);
 
 
 
@@ -236,8 +245,6 @@ struct Json_Array {
 	JsonValue values[1]; // tail [0]
 };
 
-static const char* Json_EMPTY_STRING = "";
-
 
 static void Json_LogError(Json_ParseContext* context, const char* fmt, ...);
 
@@ -250,6 +257,8 @@ static bool Json_LexerIsToken(Json_ParseContext* context, Json_TokenType type);
 static bool Json_LexerMatchToken(Json_ParseContext* context, Json_TokenType type);
 
 static bool Json_LexerExpectToken(Json_ParseContext* context, Json_TokenType type);
+
+static char* Json_LexerParseHexaNumber(Json_ParseContext* context);
 
 static char* Json_LexerParseNumber(Json_ParseContext* context);
 
@@ -281,7 +290,12 @@ static void Json_ValuePrintPretty(JsonPrintContext* context, const JsonValue* va
 static void Json_ValuePrint(JsonPrintContext* context, const JsonValue* value);
 
 
-bool JsonParse(char* stream, void* allocContext, JsonValue* outValue, char error[64]) {
+bool JsonParse(char* stream, void* allocContext, JsonValue* outValue) {
+	char error[64];
+	return JsonParseError(stream, allocContext, outValue, error);
+}
+
+bool JsonParseError(char* stream, void* allocContext, JsonValue* outValue, char error[64]) {
 	Json_ParseContext context;
 	Json_LexerInit(&context, allocContext, stream);
 
@@ -358,7 +372,7 @@ void JsonDeinit(JsonValue* value) {
 }
 
 JsonKeyValue* JsonObjectBegin(JsonValue* value) {
-	return value->_allocated ? (JsonKeyValue*) value->_arrayVal->values : nullptr;
+	return value->_allocated ? (JsonKeyValue*)value->_arrayVal->values : nullptr;
 }
 
 const JsonKeyValue* JsonObjectCBegin(const JsonValue* value) {
@@ -426,14 +440,14 @@ void JsonSetDouble(JsonValue* value, double number) {
 void JsonSetString(JsonValue* value, const char* str, void* allocContext) {
 	value->type_ = JSON_VALUE_STRING;
 	value->_allocated = true;
-	unsigned int len = (unsigned int) strlen(str);
-	value->_strVal = (char*) JSON_ALLOC(allocContext, len + 1);
+	unsigned int len = (unsigned int)strlen(str);
+	value->_strVal = (char*)JSON_ALLOC(allocContext, len + 1);
 	memcpy(value->_strVal, str, len + 1);
 }
 
 void JsonSetCString(JsonValue* value, const char* str) {
 	value->type_ = JSON_VALUE_STRING;
-	value->_strVal = (char*) str;
+	value->_strVal = (char*)str;
 	value->_allocated = false;
 }
 
@@ -554,7 +568,7 @@ unsigned int JsonObjectCount(const JsonValue* object) {
 
 static Json_Array* Json_MakeArray(unsigned int capacity, void* allocContext) {
 	size_t size = capacity * sizeof(JsonValue) + offsetof(Json_Array, values);
-	Json_Array* arr = (Json_Array*) JSON_ALLOC(allocContext, size);
+	Json_Array* arr = (Json_Array*)JSON_ALLOC(allocContext, size);
 	arr->allocContext = allocContext;
 	arr->count = 0;
 	arr->capacity = capacity;
@@ -601,8 +615,8 @@ static const char* Json_TokenName(Json_TokenType type) {
 	case JSON_TOKEN_COMMA: return ",";
 	case JSON_TOKEN_LEFT_BRACE: return "{";
 	case JSON_TOKEN_RIGHT_BRACE: return "}";
-	case JSON_TOKEN_LEFT_BRACKET: return "{";
-	case JSON_TOKEN_RIGHT_BRACKET: return "}";
+	case JSON_TOKEN_LEFT_BRACKET: return "[";
+	case JSON_TOKEN_RIGHT_BRACKET: return "]";
 	case JSON_TOKEN_INT: return "integer";
 	case JSON_TOKEN_DOUBLE: return "double";
 	case JSON_TOKEN_STR: return "string";
@@ -613,6 +627,35 @@ static const char* Json_TokenName(Json_TokenType type) {
 		break;
 	}
 	return nullptr;
+}
+
+
+static char* Json_LexerParseHexaNumber(Json_ParseContext* context) {
+	char* stream = context->stream;
+	char* start = stream;
+
+	++stream; // skip zero
+	++stream; // skip x
+
+	if (!isxdigit(*stream)) {
+		Json_LogError(context, "JSON: Hex digit expected after 0x\n");
+		return stream;
+	}
+	++stream;
+
+	while (isxdigit(*stream))
+		++stream;
+
+	long long int i = strtoll(start, nullptr, 16);
+	if (i == LLONG_MAX) {
+		Json_LogError(context, "JSON: Integer value too large\n");
+	}
+	else {
+		context->token.intVal = i;
+		context->token.type = JSON_TOKEN_INT;
+	}
+
+	return stream;
 }
 
 static char* Json_LexerParseNumber(Json_ParseContext* context) {
@@ -664,7 +707,7 @@ static char* Json_LexerParseNumber(Json_ParseContext* context) {
 		}
 	}
 	else {
-		long long int i = strtoull(start, nullptr, 10);
+		long long int i = strtoll(start, nullptr, 10);
 		if (i == LLONG_MAX) { // this kills the last value (if we dont check errno), can be done better
 			Json_LogError(context, "JSON: Integer value too large\n");
 		}
@@ -776,11 +819,19 @@ static void Json_LexerNextToken(Json_ParseContext* context) {
 			Json_LogError(context, "JSON: Digit expected after -\n");
 		}
 		else {
-			++stream;
 			stream = Json_LexerParseNumber(context);
 		}
 		break;
-	case '0': case '1': case '2': case '3': case '4':
+	case '0':
+		++stream;
+		if (*stream == 'x') {
+			stream = Json_LexerParseHexaNumber(context);
+		}
+		else {
+			stream = Json_LexerParseNumber(context);
+		}
+		break;
+	case '1': case '2': case '3': case '4':
 	case '5': case '6': case '7': case '8': case '9':
 		stream = Json_LexerParseNumber(context);
 		break;
@@ -881,12 +932,12 @@ static bool Json_MatchString(Json_ParseContext* context, JsonValue* outValue) {
 		outValue->_allocated = false;
 #else
 		if (context->token.valEnd - context->token.valBegin == 2) {
-			outValue->_strVal = (char*)EMPTY_STRING;
+			outValue->_strVal = nullptr;
 			outValue->_allocated = false;
 		}
 		else {
 			long long len = context->token.valEnd - context->token.valBegin - 2;
-			char* s = (char*) JSON_ALLOC(context->allocContext, len + 1);
+			char* s = (char*)JSON_ALLOC(context->allocContext, len + 1);
 			s[len] = 0;
 			outValue->_strVal = s;
 			memcpy(s, context->token.valBegin + 1, len);
@@ -993,7 +1044,7 @@ static void Json_PrintFormat(JsonPrintContext* context, const char* format, ...)
 	if (needed >= 0) {
 		if (needed >= capacity) {
 			unsigned int newCapacity = 2 * (needed + context->bufferCapacity) + 256;
-			char* newBuffer = (char*) JSON_ALLOC(context->allocContext, newCapacity);
+			char* newBuffer = (char*)JSON_ALLOC(context->allocContext, newCapacity);
 			if (context->buffer) {
 				memcpy(newBuffer, context->buffer, context->bufferSize);
 				JSON_FREE(context->allocContext, context->buffer);
@@ -1011,6 +1062,7 @@ static void Json_PrintFormat(JsonPrintContext* context, const char* format, ...)
 
 static void Json_ValuePrintPretty(JsonPrintContext* context, const JsonValue* value, unsigned int indentAll, unsigned int indentCur) {
 	switch (value->type_) {
+	case JSON_VALUE_INVALID: break;
 	case JSON_VALUE_ARRAY:
 	{
 		const JsonValue* it = JsonArrayCBegin(value);
@@ -1054,17 +1106,18 @@ static void Json_ValuePrintPretty(JsonPrintContext* context, const JsonValue* va
 		}
 		break;
 	}
-	case JSON_VALUE_BOOL: Json_PrintFormat(context, value->_boolVal ? "%*strue" : "%*sfalse", indentCur, ""); break;
+	case JSON_VALUE_BOOL: Json_PrintFormat(context, value->_boolVal ? "%*strue" : "%*false", indentCur, ""); break;
 	case JSON_VALUE_NULL: Json_PrintFormat(context, "%*snull", indentCur, ""); break;
-	case JSON_VALUE_INT: Json_PrintFormat(context, "%*s%lld", indentCur, "", value->_intVal);break;
+	case JSON_VALUE_INT: Json_PrintFormat(context, "%*s%lld", indentCur, "", value->_intVal); break;
 	case JSON_VALUE_DOUBLE: Json_PrintFormat(context, "%*s%f", indentCur, "", value->_doubleVal); break;
-	case JSON_VALUE_STRING: Json_PrintFormat(context, "%*s\"%s\"", indentCur, "", (value->_strVal != nullptr) ? value->_strVal : ""); break;
+	case JSON_VALUE_STRING: Json_PrintFormat(context, "%*s\"%s\"", indentCur, "", value->_strVal ? value->_strVal : ""); break;
 	default: break;
 	}
 }
 
 static void Json_ValuePrint(JsonPrintContext* context, const JsonValue* value) {
 	switch (value->type_) {
+	case JSON_VALUE_INVALID: break;
 	case JSON_VALUE_ARRAY:
 	{
 		const JsonValue* it = JsonArrayCBegin(value);
@@ -1109,7 +1162,7 @@ static void Json_ValuePrint(JsonPrintContext* context, const JsonValue* value) {
 	case JSON_VALUE_NULL: Json_PrintFormat(context, "null"); break;
 	case JSON_VALUE_INT: Json_PrintFormat(context, "%lld", value->_intVal); break;
 	case JSON_VALUE_DOUBLE: Json_PrintFormat(context, "%f", value->_doubleVal); break;
-	case JSON_VALUE_STRING: Json_PrintFormat(context, "\"%s\"", value->_strVal); break;
+	case JSON_VALUE_STRING: Json_PrintFormat(context, "\"%s\"", value->_strVal ? value->_strVal : ""); break;
 	default: break;
 	}
 }
@@ -1122,5 +1175,4 @@ static void Json_ValuePrint(JsonPrintContext* context, const JsonValue* value) {
 #undef JSON_FREE
 #undef JSON_ALLOC_DEFAULT_DEF
 #endif
-
 

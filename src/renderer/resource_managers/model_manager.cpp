@@ -51,6 +51,8 @@ void ModelManager::DestroyResource(Resource* resource)
 	for (Mesh& mesh : model->meshes)
 	{
 		m_renderSystem->DestroyMeshData(mesh.renderDataHandle);
+		m_allocator.Deallocate(mesh.verticesData);
+		m_allocator.Deallocate(mesh.indicesData);
 		m_depManager->UnloadResource(ResourceType::Material, static_cast<resourceHandle>(mesh.material));
 	}
 
@@ -70,12 +72,129 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	
 	Mesh& mesh = model->meshes.PushBack();
 
-	mesh.renderDataHandle = m_renderSystem->CreateMeshData(data);
-
 	char errorBuffer[64] = { 0 };
 	JsonValue parsedJson;
-	ASSERT(JsonParse((char*)data.GetData(), &m_allocator, &parsedJson, errorBuffer));
+	ASSERT(JsonParseError((char*)data.GetData(), &m_allocator, &parsedJson, errorBuffer));
 	ASSERT(JsonIsObject(&parsedJson));
+
+
+	JsonKeyValue* verticesData = JsonObjectFind(&parsedJson, "vertices");
+	if (verticesData != nullptr)
+	{
+		ASSERT(JsonIsObject(&verticesData->value));
+
+		JsonKeyValue* countJson = JsonObjectFind(&verticesData->value, "count");
+		ASSERT(countJson != nullptr && JsonIsInt(&countJson->value));
+		size_t count = (size_t)JsonGetInt(&countJson->value);
+		if (count < MAX_U32)
+		{
+			mesh.verticesCount = (u32)count;
+		}
+		else
+		{
+			ASSERT2(false, "Too many vertices, limit is 2^32 - 1, clamped count to this number");
+			mesh.verticesCount = MAX_U32;
+		}
+		JsonKeyValue* positions = JsonObjectFind(&verticesData->value, "positions");
+		JsonKeyValue* colors = JsonObjectFind(&verticesData->value, "colors");
+		JsonKeyValue* texCoords = JsonObjectFind(&verticesData->value, "uvs");
+		JsonValue* positionArr = nullptr;
+		JsonValue* colorsArr = nullptr;
+		JsonValue* texCoordArr = nullptr;
+
+		size_t bufferSize = 0;
+		if (positions != nullptr)
+		{
+			ASSERT(JsonIsArray(&positions->value) && JsonArrayCount(&positions->value) == count * 3);
+			positionArr = JsonArrayBegin(&positions->value);
+			bufferSize += 3 * count * sizeof(float);
+			mesh.varyings |= SV_POSITION_BIT;
+		}
+		if (colors != nullptr)
+		{
+			ASSERT(JsonIsArray(&colors->value) && JsonArrayCount(&colors->value) == count);
+			colorsArr = JsonArrayBegin(&colors->value);
+			bufferSize += 4 * count * sizeof(u8);
+			mesh.varyings |= SV_COLOR0_BIT;
+		}
+		if (texCoords != nullptr)
+		{
+			ASSERT(JsonIsArray(&texCoords->value) && JsonArrayCount(&texCoords->value) == count * 2);
+			texCoordArr = JsonArrayBegin(&texCoords->value);
+			bufferSize += 2 * count * sizeof(float);
+			mesh.varyings |= SV_TEXCOORDS0_BIT;
+		}
+
+		mesh.verticesData = (u8*)m_allocator.Allocate(bufferSize, alignof(float));
+		u8* dataBuffer = mesh.verticesData;
+		for (size_t i = 0; i < count; ++i)
+		{
+			if (positionArr != nullptr)
+			{
+				float* posBuffer = (float*)dataBuffer;
+				*posBuffer = (float)JsonGetDouble(positionArr++);
+				*(posBuffer + 1) = (float)JsonGetDouble(positionArr++);
+				*(posBuffer + 2) = (float)JsonGetDouble(positionArr++);
+				dataBuffer = (u8*)(posBuffer + 3);
+			}
+			if (colorsArr != nullptr)
+			{
+				u32* colBuffer = (u32*)dataBuffer;
+				*colBuffer = (u32)JsonGetInt(colorsArr++);
+				dataBuffer = (u8*)(colBuffer + 1);
+			}
+			if (texCoordArr != nullptr)
+			{
+				float* uvBuffer = (float*)dataBuffer;
+				*uvBuffer = (float)JsonGetDouble(texCoordArr++);
+				*(uvBuffer + 1) = (float)JsonGetDouble(texCoordArr++);
+				dataBuffer = (u8*)(uvBuffer + 2);
+			}
+		}
+	}
+	else
+	{
+		ASSERT2(false, "Missing vertex data");
+		mesh.verticesData = nullptr;
+	}
+
+
+	JsonKeyValue* indicesData = JsonObjectFind(&parsedJson, "indices");
+	if (indicesData != nullptr)
+	{
+		ASSERT(JsonIsObject(&indicesData->value));
+
+		JsonKeyValue* countJson = JsonObjectFind(&indicesData->value, "count");
+		ASSERT(countJson != nullptr && JsonIsInt(&countJson->value));
+		size_t count = (size_t)JsonGetInt(&countJson->value);
+		if (count < MAX_U32)
+		{
+			mesh.indicesCount = (u32)count;
+		}
+		else
+		{
+			ASSERT2(false, "Too many indices, limit is 2^32 - 1, clamped count to this number");
+			mesh.indicesCount = MAX_U32;
+		}
+		count *= 3;//hard coded triangles here
+		JsonKeyValue* indices = JsonObjectFind(&indicesData->value, "data");
+		ASSERT(JsonIsArray(&indices->value) && JsonArrayCount(&indices->value) == count);
+		JsonValue* indexArr = JsonArrayBegin(&indices->value);
+
+		mesh.indicesData = (u16*)m_allocator.Allocate(count * sizeof(u16), alignof(u16));
+		u16* dataBuffer = mesh.indicesData;
+		for (size_t i = 0; i < count; ++i)
+		{
+			*dataBuffer = (u16)JsonGetInt(indexArr++);
+			dataBuffer++;
+		}
+	}
+	else
+	{
+		ASSERT2(false, "Missing indices");
+		mesh.indicesData = nullptr;
+	}
+
 
 	JsonKeyValue* material = JsonObjectFind(&parsedJson, "material");
 	if(material != nullptr)
@@ -87,6 +206,8 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	}
 
 	JsonDeinit(&parsedJson);
+
+	mesh.renderDataHandle = m_renderSystem->CreateMeshData(mesh);
 }
 
 
