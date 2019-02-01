@@ -7,7 +7,7 @@
 #include "core/string.h"
 
 
-#include "core/os/win/simple_windows.h"
+#include "core/os/os_utils.h"
 
 
 namespace Veng
@@ -17,10 +17,32 @@ namespace Editor
 {
 
 
-void BasicFileOpen()
+static bool FileOpen(Path& path)
 {
-	OPENFILENAME dialogInfo;
-	GetOpenFileName(&dialogInfo);
+	os::FileDialogData data;
+	data.filter = "Wavefront obj,.obj";
+	string::Copy(data.fileName, "*.obj");
+	
+	bool result = ShowOpenFileDialog(data);
+	if (result)
+	{
+		path.SetPath(data.fileName);
+	}
+	return result;
+}
+
+static bool FileSave(Path& path)
+{
+	os::FileDialogData data;
+	data.filter = "Model file,.model";
+	string::Copy(data.fileName, "*.model");
+
+	bool result = ShowSaveFileDialog(data);
+	if (result)
+	{
+		path.SetPath(data.fileName);
+	}
+	return result;
 }
 
 
@@ -47,33 +69,42 @@ void ObjImportWidget::Update(EventQueue& queue)
 
 void ObjImportWidget::RenderInternal(EventQueue& queue)
 {
-	static char pathBuffer[Path::MAX_LENGTH + 1];
-	ImGui::InputText("##input", pathBuffer, Path::MAX_LENGTH + 1);
+	ImGui::PushID("input");
+	static char iPathBuffer[Path::MAX_LENGTH + 1];
+	ImGui::InputText("##input", iPathBuffer, Path::MAX_LENGTH + 1);
 	if (ImGui::BeginDragDropTarget())
 	{
 		const ImGuiPayload* data = ImGui::AcceptDragDropPayload("obj", ImGuiDragDropFlags_None);
 		if (data != nullptr)
 		{
-			string::Copy(pathBuffer, (const char*)data->Data);
+			string::Copy(iPathBuffer, (const char*)data->Data);
 		}
 		ImGui::EndDragDropTarget();
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Browse"))
 	{
-
+		Path objFile;
+		if(FileOpen(objFile))
+			string::Copy(iPathBuffer, objFile.GetPath());
 	}
 	ImGui::SameLine();
 	ImGui::Text("input");
+	ImGui::PopID();
 	
-	ImGui::InputText("##output", pathBuffer, Path::MAX_LENGTH + 1);
+	ImGui::PushID("output");
+	static char oPathBuffer[Path::MAX_LENGTH + 1];
+	ImGui::InputText("##output", oPathBuffer, Path::MAX_LENGTH + 1);
 	ImGui::SameLine();
 	if (ImGui::Button("Browse"))
 	{
-
+		Path objFile;
+		if (FileSave(objFile))
+			string::Copy(oPathBuffer, objFile.GetPath());
 	}
 	ImGui::SameLine();
 	ImGui::Text("output");
+	ImGui::PopID();
 }
 
 

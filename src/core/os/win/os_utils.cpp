@@ -4,6 +4,7 @@
 //#include <dbghelp.h>
 
 #include "core/asserts.h"
+#include "core/string.h"
 
 
 namespace Veng
@@ -147,6 +148,106 @@ SystemInfo GetSystemInfo()
 		sysInfo.dwNumberOfProcessors,
 		sysInfo.dwAllocationGranularity
 	};
+}
+
+
+bool ShowOpenFileDialog(FileDialogData& data)
+{
+	const size_t MAX_FILTER = 1024 + 1;
+
+	size_t filterLen = string::Length(data.filter);
+	if (filterLen >= MAX_FILTER - 1)
+	{
+		ASSERT2(false, "Filter is too long");
+		return false;
+	}
+	char filterBuffer[MAX_FILTER] = {0};
+	for (int i = 0; i < filterLen; ++i)
+	{
+		if (data.filter[i] == ',')
+			filterBuffer[i] = '\0';
+		else
+			filterBuffer[i] = data.filter[i];
+	}
+
+	OPENFILENAME dialogInfo = { 0 };
+	dialogInfo.lStructSize = sizeof(OPENFILENAME);
+	dialogInfo.hwndOwner = (HWND)data.parentWindow;
+	dialogInfo.hInstance;//ignored
+	dialogInfo.lpstrFilter = filterBuffer;
+	dialogInfo.lpstrCustomFilter;//ignored
+	dialogInfo.nMaxCustFilter;//ignored
+	dialogInfo.nFilterIndex = data.filterIndex+1;
+	dialogInfo.lpstrFile = data.fileName;
+	dialogInfo.nMaxFile = MAX_PATH_LENGTH;
+	dialogInfo.lpstrFileTitle = NULL;//???
+	dialogInfo.nMaxFileTitle;//^?^?^?
+	dialogInfo.lpstrInitialDir = data.initDir;
+	dialogInfo.lpstrTitle = data.title;
+	if (GetOpenFileName(&dialogInfo) != 0)
+	{
+		data.filterIndex--;
+		data.fileOffset = dialogInfo.nFileOffset;
+		data.extensionOffset = dialogInfo.nFileExtension;
+		return true;
+	}
+	else
+	{
+		DWORD err = CommDlgExtendedError();
+		if (err != 0)//err 0 is "user closed or canceled the dialog box"
+			ASSERT2(false, "Failed to call GetOpenFileName");
+		return false;
+	}
+}
+
+bool ShowSaveFileDialog(FileDialogData& data)
+{
+	const size_t MAX_FILTER = 1024 + 1;
+
+	size_t filterLen = string::Length(data.filter);
+	if (filterLen >= MAX_FILTER - 1)
+	{
+		ASSERT2(false, "Filter is too long");
+		return false;
+	}
+	char filterBuffer[MAX_FILTER] = { 0 };
+	for (int i = 0; i < filterLen; ++i)
+	{
+		if (data.filter[i] == ',')
+			filterBuffer[i] = '\0';
+		else
+			filterBuffer[i] = data.filter[i];
+	}
+
+	OPENFILENAME dialogInfo = { 0 };
+	dialogInfo.lStructSize = sizeof(OPENFILENAME);
+	dialogInfo.hwndOwner = (HWND)data.parentWindow;
+	dialogInfo.hInstance;//ignored
+	dialogInfo.lpstrFilter = filterBuffer;
+	dialogInfo.lpstrCustomFilter;//ignored
+	dialogInfo.nMaxCustFilter;//ignored
+	dialogInfo.nFilterIndex = data.filterIndex + 1;
+	dialogInfo.lpstrFile = data.fileName;
+	dialogInfo.nMaxFile = MAX_PATH_LENGTH;
+	dialogInfo.lpstrFileTitle = NULL;//???
+	dialogInfo.nMaxFileTitle;//^?^?^?
+	dialogInfo.lpstrInitialDir = data.initDir;
+	dialogInfo.lpstrTitle = data.title;
+
+	if (GetSaveFileName(&dialogInfo) != 0)
+	{
+		data.filterIndex--;
+		data.fileOffset = dialogInfo.nFileOffset;
+		data.extensionOffset = dialogInfo.nFileExtension;
+		return true;
+	}
+	else
+	{
+		DWORD err = CommDlgExtendedError();
+		if(err != 0)//err 0 is "user closed or canceled the dialog box"
+			ASSERT2(false, "Failed to call GetOpenFileName");
+		return false;
+	}
 }
 
 
