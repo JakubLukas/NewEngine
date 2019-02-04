@@ -73,7 +73,7 @@ void FileBrowserWidget::ProcessDirFiles(const Path& searchPath)
 void FileBrowserWidget::Init(Engine& engine)
 {
 	char buffer[Path::MAX_LENGTH] = { 0 };
-	os::GetCurrentDir(buffer, Path::MAX_LENGTH);
+	os::GetWorkingDir(buffer, Path::MAX_LENGTH);
 
 	StaticInputBuffer<Path::MAX_LENGTH> pathBuf;
 	pathBuf << buffer << "/*";

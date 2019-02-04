@@ -15,17 +15,29 @@ namespace os
 {
 
 
-void GetCurrentDir(char* path, size_t maxLen)
+struct WorkingDir
 {
-	GetCurrentDirectory((DWORD)maxLen, path);
-
-	char* str = path;
-	while (str[0] != '\0')
+	WorkingDir()
 	{
-		if (str[0] == '\\')
-			str[0] = '/';
-		str++;
+		GetCurrentDirectory(MAX_PATH, dir);
+
+		char* str = dir;
+		while(str[0] != '\0')
+		{
+			if(str[0] == '\\')
+				str[0] = '/';
+			str++;
+		}
 	}
+
+	char dir[MAX_PATH];
+};
+static WorkingDir workingDir;
+
+
+void GetWorkingDir(char* path, size_t maxLen)
+{
+	memcpy(path, workingDir.dir, (maxLen < MAX_PATH) ? maxLen : MAX_PATH);
 }
 
 
@@ -247,6 +259,25 @@ bool ShowSaveFileDialog(FileDialogData& data)
 		if(err != 0)//err 0 is "user closed or canceled the dialog box"
 			ASSERT2(false, "Failed to call GetOpenFileName");
 		return false;
+	}
+}
+
+
+void PathToNativePath(char* path)
+{
+	while(*path != '\0')
+	{
+		if(*path == '/') *path = '\\';
+		path++;
+	}
+}
+
+void PathToEnginePath(char* path)
+{
+	while(*path != '\0')
+	{
+		if(*path == '\\') *path = '/';
+		path++;
 	}
 }
 

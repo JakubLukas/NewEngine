@@ -36,8 +36,8 @@ public:
 		m_callback.Bind<FileSystemImpl, &FileSystemImpl::Callback>(this);
 
 		char buffer[Path::MAX_LENGTH] = { 0 };
-		os::GetCurrentDir(buffer, Path::MAX_LENGTH);
-		m_currentDir = Path(buffer);
+		os::GetWorkingDir(buffer, Path::MAX_LENGTH);
+		m_workingDir = Path(buffer);
 	}
 
 
@@ -151,9 +151,9 @@ public:
 	}
 
 
-	const Path& GetCurrentDir() const override
+	const Path& GetWorkingDir() const override
 	{
-		return m_currentDir;
+		return m_workingDir;
 	}
 
 
@@ -192,7 +192,7 @@ private:
 	ObjectPool<File> m_filePool;
 	Array<File*> m_files;
 	Function<void(nativeFileHandle, size_t)> m_callback;
-	Path m_currentDir;
+	Path m_workingDir;
 };
 
 

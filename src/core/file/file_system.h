@@ -83,7 +83,7 @@ public:
 
 	virtual void Update(float deltaTime) = 0;
 
-	virtual const Path& GetCurrentDir() const = 0;
+	virtual const Path& GetWorkingDir() const = 0;
 
 	virtual bool CreateDirectory(const Path& path) const = 0;
 	virtual bool RemoveDirectory(const Path& path) const = 0;

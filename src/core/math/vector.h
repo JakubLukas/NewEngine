@@ -5,6 +5,20 @@ namespace Veng
 {
 
 
+struct Vector2
+{
+	static const Vector2 AXIS_X;
+	static const Vector2 AXIS_Y;
+
+	Vector2();
+	Vector2(float x, float y);
+	Vector2(const Vector2& vec);
+
+	float x;
+	float y;
+};
+
+
 struct Vector3
 {
 	static const Vector3 AXIS_X;
@@ -13,6 +27,7 @@ struct Vector3
 
 	Vector3();
 	Vector3(float x, float y, float z);
+	Vector3(const Vector2& vec2, float z);
 	Vector3(const Vector3& vec);
 
 	Vector3& operator=(const Vector3& vec);

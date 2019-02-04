@@ -42,15 +42,15 @@ struct FileDialogData
 	const char* filter = "All Files,*.*";//comma separated pairs of [name,pattern]. pattern can specify multiple filters, separated by semicolon
 	u32 filterIndex = 0;//after use, contains index of filter selected by user
 	char fileName[MAX_PATH_LENGTH] = {0};//after use, contains full path of file selected
-	const char* initDir = nullptr;//initial directory, if null, current directory is used
-	const char* title = nullptr;//title of dialog window, if null, "Save As" or "Open" is used
+	char initDir[MAX_PATH_LENGTH] = {0};//initial directory, if null, current directory is used
+	char* title = nullptr;//title of dialog window, if null, "Save As" or "Open" is used
 	//return values under
 	u16 fileOffset;//offset of file name in full path stored in fileName;
 	u16 extensionOffset;//offset of file extension in full path stored in fileName; points to string after last occurrence of '.'; if no '.' in string -> it's zero
 };
 
 
-void GetCurrentDir(char* path, size_t maxLen);
+void GetWorkingDir(char* path, size_t maxLen);
 
 void LogDebugString(const char* str);
 
@@ -63,6 +63,9 @@ SystemInfo GetSystemInfo();
 bool ShowOpenFileDialog(FileDialogData& data);
 
 bool ShowSaveFileDialog(FileDialogData& data);
+
+void PathToNativePath(char* path);
+void PathToEnginePath(char* path);
 
 
 u32 GetCallStack(u32 framesToSkip, u32 framesToCapture, void** callstack);

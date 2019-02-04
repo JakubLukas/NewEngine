@@ -8,6 +8,26 @@ namespace Veng
 {
 
 
+const Vector2 Vector2::AXIS_X(1.0f, 0.0f);
+const Vector2 Vector2::AXIS_Y(0.0f, 1.0f);
+
+Vector2::Vector2()
+	: x(0.0f)
+	, y(0.0f)
+{}
+
+Vector2::Vector2(float x, float y)
+	: x(x)
+	, y(y)
+{}
+
+Vector2::Vector2(const Vector2& vec)
+	: x(vec.x)
+	, y(vec.y)
+{}
+
+
+
 const Vector3 Vector3::AXIS_X(1.0f, 0.0f, 0.0f);
 const Vector3 Vector3::AXIS_Y(0.0f, 1.0f, 0.0f);
 const Vector3 Vector3::AXIS_Z(0.0f, 0.0f, 1.0f);
@@ -26,6 +46,12 @@ Vector3::Vector3(float x, float y, float z)
 	, z(z)
 {
 }
+
+Vector3::Vector3(const Vector2& vec2, float z)
+	: x(vec2.x)
+	, y(vec2.y)
+	, z(z)
+{}
 
 Vector3::Vector3(const Vector3& vec)
 	: x(vec.x)
