@@ -50,6 +50,8 @@ private:
 
 	void FinalizeMaterial(Material* material);
 
+	static bool LoadingOpCompleted(const LoadingOp& op);
+
 private:
 	RenderSystem* m_renderSystem;
 	Array<LoadingOp> m_loadingOp;

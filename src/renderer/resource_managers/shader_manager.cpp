@@ -279,18 +279,29 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	JsonDeinit(&parsedJson);
 
 
-	LoadingOp& op = m_loadingOp.PushBack();
+	LoadingOp op;
 	op.shader = handle;
 
 	Path vOutPath;
 	ASSERT(CompileShader(GetFileSystem(), vsPath, vOutPath));
 	shader->vsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, vOutPath);
 	op.vsHandle = shader->vsHandle;
+	Resource* vRes = GetResource(shader->vsHandle);
+	if(vRes->GetState() != Resource::State::Ready && vRes->GetState() != Resource::State::Failure)
+		op.shadersToLoad |= LoadingOp::VERTEX_BIT;
 
 	Path fOutPath;
 	ASSERT(CompileShader(GetFileSystem(), fsPath, fOutPath));
 	shader->fsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, fOutPath);
 	op.fsHandle = shader->fsHandle;
+	Resource* fRes = GetResource(shader->fsHandle);
+	if(fRes->GetState() != Resource::State::Ready && fRes->GetState() != Resource::State::Failure)
+		op.shadersToLoad |= LoadingOp::FRAGMENT_BIT;
+
+	if(!LoadingOpCompleted(op))
+		m_loadingOp.PushBack(op);
+	else
+		FinalizeShader(shader);
 }
 
 
@@ -301,12 +312,12 @@ void ShaderManager::ChildResourceLoaded(resourceHandle handle, ResourceType type
 		LoadingOp& op = m_loadingOp[i];
 
 		if(op.vsHandle == handle)
-			op.shadersIntLoaded |= 1;
+			op.shadersToLoad &= ~LoadingOp::VERTEX_BIT;
 		else if(op.fsHandle == handle)
-			op.shadersIntLoaded |= 1 << 1;
+			op.shadersToLoad &= ~LoadingOp::FRAGMENT_BIT;
 
 
-		if(op.shadersIntLoaded == 3)
+		if(LoadingOpCompleted(op))
 		{
 			Shader* shader = static_cast<Shader*>(GetResource(op.shader));
 			FinalizeShader(shader);
@@ -326,6 +337,12 @@ void ShaderManager::FinalizeShader(Shader* shader)
 	shader->renderDataHandle = m_renderSystem->CreateShaderData(vs->renderDataHandle, fs->renderDataHandle);
 
 	m_depManager->ResourceLoaded(ResourceType::Shader, GetResourceHandle(shader));
+}
+
+
+bool ShaderManager::LoadingOpCompleted(const LoadingOp& op)
+{
+	return (op.shadersToLoad == LoadingOp::NONE);
 }
 
 

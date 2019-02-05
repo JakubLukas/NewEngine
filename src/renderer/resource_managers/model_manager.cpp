@@ -203,6 +203,11 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 		const char* materialRawStr = JsonGetString(&material->value);
 		Path materialPath(materialRawStr);
 		mesh.material = m_depManager->LoadResource(ResourceType::Model, ResourceType::Material, materialPath);
+		Resource* material = GetResource(mesh.material);
+		if(material->GetState() == Resource::State::Ready || material->GetState() == Resource::State::Failure)
+		{
+			FinalizeModel(model);
+		}
 	}
 
 	JsonDeinit(&parsedJson);

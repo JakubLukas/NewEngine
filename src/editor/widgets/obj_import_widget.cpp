@@ -197,8 +197,8 @@ static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& ou
 	JsonObjectAdd(&verticesObj, &label, &vPosArr);
 	JsonSetCString(&label, "uvs");
 	JsonObjectAdd(&verticesObj, &label, &vUvArr);
-	//JsonSetCString(&label, "normals");
-	//JsonObjectAdd(&verticesObj, &label, &vUvArr);
+	JsonSetCString(&label, "normals");
+	JsonObjectAdd(&verticesObj, &label, &vNormArr);
 
 	JsonValue indicesObj;
 	JsonSetObject(&indicesObj, &allocator);

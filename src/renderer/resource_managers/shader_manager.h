@@ -45,10 +45,16 @@ class ShaderManager final : public ResourceManager
 private:
 	struct LoadingOp
 	{
+		enum ShaderBits : u8
+		{
+			NONE = 0,
+			VERTEX_BIT = 1 << 0,
+			FRAGMENT_BIT = 1 << 1,
+		};
 		resourceHandle shader;
 		resourceHandle vsHandle;
 		resourceHandle fsHandle;
-		u8 shadersIntLoaded = 0;
+		u8 shadersToLoad = NONE;
 	};
 
 public:
@@ -71,6 +77,8 @@ private:
 	void ChildResourceLoaded(resourceHandle handle, ResourceType type) override;
 
 	void FinalizeShader(Shader* shader);
+
+	static bool LoadingOpCompleted(const LoadingOp& op);
 
 private:
 	RenderSystem* m_renderSystem;

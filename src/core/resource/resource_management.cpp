@@ -54,11 +54,21 @@ public:
 		ResourceManager* manager = m_managers[(size_t)resourceType];
 		if (manager != nullptr)
 		{
-			DependencyAsyncOp& asyncOp = m_dependencyAsyncOps.PushBack();
-			asyncOp.parent = GetManager(requestedType);
-			asyncOp.childType = resourceType;
-			asyncOp.childHandle = manager->Load(path);
-			return asyncOp.childHandle;
+			ResourceManager* parentManager = GetManager(requestedType);
+			resourceHandle resHandle = manager->Load(path);
+			Resource* resource = manager->GetResource(resHandle);
+			if(resource->GetState() == Resource::State::Ready || resource->GetState() == Resource::State::Failure)
+			{
+				return resHandle;
+			}
+			else
+			{
+				DependencyAsyncOp& asyncOp = m_dependencyAsyncOps.PushBack();
+				asyncOp.parent = parentManager;
+				asyncOp.childType = resourceType;
+				asyncOp.childHandle = resHandle;
+				return asyncOp.childHandle;
+			}
 		}
 		else
 		{
@@ -89,7 +99,6 @@ public:
 			if (asyncOp.childType == resourceType && asyncOp.childHandle == handle)
 			{
 				loaded.PushBack(asyncOp);
-				//tmp.parent->ChildResourceLoaded(handle);
 				m_dependencyAsyncOps.Erase((unsigned)i);
 			}
 			else

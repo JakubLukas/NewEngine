@@ -74,7 +74,7 @@ void MaterialManager::ReloadResource(Resource* resource)
 void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 {
 	Material* material = static_cast<Material*>(GetResource(handle));
-	LoadingOp& op = m_loadingOp.PushBack();
+	LoadingOp op;
 	op.material = handle;
 
 	char errorBuffer[64] = { 0 };
@@ -88,6 +88,9 @@ void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 
 	material->shader = m_depManager->LoadResource(ResourceType::Material, ResourceType::Shader, shaderPath);
 	op.shader = material->shader;
+	Resource* shaderRes = GetResource(material->shader);
+	if(shaderRes->GetState() == Resource::State::Ready || shaderRes->GetState() == Resource::State::Failure)
+		op.shaderLoaded = true;
 
 	JsonKeyValue* textures = JsonObjectFind(&parsedJson, "textures");
 	ASSERT(textures != nullptr && JsonIsObject(&textures->value));
@@ -100,7 +103,9 @@ void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 		material->textures |= ST_DIFF_TEXTURE_BIT;
 		material->textureHandles[0] = m_depManager->LoadResource(ResourceType::Material, ResourceType::Texture, path);
 		op.textures[0] = material->textureHandles[0];
-		op.texturesToLoad |= ST_DIFF_TEXTURE_BIT;
+		Resource* textureRes = GetResource(material->textureHandles[0]);
+		if(textureRes->GetState() != Resource::State::Ready && textureRes->GetState() != Resource::State::Failure)
+			op.texturesToLoad |= ST_DIFF_TEXTURE_BIT;
 	}
 
 	JsonKeyValue* normalTex = JsonObjectFind(&textures->value, "normal");
@@ -111,12 +116,19 @@ void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 		material->textures |= ST_NORM_TEXTURE_BIT;
 		material->textureHandles[1] = m_depManager->LoadResource(ResourceType::Material, ResourceType::Texture, path);
 		op.textures[1] = material->textureHandles[1];
-		op.texturesToLoad |= ST_NORM_TEXTURE_BIT;
+		Resource* textureRes = GetResource(material->textureHandles[1]);
+		if(textureRes->GetState() != Resource::State::Ready && textureRes->GetState() != Resource::State::Failure)
+			op.texturesToLoad |= ST_NORM_TEXTURE_BIT;
 	}
 
 	JsonDeinit(&parsedJson);
 
 	material->renderDataHandle = m_renderSystem->CreateMaterialData(*material);
+
+	if(!LoadingOpCompleted(op))
+		m_loadingOp.PushBack(op);
+	else
+		FinalizeMaterial(material);
 }
 
 
@@ -136,11 +148,11 @@ void MaterialManager::ChildResourceLoaded(resourceHandle handle, ResourceType ty
 			for (size_t i = 0; i < Material::MAX_TEXTURES; ++i)
 			{
 				if (op.textures[i] == handle)
-					op.texturesToLoad ^= 1 << i;
+					op.texturesToLoad &= ~(1 << i);
 			}
 		}
 
-		if (op.shaderLoaded && op.texturesToLoad == 0)
+		if (LoadingOpCompleted(op))
 		{
 			Material* material = static_cast<Material*>(GetResource(op.material));
 			FinalizeMaterial(material);
@@ -154,6 +166,12 @@ void MaterialManager::FinalizeMaterial(Material* material)
 {
 	material->SetState(Resource::State::Ready);
 	m_depManager->ResourceLoaded(ResourceType::Material, GetResourceHandle(material));
+}
+
+
+bool MaterialManager::LoadingOpCompleted(const LoadingOp& op)
+{
+	return (op.shaderLoaded && op.texturesToLoad == 0);
 }
 
 
