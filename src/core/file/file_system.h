@@ -59,6 +59,7 @@ enum class MoveMethod
 
 
 enum class fileHandle : u64 {};
+const fileHandle INVALID_FILE_HANDLE = (fileHandle)0;
 
 
 class FileSystem

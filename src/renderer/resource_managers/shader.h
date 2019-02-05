@@ -7,7 +7,7 @@
 namespace Veng
 {
 
-enum class shaderInternalRenderHandle : u64 {};
+enum class shaderInternalRenderHandle : u32 {};
 const shaderInternalRenderHandle INVALID_SHADER_INTERNAL_RENDER_HANDLE = (shaderInternalRenderHandle)0;
 
 
@@ -19,7 +19,7 @@ struct ShaderInternal : public Resource
 };
 
 
-enum class shaderRenderHandle : u64 {};
+enum class shaderRenderHandle : u32 {};
 const shaderRenderHandle INVALID_SHADER_RENDER_HANDLE = (shaderRenderHandle)0;
 
 

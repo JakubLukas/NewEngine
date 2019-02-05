@@ -52,7 +52,6 @@ void ResourceManager::Unload(resourceHandle handle)
 		ASSERT(resource == *item);
 		if (0 == --resource->m_refCount)
 		{
-			m_fileSystem.CloseFile((*item)->m_fileHandle);
 			DestroyResource(*item);
 			m_resources.Erase(hash);
 		}
@@ -95,7 +94,7 @@ resourceHandle ResourceManager::GetResourceHandle(Resource* resource) const
 
 void ResourceManager::LoadResource(const Path& path, Resource* resource)
 {
-	static const FileMode mode{
+	const FileMode mode{
 		FileMode::Access::Read,
 		FileMode::ShareMode::ShareRead,
 		FileMode::CreationDisposition::OpenExisting,
@@ -123,6 +122,10 @@ void ResourceManager::FileSystemCallback(fileHandle handle)
 	ResourceAsyncOp* tmp;
 	if (m_asyncOps.Find(handle, tmp))
 	{
+		Resource* resource = GetResource(tmp->handle);
+		m_fileSystem.CloseFile(resource->m_fileHandle);
+		resource->m_fileHandle = INVALID_FILE_HANDLE;
+
 		InputBlob blob(static_cast<char*>(tmp->buffer), tmp->bufferSize);
 
 		ResourceLoaded(tmp->handle, blob);

@@ -264,20 +264,20 @@ ValueType* HashMap<KeyType, ValueType>::Insert(unsigned bucketIdx, const KeyType
 		return &newNode->value;
 	}
 
-	HashNode& node = m_table[bucketIdx];
-	while (node.key != key && node.next != INVALID_INDEX)
+	HashNode* node = &m_table[m_buckets[bucketIdx]];
+	while (node->key != key && node->next != INVALID_INDEX)
 	{
-		node = Utils::Move(m_table[node.next]);
+		node = &m_table[node->next];
 	}
 
-	if (node.key == key)
+	if (node->key == key)
 	{
 		return nullptr;
 	}
 	else
 	{
 		HashNode* newNode = NEW_PLACEMENT(m_table + m_size, HashNode)(key, value);
-		node.next = m_size++;
+		node->next = m_size++;
 		return &newNode->value;
 	}
 }

@@ -17,7 +17,7 @@ class DependencyManager;
 
 static u32 HashFileHandle(const fileHandle& key)
 {
-	return static_cast<u32>(key);
+	return static_cast<u32>(key) * 37;
 };
 
 

@@ -9,7 +9,7 @@
 namespace Veng
 {
 
-enum class meshRenderHandle : u64 {};
+enum class meshRenderHandle : u32 {};
 const meshRenderHandle INVALID_MESH_RENDER_HANDLE = (meshRenderHandle)0;
 
 

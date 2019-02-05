@@ -52,6 +52,7 @@ void MaterialManager::DestroyResource(Resource* resource)
 {
 	Material* material = static_cast<Material*>(resource);
 
+	m_renderSystem->DestroyMaterialData(material->renderDataHandle);
 	m_depManager->UnloadResource(ResourceType::Shader, material->shader);
 
 	for(int i = 0; i < Material::MAX_TEXTURES; ++i)
@@ -114,6 +115,8 @@ void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	}
 
 	JsonDeinit(&parsedJson);
+
+	material->renderDataHandle = m_renderSystem->CreateMaterialData(*material);
 }
 
 

@@ -114,7 +114,7 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 
 					ImGui::InputScalar(value.name, ImGuiDataType_U64, handle, NULL, NULL, NULL, ImGuiInputTextFlags_ReadOnly);
 
-					ResourceManager* manager = m_engine->GetResourceManager(ResourceType::Material);
+					ResourceManager* manager = m_engine->GetResourceManager(type);
 					Resource* resource = manager->GetResource(*handle);
 
 					char pathBuffer[Path::MAX_LENGTH + 1];

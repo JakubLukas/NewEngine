@@ -117,6 +117,9 @@ public:
 	virtual meshRenderHandle CreateMeshData(Mesh& mesh) = 0;
 	virtual void DestroyMeshData(meshRenderHandle handle) = 0;
 
+	virtual materialRenderHandle CreateMaterialData(Material& material) = 0;
+	virtual void DestroyMaterialData(materialRenderHandle handle) = 0;
+
 	virtual textureRenderHandle CreateTextureData(const Texture& texture) = 0;
 	virtual void DestroyTextureData(textureRenderHandle handle) = 0;
 

@@ -9,6 +9,9 @@
 namespace Veng
 {
 
+enum class materialRenderHandle : u32 {};
+const materialRenderHandle INVALID_MATERIAL_RENDER_HANDLE = (materialRenderHandle)0;
+
 
 struct Material : public Resource
 {
@@ -19,10 +22,11 @@ struct Material : public Resource
 			textureHandles[i] = INVALID_RESOURCE_HANDLE;
 	}
 
-	ShaderTextureFlags textures = ST_NONE;
-	//48b padding
-	resourceHandle shader;
 	static const size_t MAX_TEXTURES = 2;
+
+	ShaderTextureFlags textures = ST_NONE;
+	materialRenderHandle renderDataHandle = INVALID_MATERIAL_RENDER_HANDLE;
+	resourceHandle shader;
 	resourceHandle textureHandles[MAX_TEXTURES];
 	//Uniforms?
 	//commandBuffer*

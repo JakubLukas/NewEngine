@@ -62,7 +62,7 @@ public:
 
 				if (i % 2 == 0)
 				{
-					resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/cube.model"));
+					resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/sphere.model"));
 					*(resourceHandle*)data = modelHandle;
 				}
 				else

@@ -36,7 +36,7 @@ HandleArray<Type, UnusedType>& HandleArray<Type, UnusedType>::operator =(const H
 {
 	size_t capacity = m_capacity;
 	size_t size = m_size;
-	Type* data = m_data;
+	DataType* data = m_data;
 	UnusedType unused = m_unused;
 	size_t unusedSize = m_unusedSize;
 
@@ -73,7 +73,7 @@ HandleArray<Type, UnusedType>::~HandleArray()
 				alive = false;
 				break;
 			}
-			idx = m_data[idx].next;
+			idx = m_data[idx].data.next;
 		}
 		DELETE_PLACEMENT(m_data + i);
 	}
@@ -94,8 +94,9 @@ size_t HandleArray<Type, UnusedType>::Add(const Type&& value)
 	if(m_unusedSize > 0)
 	{
 		UnusedType idx = m_unused;
-		m_unused = m_data[idx].next;
-		NEW_PLACEMENT(m_data + idx, Type)(Utils::Move(value));
+		m_unused = m_data[idx].data.next;
+		DataType* newItem = (DataType*)NEW_PLACEMENT(m_data + idx, DataType)();
+		newItem->data.data = Utils::Move(value);
 #		if defined(DEBUG_HANDLE_ARRAY)
 		m_data[idx].alive = true;
 #		endif
@@ -123,8 +124,8 @@ void HandleArray<Type, UnusedType>::Remove(size_t handle)
 	m_data[idx].alive = false;
 #	endif
 
-	m_data[idx].data.~Type();
-	m_data[idx].next = m_unused;
+	m_data[idx].data.data.~Type();
+	m_data[idx].data.next = m_unused;
 	m_unused = (UnusedType)idx;
 	m_unusedSize++;
 }
@@ -136,7 +137,7 @@ Type& HandleArray<Type, UnusedType>::Get(size_t handle)
 #	if defined(DEBUG_HANDLE_ARRAY)
 	ASSERT2(m_data[idx].alive, "Item has been already removed");
 #	endif
-	return m_data[idx].data;
+	return m_data[idx].data.data;
 }
 
 template<class Type, class UnusedType>
@@ -146,7 +147,7 @@ const Type& HandleArray<Type, UnusedType>::Get(size_t handle) const
 #	if defined(DEBUG_HANDLE_ARRAY)
 	ASSERT2(m_data[idx].alive, "Item has been already removed");
 #	endif
-	return m_data[idx].data;
+	return m_data[idx].data.data;
 }
 
 
@@ -170,7 +171,9 @@ typename HandleArray<Type, UnusedType>::DataType& HandleArray<Type, UnusedType>:
 	if(m_size == m_capacity)
 		Enlarge();
 
-	return *(DataType*)NEW_PLACEMENT(m_data + m_size++, Type)(Utils::Forward<Args>(args)...);
+	DataType* newItem = (DataType*)NEW_PLACEMENT(m_data + m_size++, DataType)();
+	newItem->data.data = Type(Utils::Forward<Args>(args)...);
+	return *newItem;
 }
 
 
@@ -179,11 +182,12 @@ void HandleArray<Type, UnusedType>::Enlarge()
 {
 	m_capacity = (m_capacity == 0) ? INITIAL_SIZE : (size_t)(m_capacity * ENLARGE_MULTIPLIER);
 	
-	DataType* newData = static_cast<DataType*>(m_allocator.Allocate(m_capacity * sizeof(Type), alignof(Type)));
+	DataType* newData = static_cast<DataType*>(m_allocator.Allocate(m_capacity * sizeof(DataType), alignof(DataType)));
 
 	for(size_t i = 0; i < m_size; ++i)
 	{
-		DataType& item = *(DataType*)NEW_PLACEMENT(newData + i, Type)(Utils::Move(m_data[i].data));
+		DataType* newItem = (DataType*)NEW_PLACEMENT(newData + i, DataType)();
+		newItem->data.data = Utils::Move(m_data[i].data.data);
 #		if defined(DEBUG_HANDLE_ARRAY)
 		item.alive = m_data[i].alive;
 #		endif

@@ -39,6 +39,11 @@ struct MeshData
 	bgfx::IndexBufferHandle indexBufferHandle;
 };
 
+struct MaterialData
+{
+	bgfx::UniformHandle handle;
+};
+
 struct TextureData
 {
 	bgfx::TextureHandle handle;
@@ -52,17 +57,6 @@ struct ShaderInternalData
 struct ShaderData
 {
 	bgfx::ProgramHandle handle;
-};
-
-
-struct PosColorVertex ///////////////////this must be dynamic in future
-{
-	float x;
-	float y;
-	float z;
-	u32 abgr;
-	float u0;
-	float v0;
 };
 
 
@@ -335,6 +329,7 @@ public:
 		: m_allocator(engine.GetAllocator())
 		, m_engine(engine)
 		, m_meshData(m_allocator)
+		, m_materialData(m_allocator)
 		, m_textureData(m_allocator)
 		, m_shaderInternalData(m_allocator)
 		, m_shaderData(m_allocator)
@@ -348,6 +343,10 @@ public:
 		invalidMeshData.vertexBufferHandle = BGFX_INVALID_HANDLE;
 		invalidMeshData.indexBufferHandle = BGFX_INVALID_HANDLE;
 		m_meshData.Add(Utils::Move(invalidMeshData));
+
+		MaterialData invalidMaterialData;
+		invalidMaterialData.handle = BGFX_INVALID_HANDLE;
+		m_materialData.Add(Utils::Move(invalidMaterialData));
 
 		TextureData invalidTextureData;
 		invalidTextureData.handle = BGFX_INVALID_HANDLE;
@@ -376,17 +375,13 @@ public:
 
 	~RenderSystemImpl() override
 	{
-		bgfx::destroy(m_uniformTextureColor);
-
 		for (const auto& scene : m_scenes)
 			DELETE_OBJECT(m_allocator, scene.value);
 	}
 
 
 	void Init() override
-	{
-		m_uniformTextureColor = bgfx::createUniform("s_texColor", bgfx::UniformType::Int1);
-	}
+	{}
 
 
 	void Update(float deltaTime) override
@@ -459,11 +454,32 @@ public:
 
 	void DestroyMeshData(meshRenderHandle handle) override
 	{
-		MeshData& data = m_meshData.Get((u64)handle);
+		MeshData& data = m_meshData.Get((u32)handle);
 		bgfx::destroy(data.vertexBufferHandle);
 		bgfx::destroy(data.indexBufferHandle);
 
-		m_meshData.Remove((u64)handle);
+		m_meshData.Remove((u32)handle);
+	}
+
+
+	materialRenderHandle CreateMaterialData(Material& material) override
+	{
+		MaterialData matData;
+
+		if (material.textures && ST_DIFF_TEXTURE_BIT)
+		{
+			matData.handle = bgfx::createUniform("t_diffuse", bgfx::UniformType::Int1);
+		}
+
+		return (materialRenderHandle)m_materialData.Add(Utils::Move(matData));
+	}
+
+	void DestroyMaterialData(materialRenderHandle handle) override
+	{
+		MaterialData& data = m_materialData.Get((u32)handle);
+		bgfx::destroy(data.handle);
+
+		m_materialData.Remove((u32)handle);
 	}
 
 
@@ -497,10 +513,10 @@ public:
 
 	void DestroyTextureData(textureRenderHandle handle) override
 	{
-		TextureData& data = m_textureData.Get((u64)handle);
+		TextureData& data = m_textureData.Get((u32)handle);
 		bgfx::destroy(data.handle);
 
-		m_textureData.Remove((u64)handle);
+		m_textureData.Remove((u32)handle);
 	}
 
 
@@ -527,10 +543,10 @@ public:
 
 	void DestroyShaderInternalData(shaderInternalRenderHandle handle) override
 	{
-		ShaderInternalData& data = m_shaderInternalData.Get((u64)handle);
+		ShaderInternalData& data = m_shaderInternalData.Get((u32)handle);
 		bgfx::destroy(data.handle);
 
-		m_shaderInternalData.Remove((u64)handle);
+		m_shaderInternalData.Remove((u32)handle);
 	}
 
 
@@ -556,9 +572,11 @@ public:
 
 	void DestroyShaderData(shaderRenderHandle handle) override
 	{
-		ShaderData& data = m_shaderData.Get((u64)handle);
+		ShaderData& data = m_shaderData.Get((u32)handle);
 
 		bgfx::destroy(data.handle);
+
+		m_shaderData.Remove((u32)handle);
 	}
 
 
@@ -675,9 +693,13 @@ public:
 						bgfx::setVertexBuffer(0, meshData.vertexBufferHandle);
 						bgfx::setIndexBuffer(meshData.indexBufferHandle);
 
-						const Texture* texture = (Texture*)m_textureManager->GetResource(material->textureHandles[0]);
-						TextureData& texData = m_textureData.Get((u64)texture->renderDataHandle);
-						bgfx::setTexture(0, m_uniformTextureColor, texData.handle);
+						if (material->textures & ST_DIFF_TEXTURE_BIT)
+						{
+							MaterialData& materialData = m_materialData.Get((u64)material->renderDataHandle);
+							const Texture* texture = (Texture*)m_textureManager->GetResource(material->textureHandles[0]);
+							TextureData& texData = m_textureData.Get((u64)texture->renderDataHandle);
+							bgfx::setTexture(0, materialData.handle, texData.handle);
+						}
 
 
 						// Set render states.
@@ -704,10 +726,11 @@ private:
 	ProxyAllocator m_allocator;//must be first
 	Engine& m_engine;
 	HashMap<worldId, RenderSceneImpl*> m_scenes;
-	HandleArray<MeshData, u64> m_meshData;
-	HandleArray<TextureData, u64> m_textureData;
-	HandleArray<ShaderInternalData, u64> m_shaderInternalData;
-	HandleArray<ShaderData, u64> m_shaderData;
+	HandleArray<MeshData, u32> m_meshData;
+	HandleArray<MaterialData, u32> m_materialData;
+	HandleArray<TextureData, u32> m_textureData;
+	HandleArray<ShaderInternalData, u32> m_shaderInternalData;
+	HandleArray<ShaderData, u32> m_shaderData;
 
 	ShaderInternalManager* m_shaderInternalManager = nullptr;
 	ShaderManager* m_shaderManager = nullptr;
@@ -723,8 +746,6 @@ private:
 	bgfx::ViewId m_currentView = m_firstView - 1;//TODO
 	HandleArray<FrameBuffer, u16> m_framebuffers;
 	Array<FramebufferHandle> m_screenSizeFrameBuffers;
-
-	bgfx::UniformHandle m_uniformTextureColor;
 };
 
 

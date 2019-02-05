@@ -8,6 +8,7 @@
 #include "core/asserts.h"
 #include "core/logs.h"
 #include "core/string.h"
+#include "core/parsing/json.h"
 #include "core/containers/array.h"
 #include "core/math/vector.h"
 
@@ -61,69 +62,198 @@ static bool FileSaveDialog(Path& path)
 
 static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& outPath, char error[64])
 {
-	const FileMode fMode{
-		FileMode::Access::Read,
-		FileMode::ShareMode::ShareRead,
-		FileMode::CreationDisposition::OpenExisting,
-		FileMode::FlagNone
-	};
-	nativeFileHandle fh;
-	if(!FS::OpenFileSync(fh, inPath, fMode))
+	char* fileBuffer = nullptr;
 	{
-		ASSERT(false);
-		string::Copy(error, "Could not open file");
-		return false;
+		const FileMode fMode{
+			FileMode::Access::Read,
+			FileMode::ShareMode::ShareRead,
+			FileMode::CreationDisposition::OpenExisting,
+			FileMode::FlagNone
+		};
+		nativeFileHandle fh;
+		if (!FS::OpenFileSync(fh, inPath, fMode))
+		{
+			ASSERT(false);
+			string::Copy(error, "Could not open input file");
+			return false;
+		}
+
+		size_t fSize = FS::GetFileSize(fh);
+		fileBuffer = (char*)allocator.Allocate(fSize, alignof(char));
+		size_t charsRead = 0;
+		if (!FS::ReadFileSync(fh, 0, fileBuffer, fSize, charsRead))
+		{
+			ASSERT(false);
+			string::Copy(error, "Could not read from input file");
+			return false;
+		}
+		ASSERT2(fSize == charsRead, "Read size is not equal file size of input file");
+		ASSERT2(FS::CloseFileSync(fh), "Closing of input file failed");
 	}
 
-	size_t fSize = FS::GetFileSize(fh);
-	char* fileBuffer = (char*)allocator.Allocate(fSize, alignof(char));
-	size_t charsRead = 0;
-	if(!FS::ReadFileSync(fh, 0, fileBuffer, fSize, charsRead))
+	struct Face
 	{
-		ASSERT(false);
-		string::Copy(error, "Could not read from file");
-		return false;
-	}
-	ASSERT2(fSize == charsRead, "Read size is not equal file size");
-	ASSERT2(FS::CloseFileSync(fh), "Closing of file failed");
+		u32 vIdx[3];
+		u32 vtIdx[3];
+		u32 vnIdx[3];
+	};
 
 	Array<Vector3> vertices(allocator);
 	Array<Vector2> uvs(allocator);
 	Array<Vector2> normals(allocator);
+	Array<Face> faces(allocator);
 
 	char lineBuffer[128];
 	int charsUsed = 0;
-	while(sscanf_s(fileBuffer, "%s%n", lineBuffer, 128, &charsUsed) > 0)
+	while(sscanf_s(fileBuffer, "%[^\t\n]\n%n", lineBuffer, 128, &charsUsed) > 0)
 	{
 		fileBuffer += charsUsed;
-		if(string::Compare(lineBuffer, "v") == 0)
+		if(lineBuffer[0] == 'v' && lineBuffer[1] == ' ')
 		{
 			Vector3& v = vertices.PushBack();
-			sscanf_s(lineBuffer + 1, "%f %f %f\n%n", &v.x, &v.y, &v.z, &charsUsed);
+			sscanf_s(lineBuffer + 2, "%f %f %f", &v.x, &v.y, &v.z);
 		}
-		else if(string::Compare(lineBuffer, "vt") == 0)
+		else if(lineBuffer[0] == 'v' && lineBuffer[1] == 't')
 		{
 			Vector2& v = uvs.PushBack();
-			sscanf_s(lineBuffer + 2, "%f %f\n%n", &v.x, &v.y, &charsUsed);
+			sscanf_s(lineBuffer + 3, "%f %f", &v.x, &v.y);
 		}
-		else if(string::Compare(lineBuffer, "vn") == 0)
+		else if(lineBuffer[0] == 'v' && lineBuffer[1] == 'n')
 		{
 			Vector2& v = normals.PushBack();
-			sscanf_s(lineBuffer + 2, "%f %f\n%n", &v.x, &v.y, &charsUsed);
+			sscanf_s(lineBuffer + 3, "%f %f", &v.x, &v.y);
 		}
-		else if(string::Compare(lineBuffer, "f") == 0)
+		else if(lineBuffer[0] == 'f')
 		{
-			u32 vIdx[3];
-			u32 vtIdx[3];
-			u32 vnIdx[3];
-			sscanf_s(lineBuffer + 1, "%d/%d/%d %d/%d/%d %d/%d/%d\n%n", &vIdx[0], &vtIdx[0], &vnIdx[0], &vIdx[1], &vtIdx[1], &vIdx[1], &vnIdx[2], &vtIdx[2], &vnIdx[2], &charsUsed);
+			Face& f = faces.PushBack();
+			sscanf_s(lineBuffer + 2, "%d/%d/%d %d/%d/%d %d/%d/%d", &f.vIdx[0], &f.vtIdx[0], &f.vnIdx[0], &f.vIdx[1], &f.vtIdx[1], &f.vnIdx[1], &f.vIdx[2], &f.vtIdx[2], &f.vnIdx[2]);
+			f.vIdx[0]--;
+			f.vIdx[1]--;
+			f.vIdx[2]--;
+			f.vtIdx[0]--;
+			f.vtIdx[1]--;
+			f.vtIdx[2]--;
+			f.vnIdx[0]--;
+			f.vnIdx[1]--;
+			f.vnIdx[2]--;
 		}
-		if unread line ,skip it
-		fileBuffer += charsUsed;
 	}
 
+	allocator.Deallocate(fileBuffer);
 
-	return false;
+	JsonValue vPosArr;
+	JsonSetArray(&vPosArr, &allocator);
+	JsonValue vUvArr;
+	JsonSetArray(&vUvArr, &allocator);
+	JsonValue vNormArr;
+	JsonSetArray(&vNormArr, &allocator);
+	JsonValue indexArr;
+	JsonSetArray(&indexArr, &allocator);
+
+	JsonValue value;
+	u32 indicesIdx = 0;
+	for (const Face& face : faces)
+	{
+		for (int i = 0; i < 3; ++i)//triangles
+		{
+			Vector3 pos = vertices[face.vIdx[i]];
+			JsonSetDouble(&value, pos.x);
+			JsonArrayAdd(&vPosArr, &value);
+			JsonSetDouble(&value, pos.y);
+			JsonArrayAdd(&vPosArr, &value);
+			JsonSetDouble(&value, pos.z);
+			JsonArrayAdd(&vPosArr, &value);
+
+			Vector2 uv = uvs[face.vtIdx[i]];
+			JsonSetDouble(&value, uv.x);
+			JsonArrayAdd(&vUvArr, &value);
+			JsonSetDouble(&value, uv.y);
+			JsonArrayAdd(&vUvArr, &value);
+
+			Vector2 norm = normals[face.vnIdx[i]];
+			JsonSetDouble(&value, norm.x);
+			JsonArrayAdd(&vNormArr, &value);
+			JsonSetDouble(&value, norm.y);
+			JsonArrayAdd(&vNormArr, &value);
+
+			JsonSetInt(&value, indicesIdx++);
+			JsonArrayAdd(&indexArr, &value);
+		}
+	}
+
+	JsonValue label;
+	JsonValue vCount;
+	JsonSetInt(&vCount, indicesIdx);
+	JsonValue vCountStr;
+	JsonSetCString(&vCountStr, "count");
+	JsonValue iCount;
+	JsonSetInt(&iCount, indicesIdx / 3);
+
+	JsonValue verticesObj;
+	JsonSetObject(&verticesObj, &allocator);
+	JsonSetCString(&label, "count");
+	JsonObjectAdd(&verticesObj, &label, &vCount);
+	JsonSetCString(&label, "positions");
+	JsonObjectAdd(&verticesObj, &label, &vPosArr);
+	JsonSetCString(&label, "uvs");
+	JsonObjectAdd(&verticesObj, &label, &vUvArr);
+	//JsonSetCString(&label, "normals");
+	//JsonObjectAdd(&verticesObj, &label, &vUvArr);
+
+	JsonValue indicesObj;
+	JsonSetObject(&indicesObj, &allocator);
+	JsonSetCString(&label, "count");
+	JsonObjectAdd(&indicesObj, &label, &iCount);
+	JsonSetCString(&label, "data");
+	JsonObjectAdd(&indicesObj, &label, &indexArr);
+
+	JsonValue modelObj;
+	JsonSetObject(&modelObj, &allocator);
+	JsonSetCString(&label, "vertices");
+	JsonObjectAdd(&modelObj, &label, &verticesObj);
+	JsonSetCString(&label, "indices");
+	JsonObjectAdd(&modelObj, &label, &indicesObj);
+
+	JsonPrintContext prtCtx = JsonPrintContextInit(&allocator);
+
+	unsigned int outBufferSize;
+	char* outBuffer = JsonValuePrint(&prtCtx, &modelObj, true, &outBufferSize);
+
+	{
+		const FileMode fMode{
+			FileMode::Access::Write,
+			FileMode::ShareMode::NoShare,
+			FileMode::CreationDisposition::CreateAlways,
+			FileMode::FlagNone
+		};
+		nativeFileHandle fh;
+		if (!FS::OpenFileSync(fh, outPath, fMode))
+		{
+			ASSERT(false);
+			string::Copy(error, "Could not open output file");
+			return false;
+		}
+
+		if (!FS::WriteFileSync(fh, 0, outBuffer, outBufferSize))
+		{
+			ASSERT(false);
+			string::Copy(error, "Could not write to output file");
+			return false;
+		}
+		ASSERT2(FS::CloseFileSync(fh), "Closing of output file failed");
+	}
+
+	JsonPrintContextDeinit(&prtCtx);
+
+	JsonDeinit(&vPosArr);
+	JsonDeinit(&vUvArr);
+	JsonDeinit(&vNormArr);
+	JsonDeinit(&indexArr);
+	JsonDeinit(&verticesObj);
+	JsonDeinit(&indicesObj);
+	JsonDeinit(&modelObj);
+
+	return true;
 }
 
 

@@ -40,10 +40,12 @@ private:
 
 	struct DataType
 	{
-		union {
+		union Data {
 			Type data;
 			UnusedType next;
+			Data() : next(-1) {}
 		};
+		Data data;
 #		if defined(DEBUG_HANDLE_ARRAY)
 		bool alive;
 #		endif
