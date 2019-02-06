@@ -28,6 +28,14 @@ class TextureManager;
 enum class FramebufferHandle : u16 {};
 const FramebufferHandle INVALID_FRAMEBUFFER_HANDLE = (FramebufferHandle)0xffff;
 
+typedef u8 FramebufferTypeFlags;
+enum FramebufferTypeBits : FramebufferTypeFlags
+{
+	FramebufferType_None = 0,
+	FramebufferType_Color = 1 << 0,//rgb
+	FramebufferType_Depth = 1 << 1,//32b float
+};
+
 
 class RenderScene : public IScene
 {
@@ -136,7 +144,7 @@ public:
 	virtual Engine& GetEngine() const = 0;
 
 	//render api
-	virtual FramebufferHandle CreateFrameBuffer(int width, int height, bool screenSize) = 0;//TODO: add: depth,stencil,formats
+	virtual FramebufferHandle CreateFrameBuffer(int width, int height, bool screenSize, FramebufferTypeFlags flags) = 0;
 	virtual void DestroyFramebuffer(FramebufferHandle handle) = 0;
 
 	virtual void NewView() = 0;

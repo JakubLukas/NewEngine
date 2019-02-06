@@ -63,18 +63,18 @@ struct SearchInfo
 		Directory,
 	};
 
-	typedef u8 FileModifiersFlags;
-	enum FileModifiersBits : FileModifiersFlags
+	typedef u8 FileModifierFlags;
+	enum FileModifierBits : FileModifierFlags
 	{
-		None = 0,
-		Hidden = 1 << 0,
-		ReadOnly = 1 << 1,
-		SymLink = 1 << 2,
+		FileModifier_None = 0,
+		FileModifier_Hidden = 1 << 0,
+		FileModifier_ReadOnly = 1 << 1,
+		FileModifier_SymLink = 1 << 2,
 	};
 
 	size_t fileSize;
 	FileType type;
-	FileModifiersFlags modifiers;
+	FileModifierFlags modifiers;
 	char fileName[Path::MAX_LENGTH] = { 0 };
 
 };

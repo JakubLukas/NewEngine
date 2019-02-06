@@ -11,41 +11,41 @@ namespace Veng
 ShaderVaryingBits GetShaderVaryingFromString(const char* str)
 {
 	if(string::Compare(str, "position") == 0)
-		return SV_POSITION_BIT;
+		return ShaderVarying_Position;
 	else if(string::Compare(str, "color0") == 0)
-		return SV_COLOR0_BIT;
+		return ShaderVarying_Color0;
 	else if(string::Compare(str, "texcoord0") == 0)
-		return SV_TEXCOORDS0_BIT;
+		return ShaderVarying_Texcoords0;
 	else if(string::Compare(str, "texcoord1") == 0)
-		return SV_TEXCOORDS1_BIT;
+		return ShaderVarying_Texcoords1;
 	else if(string::Compare(str, "normal") == 0)
-		return SV_NORMAL_BIT;
+		return ShaderVarying_Normal;
 	else if(string::Compare(str, "tangent") == 0)
-		return SV_TANGENT_BIT;
+		return ShaderVarying_Tangent;
 	else if(string::Compare(str, "binormal") == 0)
-		return SV_BINORMAL_BIT;
+		return ShaderVarying_Binormal;
 	else
 	{
 		ASSERT2(false, "Unrecognized value");
-		return SV_NONE;
+		return ShaderVarying_None;
 	}
 }
 
 const char* GetShaderVaryingName(ShaderVaryingBits value)
 {
-	if(value == SV_POSITION_BIT)
+	if(value == ShaderVarying_Position)
 		return "position";
-	else if(value == SV_COLOR0_BIT)
+	else if(value == ShaderVarying_Color0)
 		return "color0";
-	else if(value == SV_TEXCOORDS0_BIT)
+	else if(value == ShaderVarying_Texcoords0)
 		return "texcoord0";
-	else if(value == SV_TEXCOORDS1_BIT)
+	else if(value == ShaderVarying_Texcoords1)
 		return "texcoord1";
-	else if(value == SV_NORMAL_BIT)
+	else if(value == ShaderVarying_Normal)
 		return "normal";
-	else if(value == SV_TANGENT_BIT)
+	else if(value == ShaderVarying_Tangent)
 		return "tangent";
-	else if(value == SV_BINORMAL_BIT)
+	else if(value == ShaderVarying_Binormal)
 		return "binormal";
 	else
 	{
@@ -58,7 +58,7 @@ const char* GetShaderVaryingName(ShaderVaryingBits value)
 ShaderUniformBits GetShaderUniformFromString(const char* str)
 {
 	ASSERT2(false, "Unrecognized value");
-	return SU_NONE;
+	return ShaderUniform_None;
 }
 
 const char* GetShaderUniformName(ShaderUniformBits value)
@@ -71,18 +71,18 @@ const char* GetShaderUniformName(ShaderUniformBits value)
 ShaderTextureBits GetShaderTextureFromString(const char* str)
 {
 	if(string::Compare(str, "diffuse") == 0)
-		return ST_DIFF_TEXTURE_BIT;
+		return ShaderTexture_Diffuse;
 	else if(string::Compare(str, "normal") == 0)
-		return ST_NORM_TEXTURE_BIT;
+		return ShaderTexture_Normal;
 	else
-		return ST_NONE;
+		return ShaderTexture_None;
 }
 
 const char* GetShaderTextureName(ShaderTextureBits value)
 {
-	if(value == ST_DIFF_TEXTURE_BIT)
+	if(value == ShaderTexture_Diffuse)
 		return "diffuse";
-	else if(value == ST_NORM_TEXTURE_BIT)
+	else if(value == ShaderTexture_Normal)
 		return "normal";
 	else
 	{

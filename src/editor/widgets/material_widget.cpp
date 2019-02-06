@@ -120,7 +120,7 @@ void MaterialWidget::RenderInternal(EventQueue& queue)
 			ImGui::PushID(i);
 			if (ImGui::TreeNode("", texSlotName))
 			{
-				ImGui::InputScalar("texture", ImGuiDataType_U64, &material->textureHandles[i], NULL, NULL, NULL, ImGuiInputTextFlags_ReadOnly);
+				ImGui::InputScalar("texture", ImGuiDataType_U64, &material->textures[i], NULL, NULL, NULL, ImGuiInputTextFlags_ReadOnly);
 				ImGui::TreePop();
 			}
 			ImGui::PopID();

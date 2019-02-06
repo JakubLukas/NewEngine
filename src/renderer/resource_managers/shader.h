@@ -27,9 +27,9 @@ struct Shader : public Resource
 {
 	Shader() : Resource(ResourceType::Shader) {}
 
-	ShaderVaryingFlags varyings = SV_NONE;
-	ShaderUniformFlags uniforms = SU_NONE;
-	ShaderTextureFlags textures = ST_NONE;
+	ShaderVaryingFlags varyings = ShaderVarying_None;
+	ShaderUniformFlags uniforms = ShaderUniform_None;
+	ShaderTextureFlags textures = ShaderTexture_None;
 	//8b padding, can be used
 	resourceHandle vsHandle;
 	resourceHandle fsHandle;

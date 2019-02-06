@@ -17,17 +17,15 @@ struct Material : public Resource
 {
 	Material()
 		: Resource(ResourceType::Material)
-	{
-		for (size_t i = 0; i < Material::MAX_TEXTURES; ++i)
-			textureHandles[i] = INVALID_RESOURCE_HANDLE;
-	}
+	{}
 
-	static const size_t MAX_TEXTURES = 2;
+	static const size_t MAX_TEXTURES = 4;
 
-	ShaderTextureFlags textures = ST_NONE;
-	materialRenderHandle renderDataHandle = INVALID_MATERIAL_RENDER_HANDLE;
 	resourceHandle shader;
-	resourceHandle textureHandles[MAX_TEXTURES];
+	resourceHandle textures[MAX_TEXTURES];
+	u8 textureCount = 0;
+	//8b padding
+	materialRenderHandle renderDataHandle = INVALID_MATERIAL_RENDER_HANDLE;
 	//Uniforms?
 	//commandBuffer*
 };

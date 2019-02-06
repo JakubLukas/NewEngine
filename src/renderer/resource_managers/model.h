@@ -16,7 +16,7 @@ const meshRenderHandle INVALID_MESH_RENDER_HANDLE = (meshRenderHandle)0;
 struct Mesh
 {
 	resourceHandle material = INVALID_RESOURCE_HANDLE;
-	ShaderVaryingFlags varyings = SV_NONE;
+	ShaderVaryingFlags varyings = ShaderVarying_None;
 	//32b padding
 	u8* verticesData = nullptr;
 	u16* indicesData = nullptr;

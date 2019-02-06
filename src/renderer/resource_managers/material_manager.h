@@ -17,17 +17,12 @@ class MaterialManager final : public ResourceManager
 private:
 	struct LoadingOp
 	{
-		LoadingOp()
-		{
-			for (size_t i = 0; i < Material::MAX_TEXTURES; ++i)
-				textures[i] = INVALID_RESOURCE_HANDLE;
-		}
-
 		resourceHandle material;
 		resourceHandle shader;
 		resourceHandle textures[Material::MAX_TEXTURES];
+		u8 textureCount = 0;
 		u8 shaderLoaded = 0;
-		u8 texturesToLoad = 0;
+		u8 texturesToLoad = 0;//TODO: ^ merge to one bitflag field
 	};
 
 public:

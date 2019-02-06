@@ -104,7 +104,7 @@ public:
 				screenSize = JsonGetBool(&fbScreenSize->value);
 			}
 
-			FramebufferHandle fbh = m_renderer.CreateFrameBuffer(width, height, screenSize);
+			FramebufferHandle fbh = m_renderer.CreateFrameBuffer(width, height, screenSize, FramebufferType_Color | FramebufferType_Depth);//TODO: cofigurable
 			m_frameBuffers.Insert(crc32_string(JsonGetString(&fb->key)), fbh);
 
 			fb++;

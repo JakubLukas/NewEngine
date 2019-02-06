@@ -193,37 +193,37 @@ namespace ImGui
 typedef Veng::u32 MouseButtonFlags;
 enum MouseButtonBitOffset : MouseButtonFlags
 {
-	MB_BO_LEFT = 0,
-	MB_BO_RIGHT,
-	MB_BO_MIDDLE,
-	MB_BO_EXTRA4,
-	MB_BO_EXTRA5,
+	MouseButtonBitOffset_Left = 0,
+	MouseButtonBitOffset_Right,
+	MouseButtonBitOffset_Middle,
+	MouseButtonBitOffset_Extra4,
+	MouseButtonBitOffset_Extra5,
 };
 enum MouseButtonBits : MouseButtonFlags
 {
-	MB_NONE = 0,
-	MB_LEFT_BIT = 1 << MB_BO_LEFT,
-	MB_RIGHT_BIT = 1 << MB_BO_RIGHT,
-	MB_MIDDLE_BIT = 1 << MB_BO_MIDDLE,
-	MB_EXTRA4_BIT = 1 << MB_BO_EXTRA4,
-	MB_EXTRA5_BIT = 1 << MB_BO_EXTRA5,
+	MouseButton_None = 0,
+	MouseButton_Left = 1 << MouseButtonBitOffset_Left,
+	MouseButton_Right = 1 << MouseButtonBitOffset_Right,
+	MouseButton_Middle = 1 << MouseButtonBitOffset_Middle,
+	MouseButton_Extra4 = 1 << MouseButtonBitOffset_Extra4,
+	MouseButton_Extra5 = 1 << MouseButtonBitOffset_Extra5,
 };
 
 typedef Veng::u32 ModifierKeyFlags;
 enum ModifierKeyBitOffset : ModifierKeyFlags
 {
-	MK_BO_CTRL = 0,
-	MK_BO_SHIFT,
-	MK_BO_ALT,
-	MK_BO_SUPER,
+	ModifierKeyBitOffset_Ctrl = 0,
+	ModifierKeyBitOffset_Shift,
+	ModifierKeyBitOffset_Alt,
+	ModifierKeyBitOffset_Super,
 };
 enum ModifierKeyBits : ModifierKeyFlags
 {
-	MK_NONE = 0,
-	MK_CTRL_BIT = 1 << MK_BO_CTRL,
-	MK_SHIFT_BIT = 1 << MK_BO_SHIFT,
-	MK_ALT_BIT = 1 << MK_BO_ALT,
-	MK_SUPER_BIT = 1 << MK_BO_SUPER,
+	ModifierKey_None = 0,
+	ModifierKey_Ctrl = 1 << ModifierKeyBitOffset_Ctrl,
+	ModifierKey_Shift = 1 << ModifierKeyBitOffset_Shift,
+	ModifierKey_Alt = 1 << ModifierKeyBitOffset_Alt,
+	ModifierKey_Super = 1 << ModifierKeyBitOffset_Super,
 };
 
 enum class TextEditSpecials : int
@@ -268,8 +268,8 @@ static const Path IMGUI_DOCK_DATA_PATH = Path("imgui_dock_data.bin");
 struct Input
 {
 	ImVec2 mousePos = { 0.0f, 0.0f };
-	ImGui::MouseButtonFlags mouseButtons = ImGui::MB_NONE;
-	ImGui::ModifierKeyFlags modifierKeys = ImGui::MK_NONE;
+	ImGui::MouseButtonFlags mouseButtons = ImGui::MouseButton_None;
+	ImGui::ModifierKeyFlags modifierKeys = ImGui::ModifierKey_None;
 	static const size_t KEYBOARD_BUFFER_SIZE = 32;
 	u8 keyboardBuffer[KEYBOARD_BUFFER_SIZE];
 	int keyboardBufferPos = 0;
@@ -479,16 +479,16 @@ public:
 			{
 			case KeyboardDevice::Button::ControlLeft:
 			case KeyboardDevice::Button::ControlRight:
-				m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_CTRL_BIT) | (pressed << ImGui::MK_BO_CTRL); break;
+				m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::ModifierKey_Ctrl) | (pressed << ImGui::ModifierKeyBitOffset_Ctrl); break;
 			case KeyboardDevice::Button::ShiftLeft:
 			case KeyboardDevice::Button::ShiftRight:
-				m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_SHIFT_BIT) | (pressed << ImGui::MK_BO_SHIFT); break;
+				m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::ModifierKey_Shift) | (pressed << ImGui::ModifierKeyBitOffset_Shift); break;
 			case KeyboardDevice::Button::AltLeft:
 			case KeyboardDevice::Button::AltRight:
-				m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_ALT_BIT) | (pressed << ImGui::MK_BO_ALT); break;
+				m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::ModifierKey_Alt) | (pressed << ImGui::ModifierKeyBitOffset_Alt); break;
 			case KeyboardDevice::Button::GUILeft:
 			case KeyboardDevice::Button::GUIRight:
-				m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::MK_SUPER_BIT) | (pressed << ImGui::MK_BO_SUPER); break;
+				m_inputBuffer.modifierKeys = (m_inputBuffer.modifierKeys & ~ImGui::ModifierKey_Super) | (pressed << ImGui::ModifierKeyBitOffset_Super); break;
 			default:
 				if (pressed)
 				{
@@ -514,15 +514,15 @@ public:
 				switch (buttonId)
 				{
 				case MouseDevice::Button::Left:
-					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MB_LEFT_BIT) | (pressed << ImGui::MB_BO_LEFT); break;
+					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MouseButton_Left) | (pressed << ImGui::MouseButtonBitOffset_Left); break;
 				case MouseDevice::Button::Right:
-					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MB_RIGHT_BIT) | (pressed << ImGui::MB_BO_RIGHT); break;
+					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MouseButton_Right) | (pressed << ImGui::MouseButtonBitOffset_Right); break;
 				case MouseDevice::Button::Middle:
-					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MB_MIDDLE_BIT) | (pressed << ImGui::MB_BO_MIDDLE); break;
+					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MouseButton_Middle) | (pressed << ImGui::MouseButtonBitOffset_Middle); break;
 				case MouseDevice::Button::Extra4:
-					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MB_EXTRA4_BIT) | (pressed << ImGui::MB_BO_EXTRA4); break;
+					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MouseButton_Extra4) | (pressed << ImGui::MouseButtonBitOffset_Extra4); break;
 				case MouseDevice::Button::Extra5:
-					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MB_EXTRA5_BIT) | (pressed << ImGui::MB_BO_EXTRA5); break;
+					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MouseButton_Extra5) | (pressed << ImGui::MouseButtonBitOffset_Extra5); break;
 				}
 			}
 			else
@@ -832,15 +832,15 @@ public:
 		io.DeltaTime = SecFromMSec(deltaTime); //msec to sec
 
 		io.MousePos = m_inputBuffer.mousePos;
-		io.MouseDown[0] = 0 != (m_inputBuffer.mouseButtons & ImGui::MB_LEFT_BIT);
-		io.MouseDown[1] = 0 != (m_inputBuffer.mouseButtons & ImGui::MB_RIGHT_BIT);
-		io.MouseDown[2] = 0 != (m_inputBuffer.mouseButtons & ImGui::MB_MIDDLE_BIT);
+		io.MouseDown[0] = 0 != (m_inputBuffer.mouseButtons & ImGui::MouseButton_Left);
+		io.MouseDown[1] = 0 != (m_inputBuffer.mouseButtons & ImGui::MouseButton_Right);
+		io.MouseDown[2] = 0 != (m_inputBuffer.mouseButtons & ImGui::MouseButton_Middle);
 		io.MouseWheel = m_inputBuffer.scroll;
 
-		io.KeyCtrl = 0 != (m_inputBuffer.modifierKeys & ImGui::MK_CTRL_BIT);
-		io.KeyShift = 0 != (m_inputBuffer.modifierKeys & ImGui::MK_SHIFT_BIT);
-		io.KeyAlt = 0 != (m_inputBuffer.modifierKeys & ImGui::MK_ALT_BIT);
-		io.KeySuper = 0 != (m_inputBuffer.modifierKeys & ImGui::MK_SUPER_BIT);
+		io.KeyCtrl = 0 != (m_inputBuffer.modifierKeys & ImGui::ModifierKey_Ctrl);
+		io.KeyShift = 0 != (m_inputBuffer.modifierKeys & ImGui::ModifierKey_Shift);
+		io.KeyAlt = 0 != (m_inputBuffer.modifierKeys & ImGui::ModifierKey_Alt);
+		io.KeySuper = 0 != (m_inputBuffer.modifierKeys & ImGui::ModifierKey_Super);
 		///* bool    */io.KeysDown[512];                  // Keyboard keys that are pressed (ideally left in the "native" order your engine has access to keyboard keys, so you can use your own defines/enums for keys).
 		///* ImWchar */io.InputCharacters[16 + 1];          // List of characters input (translated by user from keypress+keyboard state). Fill using AddInputCharacter() helper.
 		///* float   */io.NavInputs[ImGuiNavInput_COUNT]; // Gamepad inputs (keyboard keys will be auto-mapped and be written here by ImGui::NewFrame, all values will be cleared back to zero in ImGui::EndFrame)

@@ -386,7 +386,7 @@ searchHandle SearchFirstFile(const Path& path, SearchInfo& info)
 	}
 
 	info.type = SearchInfo::FileType::Normal;
-	info.modifiers = SearchInfo::FileModifiersBits::None;
+	info.modifiers = SearchInfo::FileModifier_None;
 	switch (findData.dwFileAttributes)
 	{
 	case FILE_ATTRIBUTE_DIRECTORY:
@@ -397,10 +397,10 @@ searchHandle SearchFirstFile(const Path& path, SearchInfo& info)
 			info.type = SearchInfo::FileType::Directory;
 		break;
 	case FILE_ATTRIBUTE_HIDDEN:
-		info.modifiers |= SearchInfo::FileModifiersBits::Hidden;
+		info.modifiers |= SearchInfo::FileModifier_Hidden;
 		break;
 	case FILE_ATTRIBUTE_READONLY:
-		info.modifiers |= SearchInfo::FileModifiersBits::ReadOnly;
+		info.modifiers |= SearchInfo::FileModifier_ReadOnly;
 		break;
 	}
 	info.fileSize = ((size_t)findData.nFileSizeHigh << 32) + findData.nFileSizeLow;
@@ -421,19 +421,19 @@ bool SearchNextFile(searchHandle handle, SearchInfo& info)
 	}
 
 	info.type = SearchInfo::FileType::Normal;
-	info.modifiers = SearchInfo::FileModifiersBits::None;
+	info.modifiers = SearchInfo::FileModifier_None;
 	
 	if(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		info.type = SearchInfo::FileType::Directory;
 	if (findData.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
 	{
 		if (findData.dwReserved0 == IO_REPARSE_TAG_SYMLINK)
-			info.modifiers |= SearchInfo::FileModifiersBits::SymLink;
+			info.modifiers |= SearchInfo::FileModifier_SymLink;
 	}
 	if (findData.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN)
-		info.modifiers |= SearchInfo::FileModifiersBits::Hidden;
+		info.modifiers |= SearchInfo::FileModifier_Hidden;
 	if (findData.dwFileAttributes & FILE_ATTRIBUTE_READONLY)
-		info.modifiers |= SearchInfo::FileModifiersBits::ReadOnly;
+		info.modifiers |= SearchInfo::FileModifier_ReadOnly;
 
 	info.fileSize = ((size_t)findData.nFileSizeHigh << 32) + findData.nFileSizeLow;
 	memory::Copy(info.fileName, findData.cFileName, Path::MAX_LENGTH);

@@ -64,7 +64,7 @@ public:
 				{
 					resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/sphere.model"));
 					*(resourceHandle*)data = modelHandle;
-					scale = 0.07f;
+					scale = 0.09f;
 				}
 				else
 				{

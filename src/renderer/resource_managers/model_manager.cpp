@@ -108,21 +108,21 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 			ASSERT(JsonIsArray(&positions->value) && JsonArrayCount(&positions->value) == count * 3);
 			positionArr = JsonArrayBegin(&positions->value);
 			bufferSize += 3 * count * sizeof(float);
-			mesh.varyings |= SV_POSITION_BIT;
+			mesh.varyings |= ShaderVarying_Position;
 		}
 		if (colors != nullptr)
 		{
 			ASSERT(JsonIsArray(&colors->value) && JsonArrayCount(&colors->value) == count);
 			colorsArr = JsonArrayBegin(&colors->value);
 			bufferSize += 4 * count * sizeof(u8);
-			mesh.varyings |= SV_COLOR0_BIT;
+			mesh.varyings |= ShaderVarying_Color0;
 		}
 		if (texCoords != nullptr)
 		{
 			ASSERT(JsonIsArray(&texCoords->value) && JsonArrayCount(&texCoords->value) == count * 2);
 			texCoordArr = JsonArrayBegin(&texCoords->value);
 			bufferSize += 2 * count * sizeof(float);
-			mesh.varyings |= SV_TEXCOORDS0_BIT;
+			mesh.varyings |= ShaderVarying_Texcoords0;
 		}
 
 		mesh.verticesData = (u8*)m_allocator.Allocate(bufferSize, alignof(float));

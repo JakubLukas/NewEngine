@@ -41,7 +41,8 @@ struct MeshData
 
 struct MaterialData
 {
-	bgfx::UniformHandle handle;
+	bgfx::UniformHandle textureUniforms[Material::MAX_TEXTURES];
+	u8 textureCount = 0;
 };
 
 struct TextureData
@@ -66,6 +67,7 @@ struct FrameBuffer
 	u16 width;
 	u16 height;
 	bool screenSize;
+	FramebufferTypeFlags flags;
 };
 
 
@@ -345,7 +347,7 @@ public:
 		m_meshData.Add(Utils::Move(invalidMeshData));
 
 		MaterialData invalidMaterialData;
-		invalidMaterialData.handle = BGFX_INVALID_HANDLE;
+		invalidMaterialData.textureUniforms[0] = BGFX_INVALID_HANDLE;
 		m_materialData.Add(Utils::Move(invalidMaterialData));
 
 		TextureData invalidTextureData;
@@ -427,17 +429,17 @@ public:
 
 		size_t bufferSize = 0;
 		meshData.vertex_decl.begin();
-		if (mesh.varyings & SV_POSITION_BIT)
+		if (mesh.varyings & ShaderVarying_Position)
 		{
 			meshData.vertex_decl.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float);
 			bufferSize += 3 * mesh.verticesCount * sizeof(float);
 		}
-		if (mesh.varyings & SV_COLOR0_BIT)
+		if (mesh.varyings & ShaderVarying_Color0)
 		{
 			meshData.vertex_decl.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true);
 			bufferSize += 4 * mesh.verticesCount * sizeof(u8);
 		}
-		if (mesh.varyings & SV_TEXCOORDS0_BIT)
+		if (mesh.varyings & ShaderVarying_Texcoords0)
 		{
 			meshData.vertex_decl.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float);
 			bufferSize += 2 * mesh.verticesCount * sizeof(float);
@@ -465,10 +467,15 @@ public:
 	materialRenderHandle CreateMaterialData(Material& material) override
 	{
 		MaterialData matData;
+		matData.textureCount = material.textureCount;
 
-		if (material.textures && ST_DIFF_TEXTURE_BIT)
+		char name[11] = { 0 };
+		memory::Copy(name, "u_texture", 9);
+
+		for(int i = 0; i < matData.textureCount; ++i)
 		{
-			matData.handle = bgfx::createUniform("t_diffuse", bgfx::UniformType::Int1);
+			name[9] = '0' + i;
+			matData.textureUniforms[i] = bgfx::createUniform(name, bgfx::UniformType::Int1);
 		}
 
 		return (materialRenderHandle)m_materialData.Add(Utils::Move(matData));
@@ -477,7 +484,8 @@ public:
 	void DestroyMaterialData(materialRenderHandle handle) override
 	{
 		MaterialData& data = m_materialData.Get((u32)handle);
-		bgfx::destroy(data.handle);
+		for(int i = 0; i < data.textureCount; ++i)
+			bgfx::destroy(data.textureUniforms[i]);
 
 		m_materialData.Remove((u32)handle);
 	}
@@ -591,7 +599,13 @@ public:
 			fb.width = width;
 			fb.height = height;
 			bgfx::destroy(fb.handle);
-			fb.handle = bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::Enum::RGB8);
+			bgfx::TextureHandle fbTextures[8];
+			u8 fbTexturesSize = 0;
+			if(fb.flags & FramebufferType_Color)
+				fbTextures[fbTexturesSize++] = bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::BGRA8, BGFX_TEXTURE_RT);
+			if(fb.flags & FramebufferType_Depth)
+				fbTextures[fbTexturesSize++] = bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::D32, BGFX_TEXTURE_RT);
+			fb.handle = bgfx::createFrameBuffer(2, fbTextures, true);
 		}
 	}
 
@@ -602,13 +616,22 @@ public:
 	Engine& GetEngine() const override { return m_engine; }
 
 
-	FramebufferHandle CreateFrameBuffer(int width, int height, bool screenSize) override
+	FramebufferHandle CreateFrameBuffer(int width, int height, bool screenSize, FramebufferTypeFlags flags) override
 	{
+		bgfx::TextureHandle fbTextures[8];
+		u8 fbTexturesSize = 0;
+		if(flags & FramebufferType_Color)
+			fbTextures[fbTexturesSize++] = bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::BGRA8, BGFX_TEXTURE_RT);
+		if(flags & FramebufferType_Depth)
+			fbTextures[fbTexturesSize++] = bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::D32, BGFX_TEXTURE_RT);
+
 		FrameBuffer fb;
-		fb.handle = bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::Enum::RGB8);
+		fb.handle = bgfx::createFrameBuffer(fbTexturesSize, fbTextures, true);
+
 		fb.width = width;
 		fb.height = height;
 		fb.screenSize = screenSize;
+		fb.flags = flags;
 		FramebufferHandle handle = (FramebufferHandle)m_framebuffers.Add(Utils::Move(fb));
 		if (screenSize)
 			m_screenSizeFrameBuffers.PushBack(handle);
@@ -692,12 +715,12 @@ public:
 						bgfx::setVertexBuffer(0, meshData.vertexBufferHandle);
 						bgfx::setIndexBuffer(meshData.indexBufferHandle);
 
-						if (material->textures & ST_DIFF_TEXTURE_BIT)
+						MaterialData& materialData = m_materialData.Get((u64)material->renderDataHandle);
+						for(int i = 0; i < materialData.textureCount; ++i)
 						{
-							MaterialData& materialData = m_materialData.Get((u64)material->renderDataHandle);
-							const Texture* texture = (Texture*)m_textureManager->GetResource(material->textureHandles[0]);
+							const Texture* texture = (Texture*)m_textureManager->GetResource(material->textures[0]);
 							TextureData& texData = m_textureData.Get((u64)texture->renderDataHandle);
-							bgfx::setTexture(0, materialData.handle, texData.handle);
+							bgfx::setTexture(i, materialData.textureUniforms[i], texData.handle);
 						}
 
 

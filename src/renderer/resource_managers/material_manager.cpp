@@ -55,10 +55,9 @@ void MaterialManager::DestroyResource(Resource* resource)
 	m_renderSystem->DestroyMaterialData(material->renderDataHandle);
 	m_depManager->UnloadResource(ResourceType::Shader, material->shader);
 
-	for(int i = 0; i < Material::MAX_TEXTURES; ++i)
+	for(int i = 0; i < material->textureCount; ++i)
 	{
-		if(material->textureHandles[i] != INVALID_RESOURCE_HANDLE)
-			m_depManager->UnloadResource(ResourceType::Texture, material->textureHandles[i]);
+		m_depManager->UnloadResource(ResourceType::Texture, material->textures[i]);
 	}
 
 	DELETE_OBJECT(m_allocator, material);
@@ -100,12 +99,13 @@ void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	{
 		ASSERT(JsonIsString(&diffuseTex->value));
 		Path path(JsonGetString(&diffuseTex->value));
-		material->textures |= ST_DIFF_TEXTURE_BIT;
-		material->textureHandles[0] = m_depManager->LoadResource(ResourceType::Material, ResourceType::Texture, path);
-		op.textures[0] = material->textureHandles[0];
-		Resource* textureRes = GetResource(material->textureHandles[0]);
+		int idx = material->textureCount++;
+		material->textures[idx] = m_depManager->LoadResource(ResourceType::Material, ResourceType::Texture, path);
+		op.textures[idx] = material->textures[idx];
+		op.textureCount++;
+		Resource* textureRes = GetResource(material->textures[idx]);
 		if(textureRes->GetState() != Resource::State::Ready && textureRes->GetState() != Resource::State::Failure)
-			op.texturesToLoad |= ST_DIFF_TEXTURE_BIT;
+			op.texturesToLoad |= 1 << idx;
 	}
 
 	JsonKeyValue* normalTex = JsonObjectFind(&textures->value, "normal");
@@ -113,12 +113,13 @@ void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	{
 		ASSERT(JsonIsString(&normalTex->value));
 		Path path(JsonGetString(&normalTex->value));
-		material->textures |= ST_NORM_TEXTURE_BIT;
-		material->textureHandles[1] = m_depManager->LoadResource(ResourceType::Material, ResourceType::Texture, path);
-		op.textures[1] = material->textureHandles[1];
-		Resource* textureRes = GetResource(material->textureHandles[1]);
+		int idx = material->textureCount++;
+		material->textures[idx] = m_depManager->LoadResource(ResourceType::Material, ResourceType::Texture, path);
+		op.textures[idx] = material->textures[idx];
+		op.textureCount++;
+		Resource* textureRes = GetResource(material->textures[idx]);
 		if(textureRes->GetState() != Resource::State::Ready && textureRes->GetState() != Resource::State::Failure)
-			op.texturesToLoad |= ST_NORM_TEXTURE_BIT;
+			op.texturesToLoad |= 1 << idx;
 	}
 
 	JsonDeinit(&parsedJson);
@@ -145,7 +146,7 @@ void MaterialManager::ChildResourceLoaded(resourceHandle handle, ResourceType ty
 		}
 		else if (type == ResourceType::Texture)
 		{
-			for (size_t i = 0; i < Material::MAX_TEXTURES; ++i)
+			for (size_t i = 0; i < op.textureCount; ++i)
 			{
 				if (op.textures[i] == handle)
 					op.texturesToLoad &= ~(1 << i);
