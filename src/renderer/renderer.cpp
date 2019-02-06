@@ -676,7 +676,6 @@ public:
 
 			Transform& trans = world.GetEntityTransform(models[i].entity);
 			Matrix44 mtx = trans.ToMatrix44();
-			mtx.Transpose();
 			// Set model matrix for rendering.
 			bgfx::setTransform(&mtx.m11);
 
@@ -704,6 +703,7 @@ public:
 
 						// Set render states.
 						bgfx::setState(BGFX_STATE_DEFAULT);
+						//bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS  | BGFX_STATE_CULL_CCW | BGFX_STATE_MSAA);
 
 						// Submit primitive for rendering to view 0.
 						const Shader* shader = (Shader*)m_shaderManager->GetResource(material->shader);

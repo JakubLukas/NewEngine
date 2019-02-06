@@ -59,11 +59,12 @@ public:
 				m_entities[i] = world->CreateEntity();
 				Transform& trans = world->GetEntityTransform(m_entities[i]);
 				renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Model), m_entities[i]);
-
+				float scale = 1.0f;
 				if (i % 2 == 0)
 				{
 					resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/sphere.model"));
 					*(resourceHandle*)data = modelHandle;
+					scale = 0.07f;
 				}
 				else
 				{
@@ -80,7 +81,7 @@ public:
 					-15.0f + float(yy) * 3.0f,
 					0.0f
 				};
-				trans = Transform(rot, pos);
+				trans = Transform(rot, pos, scale);
 				i++;
 			}
 		}

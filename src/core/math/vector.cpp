@@ -26,6 +26,13 @@ Vector2::Vector2(const Vector2& vec)
 	, y(vec.y)
 {}
 
+Vector2& Vector2::operator=(const Vector2& other)
+{
+	x = other.x;
+	y = other.y;
+	return *this;
+}
+
 
 
 const Vector3 Vector3::AXIS_X(1.0f, 0.0f, 0.0f);

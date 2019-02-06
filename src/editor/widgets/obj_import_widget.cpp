@@ -103,11 +103,12 @@ static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& ou
 	Array<Vector2> normals(allocator);
 	Array<Face> faces(allocator);
 
+	char* fileBufferPtr = fileBuffer;
 	char lineBuffer[128];
 	int charsUsed = 0;
-	while(sscanf_s(fileBuffer, "%[^\t\n]\n%n", lineBuffer, 128, &charsUsed) > 0)
+	while(sscanf_s(fileBufferPtr, "%[^\t\n]\n%n", lineBuffer, 128, &charsUsed) > 0)
 	{
-		fileBuffer += charsUsed;
+		fileBufferPtr += charsUsed;
 		if(lineBuffer[0] == 'v' && lineBuffer[1] == ' ')
 		{
 			Vector3& v = vertices.PushBack();
@@ -154,9 +155,10 @@ static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& ou
 	u32 indicesIdx = 0;
 	for (const Face& face : faces)
 	{
+		const int idxs[3] = { 0, 1, 2 };// = { 0, 2, 1 }; //to fix CW vs CCW culling
 		for (int i = 0; i < 3; ++i)//triangles
 		{
-			Vector3 pos = vertices[face.vIdx[i]];
+			Vector3 pos = vertices[face.vIdx[idxs[i]]];
 			JsonSetDouble(&value, pos.x);
 			JsonArrayAdd(&vPosArr, &value);
 			JsonSetDouble(&value, pos.y);
@@ -164,13 +166,13 @@ static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& ou
 			JsonSetDouble(&value, pos.z);
 			JsonArrayAdd(&vPosArr, &value);
 
-			Vector2 uv = uvs[face.vtIdx[i]];
+			Vector2 uv = uvs[face.vtIdx[idxs[i]]];
 			JsonSetDouble(&value, uv.x);
 			JsonArrayAdd(&vUvArr, &value);
 			JsonSetDouble(&value, uv.y);
 			JsonArrayAdd(&vUvArr, &value);
 
-			Vector2 norm = normals[face.vnIdx[i]];
+			Vector2 norm = normals[face.vnIdx[idxs[i]]];
 			JsonSetDouble(&value, norm.x);
 			JsonArrayAdd(&vNormArr, &value);
 			JsonSetDouble(&value, norm.y);

@@ -200,6 +200,8 @@ void Matrix44::SetRotateZ(float angle)
 
 void Matrix44::SetRotation(const Quaternion& quat)
 {
+	memory::Set(&m11, 0, 16 * sizeof(float));
+
 	float fx = quat.x + quat.x;
 	float fy = quat.y + quat.y;
 	float fz = quat.z + quat.z;
@@ -214,16 +216,15 @@ void Matrix44::SetRotation(const Quaternion& quat)
 	float fzz = fz * quat.z;
 
 	m11 = 1.0f - (fyy + fzz);
-	m21 = fxy - fwz;
-	m31 = fxz + fwy;
-	m12 = fxy + fwz;
+	m12 = fxy - fwz;
+	m13 = fxz + fwy;
+	m21 = fxy + fwz;
 	m22 = 1.0f - (fxx + fzz);
-	m32 = fyz - fwx;
-	m13 = fxz - fwy;
-	m23 = fyz + fwx;
+	m23 = fyz - fwx;
+	m31 = fxz - fwy;
+	m32 = fyz + fwx;
 	m33 = 1.0f - (fxx + fyy);
 
-	m41 = m42 = m43 = m14 = m24 = m34 = 0.0f;
 	m44 = 1.0f;
 }
 
@@ -252,9 +253,26 @@ void Matrix44::RotateZ(float angle)
 
 void Matrix44::SetTranslation(const Vector3& trans)
 {
-	m14 = trans.x;
-	m24 = trans.y;
-	m34 = trans.z;
+	memory::Set(&m11, 0, 16 * sizeof(float));
+
+	m11 = 1.0f;
+	m22 = 1.0f;
+	m33 = 1.0f;
+	m41 = trans.x;
+	m42 = trans.y;
+	m43 = trans.z;
+	m44 = 1.0f;
+}
+
+
+void Matrix44::SetScale(float scale)
+{
+	memory::Set(&m11, 0, 16 * sizeof(float));
+
+	m11 = scale;
+	m22 = scale;
+	m33 = scale;
+	m44 = 1.0f;
 }
 
 
@@ -294,24 +312,27 @@ Transform::Transform()
 
 }
 
-Transform::Transform(const Quaternion& rot, const Vector3& pos)
-	: rotation(rot), position(pos)
-{
-
-}
+Transform::Transform(const Quaternion& rot, const Vector3& pos, float scale)
+	: rotation(rot)
+	, position(pos)
+	, scale(scale)
+{}
 
 Transform::Transform(const Transform& other)
-	: rotation(other.rotation), position(other.position)
-{
-
-}
+	: rotation(other.rotation)
+	, position(other.position)
+	, scale(other.scale)
+{}
 
 Matrix44 Transform::ToMatrix44() const
 {
-	Matrix44 mtx;
-	mtx.SetRotation(rotation);
-	mtx.SetTranslation(position);
-	return mtx;
+	Matrix44 rot;
+	rot.SetRotation(rotation);
+	Matrix44 trans;
+	trans.SetTranslation(position);
+	Matrix44 scal;
+	scal.SetScale(scale);
+	return scal * rot * trans;
 }
 
 

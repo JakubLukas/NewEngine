@@ -9,6 +9,7 @@ namespace Veng
 {
 
 //right hand coordinate system (z from display (OpenGL style))
+//row major
 
 struct FORCE_ALIGNMENT(16) Matrix44
 {
@@ -53,6 +54,8 @@ struct FORCE_ALIGNMENT(16) Matrix44
 
 	void SetTranslation(const Vector3& trans);
 
+	void SetScale(float scale);
+
 	void Transpose();
 
 
@@ -70,7 +73,7 @@ Vector4 operator*(const Vector4& vec, const Matrix44& mat);
 struct Transform
 {
 	Transform();
-	Transform(const Quaternion& rot, const Vector3& pos);
+	Transform(const Quaternion& rot, const Vector3& pos, float scale);
 	Transform(const Transform& other);
 
 	Matrix44 ToMatrix44() const;
@@ -78,6 +81,7 @@ struct Transform
 
 	Quaternion rotation = Quaternion::IDENTITY;
 	Vector3 position;
+	float scale = 1.0f;
 };
 
 

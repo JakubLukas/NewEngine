@@ -73,6 +73,7 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 		Transform& entityTrans = m_world->GetEntityTransform(m_entity);
 		ImGui::InputFloat3("position", &entityTrans.position.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
 		ImGui::InputFloat4("rotation", &entityTrans.rotation.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::InputFloat("scale", &entityTrans.scale, 0.1f, 1.0f, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
 		ImGui::Separator();
 		ImGui::TreePop();
 	}
