@@ -47,14 +47,14 @@ private:
 	{
 		enum ShaderBits : u8
 		{
-			NONE = 0,
-			VERTEX_BIT = 1 << 0,
-			FRAGMENT_BIT = 1 << 1,
+			Shader_None = 0,
+			Shader_Vertex = 1 << 0,
+			Shader_Fragment = 1 << 1,
 		};
 		resourceHandle shader;
 		resourceHandle vsHandle;
 		resourceHandle fsHandle;
-		u8 shadersToLoad = NONE;
+		u8 shadersToLoad = Shader_None;
 	};
 
 public:

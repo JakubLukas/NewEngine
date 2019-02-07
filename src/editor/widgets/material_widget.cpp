@@ -115,7 +115,7 @@ void MaterialWidget::RenderInternal(EventQueue& queue)
 		ImGui::Text("textures:");
 		for (int i = 0; i < Material::MAX_TEXTURES; ++i)
 		{
-			const char* texSlotName = GetShaderTextureName((ShaderTextureBits)(1 << i));
+			const char* texSlotName = material->outputTextures[i].name;
 
 			ImGui::PushID(i);
 			if (ImGui::TreeNode("", texSlotName))

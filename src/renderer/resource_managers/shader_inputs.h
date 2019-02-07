@@ -34,18 +34,11 @@ enum ShaderUniformBits : ShaderUniformFlags
 ShaderUniformBits GetShaderUniformFromString(const char* str);
 const char* GetShaderUniformName(ShaderUniformBits value);
 
-
-
-typedef u8 ShaderTextureFlags;
-enum ShaderTextureBits : ShaderTextureFlags
+struct ShaderUniform
 {
-	ShaderTexture_None = 0,
-	ShaderTexture_Diffuse = 1 << 0,
-	ShaderTexture_Normal = 1 << 1,
+	static const u8 MAX_NAME_LENGTH = 15;
+	char name[MAX_NAME_LENGTH + 1] = { 0 };
 };
-
-ShaderTextureBits GetShaderTextureFromString(const char* str);
-const char* GetShaderTextureName(ShaderTextureBits value);
 
 
 }

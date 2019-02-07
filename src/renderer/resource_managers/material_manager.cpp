@@ -1,6 +1,8 @@
 #include "material_manager.h"
 
 #include "core/file/blob.h"
+#include "core/string.h"
+#include "core/logs.h"
 
 #include "../renderer.h"
 #include "core/parsing/json.h"
@@ -92,34 +94,34 @@ void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 		op.shaderLoaded = true;
 
 	JsonKeyValue* textures = JsonObjectFind(&parsedJson, "textures");
-	ASSERT(textures != nullptr && JsonIsObject(&textures->value));
-
-	JsonKeyValue* diffuseTex = JsonObjectFind(&textures->value, "diffuse");
-	if(diffuseTex != nullptr)
+	if (textures != nullptr)
 	{
-		ASSERT(JsonIsString(&diffuseTex->value));
-		Path path(JsonGetString(&diffuseTex->value));
-		int idx = material->textureCount++;
-		material->textures[idx] = m_depManager->LoadResource(ResourceType::Material, ResourceType::Texture, path);
-		op.textures[idx] = material->textures[idx];
-		op.textureCount++;
-		Resource* textureRes = GetResource(material->textures[idx]);
-		if(textureRes->GetState() != Resource::State::Ready && textureRes->GetState() != Resource::State::Failure)
-			op.texturesToLoad |= 1 << idx;
-	}
+		ASSERT(JsonIsObject(&textures->value));
+		const JsonKeyValue* val = JsonObjectCBegin(&textures->value);
+		for (size_t i = 0; i < JsonObjectCount(&textures->value); ++i)
+		{
+			const int idx = material->textureCount++;
 
-	JsonKeyValue* normalTex = JsonObjectFind(&textures->value, "normal");
-	if(normalTex != nullptr)
-	{
-		ASSERT(JsonIsString(&normalTex->value));
-		Path path(JsonGetString(&normalTex->value));
-		int idx = material->textureCount++;
-		material->textures[idx] = m_depManager->LoadResource(ResourceType::Material, ResourceType::Texture, path);
-		op.textures[idx] = material->textures[idx];
-		op.textureCount++;
-		Resource* textureRes = GetResource(material->textures[idx]);
-		if(textureRes->GetState() != Resource::State::Ready && textureRes->GetState() != Resource::State::Failure)
-			op.texturesToLoad |= 1 << idx;
+			const char* textureName = JsonGetString(&val->key);
+			size_t textureNameLen = string::Length(textureName);
+			if (textureNameLen > ShaderUniform::MAX_NAME_LENGTH)
+			{
+				Log(LogType::Error, "Uniform name is too long, clamped to %d chars\n", ShaderUniform::MAX_NAME_LENGTH);
+				textureNameLen = ShaderUniform::MAX_NAME_LENGTH;
+			}
+			string::Copy(material->outputTextures[idx].name, textureName, textureNameLen);
+
+			ASSERT(JsonIsString(&val->value));
+			const Path path(JsonGetString(&val->value));
+			material->textures[idx] = m_depManager->LoadResource(ResourceType::Material, ResourceType::Texture, path);
+			op.textures[idx] = material->textures[idx];
+			op.textureCount++;
+			Resource* textureRes = GetResource(material->textures[idx]);
+			if (textureRes->GetState() != Resource::State::Ready && textureRes->GetState() != Resource::State::Failure)
+				op.texturesToLoad |= 1 << idx;
+
+			val++;
+		}
 	}
 
 	JsonDeinit(&parsedJson);

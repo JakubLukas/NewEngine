@@ -469,14 +469,8 @@ public:
 		MaterialData matData;
 		matData.textureCount = material.textureCount;
 
-		char name[11] = { 0 };
-		memory::Copy(name, "u_texture", 9);
-
 		for(int i = 0; i < matData.textureCount; ++i)
-		{
-			name[9] = '0' + i;
-			matData.textureUniforms[i] = bgfx::createUniform(name, bgfx::UniformType::Int1);
-		}
+			matData.textureUniforms[i] = bgfx::createUniform(material.outputTextures[i].name, bgfx::UniformType::Int1);
 
 		return (materialRenderHandle)m_materialData.Add(Utils::Move(matData));
 	}
@@ -718,17 +712,15 @@ public:
 						MaterialData& materialData = m_materialData.Get((u64)material->renderDataHandle);
 						for(int i = 0; i < materialData.textureCount; ++i)
 						{
-							const Texture* texture = (Texture*)m_textureManager->GetResource(material->textures[0]);
+							const Texture* texture = (Texture*)m_textureManager->GetResource(material->textures[i]);
 							TextureData& texData = m_textureData.Get((u64)texture->renderDataHandle);
 							bgfx::setTexture(i, materialData.textureUniforms[i], texData.handle);
 						}
 
-
-						// Set render states.
-						bgfx::setState(BGFX_STATE_DEFAULT);
+						uint64_t state = BGFX_STATE_DEFAULT;
+						bgfx::setState(state);
 						//bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS  | BGFX_STATE_CULL_CCW | BGFX_STATE_MSAA);
 
-						// Submit primitive for rendering to view 0.
 						const Shader* shader = (Shader*)m_shaderManager->GetResource(material->shader);
 						ShaderData& shaderData = m_shaderData.Get((u64)shader->renderDataHandle);
 						bgfx::submit(m_currentView, shaderData.handle);

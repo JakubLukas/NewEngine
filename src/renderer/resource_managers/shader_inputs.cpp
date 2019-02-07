@@ -68,28 +68,4 @@ const char* GetShaderUniformName(ShaderUniformBits value)
 }
 
 
-ShaderTextureBits GetShaderTextureFromString(const char* str)
-{
-	if(string::Compare(str, "diffuse") == 0)
-		return ShaderTexture_Diffuse;
-	else if(string::Compare(str, "normal") == 0)
-		return ShaderTexture_Normal;
-	else
-		return ShaderTexture_None;
-}
-
-const char* GetShaderTextureName(ShaderTextureBits value)
-{
-	if(value == ShaderTexture_Diffuse)
-		return "diffuse";
-	else if(value == ShaderTexture_Normal)
-		return "normal";
-	else
-	{
-		ASSERT2(false, "Unrecognized value");
-		return "";
-	}
-}
-
-
 }

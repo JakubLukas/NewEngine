@@ -15,14 +15,16 @@ const materialRenderHandle INVALID_MATERIAL_RENDER_HANDLE = (materialRenderHandl
 
 struct Material : public Resource
 {
-	Material()
-		: Resource(ResourceType::Material)
-	{}
+	Material() : Resource(ResourceType::Material) {}
 
-	static const size_t MAX_TEXTURES = 4;
+	static const u8 MAX_UNIFORMS = 4;
+	static const u8 MAX_TEXTURES = 4;
 
 	resourceHandle shader;
 	resourceHandle textures[MAX_TEXTURES];
+	ShaderUniform outputUniforms[MAX_UNIFORMS];//TODO: separate, just for editor
+	ShaderUniform outputTextures[MAX_UNIFORMS];//TODO: separate, just for editor
+	u8 outputUniformCount = 0;//TODO: separate, just for editor
 	u8 textureCount = 0;
 	//8b padding
 	materialRenderHandle renderDataHandle = INVALID_MATERIAL_RENDER_HANDLE;

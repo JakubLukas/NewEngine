@@ -236,11 +236,12 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	if (varyings != nullptr)
 	{
 		ASSERT(JsonIsArray(&varyings->value));
+		const JsonValue* val = JsonArrayCBegin(&varyings->value);
 		for (size_t i = 0; i < JsonArrayCount(&varyings->value); ++i)
 		{
-			const JsonValue* val = JsonArrayCBegin(&varyings->value) + i;
 			ASSERT(JsonIsString(val));
 			shader->varyings |= GetShaderVaryingFromString(JsonGetString(val));
+			val++;
 		}
 	}
 
@@ -248,11 +249,20 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	if (uniforms != nullptr)
 	{
 		ASSERT(JsonIsArray(&uniforms->value));
+		const JsonValue* val = JsonArrayCBegin(&uniforms->value);
 		for (size_t i = 0; i < JsonArrayCount(&uniforms->value); ++i)
 		{
-			const JsonValue* val = JsonArrayCBegin(&uniforms->value) + i;
 			ASSERT(JsonIsString(val));
-			shader->uniforms |= GetShaderUniformFromString(JsonGetString(val));
+			const char* uniformName = JsonGetString(val);
+			size_t uniformNameLen = string::Length(uniformName);
+			if (uniformNameLen > ShaderUniform::MAX_NAME_LENGTH)
+			{
+				Log(LogType::Error, "Uniform name is too long, clamped to %d chars\n", ShaderUniform::MAX_NAME_LENGTH);
+				uniformNameLen = ShaderUniform::MAX_NAME_LENGTH;
+			}
+			string::Copy(shader->inputUniforms[shader->inputUniformCount++].name, uniformName, uniformNameLen);
+
+			val++;
 		}
 	}
 
@@ -260,13 +270,25 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	if (textures != nullptr)
 	{
 		ASSERT(JsonIsArray(&textures->value));
+		const JsonValue* val = JsonArrayCBegin(&textures->value);
 		for (size_t i = 0; i < JsonArrayCount(&textures->value); ++i)
 		{
-			const JsonValue* val = JsonArrayCBegin(&textures->value) + i;
 			ASSERT(JsonIsString(val));
-			shader->textures |= GetShaderTextureFromString(JsonGetString(val));
+			const char* textureName = JsonGetString(val);
+			size_t textureNameLen = string::Length(textureName);
+			if (textureNameLen > ShaderUniform::MAX_NAME_LENGTH)
+			{
+				Log(LogType::Error, "Texture name is too long, clamped to %d chars\n", ShaderUniform::MAX_NAME_LENGTH);
+				textureNameLen = ShaderUniform::MAX_NAME_LENGTH;
+			}
+			string::Copy(shader->inputTextures[shader->inputTextureCount++].name, textureName, textureNameLen);
+
+			val++;
 		}
 	}
+
+	JsonKeyValue* textures = JsonObjectFind(&parsedJson, "lights");
+	add lights parsing there
 
 	JsonKeyValue* vShader = JsonObjectFind(&parsedJson, "vertexShader");
 	ASSERT(vShader != nullptr && JsonIsString(&vShader->value));
@@ -288,7 +310,7 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	op.vsHandle = shader->vsHandle;
 	Resource* vRes = GetResource(shader->vsHandle);
 	if(vRes->GetState() != Resource::State::Ready && vRes->GetState() != Resource::State::Failure)
-		op.shadersToLoad |= LoadingOp::VERTEX_BIT;
+		op.shadersToLoad |= LoadingOp::Shader_Vertex;
 
 	Path fOutPath;
 	ASSERT(CompileShader(GetFileSystem(), fsPath, fOutPath));
@@ -296,7 +318,7 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	op.fsHandle = shader->fsHandle;
 	Resource* fRes = GetResource(shader->fsHandle);
 	if(fRes->GetState() != Resource::State::Ready && fRes->GetState() != Resource::State::Failure)
-		op.shadersToLoad |= LoadingOp::FRAGMENT_BIT;
+		op.shadersToLoad |= LoadingOp::Shader_Fragment;
 
 	if(!LoadingOpCompleted(op))
 		m_loadingOp.PushBack(op);
@@ -312,9 +334,9 @@ void ShaderManager::ChildResourceLoaded(resourceHandle handle, ResourceType type
 		LoadingOp& op = m_loadingOp[i];
 
 		if(op.vsHandle == handle)
-			op.shadersToLoad &= ~LoadingOp::VERTEX_BIT;
+			op.shadersToLoad &= ~LoadingOp::Shader_Vertex;
 		else if(op.fsHandle == handle)
-			op.shadersToLoad &= ~LoadingOp::FRAGMENT_BIT;
+			op.shadersToLoad &= ~LoadingOp::Shader_Fragment;
 
 
 		if(LoadingOpCompleted(op))
@@ -342,7 +364,7 @@ void ShaderManager::FinalizeShader(Shader* shader)
 
 bool ShaderManager::LoadingOpCompleted(const LoadingOp& op)
 {
-	return (op.shadersToLoad == LoadingOp::NONE);
+	return (op.shadersToLoad == LoadingOp::Shader_None);
 }
 
 

@@ -27,10 +27,17 @@ struct Shader : public Resource
 {
 	Shader() : Resource(ResourceType::Shader) {}
 
-	ShaderVaryingFlags varyings = ShaderVarying_None;
-	ShaderUniformFlags uniforms = ShaderUniform_None;
-	ShaderTextureFlags textures = ShaderTexture_None;
-	//8b padding, can be used
+	static const u8 MAX_UNIFORMS = 4;
+	static const u8 MAX_TEXTURES = 4;
+
+	ShaderVaryingFlags varyings = ShaderVarying_None;//TODO: separate, just for editor
+	u8 inputUniformCount = 0;//TODO: separate, just for editor
+	u8 inputTextureCount = 0;//TODO: separate, just for editor
+	//16b padding
+	ShaderUniform inputUniforms[MAX_UNIFORMS];//TODO: separate, just for editor
+	ShaderUniform inputTextures[MAX_TEXTURES];//TODO: separate, just for editor
+	u8 inputDirectionalLights = 0;//TODO: separate, just for editor
+	u8 inputPointLights = 0;//TODO: separate, just for editor
 	resourceHandle vsHandle;
 	resourceHandle fsHandle;
 	shaderRenderHandle renderDataHandle;
