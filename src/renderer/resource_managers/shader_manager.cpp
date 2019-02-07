@@ -287,8 +287,24 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 		}
 	}
 
-	JsonKeyValue* textures = JsonObjectFind(&parsedJson, "lights");
-	add lights parsing there
+	JsonKeyValue* lights = JsonObjectFind(&parsedJson, "lights");
+	if(lights != nullptr)
+	{
+		ASSERT(JsonIsObject(&lights->value));
+		
+		JsonKeyValue* directional = JsonObjectFind(&parsedJson, "directional");
+		if(directional != nullptr)
+		{
+			ASSERT(JsonIsInt(&directional->value));
+			shader->inputDirectionalLightsCount = (u8)JsonGetInt(&directional->value);
+		}
+		JsonKeyValue* point = JsonObjectFind(&parsedJson, "point");
+		if(point != nullptr)
+		{
+			ASSERT(JsonIsInt(&point->value));
+			shader->inputPointLightsCount = (u8)JsonGetInt(&point->value);
+		}
+	}
 
 	JsonKeyValue* vShader = JsonObjectFind(&parsedJson, "vertexShader");
 	ASSERT(vShader != nullptr && JsonIsString(&vShader->value));

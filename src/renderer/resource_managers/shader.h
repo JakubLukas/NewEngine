@@ -36,8 +36,8 @@ struct Shader : public Resource
 	//16b padding
 	ShaderUniform inputUniforms[MAX_UNIFORMS];//TODO: separate, just for editor
 	ShaderUniform inputTextures[MAX_TEXTURES];//TODO: separate, just for editor
-	u8 inputDirectionalLights = 0;//TODO: separate, just for editor
-	u8 inputPointLights = 0;//TODO: separate, just for editor
+	u8 inputDirectionalLightsCount = 0;//TODO: separate, just for editor
+	u8 inputPointLightsCount = 0;//TODO: separate, just for editor
 	resourceHandle vsHandle;
 	resourceHandle fsHandle;
 	shaderRenderHandle renderDataHandle;
