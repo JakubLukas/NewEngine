@@ -203,7 +203,7 @@ public:
 					const RenderScene* scene = (RenderScene*)m_renderer.GetScene(cmd->world);
 					World* world = m_engine.GetWorld(cmd->world);
 					const RenderScene::ModelItem* modelItems = scene->GetModels();
-					const RenderScene::CameraItem* cameraItem = scene->GetDefaultCamera();
+					const RenderScene::CameraItem* cameraItem = scene->GetMainCamera();
 					m_renderer.SetCamera(*world, cameraItem->entity);
 					m_renderer.RenderModels(*world, modelItems, scene->GetModelsCount());
 					break;

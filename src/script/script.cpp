@@ -38,7 +38,7 @@ public:
 
 		Entity dirLight = world->CreateEntity();
 		Transform& camTrans = world->GetEntityTransform(dirLight);
-		camTrans.position = Vector3(0, 0, 35);
+		camTrans.position = Vector3(-30, 30, 10);
 
 		DirectionalLight dirLightData;
 		dirLightData.color = Color(255, 255, 255, 255);

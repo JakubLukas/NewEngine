@@ -89,11 +89,11 @@ public:
 
 	virtual size_t GetCamerasCount() const = 0;
 	virtual const CameraItem* GetCameras() const = 0;
-	virtual const CameraItem* GetDefaultCamera() const = 0;
+	virtual void SetMainCamera(Entity entity) = 0;
+	virtual const CameraItem* GetMainCamera() const = 0;
 
 	virtual size_t GetDirectionalLightsCount() const = 0;
 	virtual const DirectionalLightItem* GetDirectionalLights() const = 0;
-
 };
 
 

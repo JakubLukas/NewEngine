@@ -34,6 +34,33 @@ Vector2& Vector2::operator=(const Vector2& other)
 }
 
 
+Vector2 Vector2::operator+() const
+{
+	return Vector2(*this);
+}
+
+Vector2 Vector2::operator-() const
+{
+	return Vector2(-x, -y);
+}
+
+
+Vector2 Vector2::operator+(const Vector2& other) const
+{
+	return Vector2(
+		x + other.x,
+		y + other.y
+	);
+}
+Vector2 Vector2::operator-(const Vector2& other) const
+{
+	return Vector2(
+		x - other.x,
+		y - other.y
+	);
+}
+
+
 
 const Vector3 Vector3::AXIS_X(1.0f, 0.0f, 0.0f);
 const Vector3 Vector3::AXIS_Y(0.0f, 1.0f, 0.0f);
@@ -73,6 +100,17 @@ Vector3& Vector3::operator=(const Vector3& vec)
 	y = vec.y;
 	z = vec.z;
 	return *this;
+}
+
+
+Vector3 Vector3::operator+() const
+{
+	return Vector3(*this);
+}
+
+Vector3 Vector3::operator-() const
+{
+	return Vector3(-x, -y, -z);
 }
 
 

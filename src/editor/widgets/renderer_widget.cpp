@@ -51,6 +51,7 @@ void RendererWidget::Init(Engine& engine)
 		};
 		renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Camera), m_camera);
 		renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Camera), m_camera, &cam);
+		renderScene->SetMainCamera(m_camera);
 	}
 }
 

@@ -15,6 +15,12 @@ struct Vector2
 	Vector2(const Vector2& vec);
 	Vector2& operator=(const Vector2& other);
 
+	Vector2 operator+() const;
+	Vector2 operator-() const;
+
+	Vector2 operator+(const Vector2& other) const;
+	Vector2 operator-(const Vector2& other) const;
+
 	float x;
 	float y;
 };
@@ -31,6 +37,9 @@ struct Vector3
 	Vector3(const Vector2& vec2, float z);
 	Vector3(const Vector3& vec);
 	Vector3& operator=(const Vector3& vec);
+
+	Vector3 operator+() const;
+	Vector3 operator-() const;
 
 	Vector3 operator+(const Vector3& other) const;
 	Vector3 operator-(const Vector3& other) const;

@@ -292,12 +292,27 @@ public:
 		return m_cameras.GetValues();
 	}
 
-	const CameraItem* GetDefaultCamera() const override
+	void SetMainCamera(Entity entity) override
 	{
-		if (m_cameras.GetSize() == 0)
+		CameraItem* cam;
+		if(!m_cameras.Find(entity, cam))
+		{
+			Log(LogType::Warning, "Given entity doesn't have component Camera");
+			ASSERT(false);
+		}
+		m_mainCamera = entity;
+	}
+
+	const CameraItem* GetMainCamera() const override
+	{
+		if(m_mainCamera == INVALID_ENTITY)
 			return nullptr;
+
+		CameraItem* cam;
+		if(m_cameras.Find(m_mainCamera, cam))
+			return cam;
 		else
-			return m_cameras.GetValues();
+			return nullptr;
 	}
 
 
@@ -317,6 +332,7 @@ private:
 
 	AssociativeArray<Entity, ModelItem> m_models;
 	AssociativeArray<Entity, CameraItem> m_cameras;
+	Entity m_mainCamera = INVALID_ENTITY;
 	AssociativeArray<Entity, DirectionalLightItem> m_directionalLights;
 };
 
@@ -380,13 +396,13 @@ public:
 		for (const auto& scene : m_scenes)
 			DELETE_OBJECT(m_allocator, scene.value);
 
-		bgfx::destroy(m_dirLight0_direction);
+		bgfx::destroy(m_dirLights);
 	}
 
 
 	void Init() override
 	{
-		m_dirLight0_direction = bgfx::createUniform("u_directionalLight[0].direction", bgfx::UniformType::Vec4);
+		m_dirLights = bgfx::createUniform("u_directionalLight", bgfx::UniformType::Vec4, 1);
 	}
 
 
@@ -447,6 +463,11 @@ public:
 		{
 			meshData.vertex_decl.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float);
 			bufferSize += 2 * mesh.verticesCount * sizeof(float);
+		}
+		if(mesh.varyings & ShaderVarying_Normal)
+		{
+			meshData.vertex_decl.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float);
+			bufferSize += 3 * mesh.verticesCount * sizeof(float);
 		}
 		meshData.vertex_decl.end();
 
@@ -649,9 +670,6 @@ public:
 	void NewView() override
 	{
 		m_currentView++;
-
-		static const float dir[4] = { 0, 0, -1, 0 };
-		bgfx::setUniform(m_dirLight0_direction, dir);
 	}
 
 	void SetFramebuffer(FramebufferHandle handle) override
@@ -666,8 +684,8 @@ public:
 		Matrix44 view;
 		Matrix44 proj;
 		RenderSceneImpl* scene = (RenderSceneImpl*)GetScene(world.GetId());
-		//Camera* camera = scene->GetComponentData() ////////////////////////////////////////////////////////
-		const RenderScene::CameraItem* cameraItem = scene->GetDefaultCamera();
+		//Camera* camera = scene->GetComponentData(componentHandle(1), ) ////////////////////////////////////////////////////////
+		const RenderScene::CameraItem* cameraItem = scene->GetMainCamera();
 		if (cameraItem != nullptr)
 		{
 			const Camera& cam = cameraItem->camera;
@@ -695,6 +713,16 @@ public:
 
 	void RenderModels(World& world, const RenderScene::ModelItem* models, size_t count)
 	{
+		const RenderScene* scene = (RenderScene*)GetScene(world.GetId());
+		if(scene->GetDirectionalLightsCount() > 0)
+		{
+			const RenderScene::DirectionalLightItem* dirLight = scene->GetDirectionalLights();
+			Transform& dirLightTrans = world.GetEntityTransform(dirLight->entity);
+			Vector4 dir = Vector4(-dirLightTrans.position, 0);
+			dir.Normalize();
+			bgfx::setUniform(m_dirLights, &dir);
+		}
+
 		for (size_t i = 0; i < count; ++i)
 		{
 
@@ -768,7 +796,7 @@ private:
 	bgfx::ViewId m_currentView = m_firstView - 1;//TODO
 	HandleArray<FrameBuffer, u16> m_framebuffers;
 	Array<FramebufferHandle> m_screenSizeFrameBuffers;
-	bgfx::UniformHandle m_dirLight0_direction;
+	bgfx::UniformHandle m_dirLights;
 };
 
 

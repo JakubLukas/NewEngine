@@ -100,7 +100,7 @@ static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& ou
 
 	Array<Vector3> vertices(allocator);
 	Array<Vector2> uvs(allocator);
-	Array<Vector2> normals(allocator);
+	Array<Vector3> normals(allocator);
 	Array<Face> faces(allocator);
 
 	char* fileBufferPtr = fileBuffer;
@@ -121,8 +121,8 @@ static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& ou
 		}
 		else if(lineBuffer[0] == 'v' && lineBuffer[1] == 'n')
 		{
-			Vector2& v = normals.PushBack();
-			sscanf_s(lineBuffer + 3, "%f %f", &v.x, &v.y);
+			Vector3& v = normals.PushBack();
+			sscanf_s(lineBuffer + 3, "%f %f %f", &v.x, &v.y, &v.z);
 		}
 		else if(lineBuffer[0] == 'f')
 		{
@@ -172,10 +172,12 @@ static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& ou
 			JsonSetDouble(&value, uv.y);
 			JsonArrayAdd(&vUvArr, &value);
 
-			Vector2 norm = normals[face.vnIdx[idxs[i]]];
+			Vector3 norm = normals[face.vnIdx[idxs[i]]];
 			JsonSetDouble(&value, norm.x);
 			JsonArrayAdd(&vNormArr, &value);
 			JsonSetDouble(&value, norm.y);
+			JsonArrayAdd(&vNormArr, &value);
+			JsonSetDouble(&value, norm.z);
 			JsonArrayAdd(&vNormArr, &value);
 
 			JsonSetInt(&value, indicesIdx++);

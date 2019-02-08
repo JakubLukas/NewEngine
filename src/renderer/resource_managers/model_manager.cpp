@@ -98,9 +98,11 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 		JsonKeyValue* positions = JsonObjectFind(&verticesData->value, "positions");
 		JsonKeyValue* colors = JsonObjectFind(&verticesData->value, "colors");
 		JsonKeyValue* texCoords = JsonObjectFind(&verticesData->value, "uvs");
+		JsonKeyValue* normals = JsonObjectFind(&verticesData->value, "normals");
 		JsonValue* positionArr = nullptr;
 		JsonValue* colorsArr = nullptr;
 		JsonValue* texCoordArr = nullptr;
+		JsonValue* normalsArr = nullptr;
 
 		size_t bufferSize = 0;
 		if (positions != nullptr)
@@ -123,6 +125,13 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 			texCoordArr = JsonArrayBegin(&texCoords->value);
 			bufferSize += 2 * count * sizeof(float);
 			mesh.varyings |= ShaderVarying_Texcoords0;
+		}
+		if(normals != nullptr)
+		{
+			ASSERT(JsonIsArray(&normals->value) && JsonArrayCount(&normals->value) == count * 3);
+			normalsArr = JsonArrayBegin(&normals->value);
+			bufferSize += 3 * count * sizeof(float);
+			mesh.varyings |= ShaderVarying_Normal;
 		}
 
 		mesh.verticesData = (u8*)m_allocator.Allocate(bufferSize, alignof(float));
@@ -149,6 +158,14 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 				*uvBuffer = (float)JsonGetDouble(texCoordArr++);
 				*(uvBuffer + 1) = (float)JsonGetDouble(texCoordArr++);
 				dataBuffer = (u8*)(uvBuffer + 2);
+			}
+			if(normalsArr != nullptr)
+			{
+				float* normalBuffer = (float*)dataBuffer;
+				*normalBuffer = (float)JsonGetDouble(normalsArr++);
+				*(normalBuffer + 1) = (float)JsonGetDouble(normalsArr++);
+				*(normalBuffer + 2) = (float)JsonGetDouble(normalsArr++);
+				dataBuffer = (u8*)(normalBuffer + 3);
 			}
 		}
 	}
