@@ -379,11 +379,15 @@ public:
 	{
 		for (const auto& scene : m_scenes)
 			DELETE_OBJECT(m_allocator, scene.value);
+
+		bgfx::destroy(m_dirLight0_direction);
 	}
 
 
 	void Init() override
-	{}
+	{
+		m_dirLight0_direction = bgfx::createUniform("u_directionalLight[0].direction", bgfx::UniformType::Vec4);
+	}
 
 
 	void Update(float deltaTime) override
@@ -645,6 +649,9 @@ public:
 	void NewView() override
 	{
 		m_currentView++;
+
+		static const float dir[4] = { 0, 0, -1, 0 };
+		bgfx::setUniform(m_dirLight0_direction, dir);
 	}
 
 	void SetFramebuffer(FramebufferHandle handle) override
@@ -761,6 +768,7 @@ private:
 	bgfx::ViewId m_currentView = m_firstView - 1;//TODO
 	HandleArray<FrameBuffer, u16> m_framebuffers;
 	Array<FramebufferHandle> m_screenSizeFrameBuffers;
+	bgfx::UniformHandle m_dirLight0_direction;
 };
 
 
