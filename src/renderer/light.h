@@ -30,8 +30,8 @@ struct DirectionalLight
 {
 	Color diffuseColor;
 	Color specularColor;
-	float unused1;
-	float unused2;
+	u32 unused1;
+	u32 unused2;
 };
 
 

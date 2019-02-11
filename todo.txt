@@ -1,0 +1,8 @@
+[new features]
+
+[refactor]
+- read shader compilation output and log to file
+- move shader compilation from engine to editor
+- move resource json parsing from engine to editor
+    engine should load just binary format
+    separate editor data from resources

@@ -41,7 +41,8 @@ public:
 		camTrans.position = Vector3(-30, 30, 10);
 
 		DirectionalLight dirLightData;
-		dirLightData.diffuseColor = Color(255, 0, 255, 255);
+		dirLightData.diffuseColor = Color(0, 255, 0, 255);
+		dirLightData.specularColor = Color(255, 0, 0, 255);
 		renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::DirectionalLight), dirLight);
 		renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::DirectionalLight), dirLight, &dirLightData);
 

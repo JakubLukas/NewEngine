@@ -36,6 +36,18 @@ const char* GetShaderUniformName(ShaderUniformBits value);
 
 struct ShaderUniform
 {
+	enum class Type : u8
+	{
+		Float
+	};
+	Type type;
+	static const u8 MAX_NAME_LENGTH = 15;
+	char name[MAX_NAME_LENGTH + 1] = { 0 };
+	u8 count;
+};
+
+struct ShaderTexture
+{
 	static const u8 MAX_NAME_LENGTH = 15;
 	char name[MAX_NAME_LENGTH + 1] = { 0 };
 };

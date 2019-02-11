@@ -23,7 +23,7 @@ struct Material : public Resource
 	resourceHandle shader;
 	resourceHandle textures[MAX_TEXTURES];
 	ShaderUniform outputUniforms[MAX_UNIFORMS];//TODO: separate, just for editor
-	ShaderUniform outputTextures[MAX_UNIFORMS];//TODO: separate, just for editor
+	ShaderTexture outputTextures[MAX_UNIFORMS];//TODO: separate, just for editor
 	u8 outputUniformCount = 0;//TODO: separate, just for editor
 	u8 textureCount = 0;
 	//8b padding
