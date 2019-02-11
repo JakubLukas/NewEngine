@@ -396,13 +396,15 @@ public:
 		for (const auto& scene : m_scenes)
 			DELETE_OBJECT(m_allocator, scene.value);
 
-		bgfx::destroy(m_dirLights);
+		bgfx::destroy(m_dirLightsPos);
+		bgfx::destroy(m_dirLightsColor);
 	}
 
 
 	void Init() override
 	{
-		m_dirLights = bgfx::createUniform("u_directionalLight", bgfx::UniformType::Vec4, 1);
+		m_dirLightsPos = bgfx::createUniform("u_directionalLightPos", bgfx::UniformType::Vec4, 1);
+		m_dirLightsColor = bgfx::createUniform("u_directionalLightColor", bgfx::UniformType::Vec4, 1);
 	}
 
 
@@ -720,7 +722,8 @@ public:
 			Transform& dirLightTrans = world.GetEntityTransform(dirLight->entity);
 			Vector4 dir = Vector4(-dirLightTrans.position, 0);
 			dir.Normalize();
-			bgfx::setUniform(m_dirLights, &dir);
+			bgfx::setUniform(m_dirLightsPos, &dir);
+			bgfx::setUniform(m_dirLightsColor, &dirLight->light);
 		}
 
 		for (size_t i = 0; i < count; ++i)
@@ -796,7 +799,9 @@ private:
 	bgfx::ViewId m_currentView = m_firstView - 1;//TODO
 	HandleArray<FrameBuffer, u16> m_framebuffers;
 	Array<FramebufferHandle> m_screenSizeFrameBuffers;
-	bgfx::UniformHandle m_dirLights;
+
+	bgfx::UniformHandle m_dirLightsPos;
+	bgfx::UniformHandle m_dirLightsColor;
 };
 
 

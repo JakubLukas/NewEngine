@@ -28,7 +28,10 @@ struct AmbientLight
 
 struct DirectionalLight
 {
-	Color color;
+	Color diffuseColor;
+	Color specularColor;
+	float unused1;
+	float unused2;
 };
 
 
