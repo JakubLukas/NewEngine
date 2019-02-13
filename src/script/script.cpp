@@ -69,14 +69,14 @@ public:
 				}
 				else
 				{
-					resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/pyramid.model"));
+					resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/cube.model"));
 					*(resourceHandle*)data = modelHandle;
 				}
 				renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Model), m_entities[i], buffer);
 
 				Quaternion rot = Quaternion::IDENTITY;
-				rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
-				rot = rot * Quaternion(Vector3::AXIS_Y, yy*0.37f);
+				//rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
+				//rot = rot * Quaternion(Vector3::AXIS_Y, yy*0.37f);
 				Vector3 pos = {
 					-15.0f + float(xx) * 3.0f,
 					-15.0f + float(yy) * 3.0f,

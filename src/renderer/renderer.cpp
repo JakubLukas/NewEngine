@@ -396,6 +396,7 @@ public:
 		for (const auto& scene : m_scenes)
 			DELETE_OBJECT(m_allocator, scene.value);
 
+		bgfx::destroy(m_cameraPos);
 		bgfx::destroy(m_dirLightsPos);
 		bgfx::destroy(m_dirLightsColor);
 	}
@@ -403,6 +404,7 @@ public:
 
 	void Init() override
 	{
+		m_cameraPos = bgfx::createUniform("u_cameraPos", bgfx::UniformType::Vec4, 1);
 		m_dirLightsPos = bgfx::createUniform("u_directionalLightPos", bgfx::UniformType::Vec4, 1);
 		m_dirLightsColor = bgfx::createUniform("u_directionalLightColor", bgfx::UniformType::Vec4, 1);
 	}
@@ -708,6 +710,8 @@ public:
 			Vector4 eye = Vector4(camTrans.position, 1);
 			Vector4 at = camRot * Vector4(0, 0, -1, 0) + Vector4(camTrans.position, 1);
 			view.SetLookAt(eye, at, Vector4::AXIS_Y);
+
+			bgfx::setUniform(m_cameraPos, &camTrans.position);
 		}
 
 		bgfx::setViewTransform(m_currentView, &view.m11, &proj.m11);
@@ -810,6 +814,7 @@ private:
 	HandleArray<FrameBuffer, u16> m_framebuffers;
 	Array<FramebufferHandle> m_screenSizeFrameBuffers;
 
+	bgfx::UniformHandle m_cameraPos;
 	bgfx::UniformHandle m_dirLightsPos;
 	bgfx::UniformHandle m_dirLightsColor;
 };

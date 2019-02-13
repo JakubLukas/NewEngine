@@ -107,7 +107,8 @@ void Matrix44::SetOrthogonal(float left, float right, float bottom, float top, f
 
 	m11 = aa;
 	m22 = bb;
-	m33 = -cc;
+	m33 = cc;
+
 	m14 = dd + offset;
 	m24 = ee;
 	m34 = ff;
@@ -125,9 +126,7 @@ void Matrix44::SetPerspective(float fovY, float ratio, float near, float far, bo
 	m11 = f / ratio;
 	m22 = f;
 	m33 = ((homogenDepth) ? (far + near) : (far)) * zDiffInv;
-	m44 = 0;
-	//m43 = (homogenDepth) ? (2.0f * far * near * zDiffInv) : (near * far * zDiffInv);
-	//m34 = /*-*/1.0f;
+
 	m34 = 1.0f;
 	m43 = -((homogenDepth) ? 2.0f : 1.0f) * near * far * zDiffInv;
 }

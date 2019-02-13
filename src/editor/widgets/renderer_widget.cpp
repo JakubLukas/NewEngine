@@ -44,8 +44,8 @@ void RendererWidget::Init(Engine& engine)
 		Camera cam
 		{
 			Camera::Type::Orthogonal,
-			800.0f,
-			600.0f,
+			60.0f,
+			40.0f,
 			0.1f,
 			1000.0f,
 			60.0_deg,
@@ -106,11 +106,11 @@ void RendererWidget::OnResize()
 {
 	m_renderer->Resize((i32)m_size.x, (i32)m_size.y);
 	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene(worldId(0)));///////////////////////////////////////
-	Camera cam;
-	renderScene->GetComponentData(componentHandle(1), m_camera, &cam);
-	cam.screenWidth = m_size.x;
-	cam.screenHeight = m_size.y;
-	renderScene->SetComponentData(componentHandle(1), m_camera, &cam);
+	//Camera cam;
+	//renderScene->GetComponentData(componentHandle(1), m_camera, &cam);
+	//cam.screenWidth = m_size.x;
+	//cam.screenHeight = m_size.y;
+	//renderScene->SetComponentData(componentHandle(1), m_camera, &cam);
 }
 
 
