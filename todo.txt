@@ -1,4 +1,5 @@
 [new features]
+- hotreload
 
 [refactor]
 - read shader compilation output and log to file

@@ -43,11 +43,12 @@ void RendererWidget::Init(Engine& engine)
 		camTrans.position = Vector3(0, 0, 35);
 		Camera cam
 		{
-			60.0_deg,
-			0.001f,
-			1000.0f,
+			Camera::Type::Orthogonal,
 			800.0f,
 			600.0f,
+			0.1f,
+			1000.0f,
+			60.0_deg,
 		};
 		renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Camera), m_camera);
 		renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Camera), m_camera, &cam);

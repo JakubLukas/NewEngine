@@ -691,8 +691,18 @@ public:
 		if (cameraItem != nullptr)
 		{
 			const Camera& cam = cameraItem->camera;
-			proj.SetPerspective(cam.fov, cam.aspect, cam.nearPlane, cam.farPlane, bgfx::getCaps()->homogeneousDepth);
 			const Transform& camTrans = world.GetEntityTransform(cameraItem->entity);
+
+			if (cam.type == Camera::Type::Perspective)
+			{
+				proj.SetPerspective(cam.fov, cam.aspect, cam.nearPlane, cam.farPlane, bgfx::getCaps()->homogeneousDepth);
+			}
+			else if (cam.type == Camera::Type::Orthogonal)
+			{
+				float halfW = cam.screenWidth * 0.5f;
+				float halfH = cam.screenHeight * 0.5f;
+				proj.SetOrthogonal(-halfW, halfW, -halfH, halfH, cam.nearPlane, cam.farPlane, 0.0f, bgfx::getCaps()->homogeneousDepth);
+			}
 			Matrix44 camRot;
 			camRot.SetRotation(camTrans.rotation);
 			Vector4 eye = Vector4(camTrans.position, 1);

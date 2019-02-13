@@ -6,11 +6,17 @@ namespace Veng
 
 struct Camera
 {
-	float fov;
-	float nearPlane;
-	float farPlane;
+	enum class Type : u8
+	{
+		Orthogonal,
+		Perspective
+	};
+	Type type;
 	float screenWidth;
 	float screenHeight;
+	float nearPlane;
+	float farPlane;
+	float fov;
 	float aspect;
 };
 

@@ -65,11 +65,12 @@ void MaterialWidget::Init(Engine& engine)
 	camTrans.position = Vector3(0, 0, 4);
 	Camera cam
 	{
-		60.0_deg,
-		0.001f,
+		Camera::Type::Perspective,
+		100.0f,
+		100.0f,
+		0.01f,
 		10.0f,
-		100.0f,
-		100.0f,
+		60.0_deg,
 	};
 	renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Camera), camera);
 	renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Camera), camera, &cam);

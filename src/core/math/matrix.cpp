@@ -108,9 +108,9 @@ void Matrix44::SetOrthogonal(float left, float right, float bottom, float top, f
 	m11 = aa;
 	m22 = bb;
 	m33 = -cc;
-	m41 = dd + offset;
-	m42 = ee;
-	m43 = ff;
+	m14 = dd + offset;
+	m24 = ee;
+	m34 = ff;
 	m44 = 1.0f;
 }
 
