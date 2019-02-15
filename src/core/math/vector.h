@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/core.h"
+
 
 namespace Veng
 {
@@ -9,6 +11,7 @@ struct Vector2
 {
 	static const Vector2 AXIS_X;
 	static const Vector2 AXIS_Y;
+
 
 	Vector2();
 	Vector2(float x, float y);
@@ -21,6 +24,7 @@ struct Vector2
 	Vector2 operator+(const Vector2& other) const;
 	Vector2 operator-(const Vector2& other) const;
 
+
 	float x;
 	float y;
 };
@@ -31,6 +35,7 @@ struct Vector3
 	static const Vector3 AXIS_X;
 	static const Vector3 AXIS_Y;
 	static const Vector3 AXIS_Z;
+
 
 	Vector3();
 	Vector3(float x, float y, float z);
@@ -48,7 +53,7 @@ struct Vector3
 	void Normalize();
 
 	static float Dot(const Vector3& vec1, const Vector3& vec2);
-	static Vector3 Cross(const Vector3& vec1, const Vector3& vec2); //left hand
+	static Vector3 Cross(const Vector3& vec1, const Vector3& vec2);
 
 
 	float x;
@@ -57,11 +62,12 @@ struct Vector3
 };
 
 
-struct Vector4
+struct FORCE_ALIGNMENT(16) Vector4
 {
 	static const Vector4 AXIS_X;
 	static const Vector4 AXIS_Y;
 	static const Vector4 AXIS_Z;
+
 
 	Vector4();
 	Vector4(float x, float y, float z, float w);

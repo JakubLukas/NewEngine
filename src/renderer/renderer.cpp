@@ -708,8 +708,15 @@ public:
 			Matrix44 camRot;
 			camRot.SetRotation(camTrans.rotation);
 			Vector4 eye = Vector4(camTrans.position, 1);
-			Vector4 at = camRot * Vector4(0, 0, -1, 0) + Vector4(camTrans.position, 1);
+			Vector4 at = camRot * Vector4(0, 0, 1, 0) + Vector4(camTrans.position, 1);
 			view.SetLookAt(eye, at, Vector4::AXIS_Y);
+
+			Matrix44 foo;
+			foo.SetTranslation(Vector3(1, 2, 3));
+			//foo.Transpose();
+			Vector4 bar = foo * Vector4(0, 0, 0, 1);
+			//view.Transpose();
+			//proj.Transpose();
 
 			bgfx::setUniform(m_cameraPos, &camTrans.position);
 		}
@@ -745,6 +752,7 @@ public:
 
 			Transform& trans = world.GetEntityTransform(models[i].entity);
 			Matrix44 mtx = trans.ToMatrix44();
+			//mtx.Transpose();
 			// Set model matrix for rendering.
 			bgfx::setTransform(&mtx.m11);
 

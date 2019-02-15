@@ -3,10 +3,13 @@
 #include "core/memory.h"
 #include "math.h"
 
+#define USE_SIMD
+#if defined(USE_SIMD)
+#include <xmmintrin.h>////////////////////////////////////////////////////
+#endif
 
 namespace Veng
 {
-
 
 const Matrix44 Matrix44::IDENTITY(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -47,50 +50,96 @@ Matrix44& Matrix44::operator=(const Matrix44& other)
 
 Matrix44 Matrix44::Multiply(const Matrix44& mat1, const Matrix44& mat2)
 {
+
+#if defined(USE_SIMD)
+	Matrix44 result;
+	__m128 c1 = _mm_load_ps(&mat1.m11);
+	__m128 c2 = _mm_load_ps(&mat1.m21);
+	__m128 c3 = _mm_load_ps(&mat1.m31);
+	__m128 c4 = _mm_load_ps(&mat1.m41);
+
+	const float* mat2Ptr = &mat2.m11;
+	float* resultPtr = &result.m11;
+	for (int i = 0; i < 4; ++i, mat2Ptr+=4, resultPtr+=4)
+	{
+		__m128 x = _mm_set1_ps(mat2Ptr[0]);
+		__m128 y = _mm_set1_ps(mat2Ptr[1]);
+		__m128 z = _mm_set1_ps(mat2Ptr[2]);
+		__m128 w = _mm_set1_ps(mat2Ptr[3]);
+
+		__m128 c1x = _mm_mul_ps(c1, x);
+		__m128 c2y = _mm_mul_ps(c2, y);
+		__m128 c3z = _mm_mul_ps(c3, z);
+		__m128 c4w = _mm_mul_ps(c4, w);
+
+		__m128 res1 = _mm_add_ps(c1x, c2y);
+		__m128 res2 = _mm_add_ps(c3z, c4w);
+		__m128 res = _mm_add_ps(res1, res2);
+
+		_mm_store_ps(resultPtr, res);
+	}
+	return result;
+#else
 	return Matrix44
 	(
-		mat1.m11 * mat2.m11 + mat1.m12 * mat2.m21 + mat1.m13 * mat2.m31 + mat1.m14 * mat2.m41,
-		mat1.m11 * mat2.m12 + mat1.m12 * mat2.m22 + mat1.m13 * mat2.m32 + mat1.m14 * mat2.m42,
-		mat1.m11 * mat2.m13 + mat1.m12 * mat2.m23 + mat1.m13 * mat2.m33 + mat1.m14 * mat2.m43,
-		mat1.m11 * mat2.m14 + mat1.m12 * mat2.m24 + mat1.m13 * mat2.m34 + mat1.m14 * mat2.m44,
+		mat1.m11 * mat2.m11 + mat1.m21 * mat2.m12 + mat1.m31 * mat2.m13 + mat1.m41 * mat2.m14,
+		mat1.m12 * mat2.m11 + mat1.m22 * mat2.m12 + mat1.m32 * mat2.m13 + mat1.m42 * mat2.m14,
+		mat1.m13 * mat2.m11 + mat1.m23 * mat2.m12 + mat1.m33 * mat2.m13 + mat1.m43 * mat2.m14,
+		mat1.m14 * mat2.m11 + mat1.m24 * mat2.m12 + mat1.m34 * mat2.m13 + mat1.m44 * mat2.m14,
 
-		mat1.m21 * mat2.m11 + mat1.m22 * mat2.m21 + mat1.m23 * mat2.m31 + mat1.m24 * mat2.m41,
-		mat1.m21 * mat2.m12 + mat1.m22 * mat2.m22 + mat1.m23 * mat2.m32 + mat1.m24 * mat2.m42,
-		mat1.m21 * mat2.m13 + mat1.m22 * mat2.m23 + mat1.m23 * mat2.m33 + mat1.m24 * mat2.m43,
-		mat1.m21 * mat2.m14 + mat1.m22 * mat2.m24 + mat1.m23 * mat2.m34 + mat1.m24 * mat2.m44,
+		mat1.m11 * mat2.m21 + mat1.m21 * mat2.m22 + mat1.m31 * mat2.m23 + mat1.m41 * mat2.m24,
+		mat1.m12 * mat2.m21 + mat1.m22 * mat2.m22 + mat1.m32 * mat2.m23 + mat1.m42 * mat2.m24,
+		mat1.m13 * mat2.m21 + mat1.m23 * mat2.m22 + mat1.m33 * mat2.m23 + mat1.m43 * mat2.m24,
+		mat1.m14 * mat2.m21 + mat1.m24 * mat2.m22 + mat1.m34 * mat2.m23 + mat1.m44 * mat2.m24,
 
-		mat1.m31 * mat2.m11 + mat1.m32 * mat2.m21 + mat1.m33 * mat2.m31 + mat1.m34 * mat2.m41,
-		mat1.m31 * mat2.m12 + mat1.m32 * mat2.m22 + mat1.m33 * mat2.m32 + mat1.m34 * mat2.m42,
-		mat1.m31 * mat2.m13 + mat1.m32 * mat2.m23 + mat1.m33 * mat2.m33 + mat1.m34 * mat2.m43,
-		mat1.m31 * mat2.m14 + mat1.m32 * mat2.m24 + mat1.m33 * mat2.m34 + mat1.m34 * mat2.m44,
+		mat1.m11 * mat2.m31 + mat1.m21 * mat2.m32 + mat1.m31 * mat2.m33 + mat1.m41 * mat2.m34,
+		mat1.m12 * mat2.m31 + mat1.m22 * mat2.m32 + mat1.m32 * mat2.m33 + mat1.m42 * mat2.m34,
+		mat1.m13 * mat2.m31 + mat1.m23 * mat2.m32 + mat1.m33 * mat2.m33 + mat1.m43 * mat2.m34,
+		mat1.m14 * mat2.m31 + mat1.m24 * mat2.m32 + mat1.m34 * mat2.m33 + mat1.m44 * mat2.m34,
 
-		mat1.m41 * mat2.m11 + mat1.m42 * mat2.m21 + mat1.m43 * mat2.m31 + mat1.m44 * mat2.m41,
-		mat1.m41 * mat2.m12 + mat1.m42 * mat2.m22 + mat1.m43 * mat2.m32 + mat1.m44 * mat2.m42,
-		mat1.m41 * mat2.m13 + mat1.m42 * mat2.m23 + mat1.m43 * mat2.m33 + mat1.m44 * mat2.m43,
-		mat1.m41 * mat2.m14 + mat1.m42 * mat2.m24 + mat1.m43 * mat2.m34 + mat1.m44 * mat2.m44
+		mat1.m11 * mat2.m41 + mat1.m21 * mat2.m42 + mat1.m31 * mat2.m43 + mat1.m41 * mat2.m44,
+		mat1.m12 * mat2.m41 + mat1.m22 * mat2.m42 + mat1.m32 * mat2.m43 + mat1.m42 * mat2.m44,
+		mat1.m13 * mat2.m41 + mat1.m23 * mat2.m42 + mat1.m33 * mat2.m43 + mat1.m43 * mat2.m44,
+		mat1.m14 * mat2.m41 + mat1.m24 * mat2.m42 + mat1.m34 * mat2.m43 + mat1.m44 * mat2.m44
 	);
+#endif
 }
 
 
 Vector4 Matrix44::Multiply(const Matrix44& mat, const Vector4& vec)
 {
-	return Vector4(
-		mat.m11 * vec.x + mat.m12 * vec.y + mat.m13 * vec.z + mat.m14 * vec.w,
-		mat.m21 * vec.x + mat.m22 * vec.y + mat.m23 * vec.z + mat.m24 * vec.w,
-		mat.m31 * vec.x + mat.m32 * vec.y + mat.m33 * vec.z + mat.m34 * vec.w,
-		mat.m41 * vec.x + mat.m42 * vec.y + mat.m43 * vec.z + mat.m44 * vec.w
-	);
-}
+#if defined(USE_SIMD)
+	__m128 c1 = _mm_load_ps(&mat.m11);
+	__m128 c2 = _mm_load_ps(&mat.m21);
+	__m128 c3 = _mm_load_ps(&mat.m31);
+	__m128 c4 = _mm_load_ps(&mat.m41);
 
+	__m128 x = _mm_set1_ps(vec.x);
+	__m128 y = _mm_set1_ps(vec.y);
+	__m128 z = _mm_set1_ps(vec.z);
+	__m128 w = _mm_set1_ps(vec.w);
 
-Vector4 Matrix44::Multiply(const Vector4& vec, const Matrix44& mat)
-{
-	return Vector4(
-		vec.x * mat.m11 + vec.y * mat.m21 + vec.z * mat.m31 + vec.w * mat.m41,
-		vec.x * mat.m12 + vec.y * mat.m22 + vec.z * mat.m32 + vec.w * mat.m42,
-		vec.x * mat.m13 + vec.y * mat.m23 + vec.z * mat.m33 + vec.w * mat.m43,
-		vec.x * mat.m14 + vec.y * mat.m24 + vec.z * mat.m34 + vec.w * mat.m44
+	__m128 c1x = _mm_mul_ps(c1, x);
+	__m128 c2y = _mm_mul_ps(c2, y);
+	__m128 c3z = _mm_mul_ps(c3, z);
+	__m128 c4w = _mm_mul_ps(c4, w);
+
+	__m128 res = _mm_add_ps(c1x, c2y);
+	res = _mm_add_ps(res, c3z);
+	res = _mm_add_ps(res, c4w);
+
+	Vector4 result;
+	_mm_store_ps(&result.x, res);
+	return result;
+#else
+	return Vector4
+	(
+		mat.m11 * vec.x + mat.m21 * vec.y + mat.m31 * vec.z + mat.m41 * vec.w,
+		mat.m21 * vec.x + mat.m22 * vec.y + mat.m32 * vec.z + mat.m42 * vec.w,
+		mat.m31 * vec.x + mat.m23 * vec.y + mat.m33 * vec.z + mat.m43 * vec.w,
+		mat.m41 * vec.x + mat.m24 * vec.y + mat.m34 * vec.z + mat.m44 * vec.w
 	);
+#endif
 }
 
 
@@ -98,20 +147,13 @@ void Matrix44::SetOrthogonal(float left, float right, float bottom, float top, f
 {
 	memory::Set(this, 0, sizeof(float) * 16);
 
-	const float aa = 2.0f / (right - left);
-	const float bb = 2.0f / (top - bottom);
-	const float cc = (homogenDepth ? 2.0f : 1.0f) / (far - near);
-	const float dd = (left + right) / (left - right);
-	const float ee = (top + bottom) / (bottom - top);
-	const float ff = homogenDepth ? (near + far) / (near - far) : near / (near - far);
+	m11 = 2.0f / (right - left);
+	m22 = 2.0f / (top - bottom);
+	m33 = (homogenDepth ? 2.0f : 1.0f) / (far - near);
 
-	m11 = aa;
-	m22 = bb;
-	m33 = cc;
-
-	m14 = dd + offset;
-	m24 = ee;
-	m34 = ff;
+	m41 = ((left + right) / (left - right)) + offset;
+	m42 = (top + bottom) / (bottom - top);
+	m43 = homogenDepth ? ((near + far) / (near - far)) : (near / (near - far));
 	m44 = 1.0f;
 }
 
@@ -139,24 +181,24 @@ void Matrix44::SetLookAt(const Vector4& eye, const Vector4& at, const Vector4& u
 	Vector3 dir = at.GetXYZ() - eyeV3;
 	dir.Normalize();
 
-	Vector3 right = Vector3::Cross(dir, up.GetXYZ());
+	Vector3 right = Vector3::Cross(up.GetXYZ(), dir);
 	right.Normalize();
 
-	Vector3 upNew = Vector3::Cross(right, dir);
+	Vector3 upNew = Vector3::Cross(dir, right);
 	right.Normalize();
 
 	memory::Set(this, 0, sizeof(float) * 16);
 
 	m11 = right.x;
-	m12 = upNew.x;
-	m13 = dir.x;
+	m21 = upNew.x;
+	m31 = dir.x;
 
-	m21 = right.y;
+	m12 = right.y;
 	m22 = upNew.y;
-	m23 = dir.y;
+	m32 = dir.y;
 
-	m31 = right.z;
-	m32 = upNew.z;
+	m13 = right.z;
+	m23 = upNew.z;
 	m33 = dir.z;
 
 	m41 = -Vector3::Dot(right, eyeV3);
@@ -257,6 +299,7 @@ void Matrix44::SetTranslation(const Vector3& trans)
 	m11 = 1.0f;
 	m22 = 1.0f;
 	m33 = 1.0f;
+
 	m41 = trans.x;
 	m42 = trans.y;
 	m43 = trans.z;
@@ -299,11 +342,6 @@ Vector4 operator*(const Matrix44& mat, const Vector4& vec)
 	return Matrix44::Multiply(mat, vec);
 }
 
-Vector4 operator*(const Vector4& vec, const Matrix44& mat)
-{
-	return Matrix44::Multiply(vec, mat);
-}
-
 
 
 Transform::Transform()
@@ -331,7 +369,7 @@ Matrix44 Transform::ToMatrix44() const
 	trans.SetTranslation(position);
 	Matrix44 scal;
 	scal.SetScale(scale);
-	return scal * rot * trans;
+	return trans * rot * scal;
 }
 
 

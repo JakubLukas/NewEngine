@@ -8,9 +8,21 @@
 namespace Veng
 {
 
-//right hand coordinate system (z from display (OpenGL style))
-//row major
+/*
+============= ENGINE MATH DEFINITIONS =============
+Coordinate system: left handed - X is to right, Y is up, Z is pointing towards monitor
+Matrices: column major, multiplication is done by left matrix row * right matrix column, translation is on m41,m42,m43
+Vectors:
+*/
 
+/*
+	indices representation:
+
+		| 11 21 31 41 |
+		| 12 22 32 42 |
+		| 13 23 33 43 |
+		| 14 24 34 44 |
+*/
 struct FORCE_ALIGNMENT(16) Matrix44
 {
 	static const Matrix44 IDENTITY;
@@ -27,14 +39,11 @@ struct FORCE_ALIGNMENT(16) Matrix44
 	Matrix44& operator=(const Matrix44& other);
 
 
-	//lines * columns
+	//rows * columns
 	static Matrix44 Multiply(const Matrix44& mat1, const Matrix44& mat2);
 
-	//lines * vector
+	//rows * vector
 	static Vector4 Multiply(const Matrix44& mat, const Vector4& vec);
-
-	// vector * columns
-	static Vector4 Multiply(const Vector4& vec, const Matrix44& mat);
 
 	void SetOrthogonal(float left, float right, float bottom, float top, float near, float far, float offset, bool homogenDepth);
 
@@ -67,7 +76,6 @@ struct FORCE_ALIGNMENT(16) Matrix44
 
 Matrix44 operator*(const Matrix44& mat1, const Matrix44& mat2);
 Vector4 operator*(const Matrix44& mat, const Vector4& vec);
-Vector4 operator*(const Vector4& vec, const Matrix44& mat);
 
 
 struct Transform

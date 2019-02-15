@@ -5,14 +5,6 @@ namespace Veng
 {
 
 
-/*
-	============= ENGINE MATH DEFINITIONS =============
-	Coordinate system: right handed, from point of view towards a monitor: X is to left, Y is up, Z is pointing from monitor
-	Matrices: row based, multiplication is done by dot products of rows of left matrix with columns of right matrix
-	Vectors: 
-*/
-
-
 template<class Type>
 Type Min(Type v1, Type v2)
 {
