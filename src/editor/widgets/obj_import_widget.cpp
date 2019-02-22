@@ -60,7 +60,7 @@ static bool FileSaveDialog(Path& path)
 	return result;
 }
 
-static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& outPath, char error[64])
+static bool ConvertObj(const ObjImportWidget::ConvertParams& params, const Path& inPath, const Path& outPath, char error[64])
 {
 	char* fileBuffer = nullptr;
 	{
@@ -79,7 +79,7 @@ static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& ou
 		}
 
 		size_t fSize = FS::GetFileSize(fh);
-		fileBuffer = (char*)allocator.Allocate(fSize, alignof(char));
+		fileBuffer = (char*)(params.allocator->Allocate(fSize, alignof(char)));
 		size_t charsRead = 0;
 		if (!FS::ReadFileSync(fh, 0, fileBuffer, fSize, charsRead))
 		{
@@ -98,10 +98,10 @@ static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& ou
 		u32 vnIdx[3];
 	};
 
-	Array<Vector3> vertices(allocator);
-	Array<Vector2> uvs(allocator);
-	Array<Vector3> normals(allocator);
-	Array<Face> faces(allocator);
+	Array<Vector3> vertices(*params.allocator);
+	Array<Vector2> uvs(*params.allocator);
+	Array<Vector3> normals(*params.allocator);
+	Array<Face> faces(*params.allocator);
 
 	char* fileBufferPtr = fileBuffer;
 	char lineBuffer[128];
@@ -140,22 +140,29 @@ static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& ou
 		}
 	}
 
-	allocator.Deallocate(fileBuffer);
+	params.allocator->Deallocate(fileBuffer);
 
 	JsonValue vPosArr;
-	JsonSetArray(&vPosArr, &allocator);
+	JsonSetArray(&vPosArr, params.allocator);
 	JsonValue vUvArr;
-	JsonSetArray(&vUvArr, &allocator);
+	JsonSetArray(&vUvArr, params.allocator);
 	JsonValue vNormArr;
-	JsonSetArray(&vNormArr, &allocator);
+	JsonSetArray(&vNormArr, params.allocator);
 	JsonValue indexArr;
-	JsonSetArray(&indexArr, &allocator);
+	JsonSetArray(&indexArr, params.allocator);
 
 	JsonValue value;
 	u32 indicesIdx = 0;
+	int idxs[3] = { 0, 1, 2 };
+	if (params.triangleDef == ObjImportWidget::ConvertParams::TriangleDefinition::CounterClockWise)
+	{
+		idxs[1] = 2;
+		idxs[2] = 1;
+	}
+	float zMult = (params.coordSystem == ObjImportWidget::ConvertParams::CoordSystemHandness::Right) ? -1.0f : 1.0f;
+
 	for (const Face& face : faces)
 	{
-		const int idxs[3] = { 0, 1, 2 };// = { 0, 2, 1 }; //to fix CW vs CCW culling
 		for (int i = 0; i < 3; ++i)//triangles
 		{
 			Vector3 pos = vertices[face.vIdx[idxs[i]]];
@@ -163,7 +170,7 @@ static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& ou
 			JsonArrayAdd(&vPosArr, &value);
 			JsonSetDouble(&value, pos.y);
 			JsonArrayAdd(&vPosArr, &value);
-			JsonSetDouble(&value, pos.z);
+			JsonSetDouble(&value, zMult * pos.z);
 			JsonArrayAdd(&vPosArr, &value);
 
 			Vector2 uv = uvs[face.vtIdx[idxs[i]]];
@@ -177,7 +184,7 @@ static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& ou
 			JsonArrayAdd(&vNormArr, &value);
 			JsonSetDouble(&value, norm.y);
 			JsonArrayAdd(&vNormArr, &value);
-			JsonSetDouble(&value, norm.z);
+			JsonSetDouble(&value, zMult * norm.z);
 			JsonArrayAdd(&vNormArr, &value);
 
 			JsonSetInt(&value, indicesIdx++);
@@ -194,7 +201,7 @@ static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& ou
 	JsonSetInt(&iCount, indicesIdx / 3);
 
 	JsonValue verticesObj;
-	JsonSetObject(&verticesObj, &allocator);
+	JsonSetObject(&verticesObj, params.allocator);
 	JsonSetCString(&label, "count");
 	JsonObjectAdd(&verticesObj, &label, &vCount);
 	JsonSetCString(&label, "positions");
@@ -205,20 +212,20 @@ static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& ou
 	JsonObjectAdd(&verticesObj, &label, &vNormArr);
 
 	JsonValue indicesObj;
-	JsonSetObject(&indicesObj, &allocator);
+	JsonSetObject(&indicesObj, params.allocator);
 	JsonSetCString(&label, "count");
 	JsonObjectAdd(&indicesObj, &label, &iCount);
 	JsonSetCString(&label, "data");
 	JsonObjectAdd(&indicesObj, &label, &indexArr);
 
 	JsonValue modelObj;
-	JsonSetObject(&modelObj, &allocator);
+	JsonSetObject(&modelObj, params.allocator);
 	JsonSetCString(&label, "vertices");
 	JsonObjectAdd(&modelObj, &label, &verticesObj);
 	JsonSetCString(&label, "indices");
 	JsonObjectAdd(&modelObj, &label, &indicesObj);
 
-	JsonPrintContext prtCtx = JsonPrintContextInit(&allocator);
+	JsonPrintContext prtCtx = JsonPrintContextInit(params.allocator);
 
 	unsigned int outBufferSize;
 	char* outBuffer = JsonValuePrint(&prtCtx, &modelObj, true, &outBufferSize);
@@ -263,7 +270,9 @@ static bool ConvertObj(IAllocator& allocator, const Path& inPath, const Path& ou
 
 ObjImportWidget::ObjImportWidget(IAllocator& allocator)
 	: m_allocator(allocator)
-{}
+{
+	m_params.allocator = &m_allocator;
+}
 
 
 ObjImportWidget::~ObjImportWidget()
@@ -320,10 +329,39 @@ void ObjImportWidget::RenderInternal(EventQueue& queue)
 	ImGui::SameLine();
 	ImGui::Text("output");
 	ImGui::PopID();
+
+	static const char* coordSystems[] = { "Right hand", "Left hand" };
+	if (ImGui::BeginCombo("coordinate system", coordSystems[(int)m_params.coordSystem], ImGuiComboFlags_None))
+	{
+		for (int i = 0; i < sizeof(coordSystems) / sizeof(*coordSystems); ++i)
+		{
+			bool isSelected = m_params.coordSystem == ConvertParams::CoordSystemHandness(i);
+			if (ImGui::Selectable(coordSystems[i], isSelected))
+				m_params.coordSystem = ConvertParams::CoordSystemHandness(i);
+			if (isSelected)
+				ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndCombo();
+	}
+
+	static const char* triangleDefs[] = { "Clock wise", "Counter clock wise" };
+	if (ImGui::BeginCombo("triangle definition", triangleDefs[(int)m_params.triangleDef], ImGuiComboFlags_None))
+	{
+		for (int i = 0; i < sizeof(triangleDefs) / sizeof(*triangleDefs); ++i)
+		{
+			bool isSelected = m_params.triangleDef == ConvertParams::TriangleDefinition(i);
+			if (ImGui::Selectable(triangleDefs[i], isSelected))
+				m_params.triangleDef = ConvertParams::TriangleDefinition(i);
+			if (isSelected)
+				ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndCombo();
+	}
+
 	if(ImGui::Button("Convert"))
 	{
 		char errorBuffer[64] = {0};
-		if(!ConvertObj(m_allocator, Path(iPathBuffer), Path(oPathBuffer), errorBuffer))
+		if(!ConvertObj(m_params, Path(iPathBuffer), Path(oPathBuffer), errorBuffer))
 		{
 			ASSERT(false);
 			Log(LogType::Warning, "Error while parsing file \"%s\": %s", iPathBuffer, errorBuffer);

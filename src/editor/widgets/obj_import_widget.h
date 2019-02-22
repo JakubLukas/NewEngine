@@ -15,6 +15,25 @@ namespace Editor
 class ObjImportWidget : public WidgetBase
 {
 public:
+	struct ConvertParams
+	{
+		enum class CoordSystemHandness : u8
+		{
+			Right,
+			Left,
+		};
+		enum class TriangleDefinition : u8
+		{
+			ClockWise,
+			CounterClockWise,
+		};
+
+		IAllocator* allocator;
+		CoordSystemHandness coordSystem = CoordSystemHandness::Right;
+		TriangleDefinition triangleDef = TriangleDefinition::ClockWise;
+	};
+
+public:
 	ObjImportWidget(IAllocator& allocator);
 	~ObjImportWidget() override;
 	void Init(Engine& engine) override;
@@ -28,6 +47,7 @@ protected:
 
 private:
 	IAllocator& m_allocator;
+	ConvertParams m_params;
 };
 
 }

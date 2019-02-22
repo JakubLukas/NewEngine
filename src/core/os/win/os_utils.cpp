@@ -182,6 +182,8 @@ bool ShowOpenFileDialog(FileDialogData& data)
 			filterBuffer[i] = data.filter[i];
 	}
 
+	bool result = false;
+
 	OPENFILENAME dialogInfo = { 0 };
 	dialogInfo.lStructSize = sizeof(OPENFILENAME);
 	dialogInfo.hwndOwner = (HWND)data.parentWindow;
@@ -201,15 +203,19 @@ bool ShowOpenFileDialog(FileDialogData& data)
 		data.filterIndex--;
 		data.fileOffset = dialogInfo.nFileOffset;
 		data.extensionOffset = dialogInfo.nFileExtension;
-		return true;
+		result = true;
 	}
 	else
 	{
 		DWORD err = CommDlgExtendedError();
 		if (err != 0)//err 0 is "user closed or canceled the dialog box"
 			ASSERT2(false, "Failed to call GetOpenFileName");
-		return false;
+		result = false;
 	}
+
+	::SetCurrentDirectory(workingDir.dir);
+
+	return result;
 }
 
 bool ShowSaveFileDialog(FileDialogData& data)
@@ -231,6 +237,8 @@ bool ShowSaveFileDialog(FileDialogData& data)
 			filterBuffer[i] = data.filter[i];
 	}
 
+	bool result = false;
+
 	OPENFILENAME dialogInfo = { 0 };
 	dialogInfo.lStructSize = sizeof(OPENFILENAME);
 	dialogInfo.hwndOwner = (HWND)data.parentWindow;
@@ -251,15 +259,19 @@ bool ShowSaveFileDialog(FileDialogData& data)
 		data.filterIndex--;
 		data.fileOffset = dialogInfo.nFileOffset;
 		data.extensionOffset = dialogInfo.nFileExtension;
-		return true;
+		result = true;
 	}
 	else
 	{
 		DWORD err = CommDlgExtendedError();
 		if(err != 0)//err 0 is "user closed or canceled the dialog box"
 			ASSERT2(false, "Failed to call GetOpenFileName");
-		return false;
+		result = false;
 	}
+
+	::SetCurrentDirectory(workingDir.dir);
+
+	return result;
 }
 
 

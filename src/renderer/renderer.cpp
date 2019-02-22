@@ -711,13 +711,6 @@ public:
 			Vector4 at = camRot * Vector4(0, 0, 1, 0) + Vector4(camTrans.position, 1);
 			view.SetLookAt(eye, at, Vector4::AXIS_Y);
 
-			Matrix44 foo;
-			foo.SetTranslation(Vector3(1, 2, 3));
-			//foo.Transpose();
-			Vector4 bar = foo * Vector4(0, 0, 0, 1);
-			//view.Transpose();
-			//proj.Transpose();
-
 			bgfx::setUniform(m_cameraPos, &camTrans.position);
 		}
 
