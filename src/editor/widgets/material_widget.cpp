@@ -74,6 +74,7 @@ void MaterialWidget::Init(Engine& engine)
 	};
 	renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Camera), camera);
 	renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Camera), camera, &cam);
+	renderScene->SetMainCamera(camera);
 }
 
 void MaterialWidget::Deinit()

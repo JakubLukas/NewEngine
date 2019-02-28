@@ -43,7 +43,7 @@ void RendererWidget::Init(Engine& engine)
 		camTrans.position = Vector3(0, 0, 0);
 		Camera cam
 		{
-			Camera::Type::Orthogonal,
+			Camera::Type::Perspective,
 			40.0f,
 			40.0f,
 			0.1f,
@@ -108,8 +108,8 @@ void RendererWidget::OnResize()
 	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene(worldId(0)));///////////////////////////////////////
 	Camera cam;
 	renderScene->GetComponentData(componentHandle(1), m_camera, &cam);
-	//cam.screenWidth = m_size.x;
-	//cam.screenHeight = m_size.y;
+	cam.screenWidth = m_size.x;
+	cam.screenHeight = m_size.y;
 	renderScene->SetComponentData(componentHandle(1), m_camera, &cam);
 }
 

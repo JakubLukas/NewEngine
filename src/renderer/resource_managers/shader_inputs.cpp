@@ -22,8 +22,6 @@ ShaderVaryingBits GetShaderVaryingFromString(const char* str)
 		return ShaderVarying_Normal;
 	else if(string::Compare(str, "tangent") == 0)
 		return ShaderVarying_Tangent;
-	else if(string::Compare(str, "binormal") == 0)
-		return ShaderVarying_Binormal;
 	else
 	{
 		ASSERT2(false, "Unrecognized value");
@@ -45,8 +43,6 @@ const char* GetShaderVaryingName(ShaderVaryingBits value)
 		return "normal";
 	else if(value == ShaderVarying_Tangent)
 		return "tangent";
-	else if(value == ShaderVarying_Binormal)
-		return "binormal";
 	else
 	{
 		ASSERT2(false, "Unrecognized value");

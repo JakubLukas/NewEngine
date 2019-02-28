@@ -126,7 +126,7 @@ public:
 		{
 			InputEvent newEvent;
 			newEvent.type = InputEvent::Type::ButtonChanged;
-			newEvent.time = 0.0f;
+			newEvent.time = 0.0f;////////////////////////////////////////////
 			newEvent.deviceId = device->id;
 			newEvent.deviceCategory = device->category;
 			newEvent.kbCode = buttonId;
@@ -145,7 +145,7 @@ public:
 		{
 			InputEvent newEvent;
 			newEvent.type = InputEvent::Type::ButtonChanged;
-			newEvent.time = 0.0f;
+			newEvent.time = 0.0f;////////////////////////////////////////////
 			newEvent.deviceId = device->id;
 			newEvent.deviceCategory = device->category;
 			newEvent.mbCode = buttonId;
@@ -164,7 +164,7 @@ public:
 		{
 			InputEvent newEvent;
 			newEvent.type = InputEvent::Type::ButtonChanged;
-			newEvent.time = 0.0f;
+			newEvent.time = 0.0f;////////////////////////////////////////////
 			newEvent.deviceId = device->id;
 			newEvent.deviceCategory = device->category;
 			newEvent.gbCode = buttonId;
@@ -183,7 +183,7 @@ public:
 		{
 			InputEvent newEvent;
 			newEvent.type = InputEvent::Type::AxisChanged;
-			newEvent.time = 0.0f;
+			newEvent.time = 0.0f;////////////////////////////////////////////
 			newEvent.deviceId = device->id;
 			newEvent.deviceCategory = device->category;
 			newEvent.maCode = axisId;
@@ -202,7 +202,7 @@ public:
 		{
 			InputEvent newEvent;
 			newEvent.type = InputEvent::Type::AxisChanged;
-			newEvent.time = 0.0f;
+			newEvent.time = 0.0f;////////////////////////////////////////////
 			newEvent.deviceId = device->id;
 			newEvent.deviceCategory = device->category;
 			newEvent.gaCode = axisId;

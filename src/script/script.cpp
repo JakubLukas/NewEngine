@@ -38,7 +38,7 @@ public:
 
 		Entity dirLight = world->CreateEntity();
 		Transform& camTrans = world->GetEntityTransform(dirLight);
-		camTrans.position = Vector3(-30, 30, 10);
+		camTrans.position = Vector3(-30, 30, -10);
 
 		DirectionalLight dirLightData;
 		dirLightData.diffuseColor = Color(255, 255, 255, 255);
@@ -53,9 +53,9 @@ public:
 		data = (ResourceType*)data + 1;
 
 		int i = 0;
-		for (unsigned yy = 0; yy < 11; ++yy)
+		for (unsigned yy = 0; yy < 1/*11*/; ++yy)
 		{
-			for (unsigned xx = 0; xx < 11; ++xx)
+			for (unsigned xx = 0; xx < 1/*11*/; ++xx)
 			{
 				m_entities[i] = world->CreateEntity();
 				Transform& trans = world->GetEntityTransform(m_entities[i]);
@@ -63,24 +63,25 @@ public:
 				float scale = 1.0f;
 				if (i % 2 == 0)
 				{
+					resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/square.model"));
+					*(resourceHandle*)data = modelHandle;
+					scale = 10;
+				}
+				else
+				{
 					resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/sphere.model"));
 					*(resourceHandle*)data = modelHandle;
 					scale = 0.09f;
 				}
-				else
-				{
-					resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/cube.model"));
-					*(resourceHandle*)data = modelHandle;
-				}
 				renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Model), m_entities[i], buffer);
 
 				Quaternion rot = Quaternion::IDENTITY;
-				rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
-				rot = rot * Quaternion(Vector3::AXIS_Y, yy*0.37f);
-				Vector3 pos = {
-					-15.0f + float(xx) * 3.0f,
-					-15.0f + float(yy) * 3.0f,
-					35.0f
+				//rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
+				//rot = rot * Quaternion(Vector3::AXIS_Y, yy*0.37f);
+				Vector3 pos = {0,0,35
+					//-15.0f + float(xx) * 3.0f,
+					//-15.0f + float(yy) * 3.0f,
+					//35.0f
 				};
 				trans = Transform(rot, pos, scale);
 				i++;
@@ -97,8 +98,8 @@ public:
 
 		for (int i = 0; i < 121; ++i)
 		{
-			Transform& trans = world->GetEntityTransform(m_entities[i]);
-			trans.rotation = trans.rotation * rot;
+			//Transform& trans = world->GetEntityTransform(m_entities[i]);
+			//trans.rotation = trans.rotation * rot;
 		}
 	}
 

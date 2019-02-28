@@ -397,7 +397,7 @@ public:
 			DELETE_OBJECT(m_allocator, scene.value);
 
 		bgfx::destroy(m_cameraPos);
-		bgfx::destroy(m_dirLightsPos);
+		bgfx::destroy(m_dirLightsDirs);
 		bgfx::destroy(m_dirLightsColor);
 	}
 
@@ -405,7 +405,7 @@ public:
 	void Init() override
 	{
 		m_cameraPos = bgfx::createUniform("u_cameraPos", bgfx::UniformType::Vec4, 1);
-		m_dirLightsPos = bgfx::createUniform("u_directionalLightPos", bgfx::UniformType::Vec4, 1);
+		m_dirLightsDirs = bgfx::createUniform("u_directionalLightDir", bgfx::UniformType::Vec4, 1);
 		m_dirLightsColor = bgfx::createUniform("u_directionalLightColor", bgfx::UniformType::Vec4, 1);
 	}
 
@@ -471,6 +471,11 @@ public:
 		if(mesh.varyings & ShaderVarying_Normal)
 		{
 			meshData.vertex_decl.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float);
+			bufferSize += 3 * mesh.verticesCount * sizeof(float);
+		}
+		if (mesh.varyings & ShaderVarying_Tangent)
+		{
+			meshData.vertex_decl.add(bgfx::Attrib::Tangent, 3, bgfx::AttribType::Float);
 			bufferSize += 3 * mesh.verticesCount * sizeof(float);
 		}
 		meshData.vertex_decl.end();
@@ -710,8 +715,9 @@ public:
 			Vector4 eye = Vector4(camTrans.position, 1);
 			Vector4 at = camRot * Vector4(0, 0, 1, 0) + Vector4(camTrans.position, 1);
 			view.SetLookAt(eye, at, Vector4::AXIS_Y);
+			eye.w = (float)cam.type;
 
-			bgfx::setUniform(m_cameraPos, &camTrans.position);
+			bgfx::setUniform(m_cameraPos, &eye);
 		}
 
 		bgfx::setViewTransform(m_currentView, &view.m11, &proj.m11);
@@ -736,7 +742,7 @@ public:
 			Transform& dirLightTrans = world.GetEntityTransform(dirLight->entity);
 			Vector4 dir = Vector4(-dirLightTrans.position, 0);
 			dir.Normalize();
-			bgfx::setUniform(m_dirLightsPos, &dir);
+			bgfx::setUniform(m_dirLightsDirs, &dir);
 			bgfx::setUniform(m_dirLightsColor, &dirLight->light);
 		}
 
@@ -816,7 +822,7 @@ private:
 	Array<FramebufferHandle> m_screenSizeFrameBuffers;
 
 	bgfx::UniformHandle m_cameraPos;
-	bgfx::UniformHandle m_dirLightsPos;
+	bgfx::UniformHandle m_dirLightsDirs;
 	bgfx::UniformHandle m_dirLightsColor;
 };
 

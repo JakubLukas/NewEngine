@@ -17,7 +17,6 @@ enum ShaderVaryingBits : ShaderVaryingFlags
 	ShaderVarying_Texcoords1 = 1 << 3,
 	ShaderVarying_Normal = 1 << 4,
 	ShaderVarying_Tangent = 1 << 5,
-	ShaderVarying_Binormal = 1 << 6,
 };
 
 ShaderVaryingBits GetShaderVaryingFromString(const char* str);

@@ -99,10 +99,12 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 		JsonKeyValue* colors = JsonObjectFind(&verticesData->value, "colors");
 		JsonKeyValue* texCoords = JsonObjectFind(&verticesData->value, "uvs");
 		JsonKeyValue* normals = JsonObjectFind(&verticesData->value, "normals");
+		JsonKeyValue* tangents = JsonObjectFind(&verticesData->value, "tangents");
 		JsonValue* positionArr = nullptr;
 		JsonValue* colorsArr = nullptr;
 		JsonValue* texCoordArr = nullptr;
 		JsonValue* normalsArr = nullptr;
+		JsonValue* tangentsArr = nullptr;
 
 		size_t bufferSize = 0;
 		if (positions != nullptr)
@@ -132,6 +134,13 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 			normalsArr = JsonArrayBegin(&normals->value);
 			bufferSize += 3 * count * sizeof(float);
 			mesh.varyings |= ShaderVarying_Normal;
+		}
+		if (tangents != nullptr)
+		{
+			ASSERT(JsonIsArray(&tangents->value) && JsonArrayCount(&tangents->value) == count * 3);
+			tangentsArr = JsonArrayBegin(&tangents->value);
+			bufferSize += 3 * count * sizeof(float);
+			mesh.varyings |= ShaderVarying_Tangent;
 		}
 
 		mesh.verticesData = (u8*)m_allocator.Allocate(bufferSize, alignof(float));
@@ -166,6 +175,14 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 				*(normalBuffer + 1) = (float)JsonGetDouble(normalsArr++);
 				*(normalBuffer + 2) = (float)JsonGetDouble(normalsArr++);
 				dataBuffer = (u8*)(normalBuffer + 3);
+			}
+			if (tangentsArr != nullptr)
+			{
+				float* tangentBuffer = (float*)dataBuffer;
+				*tangentBuffer = (float)JsonGetDouble(tangentsArr++);
+				*(tangentBuffer + 1) = (float)JsonGetDouble(tangentsArr++);
+				*(tangentBuffer + 2) = (float)JsonGetDouble(tangentsArr++);
+				dataBuffer = (u8*)(tangentBuffer + 3);
 			}
 		}
 	}

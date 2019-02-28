@@ -387,6 +387,8 @@ private:
 		{ 
 			static const float WHEEL_DELTA_INV = 1.0f / WHEEL_DELTA;
 			float delta = (short)mouse.usButtonData * WHEEL_DELTA_INV;
+			//UINT num;
+			//SystemParametersInfoA(SPI_GETWHEELSCROLLLINES, 0, &num, 0); GET NUMBER OF LINES TO SCROLL
 			Vector3 axisWheel{
 				delta,
 				0.0f,
