@@ -12,6 +12,7 @@ struct Camera
 		Perspective
 	};
 	Type type;
+	//3B padding
 	float screenWidth;
 	float screenHeight;
 	float nearPlane;

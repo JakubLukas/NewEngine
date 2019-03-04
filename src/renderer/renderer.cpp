@@ -20,6 +20,9 @@
 
 #include "core/math/math.h"
 #include "core/parsing/json.h"
+#include "core/string.h"
+
+#include "editor/editor_interface.h"
 
 
 namespace Veng
@@ -91,13 +94,13 @@ public:
 		ComponentInfo* compInfoModel;
 
 		compInfoModel = &m_componentInfos.EmplaceBack(m_allocator);
-		compInfoModel->handle = GetComponentHandle(Component::Model);
+		compInfoModel->handle = RenderScene::GetComponentHandle(Component::Model);
 		compInfoModel->name = "model";
 		compInfoModel->values.PushBack({ ComponentInfo::ValueType::ResourceHandle, "model handle" });
 		compInfoModel->dataSize = sizeof(ResourceType) + sizeof(resourceHandle);
 
 		compInfoModel = &m_componentInfos.EmplaceBack(m_allocator);
-		compInfoModel->handle = GetComponentHandle(Component::Camera);
+		compInfoModel->handle = RenderScene::GetComponentHandle(Component::Camera);
 		compInfoModel->name = "camera";
 		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Angle, "fov" });
 		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "near plane" });
@@ -107,8 +110,8 @@ public:
 		compInfoModel->dataSize = sizeof(Camera);
 
 		compInfoModel = &m_componentInfos.EmplaceBack(m_allocator);
-		compInfoModel->handle = GetComponentHandle(Component::DirectionalLight);
-		compInfoModel->name = "directional light";
+		compInfoModel->handle = RenderScene::GetComponentHandle(Component::DirectionalLight);
+		compInfoModel->name = "directional_light";
 		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Color, "color" });
 	}
 
@@ -127,9 +130,29 @@ public:
 
 	size_t GetComponentCount() const override { return m_componentInfos.GetSize(); }
 
-	const ComponentInfo* GetComponents() const override { return m_componentInfos.Begin(); }
+	const ComponentInfo* GetComponentInfos() const override { return m_componentInfos.Begin(); }
 
 	const ComponentInfo* GetComponentInfo(componentHandle handle) const override { return &m_componentInfos[(size_t)handle]; }
+
+	componentHandle GetComponentHandle(const char* name) const override
+	{
+		if (string::Compare(name, "model"))
+		{
+			return RenderScene::GetComponentHandle(Component::Model);
+		}
+		else if (string::Compare(name, "camera"))
+		{
+			return RenderScene::GetComponentHandle(Component::Camera);
+		}
+		else if (string::Compare(name, "directional_light"))
+		{
+			return RenderScene::GetComponentHandle(Component::DirectionalLight);
+		}
+		else
+		{
+			return INVALID_COMPONENT_HANDLE;
+		}
+	}
 
 
 	void AddComponent(componentHandle handle, Entity entity) override
@@ -205,7 +228,47 @@ public:
 		}
 	}
 
-	void GetComponentData(componentHandle handle, Entity entity, void* buffer) const override
+	void EditComponent(EditorInterface* editor, componentHandle handle, Entity entity) override
+	{
+		switch ((u8)handle)
+		{
+		case (u8)RenderScene::Component::Model:
+		{
+			ModelItem* model;
+			if (m_models.Find(entity, model))
+			{
+				editor->EditU64("model handle", *(u64*)&model->model, EditorInterface::EditFlag_ReadOnly);
+			}
+			break;
+		}
+		case (u8)RenderScene::Component::Camera:
+		{
+			CameraItem* camera;
+			if (m_cameras.Find(entity, camera))
+			{
+				Camera& cam = camera->camera;
+				const char* cameraTypeNames[] = { "Orthogonal" , "Perspective" };
+				u32 typeIdx = (u32)cam.type;
+				editor->EditEnum("type", typeIdx, cameraTypeNames, sizeof(cameraTypeNames) / sizeof(cameraTypeNames[0]));
+				editor->EditFloat("screen width", cam.screenWidth, EditorInterface::EditFlag_ReadOnly);
+				editor->EditFloat("screen height", cam.screenHeight, EditorInterface::EditFlag_ReadOnly);
+				editor->EditFloat("near plane", cam.nearPlane);
+				editor->EditFloat("screen height", cam.farPlane);
+				editor->EditFloat("fov", cam.fov);
+			}
+			break;
+		}
+		case (u8)RenderScene::Component::DirectionalLight:
+		{
+			asd
+			break;
+		}
+		default:
+			break;
+		}
+	}
+
+	/*void GetComponentData(componentHandle handle, Entity entity, void* buffer) const override
 	{
 		switch ((u8)handle)
 		{
@@ -268,7 +331,7 @@ public:
 		default:
 			ASSERT2(false, "Unrecognized componentHandle");
 		}
-	}
+	}*/
 
 
 	size_t GetModelsCount() const override
