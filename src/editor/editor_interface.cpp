@@ -98,5 +98,24 @@ bool EditorInterface::EditEnum(const char* name, u32& idx, const char* values[],
 	return changed;
 }
 
+bool EditorInterface::EditString(const char* name, char* buffer, size_t bufferLength, EditFlags flags)
+{
+	return ImGui::InputText("path", buffer, bufferLength, ResolveFlags(flags));
+}
+
+bool EditorInterface::DragDropTarget(const char* acceptPayload, void(*callback)(char*))
+{
+	if(ImGui::BeginDragDropTarget())
+	{
+		const ImGuiPayload* data = ImGui::AcceptDragDropPayload(acceptPayload, ImGuiDragDropFlags_None);
+		if(data != nullptr)
+		{
+			callback((char*)data->Data);
+		}
+		ImGui::EndDragDropTarget();
+	}
+	return false;
+}
+
 
 }

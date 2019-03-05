@@ -5,6 +5,8 @@
 namespace Veng
 {
 
+class Path;
+
 
 class EditorInterface
 {
@@ -24,6 +26,9 @@ public:
 	bool EditPointer(const char* name, void* value, EditFlags flags = EditFlag_None);
 	bool EditColor(const char* name, u32& abgrColor, EditFlags flags = EditFlag_None);
 	bool EditEnum(const char* name, u32& idx, const char* values[], size_t count, EditFlags flags = EditFlag_None);
+	bool EditString(const char* name, char* buffer, size_t bufferLength, EditFlags flags = EditFlag_None);
+
+	bool DragDropTarget(const char* acceptPayload, void(*callback)(char*));
 };
 
 

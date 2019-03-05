@@ -228,7 +228,55 @@ public:
 			ModelItem* modelItem;
 			if (m_models.Find(entity, modelItem))
 			{
+
+				resourceHandle* handle = &modelItem->model;
+
 				editor->EditU64("model handle", *(u64*)&modelItem->model, EditorInterface::EditFlag_ReadOnly);
+
+				ModelManager& manager = m_renderSystem.GetModelManager();
+				Resource* resource = manager.GetResource(*handle);
+
+				char pathBuffer[Path::MAX_LENGTH + 1];
+				memory::Copy(pathBuffer, resource->GetPath().GetPath(), Path::MAX_LENGTH + 1);
+				editor->EditString("path", pathBuffer, Path::MAX_LENGTH + 1);
+				for(size_t i = 0; i < manager.GetSupportedFileExtCount(); ++i)
+				{
+					editor->DragDropTarget(manager.GetSupportedFileExt()[i], [](char* payload)
+					{
+						Path path(payload);
+						/*if(resource->GetPath() != path)
+						{
+							resourceHandle newResource = manager->Load(path);
+							*handle = newResource;
+							changed = true;
+						}*/
+					});
+				}
+				/*for(size_t i = 0; i < manager.GetSupportedFileExtCount(); ++i)
+				{
+					if(ImGui::BeginDragDropTarget())
+					{
+						const ImGuiPayload* data = ImGui::AcceptDragDropPayload(manager->GetSupportedFileExt()[i], ImGuiDragDropFlags_None);
+						if(data != nullptr)
+						{
+							Path path((char*)data->Data);
+							if(resource->GetPath() != path)
+							{
+								resourceHandle newResource = manager->Load(path);
+								*handle = newResource;
+								changed = true;
+							}
+						}
+						ImGui::EndDragDropTarget();
+					}
+				}
+				if(ImGui::Button("Open in editor"))
+				{
+					EventSelectResource event;
+					event.type = type;
+					event.resource = *handle;
+					queue.PushEvent(event);
+				}*/
 			}
 			else
 			{
