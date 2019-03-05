@@ -7,6 +7,7 @@ namespace Veng
 
 class IAllocator;
 class Engine;
+class EditorInterface;
 
 
 namespace Editor
@@ -17,7 +18,7 @@ class WidgetBase
 {
 public:
 	virtual ~WidgetBase() {}
-	virtual void Init(Engine& engine) = 0;
+	virtual void Init(Engine& engine, EditorInterface& editor) = 0;
 	virtual void Deinit() = 0;
 
 	virtual void Update(EventQueue& queue) = 0;

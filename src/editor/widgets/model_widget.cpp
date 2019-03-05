@@ -25,7 +25,7 @@ ModelWidget::~ModelWidget()
 {}
 
 
-void ModelWidget::Init(Engine& engine)
+void ModelWidget::Init(Engine& engine, EditorInterface& editor)
 {
 	m_manager = engine.GetResourceManagement();
 }

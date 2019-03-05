@@ -46,11 +46,7 @@ public:
 		renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::DirectionalLight), dirLight);
 		renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::DirectionalLight), dirLight, &dirLightData);
 
-
-		char* buffer[sizeof(ResourceType) + sizeof(resourceHandle)];
-		void* data = buffer;
-		*(ResourceType*)data = ResourceType::Model;
-		data = (ResourceType*)data + 1;
+		resourceHandle modelHandle = INVALID_RESOURCE_HANDLE;
 
 		int i = 0;
 		for (unsigned yy = 0; yy < 1/*11*/; ++yy)
@@ -63,17 +59,15 @@ public:
 				float scale = 1.0f;
 				if (i % 2 == 0)
 				{
-					resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/square.model"));
-					*(resourceHandle*)data = modelHandle;
+					modelHandle = renderSystem->GetModelManager().Load(Path("models/square.model"));
 					scale = 10;
 				}
 				else
 				{
-					resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/sphere.model"));
-					*(resourceHandle*)data = modelHandle;
+					modelHandle = renderSystem->GetModelManager().Load(Path("models/sphere.model"));
 					scale = 0.09f;
 				}
-				renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Model), m_entities[i], buffer);
+				renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Model), m_entities[i], &modelHandle);
 
 				Quaternion rot = Quaternion::IDENTITY;
 				//rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);

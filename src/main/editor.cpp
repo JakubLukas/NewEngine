@@ -1,5 +1,6 @@
 #include "editor.h"
 
+#include "editor/editor_interface.h"
 #include <bgfx/bgfx.h>
 
 #include "core/allocators.h"
@@ -598,7 +599,7 @@ public:
 		while (registry != nullptr)
 		{
 			WidgetBase* widget = registry->creator(m_allocator);
-			widget->Init(*m_engine);
+			widget->Init(*m_engine, m_editorInterface);
 			m_widgets.PushBack(widget);
 			registry = registry->next;
 		}
@@ -988,6 +989,7 @@ public:
 
 private:
 	IAllocator& m_allocator;
+	EditorInterface m_editorInterface;
 	App& m_app;
 	ProxyAllocator m_engineAllocator;
 	Engine* m_engine = nullptr;

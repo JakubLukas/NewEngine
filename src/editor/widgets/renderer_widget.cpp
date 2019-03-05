@@ -27,7 +27,7 @@ RendererWidget::~RendererWidget()
 {}
 
 
-void RendererWidget::Init(Engine& engine)
+void RendererWidget::Init(Engine& engine, EditorInterface& editor)
 {
 	m_engine = &engine;
 	m_renderer = static_cast<RenderSystem*>(engine.GetSystem("renderer"));
@@ -106,11 +106,12 @@ void RendererWidget::OnResize()
 {
 	m_renderer->Resize((i32)m_size.x, (i32)m_size.y);
 	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene(worldId(0)));///////////////////////////////////////
-	Camera cam;
-	renderScene->GetComponentData(componentHandle(1), m_camera, &cam);
-	cam.screenWidth = m_size.x;
-	cam.screenHeight = m_size.y;
-	renderScene->SetComponentData(componentHandle(1), m_camera, &cam);
+	const componentHandle cameraComponentHandle = renderScene->GetComponentHandle("camera");
+	Camera* cam = (Camera*)renderScene->GetComponentData(cameraComponentHandle, m_camera);
+	cam->screenWidth = m_size.x;
+	cam->screenHeight = m_size.y;
+	cam->aspect = cam->screenWidth / cam->screenHeight;
+	//renderScene->SetComponentData(componentHandle(1), m_camera, &cam);/////////////////////////////////////
 }
 
 

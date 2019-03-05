@@ -70,7 +70,7 @@ void FileBrowserWidget::ProcessDirFiles(const Path& searchPath)
 	FS::SearchClose(handle);
 }
 
-void FileBrowserWidget::Init(Engine& engine)
+void FileBrowserWidget::Init(Engine& engine, EditorInterface& editor)
 {
 	char buffer[Path::MAX_LENGTH] = { 0 };
 	os::GetWorkingDir(buffer, Path::MAX_LENGTH);

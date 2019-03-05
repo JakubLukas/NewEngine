@@ -21,7 +21,7 @@ class ModelWidget : public WidgetBase
 public:
 	ModelWidget(IAllocator& allocator);
 	~ModelWidget() override;
-	void Init(Engine& engine) override;
+	void Init(Engine& engine, EditorInterface& editor) override;
 	void Deinit() override;
 
 	void Update(EventQueue& queue) override;

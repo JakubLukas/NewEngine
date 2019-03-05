@@ -23,7 +23,7 @@ public:
 	bool EditFloat(const char* name, float& value, EditFlags flags = EditFlag_None);
 	bool EditPointer(const char* name, void* value, EditFlags flags = EditFlag_None);
 	bool EditColor(const char* name, u32& abgrColor, EditFlags flags = EditFlag_None);
-	bool EditEnum(const char* name, u32& idx, const char* values[], size_t count);
+	bool EditEnum(const char* name, u32& idx, const char* values[], size_t count, EditFlags flags = EditFlag_None);
 };
 
 

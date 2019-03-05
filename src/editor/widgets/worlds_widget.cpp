@@ -20,7 +20,7 @@ WorldsWidget::~WorldsWidget()
 }
 
 
-void WorldsWidget::Init(Engine& engine)
+void WorldsWidget::Init(Engine& engine, EditorInterface& editor)
 {
 	m_engine = &engine;
 }

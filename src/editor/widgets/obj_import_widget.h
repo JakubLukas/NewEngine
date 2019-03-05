@@ -36,7 +36,7 @@ public:
 public:
 	ObjImportWidget(IAllocator& allocator);
 	~ObjImportWidget() override;
-	void Init(Engine& engine) override;
+	void Init(Engine& engine, EditorInterface& editor) override;
 	void Deinit() override;
 
 	void Update(EventQueue& queue) override;

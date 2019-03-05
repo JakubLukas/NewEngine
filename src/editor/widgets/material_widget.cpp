@@ -35,18 +35,13 @@ MaterialWidget::~MaterialWidget()
 {}
 
 
-void MaterialWidget::Init(Engine& engine)
+void MaterialWidget::Init(Engine& engine, EditorInterface& editor)
 {
 	m_manager = engine.GetResourceManager(ResourceType::Material);
 
 	RenderSystem* renderSystem = static_cast<RenderSystem*>(engine.GetSystem("renderer"));
 	m_pipeline = Pipeline::Create(m_allocator, engine, *renderSystem);
 	m_pipeline->Load(Path("pipelines/material_widget.pipeline"));
-
-	char* buffer[sizeof(ResourceType) + sizeof(resourceHandle)];
-	void* data = buffer;
-	*(ResourceType*)data = ResourceType::Model;
-	data = (ResourceType*)data + 1;
 
 	worldId wId = engine.AddWorld();
 	World* world = engine.GetWorld(wId);
@@ -57,8 +52,7 @@ void MaterialWidget::Init(Engine& engine)
 	renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Model), entity);
 
 	resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/cube.model"));
-	*(resourceHandle*)data = modelHandle;
-	renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Model), entity, buffer);
+	renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Model), entity, &modelHandle);
 
 	Entity camera = world->CreateEntity();
 	Transform& camTrans = world->GetEntityTransform(camera);

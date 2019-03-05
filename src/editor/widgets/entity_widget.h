@@ -17,7 +17,7 @@ namespace Editor
 class EntityWidget : public WidgetBase
 {
 public:
-	void Init(Engine& engine) override;
+	void Init(Engine& engine, EditorInterface& editor) override;
 	void Deinit() override;
 
 	void Update(EventQueue& queue) override;
@@ -28,6 +28,7 @@ protected:
 
 private:
 	Engine* m_engine = nullptr;
+	EditorInterface* m_editorInterface;
 	World* m_world = nullptr;
 	Entity m_entity = INVALID_ENTITY;
 };

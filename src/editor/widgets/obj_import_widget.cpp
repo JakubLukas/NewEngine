@@ -279,7 +279,7 @@ ObjImportWidget::~ObjImportWidget()
 {}
 
 
-void ObjImportWidget::Init(Engine& engine)
+void ObjImportWidget::Init(Engine& engine, EditorInterface& editor)
 {}
 
 

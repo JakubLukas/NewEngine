@@ -93,26 +93,17 @@ public:
 	{
 		ComponentInfo* compInfoModel;
 
-		compInfoModel = &m_componentInfos.EmplaceBack(m_allocator);
+		compInfoModel = &m_componentInfos.EmplaceBack();
 		compInfoModel->handle = RenderScene::GetComponentHandle(Component::Model);
 		compInfoModel->name = "model";
-		compInfoModel->values.PushBack({ ComponentInfo::ValueType::ResourceHandle, "model handle" });
-		compInfoModel->dataSize = sizeof(ResourceType) + sizeof(resourceHandle);
 
-		compInfoModel = &m_componentInfos.EmplaceBack(m_allocator);
+		compInfoModel = &m_componentInfos.EmplaceBack();
 		compInfoModel->handle = RenderScene::GetComponentHandle(Component::Camera);
 		compInfoModel->name = "camera";
-		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Angle, "fov" });
-		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "near plane" });
-		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "far plane" });
-		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "screen width" });
-		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Float, "screen height" });
-		compInfoModel->dataSize = sizeof(Camera);
 
-		compInfoModel = &m_componentInfos.EmplaceBack(m_allocator);
+		compInfoModel = &m_componentInfos.EmplaceBack();
 		compInfoModel->handle = RenderScene::GetComponentHandle(Component::DirectionalLight);
 		compInfoModel->name = "directional_light";
-		compInfoModel->values.PushBack({ ComponentInfo::ValueType::Color, "color" });
 	}
 
 	~RenderSceneImpl() override
@@ -136,15 +127,15 @@ public:
 
 	componentHandle GetComponentHandle(const char* name) const override
 	{
-		if (string::Compare(name, "model"))
+		if (string::Equal(name, "model"))
 		{
 			return RenderScene::GetComponentHandle(Component::Model);
 		}
-		else if (string::Compare(name, "camera"))
+		else if (string::Equal(name, "camera"))
 		{
 			return RenderScene::GetComponentHandle(Component::Camera);
 		}
-		else if (string::Compare(name, "directional_light"))
+		else if (string::Equal(name, "directional_light"))
 		{
 			return RenderScene::GetComponentHandle(Component::DirectionalLight);
 		}
@@ -234,70 +225,113 @@ public:
 		{
 		case (u8)RenderScene::Component::Model:
 		{
-			ModelItem* model;
-			if (m_models.Find(entity, model))
+			ModelItem* modelItem;
+			if (m_models.Find(entity, modelItem))
 			{
-				editor->EditU64("model handle", *(u64*)&model->model, EditorInterface::EditFlag_ReadOnly);
+				editor->EditU64("model handle", *(u64*)&modelItem->model, EditorInterface::EditFlag_ReadOnly);
+			}
+			else
+			{
+				Log(LogType::Warning, "Model component for entity %d was not found", (u64)entity);
 			}
 			break;
 		}
 		case (u8)RenderScene::Component::Camera:
 		{
-			CameraItem* camera;
-			if (m_cameras.Find(entity, camera))
+			CameraItem* cameraItem;
+			if (m_cameras.Find(entity, cameraItem))
 			{
-				Camera& cam = camera->camera;
+				Camera& camera = cameraItem->camera;
 				const char* cameraTypeNames[] = { "Orthogonal" , "Perspective" };
-				u32 typeIdx = (u32)cam.type;
-				editor->EditEnum("type", typeIdx, cameraTypeNames, sizeof(cameraTypeNames) / sizeof(cameraTypeNames[0]));
-				editor->EditFloat("screen width", cam.screenWidth, EditorInterface::EditFlag_ReadOnly);
-				editor->EditFloat("screen height", cam.screenHeight, EditorInterface::EditFlag_ReadOnly);
-				editor->EditFloat("near plane", cam.nearPlane);
-				editor->EditFloat("screen height", cam.farPlane);
-				editor->EditFloat("fov", cam.fov);
+				u32 typeIdx = (u32)camera.type;
+				if (editor->EditEnum("type", typeIdx, cameraTypeNames, sizeof(cameraTypeNames) / sizeof(cameraTypeNames[0])))
+					camera.type = (Camera::Type)typeIdx;
+				editor->EditFloat("screen width", camera.screenWidth, EditorInterface::EditFlag_ReadOnly);
+				editor->EditFloat("screen height", camera.screenHeight, EditorInterface::EditFlag_ReadOnly);
+				editor->EditFloat("near plane", camera.nearPlane);
+				editor->EditFloat("far plane", camera.farPlane);
+				if (camera.type == Camera::Type::Perspective)
+				{
+					float fovDeg = toDeg(camera.fov);
+					if (editor->EditFloat("fov", fovDeg))
+						camera.fov = toRad(fovDeg);
+
+				}
+			}
+			else
+			{
+				Log(LogType::Warning, "Camera component for entity %d was not found", (u64)entity);
 			}
 			break;
 		}
 		case (u8)RenderScene::Component::DirectionalLight:
 		{
-			asd
-			break;
-		}
-		default:
-			break;
-		}
-	}
-
-	/*void GetComponentData(componentHandle handle, Entity entity, void* buffer) const override
-	{
-		switch ((u8)handle)
-		{
-		case (u8)RenderScene::Component::Model:
-		{
-			ModelItem* model;
-			ASSERT2(m_models.Find(entity, model), "Component not found");
-			*(ResourceType*)buffer = ResourceType::Model;
-			buffer = (ResourceType*)buffer + 1;
-			*(resourceHandle*)buffer = model->model;
-			break;
-		}
-		case (u8)RenderScene::Component::Camera:
-		{
-			CameraItem* cam;
-			ASSERT2(m_cameras.Find(entity, cam), "Component not found");
-			memory::Copy(buffer, &cam->camera, sizeof(Camera));
-			break;
-		}
-		case (u8)RenderScene::Component::DirectionalLight:
-		{
-			DirectionalLightItem* light;
-			ASSERT2(m_directionalLights.Find(entity, light), "Component not found");
-			memory::Copy(buffer, &light->light, sizeof(DirectionalLight));
+			DirectionalLightItem* lightItem;
+			if (m_directionalLights.Find(entity, lightItem))
+			{
+				DirectionalLight& light = lightItem->light;
+				editor->EditColor("diffuse color", light.diffuseColor.abgr, EditorInterface::EditFlag_None);
+				editor->EditColor("specular color", light.specularColor.abgr, EditorInterface::EditFlag_None);
+			}
+			else
+			{
+				Log(LogType::Warning, "Directional light component for entity %d was not found", (u64)entity);
+			}
 			break;
 		}
 		default:
 			ASSERT2(false, "Unrecognized componentHandle");
 		}
+	}
+
+	void* GetComponentData(componentHandle handle, Entity entity) const override
+	{
+		switch ((u8)handle)
+		{
+		case (u8)RenderScene::Component::Model:
+		{
+			ModelItem* modelItem;
+			if (m_models.Find(entity, modelItem))
+			{
+				return &modelItem->model;
+			}
+			else
+			{
+				Log(LogType::Warning, "Model component for entity %d was not found", (u64)entity);
+			}
+			break;
+		}
+		case (u8)RenderScene::Component::Camera:
+		{
+			CameraItem* cameraItem;
+			if (m_cameras.Find(entity, cameraItem))
+			{
+				return &cameraItem->camera;
+			}
+			else
+			{
+				Log(LogType::Warning, "Camera component for entity %d was not found", (u64)entity);
+			}
+			break;
+		}
+		case (u8)RenderScene::Component::DirectionalLight:
+		{
+			DirectionalLightItem* lightItem;
+			if (m_directionalLights.Find(entity, lightItem))
+			{
+				return &lightItem->light;
+			}
+			else
+			{
+				Log(LogType::Warning, "Directional light component for entity %d was not found", (u64)entity);
+			}
+			break;
+		}
+		default:
+			ASSERT2(false, "Unrecognized componentHandle");
+		}
+
+		return nullptr;
 	}
 
 	void SetComponentData(componentHandle handle, Entity entity, void* data) override
@@ -306,32 +340,50 @@ public:
 		{
 		case (u8)RenderScene::Component::Model:
 		{
-			ModelItem* model;
-			ASSERT2(m_models.Find(entity, model), "Component not found");
-			if (model->model != INVALID_RESOURCE_HANDLE)
-				m_renderSystem.GetModelManager().Unload(model->model);
-			model->model = *(resourceHandle*)((ResourceType*)data + 1);
+			ModelItem* modelItem;
+			if (m_models.Find(entity, modelItem))
+			{
+				resourceHandle* modelhandle = (resourceHandle*)data;
+				modelItem->model = *modelhandle;
+			}
+			else
+			{
+				Log(LogType::Warning, "Model component for entity %d was not found", (u64)entity);
+			}
 			break;
 		}
 		case (u8)RenderScene::Component::Camera:
 		{
-			CameraItem* cam;
-			ASSERT2(m_cameras.Find(entity, cam), "Component not found");
-			memory::Move(&cam->camera, data, sizeof(Camera));
-			cam->camera.aspect = cam->camera.screenWidth / cam->camera.screenHeight;
+			CameraItem* cameraItem;
+			if (m_cameras.Find(entity, cameraItem))
+			{
+				Camera* camera = (Camera*)data;
+				cameraItem->camera = *camera;
+			}
+			else
+			{
+				Log(LogType::Warning, "Camera component for entity %d was not found", (u64)entity);
+			}
 			break;
 		}
 		case (u8)RenderScene::Component::DirectionalLight:
 		{
-			DirectionalLightItem* light;
-			ASSERT2(m_directionalLights.Find(entity, light), "Component not found");
-			memory::Move(&light->light, data, sizeof(DirectionalLight));
+			DirectionalLightItem* lightItem;
+			if (m_directionalLights.Find(entity, lightItem))
+			{
+				DirectionalLight* light = (DirectionalLight*)data;
+				lightItem->light = *light;
+			}
+			else
+			{
+				Log(LogType::Warning, "Directional light component for entity %d was not found", (u64)entity);
+			}
 			break;
 		}
 		default:
 			ASSERT2(false, "Unrecognized componentHandle");
 		}
-	}*/
+	}
 
 
 	size_t GetModelsCount() const override

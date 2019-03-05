@@ -13,7 +13,7 @@ namespace Editor
 {
 
 
-void EntitiesWidget::Init(Engine& engine)
+void EntitiesWidget::Init(Engine& engine, EditorInterface& editor)
 {
 	m_engine = &engine;
 }

@@ -18,31 +18,8 @@ const componentHandle INVALID_COMPONENT_HANDLE = (componentHandle)-1;
 
 struct ComponentInfo
 {
-	enum class ValueType : u8
-	{
-		ResourceHandle,
-		Int,
-		Float,
-		Angle,
-		String,
-		Vector3,
-		Color,
-		//Text,
-		//Array,
-	};
-
-	struct Value
-	{
-		ValueType type;
-		const char* name;
-	};
-
-	ComponentInfo(IAllocator& allocator) : values(allocator) {}
-
 	componentHandle handle;
 	const char* name;
-	Array<Value> values;
-	size_t dataSize = 0;
 };
 
 
@@ -62,8 +39,8 @@ public:
 	virtual void RemoveComponent(componentHandle handle, Entity entity) = 0;
 	virtual bool HasComponent(componentHandle handle, Entity entity) const = 0;
 	virtual void EditComponent(EditorInterface* editor, componentHandle handle, Entity entity) = 0;
-	//virtual void GetComponentData(componentHandle handle, Entity entity, void* buffer) const = 0;
-	//virtual void SetComponentData(componentHandle handle, Entity entity, void* data) = 0;
+	virtual void* GetComponentData(componentHandle handle, Entity entity) const = 0;
+	virtual void SetComponentData(componentHandle handle, Entity entity, void* data) = 0;
 };
 
 

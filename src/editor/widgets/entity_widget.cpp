@@ -25,9 +25,10 @@ namespace Editor
 {
 
 
-void EntityWidget::Init(Engine& engine)
+void EntityWidget::Init(Engine& engine, EditorInterface& editor)
 {
 	m_engine = &engine;
+	m_editorInterface = &editor;
 }
 
 
@@ -87,7 +88,7 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 		if (scene == nullptr)
 			continue;
 
-		const ComponentInfo* componentInfos = scene->GetComponents();
+		const ComponentInfo* componentInfos = scene->GetComponentInfos();
 		for (int i = 0; i < scene->GetComponentCount(); ++i)
 		{
 			const ComponentInfo& info = componentInfos[i];
@@ -95,16 +96,18 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 			if (!scene->HasComponent(info.handle, m_entity))
 				continue;
 
-			char buffer[1024];
-			char* data = buffer;
-			ASSERT2(sizeof(buffer) >= info.dataSize, "Buffer is not large enough");
-			scene->GetComponentData(info.handle, m_entity, data);
+			//char buffer[1024];
+			//char* data = buffer;
+			//ASSERT2(sizeof(buffer) >= info.dataSize, "Buffer is not large enough");
+			//scene->GetComponentData(info.handle, m_entity, data);
 
 			if (!ImGui::TreeNodeEx(info.name, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnDoubleClick))
 				continue;
 
-			bool changed = false;
-			for (const ComponentInfo::Value& value : info.values)
+			scene->EditComponent(m_editorInterface, info.handle, m_entity);
+
+			//bool changed = false;
+			/*for (const ComponentInfo::Value& value : info.values)
 			{
 				switch (value.type)
 				{
@@ -201,7 +204,7 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 			}
 
 			if(changed)
-				scene->SetComponentData(info.handle, m_entity, buffer);
+				scene->SetComponentData(info.handle, m_entity, buffer);*/
 
 			ImGui::TreePop();
 		}

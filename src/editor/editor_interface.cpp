@@ -12,7 +12,9 @@ namespace Veng
 
 static ImGuiInputTextFlags ResolveFlags(EditorInterface::EditFlags flags)
 {
-	ImGuiInputTextFlags imFlags = ImGuiInputTextFlags_None;
+	ImGuiInputTextFlags imFlags = ImGuiInputTextFlags_None
+		| ImGuiInputTextFlags_AutoSelectAll
+		| ImGuiInputTextFlags_EnterReturnsTrue;
 	if (flags & EditorInterface::EditFlag_ReadOnly)
 		imFlags |= ImGuiInputTextFlags_ReadOnly;
 
@@ -20,32 +22,32 @@ static ImGuiInputTextFlags ResolveFlags(EditorInterface::EditFlags flags)
 }
 
 
-bool EditorInterface::EditI32(const char* name, i32& value, EditFlags flags = EditFlag_None)
+bool EditorInterface::EditI32(const char* name, i32& value, EditFlags flags)
 {
 	return ImGui::InputScalar(name, ImGuiDataType_S32, &value, 0, 0, 0, ResolveFlags(flags));
 }
 
-bool EditorInterface::EditU32(const char* name, u32& value, EditFlags flags = EditFlag_None)
+bool EditorInterface::EditU32(const char* name, u32& value, EditFlags flags)
 {
 	return ImGui::InputScalar(name, ImGuiDataType_U32, &value, 0, 0, 0, ResolveFlags(flags));
 }
 
-bool EditorInterface::EditI64(const char* name, i64& value, EditFlags flags = EditFlag_None)
+bool EditorInterface::EditI64(const char* name, i64& value, EditFlags flags)
 {
 	return ImGui::InputScalar(name, ImGuiDataType_S64, &value, 0, 0, 0, ResolveFlags(flags));
 }
 
-bool EditorInterface::EditU64(const char* name, u64& value, EditFlags flags = EditFlag_None)
+bool EditorInterface::EditU64(const char* name, u64& value, EditFlags flags)
 {
 	return ImGui::InputScalar(name, ImGuiDataType_U64, &value, 0, 0, 0, ResolveFlags(flags));
 }
 
-bool EditorInterface::EditFloat(const char* name, float& value, EditFlags flags = EditFlag_None)
+bool EditorInterface::EditFloat(const char* name, float& value, EditFlags flags)
 {
 	return ImGui::InputScalar(name, ImGuiDataType_Float, &value, 0, 0, 0, ResolveFlags(flags));
 }
 
-bool EditorInterface::EditPointer(const char* name, void* value, EditFlags flags = EditFlag_None)
+bool EditorInterface::EditPointer(const char* name, void* value, EditFlags flags)
 {
 	if (sizeof(value) == 4)
 		return ImGui::InputScalar(name, ImGuiDataType_U32, value, 0, 0, 0, ResolveFlags(flags));
@@ -56,7 +58,7 @@ bool EditorInterface::EditPointer(const char* name, void* value, EditFlags flags
 	return false;
 }
 
-bool EditorInterface::EditColor(const char* name, u32& abgrColor, EditFlags flags = EditFlag_None)
+bool EditorInterface::EditColor(const char* name, u32& abgrColor, EditFlags flags)
 {
 	float rgba[4] = {
 		(abgrColor >> 24 & 0xFF) / 255.0f,
@@ -78,17 +80,22 @@ bool EditorInterface::EditColor(const char* name, u32& abgrColor, EditFlags flag
 	}
 }
 
-bool EditorInterface::EditEnum(const char* name, u32& idx, const char* values[], size_t count)
+bool EditorInterface::EditEnum(const char* name, u32& idx, const char* values[], size_t count, EditFlags flags)
 {
+	bool changed = false;
 	if (ImGui::BeginCombo(name, values[idx], ImGuiComboFlags_None))
 	{
 		for (int i = 0; i < count; ++i)
 		{
 			if (ImGui::Selectable(values[i], (i == idx), ImGuiSelectableFlags_None))
+			{
 				idx = i;
+				changed = true;
+			}
 		}
 		ImGui::EndCombo();
 	}
+	return changed;
 }
 
 

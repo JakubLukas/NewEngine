@@ -22,7 +22,7 @@ class RendererWidget : public WidgetBase
 public:
 	explicit RendererWidget(IAllocator& allocator);
 	~RendererWidget() override;
-	void Init(Engine& engine) override;
+	void Init(Engine& engine, EditorInterface& editor) override;
 	void Deinit() override;
 
 	void Update(EventQueue& queue) override;

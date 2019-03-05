@@ -83,8 +83,8 @@ public:
 	virtual void RemoveComponent(componentHandle handle, Entity entity) override = 0;
 	virtual bool HasComponent(componentHandle handle, Entity entity) const override = 0;
 	virtual void EditComponent(EditorInterface* editor, componentHandle handle, Entity entity) override = 0;
-	//virtual void GetComponentData(componentHandle handle, Entity entity, void* buffer) const override = 0;
-	//virtual void SetComponentData(componentHandle handle, Entity entity, void* data) override = 0;
+	virtual void* GetComponentData(componentHandle handle, Entity entity) const override = 0;
+	virtual void SetComponentData(componentHandle handle, Entity entity, void* data) override = 0;
 
 	virtual size_t GetModelsCount() const = 0;
 	virtual const ModelItem* GetModels() const = 0;

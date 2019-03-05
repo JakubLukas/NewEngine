@@ -50,7 +50,7 @@ MemoryWidget::~MemoryWidget()
 }
 
 
-void MemoryWidget::Init(Engine& engine)
+void MemoryWidget::Init(Engine& engine, EditorInterface& editor)
 {}
 
 
