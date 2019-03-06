@@ -121,9 +121,9 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 					ResourceManager* manager = m_engine->GetResourceManager(type);
 					Resource* resource = manager->GetResource(*handle);
 
-					char pathBuffer[Path::MAX_LENGTH + 1];
-					memory::Copy(pathBuffer, resource->GetPath().GetPath(), Path::MAX_LENGTH + 1);
-					ImGui::InputText("path", pathBuffer, Path::MAX_LENGTH + 1);
+					char pathBuffer[Path::BUFFER_LENGTH];
+					memory::Copy(pathBuffer, resource->GetPath().GetPath(), Path::BUFFER_LENGTH);
+					ImGui::InputText("path", pathBuffer, Path::BUFFER_LENGTH);
 					for (size_t i = 0; i < manager->GetSupportedFileExtCount(); ++i)
 					{
 						if (ImGui::BeginDragDropTarget())

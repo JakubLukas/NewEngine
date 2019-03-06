@@ -104,9 +104,9 @@ void MaterialWidget::RenderInternal(EventQueue& queue)
 		Material* material = (Material*)m_manager->GetResource(m_material);
 
 		bool changed = false;
-		char pathBuffer[Path::MAX_LENGTH + 1];
-		memory::Copy(pathBuffer, material->GetPath().GetPath(), Path::MAX_LENGTH + 1);
-		ImGui::InputText("path", pathBuffer, Path::MAX_LENGTH + 1);
+		char pathBuffer[Path::BUFFER_LENGTH];
+		memory::Copy(pathBuffer, material->GetPath().GetPath(), Path::BUFFER_LENGTH);
+		ImGui::InputText("path", pathBuffer, Path::BUFFER_LENGTH);
 
 		ImGui::Text("textures:");
 		for (int i = 0; i < Material::MAX_TEXTURES; ++i)

@@ -1,5 +1,6 @@
 #include "resource_manager.h"
 
+#include "core/logs.h"
 #include "core/file/blob.h"
 
 
@@ -45,6 +46,10 @@ resourceHandle ResourceManager::Load(const Path& path)
 void ResourceManager::Unload(resourceHandle handle)
 {
 	Resource* resource = GetResource(handle);
+
+	if (resource->GetState() == Resource::State::Loading)
+		m_asyncOps.Erase(resource->m_fileHandle);
+
 	Path::Hash hash = resource->m_path.GetHash();
 	Resource** item;
 	if (m_resources.Find(hash, item))
@@ -52,7 +57,8 @@ void ResourceManager::Unload(resourceHandle handle)
 		ASSERT(resource == *item);
 		if (0 == --resource->m_refCount)
 		{
-			DestroyResource(*item);
+			//if(resource->GetState() == Resource::State::Ready)
+				DestroyResource(*item);
 			m_resources.Erase(hash);
 		}
 	}
@@ -66,12 +72,15 @@ void ResourceManager::Unload(resourceHandle handle)
 void ResourceManager::Reload(resourceHandle handle)
 {
 	Resource* resource = GetResource(handle);
+	ASSERT2(resource->GetState() != Resource::State::Loading, "Resource is still loading");
+
 	Path::Hash hash = resource->m_path.GetHash();
 	Resource** item;
 	if (m_resources.Find(hash, item))
 	{
 		ASSERT(resource == *item);
-		ReloadResource(*item);
+		if (resource->GetState() == Resource::State::Ready)
+			ReloadResource(*item);
 	}
 	else
 	{
@@ -101,17 +110,28 @@ void ResourceManager::LoadResource(const Path& path, Resource* resource)
 		FileMode::FlagNone
 	};
 
+	resource->m_path = path;
+	resource->m_state = Resource::State::Loading;
+
+	if (!m_fileSystem.OpenFile(resource->m_fileHandle, path, mode))
+	{
+		resource->m_state = Resource::State::Failure;
+		Log(LogType::Error, "File \"%s\" not found", path.GetPath());
+		return;
+	}
 	ResourceAsyncOp tmp;
-	ASSERT(m_fileSystem.OpenFile(resource->m_fileHandle, path, mode));
 	tmp.bufferSize = m_fileSystem.GetSize(resource->m_fileHandle);
 	tmp.buffer = m_allocator.Allocate(tmp.bufferSize, alignof(char));
 	tmp.handle = GetResourceHandle(resource);
 	Function<void(fileHandle)> f;
 	f.Bind<ResourceManager, &ResourceManager::FileSystemCallback>(this);
-	ASSERT(m_fileSystem.Read(resource->m_fileHandle, tmp.buffer, tmp.bufferSize, f));
-
-	resource->m_path = path;
-	resource->m_state = Resource::State::Loading;
+	if (!m_fileSystem.Read(resource->m_fileHandle, tmp.buffer, tmp.bufferSize, f))
+	{
+		resource->m_state = Resource::State::Failure;
+		Log(LogType::Error, "File \"%s\" read failed", path.GetPath());
+		m_fileSystem.CloseFile(resource->m_fileHandle);
+		return;
+	}
 
 	m_asyncOps.Insert(resource->m_fileHandle, tmp);
 }

@@ -28,7 +28,7 @@ public:
 	bool EditEnum(const char* name, u32& idx, const char* values[], size_t count, EditFlags flags = EditFlag_None);
 	bool EditString(const char* name, char* buffer, size_t bufferLength, EditFlags flags = EditFlag_None);
 
-	bool DragDropTarget(const char* acceptPayload, void(*callback)(char*));
+	bool DragDropTarget(const char* acceptPayload, void(*callback)(void* ctx, void* data), void* userCtx);
 };
 
 

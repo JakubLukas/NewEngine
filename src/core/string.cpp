@@ -21,12 +21,13 @@ size_t Length(const char* str)
 
 void Copy(char* destination, const char* source)
 {
-	while (source[0] != '\0')
+	while (*source != '\0')
 	{
-		destination[0] = source[0];
+		*destination = *source;
 		destination++;
 		source++;
 	}
+	*destination = '\0';
 }
 
 

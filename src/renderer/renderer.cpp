@@ -228,6 +228,10 @@ public:
 			ModelItem* modelItem;
 			if (m_models.Find(entity, modelItem))
 			{
+				auto dropCallback = [](void* path, void* payload)
+				{
+					string::Copy((char*)path, (char*)payload);
+				};
 
 				resourceHandle* handle = &modelItem->model;
 
@@ -236,40 +240,25 @@ public:
 				ModelManager& manager = m_renderSystem.GetModelManager();
 				Resource* resource = manager.GetResource(*handle);
 
-				char pathBuffer[Path::MAX_LENGTH + 1];
-				memory::Copy(pathBuffer, resource->GetPath().GetPath(), Path::MAX_LENGTH + 1);
-				editor->EditString("path", pathBuffer, Path::MAX_LENGTH + 1);
+				bool pathChanged = false;
+				char pathBuffer[Path::BUFFER_LENGTH];
+				memory::Copy(pathBuffer, resource->GetPath().GetPath(), Path::BUFFER_LENGTH);
+				if (editor->EditString("path", pathBuffer, Path::BUFFER_LENGTH))
+					pathChanged = true;
 				for(size_t i = 0; i < manager.GetSupportedFileExtCount(); ++i)
 				{
-					editor->DragDropTarget(manager.GetSupportedFileExt()[i], [](char* payload)
-					{
-						Path path(payload);
-						/*if(resource->GetPath() != path)
-						{
-							resourceHandle newResource = manager->Load(path);
-							*handle = newResource;
-							changed = true;
-						}*/
-					});
+					if (editor->DragDropTarget(manager.GetSupportedFileExt()[i], dropCallback, pathBuffer))
+						pathChanged = true;
 				}
-				/*for(size_t i = 0; i < manager.GetSupportedFileExtCount(); ++i)
+				if (pathChanged)
 				{
-					if(ImGui::BeginDragDropTarget())
-					{
-						const ImGuiPayload* data = ImGui::AcceptDragDropPayload(manager->GetSupportedFileExt()[i], ImGuiDragDropFlags_None);
-						if(data != nullptr)
-						{
-							Path path((char*)data->Data);
-							if(resource->GetPath() != path)
-							{
-								resourceHandle newResource = manager->Load(path);
-								*handle = newResource;
-								changed = true;
-							}
-						}
-						ImGui::EndDragDropTarget();
-					}
+					Path newPath(pathBuffer);
+					resourceHandle newHandle = manager.Load(newPath);
+					resourceHandle oldHandle = *handle;
+					*handle = newHandle;
+					manager.Unload(oldHandle);
 				}
+				/*
 				if(ImGui::Button("Open in editor"))
 				{
 					EventSelectResource event;

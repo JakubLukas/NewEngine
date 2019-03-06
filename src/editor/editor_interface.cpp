@@ -5,6 +5,8 @@
 #include "../external/imgui/imgui.h"
 #include "../external/imgui/imgui_internal.h"
 
+#include "core/logs.h"/////////////////////// TEMP
+
 
 namespace Veng
 {
@@ -103,18 +105,20 @@ bool EditorInterface::EditString(const char* name, char* buffer, size_t bufferLe
 	return ImGui::InputText("path", buffer, bufferLength, ResolveFlags(flags));
 }
 
-bool EditorInterface::DragDropTarget(const char* acceptPayload, void(*callback)(char*))
+bool EditorInterface::DragDropTarget(const char* acceptPayload, void(*callback)(void* ctx, void* data), void* userCtx)
 {
+	bool dropped = false;
 	if(ImGui::BeginDragDropTarget())
 	{
 		const ImGuiPayload* data = ImGui::AcceptDragDropPayload(acceptPayload, ImGuiDragDropFlags_None);
 		if(data != nullptr)
 		{
-			callback((char*)data->Data);
+			callback(userCtx, data->Data);
+			dropped = true;
 		}
 		ImGui::EndDragDropTarget();
 	}
-	return false;
+	return dropped;
 }
 
 

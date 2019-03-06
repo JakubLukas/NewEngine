@@ -5,6 +5,7 @@
 #include "core/iallocator.h"
 #include "core/engine.h"
 #include "core/resource/resource_management.h"
+#include "core/resource/resource_manager.h"
 #include "renderer/resource_managers/model.h"
 
 
@@ -32,7 +33,10 @@ void ModelWidget::Init(Engine& engine, EditorInterface& editor)
 
 void ModelWidget::Deinit()
 {
-	m_model = INVALID_RESOURCE_HANDLE;
+	if (m_modelHandle != INVALID_RESOURCE_HANDLE)
+		m_manager->UnloadResource(ResourceType::Model, m_modelHandle);
+
+	m_modelHandle = INVALID_RESOURCE_HANDLE;
 	m_manager = nullptr;
 }
 
@@ -47,7 +51,7 @@ void ModelWidget::Update(EventQueue& queue)
 			const EventSelectResource* eventResource = (EventSelectResource*)event;
 			if (eventResource->type == ResourceType::Model)
 			{
-				m_model = eventResource->resource;
+				m_modelHandle = eventResource->resource;
 			}
 		}
 	}
@@ -56,15 +60,35 @@ void ModelWidget::Update(EventQueue& queue)
 
 void ModelWidget::RenderInternal(EventQueue& queue)
 {
-	if (m_model != INVALID_RESOURCE_HANDLE)
+	char pathBuffer[Path::BUFFER_LENGTH] = {0};
+	Model* model = nullptr;
+	ResourceManager* modelManager = m_manager->GetManager(ResourceType::Model);
+
+	if (m_modelHandle != INVALID_RESOURCE_HANDLE)
 	{
-		Model* model = (Model*)m_manager->GetResource(ResourceType::Model, m_model);
+		model = (Model*)modelManager->GetResource(m_modelHandle);
+		memory::Copy(pathBuffer, model->GetPath().GetPath(), Path::BUFFER_LENGTH);
+	}
 
-		bool changed = false;
-		char pathBuffer[Path::MAX_LENGTH + 1];
-		memory::Copy(pathBuffer, model->GetPath().GetPath(), Path::MAX_LENGTH + 1);
-		ImGui::InputText("path", pathBuffer, Path::MAX_LENGTH + 1);
+	ImGui::InputText("path", pathBuffer, Path::BUFFER_LENGTH);
+	for (int i = 0; i < modelManager->GetSupportedFileExtCount(); ++i)
+	{
+		if (ImGui::BeginDragDropTarget())
+		{
+			const ImGuiPayload* data = ImGui::AcceptDragDropPayload(modelManager->GetSupportedFileExt()[i], ImGuiDragDropFlags_None);
+			if (data != nullptr)
+			{
+				if (m_modelHandle != INVALID_RESOURCE_HANDLE)
+					modelManager->Unload(m_modelHandle);
+				Path modelPath((char*)data->Data);
+				m_modelHandle = modelManager->Load(modelPath);
+			}
+			ImGui::EndDragDropTarget();
+		}
+	}
 
+	if (model != nullptr && model->GetState() == Resource::State::Ready)
+	{
 		ImGui::Text("meshes:");
 		for (int i = 0; i < model->meshes.GetSize(); ++i)
 		{
@@ -75,8 +99,8 @@ void ModelWidget::RenderInternal(EventQueue& queue)
 				ImGui::InputScalar("material", ImGuiDataType_U64, &mesh.material, NULL, NULL, NULL, ImGuiInputTextFlags_ReadOnly);
 
 				Resource* material = m_manager->GetResource(ResourceType::Material, mesh.material);
-				memory::Copy(pathBuffer, material->GetPath().GetPath(), Path::MAX_LENGTH + 1);
-				ImGui::InputText("path", pathBuffer, Path::MAX_LENGTH + 1);
+				memory::Copy(pathBuffer, material->GetPath().GetPath(), Path::BUFFER_LENGTH);
+				ImGui::InputText("path", pathBuffer, Path::BUFFER_LENGTH);
 				if (ImGui::Button("Open in editor"))
 				{
 					EventSelectResource event;
@@ -90,8 +114,6 @@ void ModelWidget::RenderInternal(EventQueue& queue)
 
 			ImGui::PopID();
 		}
-
-		//if (changed)
 	}
 }
 

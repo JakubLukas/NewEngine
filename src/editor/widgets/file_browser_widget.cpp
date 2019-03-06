@@ -6,6 +6,8 @@
 #include "core/os/os_utils.h"
 #include "core/file/file.h"
 
+#include "core/logs.h"///////////////////// TEMP
+
 
 namespace Veng
 {
@@ -72,8 +74,8 @@ void FileBrowserWidget::ProcessDirFiles(const Path& searchPath)
 
 void FileBrowserWidget::Init(Engine& engine, EditorInterface& editor)
 {
-	char buffer[Path::MAX_LENGTH] = { 0 };
-	os::GetWorkingDir(buffer, Path::MAX_LENGTH);
+	char buffer[Path::BUFFER_LENGTH] = { 0 };
+	os::GetWorkingDir(buffer, Path::BUFFER_LENGTH);
 
 	StaticInputBuffer<Path::MAX_LENGTH> pathBuf;
 	pathBuf << buffer << "/*";

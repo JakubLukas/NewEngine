@@ -12,6 +12,7 @@ class Path
 public:
 	typedef u32 Hash;
 	static const size_t MAX_LENGTH = 260;
+	static const size_t BUFFER_LENGTH = MAX_LENGTH + 1;
 
 public:
 	Path();
@@ -32,7 +33,7 @@ public:
 	bool operator!=(const Path& other) const;
 
 private:
-	char m_path[MAX_LENGTH + 1] = { '\0' };
+	char m_path[BUFFER_LENGTH] = { '\0' };
 	Hash m_hash;
 };
 

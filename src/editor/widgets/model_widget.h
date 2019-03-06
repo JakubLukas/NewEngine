@@ -33,7 +33,7 @@ protected:
 private:
 	IAllocator& m_allocator;
 	ResourceManagement* m_manager;
-	resourceHandle m_model = INVALID_RESOURCE_HANDLE;
+	resourceHandle m_modelHandle = INVALID_RESOURCE_HANDLE;
 };
 
 

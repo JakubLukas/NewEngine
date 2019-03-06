@@ -294,8 +294,8 @@ void ObjImportWidget::Update(EventQueue& queue)
 void ObjImportWidget::RenderInternal(EventQueue& queue)
 {
 	ImGui::PushID("input");
-	static char iPathBuffer[Path::MAX_LENGTH + 1];
-	ImGui::InputText("##input", iPathBuffer, Path::MAX_LENGTH + 1);
+	static char iPathBuffer[Path::BUFFER_LENGTH];
+	ImGui::InputText("##input", iPathBuffer, Path::BUFFER_LENGTH);
 	if (ImGui::BeginDragDropTarget())
 	{
 		const ImGuiPayload* data = ImGui::AcceptDragDropPayload("obj", ImGuiDragDropFlags_None);
@@ -317,8 +317,8 @@ void ObjImportWidget::RenderInternal(EventQueue& queue)
 	ImGui::PopID();
 	
 	ImGui::PushID("output");
-	static char oPathBuffer[Path::MAX_LENGTH + 1];
-	ImGui::InputText("##output", oPathBuffer, Path::MAX_LENGTH + 1);
+	static char oPathBuffer[Path::BUFFER_LENGTH];
+	ImGui::InputText("##output", oPathBuffer, Path::BUFFER_LENGTH);
 	ImGui::SameLine();
 	if (ImGui::Button("Browse"))
 	{
