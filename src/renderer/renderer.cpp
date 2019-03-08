@@ -477,6 +477,29 @@ public:
 		return m_directionalLights.GetValues();
 	}
 
+
+	virtual bool RaycastModels(const Ray& ray, ModelItem* model) const override
+	{
+		const ModelManager& manager = m_renderSystem.GetModelManager();
+		for (const ModelItem& item : m_models)
+		{
+			const Model* model = (Model*)manager.GetResource(item.model);
+			for (u32 meshIdx = 0, meshCount = model->meshes.GetSize(); meshIdx < meshCount; ++meshIdx)
+			{
+				const Mesh& mesh = model->meshes[meshIdx];
+
+				u8* vertices = mesh.verticesData;
+				size_t vertexOffset = 3 * sizeof(float);
+				if (mesh.varyings & ShaderVarying_Color0);
+				u16* indices = mesh.indicesData;
+				for (u32 indexIdx = 0, indexCount = mesh.indicesCount; indexIdx < indexCount; ++i)
+				{
+
+				}
+			}
+		}
+	}
+
 private:
 	IAllocator& m_allocator;
 	RenderSystem& m_renderSystem;
