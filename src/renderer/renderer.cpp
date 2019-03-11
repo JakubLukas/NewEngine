@@ -19,6 +19,7 @@
 #include "core/file/blob.h"//////////////////////
 
 #include "core/math/math.h"
+#include "core/math/math_ext.h"
 #include "core/parsing/json.h"
 #include "core/string.h"
 
@@ -478,26 +479,66 @@ public:
 	}
 
 
-	virtual bool RaycastModels(const Ray& ray, ModelItem* model) const override
+	virtual bool RaycastModels(const Ray& ray, const ModelItem* hitModel) const override
 	{
 		const ModelManager& manager = m_renderSystem.GetModelManager();
 		for (const ModelItem& item : m_models)
 		{
 			const Model* model = (Model*)manager.GetResource(item.model);
-			for (u32 meshIdx = 0, meshCount = model->meshes.GetSize(); meshIdx < meshCount; ++meshIdx)
+			for (size_t meshIdx = 0, meshCount = model->meshes.GetSize(); meshIdx < meshCount; ++meshIdx)
 			{
 				const Mesh& mesh = model->meshes[meshIdx];
 
 				u8* vertices = mesh.verticesData;
 				size_t vertexOffset = 3 * sizeof(float);
-				if (mesh.varyings & ShaderVarying_Color0);
+				if (mesh.varyings & ShaderVarying_Color0)
+					vertexOffset += sizeof(u32);
+				if (mesh.varyings & ShaderVarying_Texcoords0)
+					vertexOffset += 2 * sizeof(float);
+				if (mesh.varyings & ShaderVarying_Texcoords1)
+					vertexOffset += 2 * sizeof(float);
+				if (mesh.varyings & ShaderVarying_Normal)
+					vertexOffset += 3 * sizeof(float);
+				if (mesh.varyings & ShaderVarying_Tangent)
+					vertexOffset += 3 * sizeof(float);
 				u16* indices = mesh.indicesData;
-				for (u32 indexIdx = 0, indexCount = mesh.indicesCount; indexIdx < indexCount; ++i)
+				for (u32 i = 0, indexCount = mesh.indicesCount; i < indexCount; ++i)
 				{
+					u16 i1 = *(indices++);
+					u16 i2 = *(indices++);
+					u16 i3 = *(indices++);
 
+					float* vertexPos = (float*)(vertices + (i1 * vertexOffset));
+					Vector3 v1(*vertexPos, *(vertexPos + 1), *(vertexPos + 2));
+					vertexPos = (float*)(vertices + (i2 * vertexOffset));
+					Vector3 v2(*vertexPos, *(vertexPos + 1), *(vertexPos + 2));
+					vertexPos = (float*)(vertices + (i3 * vertexOffset));
+					Vector3 v3(*vertexPos, *(vertexPos + 1), *(vertexPos + 2));
+
+					Vector3 d1 = v2 - v1;
+					d1.Normalize();
+					Vector3 d2 = v3 - v2;
+					d2.Normalize();
+
+					Vector3 normal = Vector3::Cross(d1, d2);
+
+					if (Vector3::Dot(normal, -ray.direction) < 0.0f)
+						continue; //backface
+
+					//ray triangle intersection
+					float D = Vector3::Dot(normal, v1);
+					float t = -(Vector3::Dot(normal, ray.position) + D) / Vector3::Dot(normal, ray.direction);
+					Vector3 intersection = ray.position + t * ray.direction;
+
+					if (IsPointInsideTriangle(intersection, v1, v2, v3))
+					{
+						hitModel = &item;
+						return true;
+					}
 				}
 			}
 		}
+		return false;
 	}
 
 private:

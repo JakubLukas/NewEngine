@@ -98,7 +98,7 @@ public:
 	virtual size_t GetDirectionalLightsCount() const = 0;
 	virtual const DirectionalLightItem* GetDirectionalLights() const = 0;
 
-	virtual bool RaycastModels(const Ray& ray, ModelItem* model) const = 0;
+	virtual bool RaycastModels(const Ray& ray, const ModelItem* hitModel) const = 0;
 };
 
 

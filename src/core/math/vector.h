@@ -55,11 +55,16 @@ struct Vector3
 	static float Dot(const Vector3& vec1, const Vector3& vec2);
 	static Vector3 Cross(const Vector3& vec1, const Vector3& vec2);
 
-
 	float x;
 	float y;
 	float z;
 };
+
+Vector3 operator*(float value, const Vector3& vec);
+Vector3 operator*(const Vector3& vec, float value);
+
+Vector3 operator/(float value, const Vector3& vec);
+Vector3 operator/(const Vector3& vec, float value);
 
 
 struct FORCE_ALIGNMENT(16) Vector4

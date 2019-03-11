@@ -1,5 +1,6 @@
 [new features]
 - hotreload
+- profiling (QueryPerformanceFrequency)
 
 [refactor]
 - read shader compilation output and log to file

@@ -163,6 +163,44 @@ Vector3 Vector3::Cross(const Vector3& vec1, const Vector3& vec2)
 }
 
 
+Vector3 operator*(float value, const Vector3& vec)
+{
+	return Vector3(
+		value * vec.x,
+		value * vec.y,
+		value * vec.z
+	);
+}
+
+Vector3 operator*(const Vector3& vec, float value)
+{
+	return Vector3(
+		value * vec.x,
+		value * vec.y,
+		value * vec.z
+	);
+}
+
+Vector3 operator/(float value, const Vector3& vec)
+{
+	float valueInv = 1.0f / value;
+	return Vector3(
+		value * vec.x,
+		value * vec.y,
+		value * vec.z
+	);
+}
+Vector3 operator/(const Vector3& vec, float value)
+{
+	float valueInv = 1.0f / value;
+	return Vector3(
+		value * vec.x,
+		value * vec.y,
+		value * vec.z
+	);
+}
+
+
 
 const Vector4 Vector4::AXIS_X(1.0f, 0.0f, 0.0f, 0.0f);
 const Vector4 Vector4::AXIS_Y(0.0f, 1.0f, 0.0f, 0.0f);
