@@ -515,20 +515,21 @@ public:
 					vertexPos = (float*)(vertices + (i3 * vertexOffset));
 					Vector3 v3(*vertexPos, *(vertexPos + 1), *(vertexPos + 2));
 
-					Vector3 d1 = v2 - v1;
+					Vector3 d1 = v3 - v1;
 					d1.Normalize();
-					Vector3 d2 = v3 - v2;
+					Vector3 d2 = v2 - v3;
 					d2.Normalize();
 
 					Vector3 normal = Vector3::Cross(d1, d2);
+					normal.Normalize();
 
 					if (Vector3::Dot(normal, -ray.direction) < 0.0f)
 						continue; //backface
 
 					//ray triangle intersection
 					float D = Vector3::Dot(normal, v1);
-					float t = -(Vector3::Dot(normal, ray.position) + D) / Vector3::Dot(normal, ray.direction);
-					Vector3 intersection = ray.position + t * ray.direction;
+					float t = -(Vector3::Dot(normal, ray.origin) + D) / Vector3::Dot(normal, ray.direction);
+					Vector3 intersection = ray.origin + t * ray.direction;
 
 					if (IsPointInsideTriangle(intersection, v1, v2, v3))
 					{

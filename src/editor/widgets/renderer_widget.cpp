@@ -8,6 +8,9 @@
 #include "core/math/math.h"
 #include "core/math/matrix.h"
 
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "../external/imgui/imgui_internal.h"
+
 
 namespace Veng
 {
@@ -97,8 +100,36 @@ void RendererWidget::RenderInternal(EventQueue& queue)
 		m_changedSize = false;
 	}
 
+	ImVec2 cursorPos = ImGui::GetCursorPos();
+
 	m_pipeline->Render();
 	ImGui::Image(m_pipeline->GetMainFrameBuffer(), windowSize);
+
+	ImGui::SetCursorPos(cursorPos);
+	if (ImGui::InvisibleButton("##raycast_trigger", windowSize))
+	{
+		ImVec2 mousePosAbs = ImGui::GetMousePos();
+		ImVec2 mousePosRel = mousePosAbs - ImGui::GetWindowPos() - cursorPos;
+
+		RenderScene* renderScene = (RenderScene*)m_renderer->GetScene((worldId)0);//TODO FIX WORLD ID ///////////////////
+		const componentHandle cameraComponentHandle = renderScene->GetComponentHandle("camera"); ////////////////////////////
+		Camera* cam = (Camera*)renderScene->GetComponentData(cameraComponentHandle, m_camera);
+		const Transform& cameraTransform = m_engine->GetWorld((worldId)0)->GetEntityTransform(m_camera);//////////////////////////////
+
+		Ray ray;
+		ray.origin = cameraTransform.position;
+		ray.direction = Vector3(0, 0, 1);
+		compute correct ray
+
+		RenderScene::ModelItem hitModel;
+		if (renderScene->RaycastModels(ray, &hitModel))
+		{
+			ASSERT(false);
+		}
+
+		//ImGui::SetCursorPos(mousePosRel);
+		//ImGui::Button("test");
+	}
 }
 
 
@@ -106,7 +137,7 @@ void RendererWidget::OnResize()
 {
 	m_renderer->Resize((i32)m_size.x, (i32)m_size.y);
 	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene(worldId(0)));///////////////////////////////////////
-	const componentHandle cameraComponentHandle = renderScene->GetComponentHandle("camera");
+	const componentHandle cameraComponentHandle = renderScene->GetComponentHandle("camera");///////////////////////////////////////
 	Camera* cam = (Camera*)renderScene->GetComponentData(cameraComponentHandle, m_camera);
 	cam->screenWidth = m_size.x;
 	cam->screenHeight = m_size.y;
