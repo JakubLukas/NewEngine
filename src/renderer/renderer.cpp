@@ -481,10 +481,14 @@ public:
 
 	virtual bool RaycastModels(const Ray& ray, const ModelItem* hitModel) const override
 	{
+		World* world = m_renderSystem.GetEngine().GetWorld(worldId(0));
+
 		const ModelManager& manager = m_renderSystem.GetModelManager();
 		for (const ModelItem& item : m_models)
 		{
 			const Model* model = (Model*)manager.GetResource(item.model);
+			const Transform& transform = world->GetEntityTransform(item.entity);
+			Matrix44 modelMatrix = transform.ToMatrix44();
 			for (size_t meshIdx = 0, meshCount = model->meshes.GetSize(); meshIdx < meshCount; ++meshIdx)
 			{
 				const Mesh& mesh = model->meshes[meshIdx];
@@ -509,11 +513,11 @@ public:
 					u16 i3 = *(indices++);
 
 					float* vertexPos = (float*)(vertices + (i1 * vertexOffset));
-					Vector3 v1(*vertexPos, *(vertexPos + 1), *(vertexPos + 2));
+					Vector3 v1 = Matrix44::Multiply(modelMatrix, Vector4(*vertexPos, *(vertexPos + 1), *(vertexPos + 2), 1.0f)).GetXYZ();
 					vertexPos = (float*)(vertices + (i2 * vertexOffset));
-					Vector3 v2(*vertexPos, *(vertexPos + 1), *(vertexPos + 2));
+					Vector3 v2 = Matrix44::Multiply(modelMatrix, Vector4(*vertexPos, *(vertexPos + 1), *(vertexPos + 2), 1.0f)).GetXYZ();
 					vertexPos = (float*)(vertices + (i3 * vertexOffset));
-					Vector3 v3(*vertexPos, *(vertexPos + 1), *(vertexPos + 2));
+					Vector3 v3 = Matrix44::Multiply(modelMatrix, Vector4(*vertexPos, *(vertexPos + 1), *(vertexPos + 2), 1.0f)).GetXYZ();
 
 					Vector3 d1 = v3 - v1;
 					d1.Normalize();
@@ -528,7 +532,7 @@ public:
 
 					//ray triangle intersection
 					float D = Vector3::Dot(normal, v1);
-					float t = -(Vector3::Dot(normal, ray.origin) + D) / Vector3::Dot(normal, ray.direction);
+					float t = (Vector3::Dot(normal, ray.origin) + D) / Vector3::Dot(normal, ray.direction);
 					Vector3 intersection = ray.origin + t * ray.direction;
 
 					if (IsPointInsideTriangle(intersection, v1, v2, v3))

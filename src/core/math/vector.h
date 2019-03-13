@@ -98,5 +98,11 @@ struct FORCE_ALIGNMENT(16) Vector4
 	float w;
 };
 
+Vector4 operator*(float value, const Vector4& vec);
+Vector4 operator*(const Vector4& vec, float value);
+
+Vector4 operator/(float value, const Vector4& vec);
+Vector4 operator/(const Vector4& vec, float value);
+
 
 }

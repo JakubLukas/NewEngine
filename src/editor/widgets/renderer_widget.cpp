@@ -118,8 +118,21 @@ void RendererWidget::RenderInternal(EventQueue& queue)
 
 		Ray ray;
 		ray.origin = cameraTransform.position;
-		ray.direction = Vector3(0, 0, 1);
-		compute correct ray
+		//compute correct ray
+		float mx = (mousePosRel.x - cam->screenWidth * 0.5f) * (1.0f / cam->screenWidth) * 2.0f;
+		float my = -(mousePosRel.y - cam->screenHeight * 0.5f) * (1.0f / cam->screenHeight) * 2.0f;
+		Matrix44 camRot;
+		camRot.SetRotation(cameraTransform.rotation);
+		Vector4 camRight = (camRot * Vector4::AXIS_X);
+		Vector4 camUp = (camRot * Vector4::AXIS_Y);
+		Vector4 camDir = (camRot * Vector4::AXIS_Z);
+
+		Vector4 screenCenter = Vector4(cameraTransform.position, 1.0f) + camDir * cam->nearPlane;
+		Vector4 screenRightDir = camRight * tanf(cam->fov * 0.5f) * cam->nearPlane;
+		Vector4 screenUpDir = camUp * tanf(cam->fov * 0.5f) * cam->nearPlane / cam->aspect;
+		Vector4 screenPoint = screenCenter + screenRightDir * mx + screenUpDir * my;
+		ray.direction = Vector3(screenPoint.x, screenPoint.y, screenPoint.z) - cameraTransform.position;
+		ray.direction.Normalize();
 
 		RenderScene::ModelItem hitModel;
 		if (renderScene->RaycastModels(ray, &hitModel))

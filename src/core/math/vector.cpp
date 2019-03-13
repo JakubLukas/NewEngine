@@ -185,18 +185,18 @@ Vector3 operator/(float value, const Vector3& vec)
 {
 	float valueInv = 1.0f / value;
 	return Vector3(
-		value * vec.x,
-		value * vec.y,
-		value * vec.z
+		valueInv * vec.x,
+		valueInv * vec.y,
+		valueInv * vec.z
 	);
 }
 Vector3 operator/(const Vector3& vec, float value)
 {
 	float valueInv = 1.0f / value;
 	return Vector3(
-		value * vec.x,
-		value * vec.y,
-		value * vec.z
+		valueInv * vec.x,
+		valueInv * vec.y,
+		valueInv * vec.z
 	);
 }
 
@@ -302,6 +302,49 @@ Vector3 Vector4::GetVector3() const
 float Vector4::Dot(const Vector4& vec1, const Vector4& vec2)
 {
 	return vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z + vec1.w * vec2.w;
+}
+
+
+Vector4 operator*(float value, const Vector4& vec)
+{
+	return Vector4(
+		value * vec.x,
+		value * vec.y,
+		value * vec.z,
+		value * vec.w
+	);
+}
+
+Vector4 operator*(const Vector4& vec, float value)
+{
+	return Vector4(
+		value * vec.x,
+		value * vec.y,
+		value * vec.z,
+		value * vec.w
+	);
+}
+
+Vector4 operator/(float value, const Vector4& vec)
+{
+	float valueInv = 1.0f / value;
+	return Vector4(
+		valueInv * vec.x,
+		valueInv * vec.y,
+		valueInv * vec.z,
+		valueInv * vec.w
+	);
+}
+
+Vector4 operator/(const Vector4& vec, float value)
+{
+	float valueInv = 1.0f / value;
+	return Vector4(
+		valueInv * vec.x,
+		valueInv * vec.y,
+		valueInv * vec.z,
+		valueInv * vec.w
+	);
 }
 
 
