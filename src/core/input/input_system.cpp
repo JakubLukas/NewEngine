@@ -5,9 +5,18 @@
 #include "core/containers/array.h"
 #include "core/string.h"
 
+#include "core/os/os_utils.h"
+
 
 namespace Veng
 {
+
+
+struct MousePos
+{
+	int x;
+	int y;
+};
 
 
 InputEvent::InputEvent()
@@ -85,7 +94,7 @@ public:
 
 	void Enable(bool enable) override
 	{
-		active = enable;
+		m_active = enable;
 	}
 
 
@@ -118,7 +127,7 @@ public:
 
 	void RegisterButtonEvent(inputDeviceHandle handle, KeyboardDevice::Button buttonId, bool pressed) override
 	{
-		if (!active)
+		if (!m_active)
 			return;
 
 		InputDevice* device;
@@ -137,7 +146,7 @@ public:
 
 	void RegisterButtonEvent(inputDeviceHandle handle, MouseDevice::Button buttonId, bool pressed) override
 	{
-		if (!active)
+		if (!m_active)
 			return;
 
 		InputDevice* device;
@@ -156,7 +165,7 @@ public:
 
 	void RegisterButtonEvent(inputDeviceHandle handle, GamepadDevice::Button buttonId, bool pressed) override
 	{
-		if (!active)
+		if (!m_active)
 			return;
 
 		InputDevice* device;
@@ -175,7 +184,7 @@ public:
 
 	void RegisterAxisEvent(inputDeviceHandle handle, MouseDevice::Axis axisId, const Vector3& delta) override
 	{
-		if (!active)
+		if (!m_active)
 			return;
 
 		InputDevice* device;
@@ -194,7 +203,7 @@ public:
 
 	void RegisterAxisEvent(inputDeviceHandle handle, GamepadDevice::Axis axisId, const Vector3& delta) override
 	{
-		if (!active)
+		if (!m_active)
 			return;
 
 		InputDevice* device;
@@ -214,7 +223,22 @@ public:
 
 	void Update(float deltaTime) override
 	{
+		if (m_mouseLocked)
+			os::SetMouseCursorPos(m_mousePositon.x, m_mousePositon.y);
+
 		m_events.Clear();
+	}
+
+
+	void LockCursor(bool lock) override
+	{
+		m_mouseLocked = lock;
+		os::GetMouseCursorPos(m_mousePositon.x, m_mousePositon.y);
+	}
+
+	void HideCursor(bool hide) override
+	{
+		os::ShowMouseCursor(hide);
 	}
 
 
@@ -239,7 +263,9 @@ private:
 	IAllocator& m_allocator;
 	AssociativeArray<inputDeviceHandle, InputDevice> m_devices;
 	Array<InputEvent> m_events;
-	bool active = true;
+	MousePos m_mousePositon;
+	bool m_mouseLocked;
+	bool m_active = true;
 };
 
 

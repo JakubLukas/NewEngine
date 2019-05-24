@@ -56,8 +56,8 @@ public:
 
 	virtual IScene* GetScene(worldId world) const = 0;
 
-	virtual void WorldAdded(worldId world) = 0;
-	virtual void WorldRemoved(worldId world) = 0;
+	virtual void OnWorldAdded(worldId world) = 0;
+	virtual void OnWorldRemoved(worldId world) = 0;
 };
 
 

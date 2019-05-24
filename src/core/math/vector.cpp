@@ -250,6 +250,17 @@ Vector4& Vector4::operator=(const Vector4& vec)
 }
 
 
+Vector4 Vector4::operator+() const
+{
+	return Vector4(*this);
+}
+
+Vector4 Vector4::operator-() const
+{
+	return Vector4(-x, -y, -z, -w);
+}
+
+
 Vector4 Vector4::operator+(const Vector4& other) const
 {
 	return Vector4(

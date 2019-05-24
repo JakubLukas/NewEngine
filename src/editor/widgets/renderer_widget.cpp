@@ -5,15 +5,86 @@
 #include "core/engine.h"
 #include "renderer/pipeline.h"
 #include "renderer/renderer.h"
+#include "script/script.h"
 #include "core/math/math.h"
 #include "core/math/matrix.h"
+#include "core/math/quaternion.h"
+
+#include "core/input/input_system.h"
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "../external/imgui/imgui_internal.h"
 
+#include "core/logs.h"////////////////////////////////////////////////////
+
 
 namespace Veng
 {
+
+
+static void ScriptCameraUpdate(void* data, Engine& engine, float deltaTime)
+{
+	deltaTime = 1.0f / deltaTime;
+
+	static float speed = 1.0f;
+	static bool forward = false;
+	static bool backward = false;
+	static bool left = false;
+	static bool right = false;
+	static bool up = false;
+	static bool down = false;
+
+	World* world = engine.GetWorld(worldId(0));
+	RenderScene* renderScene = static_cast<RenderScene*>(engine.GetSystem("renderer")->GetScene(worldId(0)));
+	const RenderScene::CameraItem* camera = renderScene->GetMainCamera();
+	Transform& camTrans = world->GetEntityTransform(camera->entity);
+
+	InputSystem* input = engine.GetInputSystem();
+	const Array<InputEvent>& events = input->GetInputEventBuffer();
+	for (const InputEvent event : events)
+	{
+		if (event.deviceCategory == InputDeviceCategory::Keyboard)
+		{
+			if (event.kbCode == KeyboardDevice::Button::W)
+				forward = event.pressed;
+			if (event.kbCode == KeyboardDevice::Button::S)
+				backward = event.pressed;
+			if (event.kbCode == KeyboardDevice::Button::A)
+				left = event.pressed;
+			if (event.kbCode == KeyboardDevice::Button::D)
+				right = event.pressed;
+			if (event.kbCode == KeyboardDevice::Button::Space)
+				up = event.pressed;
+			if (event.kbCode == KeyboardDevice::Button::ControlLeft)
+				down = event.pressed;
+		}
+		if (event.deviceCategory == InputDeviceCategory::Mouse)
+		{
+			if (event.maCode == MouseDevice::Axis::Movement)
+			{
+				Matrix44 currentCamRotation;
+				currentCamRotation.SetRotation(camTrans.rotation);
+				Vector4 camAxisX = Matrix44::Multiply(currentCamRotation, -Vector4::AXIS_X);
+				Vector4 camAxisY = Matrix44::Multiply(currentCamRotation, -Vector4::AXIS_Y);
+
+				Quaternion rotY(camAxisX.GetXYZ(), event.axis.y * deltaTime * 0.1f);
+				Quaternion rotX(camAxisY.GetXYZ(), event.axis.x * deltaTime * 0.1f);
+
+				Quaternion deltaRot = rotX * rotY;
+
+				camTrans.rotation = camTrans.rotation * deltaRot;
+			}
+			if (event.maCode == MouseDevice::Axis::Wheel)
+				speed += event.axis.x * 0.1f;
+		}
+	}
+
+	Vector3 movement(0.0f, 0.0f, 0.0f);
+	movement.x = (left) ? -speed : 0.0f + (right) ? speed : 0.0f;
+	movement.y = (up) ? speed : 0.0f + (down) ? -speed : 0.0f;
+	movement.z = (forward) ? speed : 0.0f + (backward) ? -speed : 0.0f;
+	camTrans.position = camTrans.position + movement * deltaTime;
+}
 
 
 namespace Editor
@@ -56,6 +127,14 @@ void RendererWidget::Init(Engine& engine, EditorInterface& editor)
 		renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Camera), m_camera);
 		renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Camera), m_camera, &cam);
 		renderScene->SetMainCamera(m_camera);
+
+		ScriptScene::ScriptClass camScript;
+		camScript.updateFunction = ScriptCameraUpdate;
+
+		ScriptSystem* scriptSystem = static_cast<ScriptSystem*>(m_engine->GetSystem("script"));
+		ScriptScene* scriptScene = static_cast<ScriptScene*>(scriptSystem->GetScene(world.GetId()));
+		scriptScene->AddComponent(ScriptScene::GetComponentHandle(ScriptScene::Component::Script), m_camera);
+		scriptScene->SetComponentData(ScriptScene::GetComponentHandle(ScriptScene::Component::Script), m_camera, &camScript);
 	}
 }
 
@@ -108,6 +187,8 @@ void RendererWidget::RenderInternal(EventQueue& queue)
 	ImGui::SetCursorPos(cursorPos);
 	if (ImGui::InvisibleButton("##raycast_trigger", windowSize))
 	{
+		//m_engine->GetInputSystem()->LockCursor(true);
+
 		ImVec2 mousePosAbs = ImGui::GetMousePos();
 		ImVec2 mousePosRel = mousePosAbs - ImGui::GetWindowPos() - cursorPos;
 
@@ -137,7 +218,10 @@ void RendererWidget::RenderInternal(EventQueue& queue)
 		RenderScene::ModelItem hitModel;
 		if (renderScene->RaycastModels(ray, &hitModel))
 		{
-			ASSERT(false);
+			//ASSERT(false);
+			Log(LogType::Info, "Model hit");
+			//m_renderer->AddDebugLine(ray.origin, ray.origin + ray.direction * 10, Color(0, 255, 0), 0);
+			//m_renderer->AddDebugLine(Vector3(0, 0, 25), Vector3(0, 0, 45), Color(0, 255, 0), 0);
 		}
 
 		//ImGui::SetCursorPos(mousePosRel);

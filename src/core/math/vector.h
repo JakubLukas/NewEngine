@@ -80,6 +80,9 @@ struct FORCE_ALIGNMENT(16) Vector4
 	Vector4(const Vector4& vec);
 	Vector4& operator=(const Vector4& vec);
 
+	Vector4 operator+() const;
+	Vector4 operator-() const;
+
 	Vector4 operator+(const Vector4& other) const;
 	Vector4 operator-(const Vector4& other) const;
 

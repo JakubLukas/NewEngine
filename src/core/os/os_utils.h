@@ -78,6 +78,10 @@ u32 GetCallStack(u32 framesToSkip, u32 framesToCapture, void** callstack);
 //bool LoadSymbols(osHandle process/*ImageName, ModuleName, BaseOfDll, SizeOfDll*/);
 
 
+void GetMouseCursorPos(int& x, int& y);
+void SetMouseCursorPos(int x, int y);
+void ShowMouseCursor(bool show);
+
 }
 
 

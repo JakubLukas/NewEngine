@@ -3,6 +3,8 @@
 #include "core/int.h"
 #include "core/entity.h"
 #include "core/resource/resource.h"
+#include "core/input/devices/input_device_keyboard.h"
+#include "core/input/devices/input_device_mouse.h"
 
 
 namespace Veng
@@ -25,11 +27,6 @@ enum EventType : u32
 	SelectCamera,
 	SelectResource,
 	ChangedSize,
-
-	Created,
-	Changed,
-	Deleted,
-	Resized
 };
 
 // ----------------------------------------------

@@ -37,7 +37,7 @@ public:
 		World& world = m_worlds.EmplaceBack(m_allocator, (worldId)m_worlds.GetSize());
 
 		for (ISystem* system : m_systems)
-			system->WorldAdded(world.GetId());
+			system->OnWorldAdded(world.GetId());
 
 		return world.GetId();
 	}
@@ -54,7 +54,7 @@ public:
 		if (idx != m_worlds.GetSize())
 		{
 			for (ISystem* system : m_systems)
-				system->WorldRemoved(id);
+				system->OnWorldRemoved(id);
 
 			m_worlds.Erase(idx);
 		}

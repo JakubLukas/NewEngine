@@ -21,6 +21,7 @@ enum CommandType
 	SetFramebuffer,
 	Clear,
 	RenderModels,
+	RenderDebug,
 };
 
 struct Command
@@ -159,6 +160,11 @@ public:
 				command.type = CommandType::RenderModels;
 				command.world = (worldId)JsonGetInt(&world->value);
 			}
+			else if (string::Equal(cmdIntName, "render_debug"))
+			{
+				Command& command = m_commands.PushBack();
+				command.type = CommandType::RenderDebug;
+			}
 			else
 			{
 				ASSERT2(false, "Unrecognized command");
@@ -206,6 +212,16 @@ public:
 					const RenderScene::CameraItem* cameraItem = scene->GetMainCamera();
 					m_renderer.SetCamera(*world, cameraItem->entity);
 					m_renderer.RenderModels(*world, modelItems, scene->GetModelsCount());
+					break;
+				}
+				case CommandType::RenderDebug:
+				{
+					const RenderScene* scene = (RenderScene*)m_renderer.GetScene(worldId(0));
+					World* world = m_engine.GetWorld(worldId(0));
+					const RenderScene::ModelItem* modelItems = scene->GetModels();
+					const RenderScene::CameraItem* cameraItem = scene->GetMainCamera();
+					m_renderer.SetCamera(*world, cameraItem->entity);
+					m_renderer.RenderDebug();
 					break;
 				}
 				default:

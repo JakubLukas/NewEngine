@@ -30,7 +30,7 @@ namespace Veng
 {
 
 
-u32 HashWorldId(const worldId& world)
+static u32 HashWorldId(const worldId& world)
 {
 	return HashU32((u32)world);
 }
@@ -575,6 +575,7 @@ public:
 		, m_framebuffers(m_allocator)
 		, m_screenSizeFrameBuffers(m_allocator)
 		, m_scenes(m_allocator, &HashWorldId)
+		, m_debugMeshes(m_allocator)
 	{
 		m_allocator.SetDebugName("Renderer");
 
@@ -614,6 +615,13 @@ public:
 
 	~RenderSystemImpl() override
 	{
+		for (Mesh& mesh : m_debugMeshes)
+		{
+			m_allocator.Deallocate(mesh.verticesData);
+			m_allocator.Deallocate(mesh.indicesData);
+			m_engine.GetResourceManagement()->UnloadResource(ResourceType::Material, mesh.material);
+		}
+
 		for (const auto& scene : m_scenes)
 			DELETE_OBJECT(m_allocator, scene.value);
 
@@ -650,13 +658,13 @@ public:
 	}
 
 
-	void WorldAdded(worldId world) override
+	void OnWorldAdded(worldId world) override
 	{
 		RenderSceneImpl* scene = NEW_OBJECT(m_allocator, RenderSceneImpl)(m_allocator, *this);
 		m_scenes.Insert(world, scene);
 	}
 
-	void WorldRemoved(worldId world) override
+	void OnWorldRemoved(worldId world) override
 	{
 		m_scenes.Erase(world);
 	}
@@ -837,6 +845,51 @@ public:
 	}
 
 
+	void AddDebugLine(Vector3 from, Vector3 to, Color color, float width, int lifetime) override
+	{
+		Mesh& mesh = m_debugMeshes.PushBack();
+
+		mesh.varyings = ShaderVarying_Position | ShaderVarying_Color0;
+		mesh.verticesCount = 4;
+		const size_t bufferSize = (3 * sizeof(float) + 4 * sizeof(u8)) * 4;
+		mesh.verticesData = (u8*)m_allocator.Allocate(bufferSize, alignof(float));
+		u8* vData = mesh.verticesData;
+
+		Vector3 from1(from.x, from.y - width, from.z);
+		Vector3 from2(from.x, from.y + width, from.z);
+		Vector3 to1(to.x, to.y - width, to.z);
+		Vector3 to2(to.x, to.y + width, to.z);
+
+		memory::Copy(vData, &from1, 3 * sizeof(float));
+		vData += 3 * sizeof(float);
+		memory::Copy(vData, &color, sizeof(Color));
+		vData += sizeof(Color);
+		memory::Copy(vData, &to1, 3 * sizeof(float));
+		vData += 3 * sizeof(float);
+		memory::Copy(vData, &color, sizeof(Color));
+		vData += sizeof(Color);
+
+		memory::Copy(vData, &from2, 3 * sizeof(float));
+		vData += 3 * sizeof(float);
+		memory::Copy(vData, &color, sizeof(Color));
+		vData += sizeof(Color);
+		memory::Copy(vData, &to2, 3 * sizeof(float));
+		vData += 3 * sizeof(float);
+		memory::Copy(vData, &color, sizeof(Color));
+		vData += sizeof(Color);
+
+		mesh.indicesCount = 2;
+		size_t count = mesh.indicesCount * 3;//triangles
+		mesh.indicesData = (u16*)m_allocator.Allocate(count * sizeof(u16), alignof(u16));
+		const u16 iData[] = { 0, 2, 1, 1, 2, 3 };
+		memory::Copy(mesh.indicesData, iData, count * sizeof(u16));
+
+		Path materialPath("materials/debug.material");
+		mesh.material = m_engine.GetResourceManagement()->GetManager(ResourceType::Material)->Load(materialPath);
+		mesh.renderDataHandle = CreateMeshData(mesh);
+	}
+
+
 	void Resize(u32 width, u32 height) override
 	{
 		m_width = width;
@@ -981,7 +1034,9 @@ public:
 			if (model->GetState() == Resource::State::Ready)
 			{
 				for (const Mesh& mesh : model->meshes)
+				//for (int i = 0; i < m_debugMeshes.GetSize(); ++i)
 				{
+					//const Mesh& mesh = m_debugMeshes[i];
 					const Material* material = (Material*)m_materialManager->GetResource(mesh.material);
 					if (material->GetState() == Resource::State::Ready)
 					{
@@ -997,15 +1052,39 @@ public:
 							bgfx::setTexture(i, materialData.textureUniforms[i], texData.handle);
 						}
 
-						uint64_t state = BGFX_STATE_DEFAULT;
+						uint64_t state = BGFX_STATE_DEFAULT;// BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_MSAA;
 						bgfx::setState(state);
-						//bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS  | BGFX_STATE_CULL_CCW | BGFX_STATE_MSAA);
 
 						const Shader* shader = (Shader*)m_shaderManager->GetResource(material->shader);
 						ShaderData& shaderData = m_shaderData.Get((u64)shader->renderDataHandle);
 						bgfx::submit(m_currentView, shaderData.handle);
 					}
 				}
+			}
+		}
+	}
+
+	void RenderDebug() override
+	{
+		Matrix44 transform = Matrix44::IDENTITY;
+		bgfx::setTransform(&transform);
+
+		for (int i = 0; i < m_debugMeshes.GetSize(); ++i)
+		{
+			const Mesh& mesh = m_debugMeshes[i];
+			const Material* material = (Material*)m_materialManager->GetResource(mesh.material);
+			if (material->GetState() == Resource::State::Ready)
+			{
+				MeshData& meshData = m_meshData.Get((u64)mesh.renderDataHandle);
+				bgfx::setVertexBuffer(0, meshData.vertexBufferHandle);
+				bgfx::setIndexBuffer(meshData.indexBufferHandle);
+
+				uint64_t state = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_MSAA | BGFX_STATE_DEPTH_TEST_LESS;
+				bgfx::setState(state);
+
+				const Shader* shader = (Shader*)m_shaderManager->GetResource(material->shader);
+				ShaderData& shaderData = m_shaderData.Get((u64)shader->renderDataHandle);
+				bgfx::submit(m_currentView, shaderData.handle);
 			}
 		}
 	}
@@ -1033,6 +1112,9 @@ private:
 	ModelManager* m_modelManager = nullptr;
 	TextureManager* m_textureManager = nullptr;
 
+	///////////////////// DEBUG STUFF
+	resourceHandle m_debugShader = INVALID_RESOURCE_HANDLE;
+	Array<Mesh> m_debugMeshes;
 	/////////////////////
 	u32 m_width = 0;
 	u32 m_height = 0;

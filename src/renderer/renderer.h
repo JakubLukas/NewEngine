@@ -119,8 +119,8 @@ public:
 
 	virtual IScene* GetScene(worldId world) const override = 0;
 
-	virtual void WorldAdded(worldId world) override = 0;
-	virtual void WorldRemoved(worldId world) override = 0;
+	virtual void OnWorldAdded(worldId world) override = 0;
+	virtual void OnWorldRemoved(worldId world) override = 0;
 
 	virtual MaterialManager& GetMaterialManager() const = 0;
 	virtual ShaderManager& GetShaderManager() const = 0;
@@ -142,6 +142,8 @@ public:
 	virtual shaderRenderHandle CreateShaderData(shaderInternalRenderHandle vsHandle, shaderInternalRenderHandle fsHandle) = 0;
 	virtual void DestroyShaderData(shaderRenderHandle handle) = 0;
 
+	virtual void AddDebugLine(Vector3 from, Vector3 to, Color color, float width, int lifetime) = 0;
+
 	virtual void Resize(u32 width, u32 height) = 0;
 	virtual u32 GetScreenWidth() const = 0;
 	virtual u32 GetScreenHeight() const = 0;
@@ -157,6 +159,7 @@ public:
 	virtual void SetCamera(World& world, Entity camera) = 0;
 	virtual void Clear() = 0;
 	virtual void RenderModels(World& world, const RenderScene::ModelItem* models, size_t count) = 0;
+	virtual void RenderDebug() = 0;
 
 	virtual void* GetNativeFrameBufferHandle(FramebufferHandle handle) = 0;
 };

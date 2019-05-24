@@ -344,6 +344,38 @@ bool LoadSymbols(osHandle process/*ImageName, ModuleName, BaseOfDll, SizeOfDll/)
 }*/
 
 
+void GetMouseCursorPos(int& x, int& y)
+{
+	POINT p;
+	if (::GetCursorPos(&p) != 0)
+	{
+		x = p.x;
+		y = p.y;
+	}
+	else
+	{
+		DWORD errId = ::GetLastError();
+		LogErrorMessage(errId);
+		ASSERT2(false, "GetCursorPos failed");
+	}
+}
+
+void SetMouseCursorPos(int x, int y)
+{
+	if (::SetCursorPos(x, y) == 0)
+	{
+		DWORD errId = ::GetLastError();
+		LogErrorMessage(errId);
+		ASSERT2(false, "SetCursorPos failed");
+	}
+}
+
+void ShowMouseCursor(bool show)
+{
+	::ShowCursor(show);
+}
+
+
 }
 
 

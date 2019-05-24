@@ -473,7 +473,7 @@ public:
 				section &= ~keyBit;
 		}
 
-		if (handle == m_app.GetMainWindowHandle())
+		//if (handle == m_app.GetMainWindowHandle())
 		{
 			ImGuiIO& io = ImGui::GetIO();
 			switch (buttonId)
@@ -500,7 +500,7 @@ public:
 				}
 			}
 		}
-		else
+		//else
 		{
 			m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, buttonId, pressed);
 		}
@@ -508,70 +508,71 @@ public:
 
 	void RegisterButtonEvent(windowHandle handle, inputDeviceHandle deviceHandle, MouseDevice::Button buttonId, bool pressed) override
 	{
-		if (m_inputEnabled)
+		if (!m_inputEnabled)
+			return;
+
+		//if (handle == m_app.GetMainWindowHandle())
 		{
-			if (handle == m_app.GetMainWindowHandle())
+			switch (buttonId)
 			{
-				switch (buttonId)
-				{
-				case MouseDevice::Button::Left:
-					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MouseButton_Left) | (pressed << ImGui::MouseButtonBitOffset_Left); break;
-				case MouseDevice::Button::Right:
-					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MouseButton_Right) | (pressed << ImGui::MouseButtonBitOffset_Right); break;
-				case MouseDevice::Button::Middle:
-					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MouseButton_Middle) | (pressed << ImGui::MouseButtonBitOffset_Middle); break;
-				case MouseDevice::Button::Extra4:
-					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MouseButton_Extra4) | (pressed << ImGui::MouseButtonBitOffset_Extra4); break;
-				case MouseDevice::Button::Extra5:
-					m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MouseButton_Extra5) | (pressed << ImGui::MouseButtonBitOffset_Extra5); break;
-				}
-			}
-			else
-			{
-				m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, buttonId, pressed);
+			case MouseDevice::Button::Left:
+				m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MouseButton_Left) | (pressed << ImGui::MouseButtonBitOffset_Left); break;
+			case MouseDevice::Button::Right:
+				m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MouseButton_Right) | (pressed << ImGui::MouseButtonBitOffset_Right); break;
+			case MouseDevice::Button::Middle:
+				m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MouseButton_Middle) | (pressed << ImGui::MouseButtonBitOffset_Middle); break;
+			case MouseDevice::Button::Extra4:
+				m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MouseButton_Extra4) | (pressed << ImGui::MouseButtonBitOffset_Extra4); break;
+			case MouseDevice::Button::Extra5:
+				m_inputBuffer.mouseButtons = (m_inputBuffer.mouseButtons & ~ImGui::MouseButton_Extra5) | (pressed << ImGui::MouseButtonBitOffset_Extra5); break;
 			}
 		}
+		//else
+		{
+			m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, buttonId, pressed);
+		}
+
 	}
 
 	void RegisterButtonEvent(windowHandle handle, inputDeviceHandle deviceHandle, GamepadDevice::Button buttonId, bool pressed) override
 	{
-		if (m_inputEnabled)
+		if (!m_inputEnabled)
+			return;
+
+		if (handle != m_app.GetMainWindowHandle())
 		{
-			if (handle != m_app.GetMainWindowHandle())
-			{
-				m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, buttonId, pressed);
-			}
+			m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, buttonId, pressed);
 		}
 	}
 
 	void RegisterAxisEvent(windowHandle handle, inputDeviceHandle deviceHandle, MouseDevice::Axis axisId, const Vector3& delta) override
 	{
-		if (m_inputEnabled)
+		if (!m_inputEnabled)
+			return;
+
+		//if (handle == m_app.GetMainWindowHandle())
 		{
-			if (handle == m_app.GetMainWindowHandle())
+			switch (axisId)
 			{
-				switch (axisId)
-				{
-				case Veng::MouseDevice::Axis::Wheel:
-					m_inputBuffer.scroll += delta.x;
-					break;
-				}
+			case Veng::MouseDevice::Axis::Wheel:
+				m_inputBuffer.scroll += delta.x;
+				break;
 			}
-			else
-			{
-				m_engine->GetInputSystem()->RegisterAxisEvent(deviceHandle, axisId, delta);
-			}
+		}
+		//else
+		{
+			m_engine->GetInputSystem()->RegisterAxisEvent(deviceHandle, axisId, delta);
 		}
 	}
 
 	void RegisterAxisEvent(windowHandle handle, inputDeviceHandle deviceHandle, GamepadDevice::Axis axisId, const Vector3& delta) override
 	{
-		if (m_inputEnabled)
+		if (!m_inputEnabled)
+			return;
+
+		//if (handle != m_app.GetMainWindowHandle())
 		{
-			if (handle != m_app.GetMainWindowHandle())
-			{
-				m_engine->GetInputSystem()->RegisterAxisEvent(deviceHandle, axisId, delta);
-			}
+			m_engine->GetInputSystem()->RegisterAxisEvent(deviceHandle, axisId, delta);
 		}
 	}
 
