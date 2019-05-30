@@ -369,7 +369,7 @@ private:
 			ASSERT2(false, "Mouse movement is mapped to virtual desktop");
 		}
 
-		if (mouse.lLastX != 0 && mouse.lLastY != 0)
+		if (mouse.lLastX != 0 || mouse.lLastY != 0)
 		{
 			Vector3 axisMov{
 				(float)mouse.lLastX,

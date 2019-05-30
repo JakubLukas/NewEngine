@@ -24,10 +24,14 @@ struct Vector2
 	Vector2 operator+(const Vector2& other) const;
 	Vector2 operator-(const Vector2& other) const;
 
+	Vector2& operator+=(const Vector2& other);
+	Vector2& operator-=(const Vector2& other);
+
 
 	float x;
 	float y;
 };
+
 
 
 struct Vector3
@@ -49,11 +53,16 @@ struct Vector3
 	Vector3 operator+(const Vector3& other) const;
 	Vector3 operator-(const Vector3& other) const;
 
+	Vector3& operator+=(const Vector3& other);
+	Vector3& operator-=(const Vector3& other);
+
+
 	float Length() const;
 	void Normalize();
 
 	static float Dot(const Vector3& vec1, const Vector3& vec2);
 	static Vector3 Cross(const Vector3& vec1, const Vector3& vec2);
+
 
 	float x;
 	float y;
@@ -65,6 +74,7 @@ Vector3 operator*(const Vector3& vec, float value);
 
 Vector3 operator/(float value, const Vector3& vec);
 Vector3 operator/(const Vector3& vec, float value);
+
 
 
 struct FORCE_ALIGNMENT(16) Vector4
@@ -85,6 +95,10 @@ struct FORCE_ALIGNMENT(16) Vector4
 
 	Vector4 operator+(const Vector4& other) const;
 	Vector4 operator-(const Vector4& other) const;
+
+	Vector4& operator+=(const Vector4& other);
+	Vector4& operator-=(const Vector4& other);
+
 
 	float Length() const;
 	void Normalize();

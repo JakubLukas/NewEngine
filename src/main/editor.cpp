@@ -539,7 +539,7 @@ public:
 		if (!m_inputEnabled)
 			return;
 
-		if (handle != m_app.GetMainWindowHandle())
+		//if (handle != m_app.GetMainWindowHandle())
 		{
 			m_engine->GetInputSystem()->RegisterButtonEvent(deviceHandle, buttonId, pressed);
 		}

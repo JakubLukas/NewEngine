@@ -35,7 +35,6 @@ struct FORCE_ALIGNMENT(16) Matrix44
 		float r41, float r42, float r43, float r44
 	);
 	Matrix44(const Matrix44& other);
-
 	Matrix44& operator=(const Matrix44& other);
 
 

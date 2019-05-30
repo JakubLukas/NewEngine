@@ -160,6 +160,7 @@ public:
 			newEvent.mbCode = buttonId;
 			newEvent.pressed = pressed;
 			m_events.PushBack(newEvent);
+			//Log(LogType::Error, "mouse click %d")
 		}
 	}
 
@@ -238,7 +239,7 @@ public:
 
 	void HideCursor(bool hide) override
 	{
-		os::ShowMouseCursor(hide);
+		os::ShowMouseCursor(!hide);
 	}
 
 
@@ -264,7 +265,7 @@ private:
 	AssociativeArray<inputDeviceHandle, InputDevice> m_devices;
 	Array<InputEvent> m_events;
 	MousePos m_mousePositon;
-	bool m_mouseLocked;
+	bool m_mouseLocked = false;
 	bool m_active = true;
 };
 

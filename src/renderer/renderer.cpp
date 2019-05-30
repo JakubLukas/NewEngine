@@ -75,6 +75,13 @@ struct FrameBuffer
 };
 
 
+struct DebugMesh
+{
+	Mesh mesh;
+	float lifetime;
+};
+
+
 componentHandle RenderScene::GetComponentHandle(Component comp)
 {
 	return (componentHandle)comp;
@@ -530,16 +537,41 @@ public:
 					if (Vector3::Dot(normal, -ray.direction) < 0.0f)
 						continue; //backface
 
+					const float epsilon = 0.001f;
+					if (absf(Vector3::Dot(normal, -ray.direction)) < epsilon)
+						continue;//ray is parallel
+
 					//ray triangle intersection
 					float D = Vector3::Dot(normal, v1);
-					float t = (Vector3::Dot(normal, ray.origin) + D) / Vector3::Dot(normal, ray.direction);
+					float t = (-Vector3::Dot(normal, ray.origin) + D) / Vector3::Dot(normal, ray.direction);
+
+					if (t < 0)
+						continue;//triangle is behind
+
 					Vector3 intersection = ray.origin + t * ray.direction;
 
-					if (IsPointInsideTriangle(intersection, v1, v2, v3))
-					{
-						hitModel = &item;
-						return true;
-					}
+					Vector3 C; // vector perpendicular to triangle's plane
+
+					Vector3 edge1 = v2 - v1;
+					Vector3 vp1 = intersection - v1;
+					C = Vector3::Cross(vp1, edge1);
+					if (Vector3::Dot(normal, C) < 0.0f)
+						continue;//point is outside of line
+
+					Vector3 edge2 = v3 - v2;
+					Vector3 vp2 = intersection - v2;
+					C = Vector3::Cross(vp2, edge2);
+					if (Vector3::Dot(normal, C) < 0.0f)
+						continue;//point is outside of line
+
+					Vector3 edge3 = v1 - v3;
+					Vector3 vp3 = intersection - v3;
+					C = Vector3::Cross(vp3, edge3);
+					if (Vector3::Dot(normal, C) < 0.0f)
+						continue;//point is outside of line
+
+					hitModel = &item;
+					return true;
 				}
 			}
 		}
@@ -615,11 +647,12 @@ public:
 
 	~RenderSystemImpl() override
 	{
-		for (Mesh& mesh : m_debugMeshes)
+		for (DebugMesh& dMesh : m_debugMeshes)
 		{
-			m_allocator.Deallocate(mesh.verticesData);
-			m_allocator.Deallocate(mesh.indicesData);
-			m_engine.GetResourceManagement()->UnloadResource(ResourceType::Material, mesh.material);
+			DestroyMeshData(dMesh.mesh.renderDataHandle);
+			m_allocator.Deallocate(dMesh.mesh.verticesData);
+			m_allocator.Deallocate(dMesh.mesh.indicesData);
+			m_engine.GetResourceManagement()->UnloadResource(ResourceType::Material, dMesh.mesh.material);
 		}
 
 		for (const auto& scene : m_scenes)
@@ -642,6 +675,20 @@ public:
 	void Update(float deltaTime) override
 	{
 		m_currentView = m_firstView - 1;//////
+
+		for (size_t i = m_debugMeshesStartDynamic; i < m_debugMeshes.GetSize(); ++i)
+		{
+			DebugMesh& dMesh = m_debugMeshes[i];
+			dMesh.lifetime -= deltaTime;
+			if (dMesh.lifetime <= 0.0f)
+			{
+				DestroyMeshData(dMesh.mesh.renderDataHandle);
+				m_allocator.Deallocate(dMesh.mesh.verticesData);
+				m_allocator.Deallocate(dMesh.mesh.indicesData);
+				m_engine.GetResourceManagement()->UnloadResource(ResourceType::Material, dMesh.mesh.material);
+				m_debugMeshes.Erase(i);
+			}
+		}
 	}
 
 
@@ -845,15 +892,15 @@ public:
 	}
 
 
-	void AddDebugLine(Vector3 from, Vector3 to, Color color, float width, int lifetime) override
+	void AddDebugLine(Vector3 from, Vector3 to, Color color, float width, float lifetime) override
 	{
-		Mesh& mesh = m_debugMeshes.PushBack();
+		DebugMesh& dMesh = m_debugMeshes.PushBack();
 
-		mesh.varyings = ShaderVarying_Position | ShaderVarying_Color0;
-		mesh.verticesCount = 4;
+		dMesh.mesh.varyings = ShaderVarying_Position | ShaderVarying_Color0;
+		dMesh.mesh.verticesCount = 4;
 		const size_t bufferSize = (3 * sizeof(float) + 4 * sizeof(u8)) * 4;
-		mesh.verticesData = (u8*)m_allocator.Allocate(bufferSize, alignof(float));
-		u8* vData = mesh.verticesData;
+		dMesh.mesh.verticesData = (u8*)m_allocator.Allocate(bufferSize, alignof(float));
+		u8* vData = dMesh.mesh.verticesData;
 
 		Vector3 from1(from.x, from.y - width, from.z);
 		Vector3 from2(from.x, from.y + width, from.z);
@@ -878,15 +925,26 @@ public:
 		memory::Copy(vData, &color, sizeof(Color));
 		vData += sizeof(Color);
 
-		mesh.indicesCount = 2;
-		size_t count = mesh.indicesCount * 3;//triangles
-		mesh.indicesData = (u16*)m_allocator.Allocate(count * sizeof(u16), alignof(u16));
+		dMesh.mesh.indicesCount = 2;
+		size_t count = dMesh.mesh.indicesCount * 3;//triangles
+		dMesh.mesh.indicesData = (u16*)m_allocator.Allocate(count * sizeof(u16), alignof(u16));
 		const u16 iData[] = { 0, 2, 1, 1, 2, 3 };
-		memory::Copy(mesh.indicesData, iData, count * sizeof(u16));
+		memory::Copy(dMesh.mesh.indicesData, iData, count * sizeof(u16));
 
 		Path materialPath("materials/debug.material");
-		mesh.material = m_engine.GetResourceManagement()->GetManager(ResourceType::Material)->Load(materialPath);
-		mesh.renderDataHandle = CreateMeshData(mesh);
+		dMesh.mesh.material = m_engine.GetResourceManagement()->GetManager(ResourceType::Material)->Load(materialPath);
+		dMesh.mesh.renderDataHandle = CreateMeshData(dMesh.mesh);
+		dMesh.lifetime = lifetime;
+
+		if (lifetime == -1.0f)
+		{
+			m_debugMeshes.Swap(m_debugMeshesStartDynamic, m_debugMeshes.GetSize() - 1);
+			m_debugMeshesStartDynamic++;
+		}
+		else
+		{
+			dMesh.lifetime *= 1000.0f;
+		}
 	}
 
 
@@ -984,10 +1042,9 @@ public:
 				float halfH = cam.screenHeight * 0.5f;
 				proj.SetOrthogonal(-halfW, halfW, -halfH, halfH, cam.nearPlane, cam.farPlane, 0.0f, bgfx::getCaps()->homogeneousDepth);
 			}
-			Matrix44 camRot;
-			camRot.SetRotation(camTrans.rotation);
+
 			Vector4 eye = Vector4(camTrans.position, 1);
-			Vector4 at = camRot * Vector4(0, 0, 1, 0) + Vector4(camTrans.position, 1);
+			Vector4 at = Vector4(Quaternion::Multiply(camTrans.rotation, Vector3::AXIS_Z), 0) + eye;
 			view.SetLookAt(eye, at, Vector4::AXIS_Y);
 			eye.w = (float)cam.type;
 
@@ -1071,7 +1128,7 @@ public:
 
 		for (int i = 0; i < m_debugMeshes.GetSize(); ++i)
 		{
-			const Mesh& mesh = m_debugMeshes[i];
+			const Mesh& mesh = m_debugMeshes[i].mesh;
 			const Material* material = (Material*)m_materialManager->GetResource(mesh.material);
 			if (material->GetState() == Resource::State::Ready)
 			{
@@ -1114,7 +1171,8 @@ private:
 
 	///////////////////// DEBUG STUFF
 	resourceHandle m_debugShader = INVALID_RESOURCE_HANDLE;
-	Array<Mesh> m_debugMeshes;
+	Array<DebugMesh> m_debugMeshes;
+	size_t m_debugMeshesStartDynamic = 0;
 	/////////////////////
 	u32 m_width = 0;
 	u32 m_height = 0;

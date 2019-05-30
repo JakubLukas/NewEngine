@@ -6,6 +6,12 @@ namespace Veng
 {
 
 
+float absf(float num)
+{
+	return ::fabsf(num);
+}
+
+
 float sinf(float num)
 {
 	return ::sinf(num);
@@ -39,7 +45,7 @@ float atanf(float num)
 }
 
 
-float pow(float num, float exp)
+float powf(float num, float exp)
 {
 	return ::powf(num, exp);
 }

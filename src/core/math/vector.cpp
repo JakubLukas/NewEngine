@@ -52,12 +52,27 @@ Vector2 Vector2::operator+(const Vector2& other) const
 		y + other.y
 	);
 }
+
 Vector2 Vector2::operator-(const Vector2& other) const
 {
 	return Vector2(
 		x - other.x,
 		y - other.y
 	);
+}
+
+Vector2& Vector2::operator+=(const Vector2& other)
+{
+	x += other.x;
+	y += other.y;
+	return *this;
+}
+
+Vector2& Vector2::operator-=(const Vector2& other)
+{
+	x -= other.x;
+	y -= other.y;
+	return *this;
 }
 
 
@@ -130,6 +145,23 @@ Vector3 Vector3::operator-(const Vector3& other) const
 		y - other.y,
 		z - other.z
 	);
+}
+
+
+Vector3& Vector3::operator+=(const Vector3& other)
+{
+	x += other.x;
+	y += other.y;
+	z += other.z;
+	return *this;
+}
+
+Vector3& Vector3::operator-=(const Vector3& other)
+{
+	x -= other.x;
+	y -= other.y;
+	z -= other.z;
+	return *this;
 }
 
 
@@ -279,6 +311,24 @@ Vector4 Vector4::operator-(const Vector4& other) const
 		z - other.z,
 		w - other.w
 	);
+}
+
+Vector4& Vector4::operator+=(const Vector4& other)
+{
+	x += other.x;
+	y += other.y;
+	z += other.z;
+	w += other.w;
+	return *this;
+}
+
+Vector4& Vector4::operator-=(const Vector4& other)
+{
+	x -= other.x;
+	y -= other.y;
+	z -= other.z;
+	w -= other.w;
+	return *this;
 }
 
 

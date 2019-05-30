@@ -190,15 +190,15 @@ void Matrix44::SetLookAt(const Vector4& eye, const Vector4& at, const Vector4& u
 	memory::Set(this, 0, sizeof(float) * 16);
 
 	m11 = right.x;
-	m21 = upNew.x;
-	m31 = dir.x;
+	m12 = upNew.x;
+	m13 = dir.x;
 
-	m12 = right.y;
+	m21 = right.y;
 	m22 = upNew.y;
-	m32 = dir.y;
+	m23 = dir.y;
 
-	m13 = right.z;
-	m23 = upNew.z;
+	m31 = right.z;
+	m32 = upNew.z;
 	m33 = dir.z;
 
 	m41 = -Vector3::Dot(right, eyeV3);

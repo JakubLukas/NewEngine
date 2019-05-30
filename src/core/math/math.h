@@ -20,6 +20,7 @@ Type Max(Type v1, Type v2)
 
 constexpr float PI = 3.1415926535897932384626433832795f;
 
+float absf(float num);
 
 float sinf(float num);
 float asinf(float num);
@@ -30,7 +31,7 @@ float acosf(float num);
 float tanf(float num);
 float atanf(float num);
 
-float pow(float num, float exp);
+float powf(float num, float exp);
 float sqrtf(float num);
 
 

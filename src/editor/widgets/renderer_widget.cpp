@@ -26,6 +26,8 @@ static void ScriptCameraUpdate(void* data, Engine& engine, float deltaTime)
 {
 	deltaTime = 1.0f / deltaTime;
 
+	static float angleYaw = 0.0f;
+	static float anglePitch = 0.0f;
 	static float speed = 1.0f;
 	static bool forward = false;
 	static bool backward = false;
@@ -60,30 +62,36 @@ static void ScriptCameraUpdate(void* data, Engine& engine, float deltaTime)
 		}
 		if (event.deviceCategory == InputDeviceCategory::Mouse)
 		{
-			if (event.maCode == MouseDevice::Axis::Movement)
+			if (event.type == InputEvent::Type::AxisChanged)
 			{
-				Matrix44 currentCamRotation;
-				currentCamRotation.SetRotation(camTrans.rotation);
-				Vector4 camAxisX = Matrix44::Multiply(currentCamRotation, -Vector4::AXIS_X);
-				Vector4 camAxisY = Matrix44::Multiply(currentCamRotation, -Vector4::AXIS_Y);
+				if (event.maCode == MouseDevice::Axis::Movement)
+				{
+					angleYaw += event.axis.x * deltaTime * 0.1f;
+					anglePitch += event.axis.y * deltaTime * 0.1f;
 
-				Quaternion rotY(camAxisX.GetXYZ(), event.axis.y * deltaTime * 0.1f);
-				Quaternion rotX(camAxisY.GetXYZ(), event.axis.x * deltaTime * 0.1f);
+					Quaternion rotYaw(Vector3::AXIS_Y, angleYaw);
+					Quaternion rotPitch(Vector3::AXIS_X, anglePitch);
 
-				Quaternion deltaRot = rotX * rotY;
-
-				camTrans.rotation = camTrans.rotation * deltaRot;
+					camTrans.rotation = rotPitch * rotYaw;
+				}
+				if (event.maCode == MouseDevice::Axis::Wheel)
+					speed = Max(speed + event.axis.x * 0.1f, 0.0f);
 			}
-			if (event.maCode == MouseDevice::Axis::Wheel)
-				speed += event.axis.x * 0.1f;
 		}
 	}
 
-	Vector3 movement(0.0f, 0.0f, 0.0f);
-	movement.x = (left) ? -speed : 0.0f + (right) ? speed : 0.0f;
-	movement.y = (up) ? speed : 0.0f + (down) ? -speed : 0.0f;
-	movement.z = (forward) ? speed : 0.0f + (backward) ? -speed : 0.0f;
-	camTrans.position = camTrans.position + movement * deltaTime;
+	if (forward)
+		camTrans.position += Quaternion::Multiply(camTrans.rotation, Vector3::AXIS_Z) * speed;
+	if (backward)
+		camTrans.position -= Quaternion::Multiply(camTrans.rotation, Vector3::AXIS_Z) * speed;
+	if (right)
+		camTrans.position += Quaternion::Multiply(Quaternion(Vector3::AXIS_Y, angleYaw), Vector3::AXIS_X) * speed;
+	if (left)
+		camTrans.position -= Quaternion::Multiply(Quaternion(Vector3::AXIS_Y, angleYaw), Vector3::AXIS_X) * speed;
+	if (up)
+		camTrans.position += Vector3::AXIS_Y * speed;
+	if (down)
+		camTrans.position -= Vector3::AXIS_Y * speed;
 }
 
 
@@ -135,6 +143,7 @@ void RendererWidget::Init(Engine& engine, EditorInterface& editor)
 		ScriptScene* scriptScene = static_cast<ScriptScene*>(scriptSystem->GetScene(world.GetId()));
 		scriptScene->AddComponent(ScriptScene::GetComponentHandle(ScriptScene::Component::Script), m_camera);
 		scriptScene->SetComponentData(ScriptScene::GetComponentHandle(ScriptScene::Component::Script), m_camera, &camScript);
+		scriptScene->SetScriptActive(m_camera, false);
 	}
 }
 
@@ -179,6 +188,14 @@ void RendererWidget::RenderInternal(EventQueue& queue)
 		m_changedSize = false;
 	}
 
+	if (ImGui::IsKeyPressed((int)KeyboardDevice::Button::Escape, false))
+	{
+		m_focused = false;
+		m_engine->GetInputSystem()->LockCursor(false);
+		//m_engine->GetInputSystem()->HideCursor(false);
+		((ScriptScene*)(m_engine->GetSystem("script")->GetScene((worldId)0)))->SetScriptActive(m_camera, false);
+	}
+
 	ImVec2 cursorPos = ImGui::GetCursorPos();
 
 	m_pipeline->Render();
@@ -187,45 +204,52 @@ void RendererWidget::RenderInternal(EventQueue& queue)
 	ImGui::SetCursorPos(cursorPos);
 	if (ImGui::InvisibleButton("##raycast_trigger", windowSize))
 	{
-		//m_engine->GetInputSystem()->LockCursor(true);
-
-		ImVec2 mousePosAbs = ImGui::GetMousePos();
-		ImVec2 mousePosRel = mousePosAbs - ImGui::GetWindowPos() - cursorPos;
-
-		RenderScene* renderScene = (RenderScene*)m_renderer->GetScene((worldId)0);//TODO FIX WORLD ID ///////////////////
-		const componentHandle cameraComponentHandle = renderScene->GetComponentHandle("camera"); ////////////////////////////
-		Camera* cam = (Camera*)renderScene->GetComponentData(cameraComponentHandle, m_camera);
-		const Transform& cameraTransform = m_engine->GetWorld((worldId)0)->GetEntityTransform(m_camera);//////////////////////////////
-
-		Ray ray;
-		ray.origin = cameraTransform.position;
-		//compute correct ray
-		float mx = (mousePosRel.x - cam->screenWidth * 0.5f) * (1.0f / cam->screenWidth) * 2.0f;
-		float my = -(mousePosRel.y - cam->screenHeight * 0.5f) * (1.0f / cam->screenHeight) * 2.0f;
-		Matrix44 camRot;
-		camRot.SetRotation(cameraTransform.rotation);
-		Vector4 camRight = (camRot * Vector4::AXIS_X);
-		Vector4 camUp = (camRot * Vector4::AXIS_Y);
-		Vector4 camDir = (camRot * Vector4::AXIS_Z);
-
-		Vector4 screenCenter = Vector4(cameraTransform.position, 1.0f) + camDir * cam->nearPlane;
-		Vector4 screenRightDir = camRight * tanf(cam->fov * 0.5f) * cam->nearPlane;
-		Vector4 screenUpDir = camUp * tanf(cam->fov * 0.5f) * cam->nearPlane / cam->aspect;
-		Vector4 screenPoint = screenCenter + screenRightDir * mx + screenUpDir * my;
-		ray.direction = Vector3(screenPoint.x, screenPoint.y, screenPoint.z) - cameraTransform.position;
-		ray.direction.Normalize();
-
-		RenderScene::ModelItem hitModel;
-		if (renderScene->RaycastModels(ray, &hitModel))
+		if (!m_focused)
 		{
-			//ASSERT(false);
-			Log(LogType::Info, "Model hit");
-			//m_renderer->AddDebugLine(ray.origin, ray.origin + ray.direction * 10, Color(0, 255, 0), 0);
-			//m_renderer->AddDebugLine(Vector3(0, 0, 25), Vector3(0, 0, 45), Color(0, 255, 0), 0);
+			m_focused = true;
+			m_engine->GetInputSystem()->LockCursor(true);
+			//m_engine->GetInputSystem()->HideCursor(true);
+			((ScriptScene*)(m_engine->GetSystem("script")->GetScene((worldId)0)))->SetScriptActive(m_camera, true);
 		}
+		else
+		{
+			ImVec2 mousePosAbs = ImGui::GetMousePos();
+			ImVec2 mousePosRel = mousePosAbs - ImGui::GetWindowPos() - cursorPos;
 
-		//ImGui::SetCursorPos(mousePosRel);
-		//ImGui::Button("test");
+			RenderScene* renderScene = (RenderScene*)m_renderer->GetScene((worldId)0);//TODO FIX WORLD ID ///////////////////
+			const componentHandle cameraComponentHandle = renderScene->GetComponentHandle("camera"); ////////////////////////////
+			Camera* cam = (Camera*)renderScene->GetComponentData(cameraComponentHandle, m_camera);
+			const Transform& cameraTransform = m_engine->GetWorld((worldId)0)->GetEntityTransform(m_camera);//////////////////////////////
+
+			Ray ray;
+			ray.origin = cameraTransform.position;
+			//compute correct ray
+			float mx = (mousePosRel.x - cam->screenWidth * 0.5f) * (1.0f / cam->screenWidth) * 2.0f;
+			float my = -(mousePosRel.y - cam->screenHeight * 0.5f) * (1.0f / cam->screenHeight) * 2.0f;
+
+			Vector3 camRight = Quaternion::Multiply(cameraTransform.rotation, Vector3::AXIS_X);
+			Vector3 camUp = Quaternion::Multiply(cameraTransform.rotation, Vector3::AXIS_Y);
+			Vector3 camDir = Quaternion::Multiply(cameraTransform.rotation, Vector3::AXIS_Z);
+
+			Vector3 screenCenter = cameraTransform.position + camDir * cam->nearPlane;
+			Vector3 screenRightDir = camRight * tanf(cam->fov * 0.5f) * cam->nearPlane;
+			Vector3 screenUpDir = camUp * tanf(cam->fov * 0.5f) * cam->nearPlane / cam->aspect;
+			Vector3 screenPoint = screenCenter + screenRightDir * mx + screenUpDir * my;
+			ray.direction = screenPoint - cameraTransform.position;
+			ray.direction.Normalize();
+
+			RenderScene::ModelItem hitModel;
+			if (renderScene->RaycastModels(ray, &hitModel))
+			{
+				//ASSERT(false);
+				Log(LogType::Info, "Model hit\n");
+				//m_renderer->AddDebugLine(Vector3(0, 0, 25), Vector3(0, 0, 45), Color(0, 255, 0), 0);
+			}
+
+			m_renderer->AddDebugLine(ray.origin, ray.origin + ray.direction * 100, Color(0, 255, 0), 0.05f, 10.0f);
+			//ImGui::SetCursorPos(mousePosRel);
+			//ImGui::Button("test");
+		}
 	}
 }
 

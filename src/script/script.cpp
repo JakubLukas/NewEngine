@@ -216,6 +216,7 @@ private:
 	Array<ComponentInfo> m_componentInfos;
 
 	AssociativeArray<Entity, ScriptItem> m_scripts;
+	size_t m_activeScriptsCount = 0;
 };
 
 
@@ -286,7 +287,7 @@ public:
 				i++;
 			}
 		}
-		renderSystem->AddDebugLine(Vector3(10, 0, 25), Vector3(-10, 0, -5), Color(0, 255, 255, 255), 0.1f, 0);
+		renderSystem->AddDebugLine(Vector3(10, 0, 25), Vector3(-10, 0, -5), Color(0, 255, 255, 255), 0.1f, -1.0f);
 	}
 
 	void Update(float deltaTime) override
@@ -296,11 +297,12 @@ public:
 			const ScriptScene::ScriptItem* scripts = sceneNode.value->GetScripts();
 			for (int i = 0; i < sceneNode.value->GetScriptsCount(); ++i)
 			{
-				scripts[i].script.updateFunction(scriptMemory, m_engine, deltaTime);
+				if(scripts[i].active)// BOOOOOOOOOOOOOOOOOOOOOOOO
+					scripts[i].script.updateFunction(scriptMemory, m_engine, deltaTime);
 			}
 		}
 
-
+		// DUMMY GAMEPLAY SCRIPT
 		Quaternion rot = Quaternion::IDENTITY;
 		rot = rot * Quaternion(Vector3::AXIS_X, SecFromMSec(deltaTime));
 

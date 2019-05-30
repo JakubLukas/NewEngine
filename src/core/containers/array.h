@@ -48,6 +48,8 @@ public:
 
 	bool Find(const Type& value, size_t& idx);
 
+	void Swap(size_t index1, size_t index2);
+
 	const Type& operator[](size_t index) const;
 	Type& operator[](size_t index);
 

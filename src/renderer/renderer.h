@@ -142,7 +142,7 @@ public:
 	virtual shaderRenderHandle CreateShaderData(shaderInternalRenderHandle vsHandle, shaderInternalRenderHandle fsHandle) = 0;
 	virtual void DestroyShaderData(shaderRenderHandle handle) = 0;
 
-	virtual void AddDebugLine(Vector3 from, Vector3 to, Color color, float width, int lifetime) = 0;
+	virtual void AddDebugLine(Vector3 from, Vector3 to, Color color, float width, float lifetime) = 0;
 
 	virtual void Resize(u32 width, u32 height) = 0;
 	virtual u32 GetScreenWidth() const = 0;

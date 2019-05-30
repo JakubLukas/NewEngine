@@ -42,6 +42,7 @@ private:
 
 	ImVec2 m_size = { 0, 0 };
 	bool m_changedSize = false;
+	bool m_focused = false;
 
 	Entity m_camera = INVALID_ENTITY;
 };
