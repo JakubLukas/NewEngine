@@ -297,7 +297,7 @@ public:
 			const ScriptScene::ScriptItem* scripts = sceneNode.value->GetScripts();
 			for (int i = 0; i < sceneNode.value->GetScriptsCount(); ++i)
 			{
-				if(scripts[i].active)// BOOOOOOOOOOOOOOOOOOOOOOOO
+				if(scripts[i].active)//TODO: change from map to array and keep unactive on end ?
 					scripts[i].script.updateFunction(scriptMemory, m_engine, deltaTime);
 			}
 		}

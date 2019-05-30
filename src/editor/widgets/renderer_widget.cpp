@@ -72,7 +72,7 @@ static void ScriptCameraUpdate(void* data, Engine& engine, float deltaTime)
 					Quaternion rotYaw(Vector3::AXIS_Y, angleYaw);
 					Quaternion rotPitch(Vector3::AXIS_X, anglePitch);
 
-					camTrans.rotation = rotPitch * rotYaw;
+					camTrans.rotation = rotYaw * rotPitch;
 				}
 				if (event.maCode == MouseDevice::Axis::Wheel)
 					speed = Max(speed + event.axis.x * 0.1f, 0.0f);
@@ -85,9 +85,9 @@ static void ScriptCameraUpdate(void* data, Engine& engine, float deltaTime)
 	if (backward)
 		camTrans.position -= Quaternion::Multiply(camTrans.rotation, Vector3::AXIS_Z) * speed;
 	if (right)
-		camTrans.position += Quaternion::Multiply(Quaternion(Vector3::AXIS_Y, angleYaw), Vector3::AXIS_X) * speed;
+		camTrans.position += Quaternion::Multiply(camTrans.rotation, Vector3::AXIS_X) * speed;
 	if (left)
-		camTrans.position -= Quaternion::Multiply(Quaternion(Vector3::AXIS_Y, angleYaw), Vector3::AXIS_X) * speed;
+		camTrans.position -= Quaternion::Multiply(camTrans.rotation, Vector3::AXIS_X) * speed;
 	if (up)
 		camTrans.position += Vector3::AXIS_Y * speed;
 	if (down)

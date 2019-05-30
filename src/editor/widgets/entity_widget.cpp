@@ -6,6 +6,7 @@
 #include "core/world/world.h"
 #include "core/math/matrix.h"
 #include "core/math/math.h"
+#include "core/math/math_ext.h"
 
 #include "renderer/renderer.h"///////////////
 #include "renderer/camera.h"///////////////////
@@ -72,9 +73,18 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 	if (ImGui::TreeNodeEx("transform", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnDoubleClick))
 	{
 		Transform& entityTrans = m_world->GetEntityTransform(m_entity);
-		ImGui::InputFloat3("position", &entityTrans.position.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
-		ImGui::InputFloat4("rotation", &entityTrans.rotation.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
-		ImGui::InputFloat("scale", &entityTrans.scale, 0.1f, 1.0f, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::InputFloat3("position", &entityTrans.position.x, "%.2f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+
+		Vector3 eulerAngles;
+		QuatToEuler(entityTrans.rotation, eulerAngles);
+		ToDeg(eulerAngles);
+		if(ImGui::InputFloat3("rotation", &eulerAngles.x, "%.2f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
+		{
+			ToRad(eulerAngles);
+			EulerToQuat(eulerAngles, entityTrans.rotation);
+		}
+
+		ImGui::InputFloat("scale", &entityTrans.scale, 0.1f, 1.0f, "%.2f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
 		ImGui::Separator();
 		ImGui::TreePop();
 	}

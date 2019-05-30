@@ -6,6 +6,12 @@ namespace Veng
 {
 
 
+float copysignf(float num, float sign)
+{
+	return ::copysignf(num, sign);
+}
+
+
 float absf(float num)
 {
 	return ::fabsf(num);
@@ -42,6 +48,11 @@ float tanf(float num)
 float atanf(float num)
 {
 	return ::atanf(num);
+}
+
+float atan2f(float y, float x)
+{
+	return ::atan2f(y, x);
 }
 
 

@@ -18,7 +18,11 @@ Type Max(Type v1, Type v2)
 }
 
 
+float copysignf(float num, float sign);
+
+
 constexpr float PI = 3.1415926535897932384626433832795f;
+constexpr float PI_HALF = PI / 2.0f;
 
 float absf(float num);
 
@@ -30,6 +34,7 @@ float acosf(float num);
 
 float tanf(float num);
 float atanf(float num);
+float atan2f(float y, float x);
 
 float powf(float num, float exp);
 float sqrtf(float num);
