@@ -1082,18 +1082,13 @@ public:
 
 			Transform& trans = world.GetEntityTransform(models[i].entity);
 			Matrix44 mtx = trans.ToMatrix44();
-			//mtx.Transpose();
-			// Set model matrix for rendering.
-			bgfx::setTransform(&mtx.m11);
-
+			bgfx::setTransform(&mtx.m11);// Set model matrix for rendering.
 
 			const Model* model = (Model*)m_modelManager->GetResource(models[i].model);
 			if (model->GetState() == Resource::State::Ready)
 			{
 				for (const Mesh& mesh : model->meshes)
-				//for (int i = 0; i < m_debugMeshes.GetSize(); ++i)
 				{
-					//const Mesh& mesh = m_debugMeshes[i];
 					const Material* material = (Material*)m_materialManager->GetResource(mesh.material);
 					if (material->GetState() == Resource::State::Ready)
 					{
