@@ -75,8 +75,9 @@ struct FrameBuffer
 };
 
 
-struct DebugMesh
+struct DebugObject
 {
+	Transform transform;
 	Mesh mesh;
 	float lifetime;
 };
@@ -607,7 +608,7 @@ public:
 		, m_framebuffers(m_allocator)
 		, m_screenSizeFrameBuffers(m_allocator)
 		, m_scenes(m_allocator, &HashWorldId)
-		, m_debugMeshes(m_allocator)
+		, m_debugObjects(m_allocator)
 	{
 		m_allocator.SetDebugName("Renderer");
 
@@ -647,12 +648,12 @@ public:
 
 	~RenderSystemImpl() override
 	{
-		for (DebugMesh& dMesh : m_debugMeshes)
+		for (DebugObject& dObject : m_debugObjects)
 		{
-			DestroyMeshData(dMesh.mesh.renderDataHandle);
-			m_allocator.Deallocate(dMesh.mesh.verticesData);
-			m_allocator.Deallocate(dMesh.mesh.indicesData);
-			m_engine.GetResourceManagement()->UnloadResource(ResourceType::Material, dMesh.mesh.material);
+			DestroyMeshData(dObject.mesh.renderDataHandle);
+			m_allocator.Deallocate(dObject.mesh.verticesData);
+			m_allocator.Deallocate(dObject.mesh.indicesData);
+			m_engine.GetResourceManagement()->UnloadResource(ResourceType::Material, dObject.mesh.material);
 		}
 
 		for (const auto& scene : m_scenes)
@@ -676,9 +677,9 @@ public:
 	{
 		m_currentView = m_firstView - 1;//////
 
-		for (size_t i = m_debugMeshesStartDynamic; i < m_debugMeshes.GetSize(); ++i)
+		for (size_t i = m_debugMeshesStartDynamic; i < m_debugObjects.GetSize(); ++i)
 		{
-			DebugMesh& dMesh = m_debugMeshes[i];
+			DebugObject& dMesh = m_debugObjects[i];
 			dMesh.lifetime -= deltaTime;
 			if (dMesh.lifetime <= 0.0f)
 			{
@@ -686,7 +687,7 @@ public:
 				m_allocator.Deallocate(dMesh.mesh.verticesData);
 				m_allocator.Deallocate(dMesh.mesh.indicesData);
 				m_engine.GetResourceManagement()->UnloadResource(ResourceType::Material, dMesh.mesh.material);
-				m_debugMeshes.Erase(i);
+				m_debugObjects.Erase(i);
 			}
 		}
 	}
@@ -894,18 +895,24 @@ public:
 
 	void AddDebugLine(Vector3 from, Vector3 to, Color color, float width, float lifetime) override
 	{
-		DebugMesh& dMesh = m_debugMeshes.PushBack();
+		DebugObject& dObject = m_debugObjects.PushBack();
 
-		dMesh.mesh.varyings = ShaderVarying_Position | ShaderVarying_Color0;
-		dMesh.mesh.verticesCount = 4;
-		const size_t bufferSize = (3 * sizeof(float) + 4 * sizeof(u8)) * 4;
-		dMesh.mesh.verticesData = (u8*)m_allocator.Allocate(bufferSize, alignof(float));
-		u8* vData = dMesh.mesh.verticesData;
+		dObject.mesh.varyings = ShaderVarying_Position | ShaderVarying_Color0;
+		dObject.mesh.verticesCount = 4;
+		const size_t bufferSize = (sizeof(Vector3) + sizeof(Color)) * dObject.mesh.verticesCount;
+		dObject.mesh.verticesData = (u8*)m_allocator.Allocate(bufferSize, alignof(float));
+		u8* vData = dObject.mesh.verticesData;
 
-		Vector3 from1(from.x, from.y - width, from.z);
-		Vector3 from2(from.x, from.y + width, from.z);
-		Vector3 to1(to.x, to.y - width, to.z);
-		Vector3 to2(to.x, to.y + width, to.z);
+		Vector3 LineDir = to - from;
+		float lineLength = LineDir.Length();
+		LineDir = LineDir / lineLength;
+		float lineLengthHalf = lineLength * 0.5f;
+		float widthHalf = width * 0.5f;
+
+		Vector3 from1(0.0f, -widthHalf, -lineLengthHalf);
+		Vector3 from2(0.0f, widthHalf, -lineLengthHalf);
+		Vector3 to1(0.0f, -widthHalf, lineLengthHalf);
+		Vector3 to2(0.0f, widthHalf, lineLengthHalf);
 
 		memory::Copy(vData, &from1, 3 * sizeof(float));
 		vData += 3 * sizeof(float);
@@ -925,25 +932,91 @@ public:
 		memory::Copy(vData, &color, sizeof(Color));
 		vData += sizeof(Color);
 
-		dMesh.mesh.indicesCount = 2;
-		size_t count = dMesh.mesh.indicesCount * 3;//triangles
-		dMesh.mesh.indicesData = (u16*)m_allocator.Allocate(count * sizeof(u16), alignof(u16));
+		dObject.mesh.indicesCount = 2;
+		size_t count = dObject.mesh.indicesCount * 3;//triangles
+		dObject.mesh.indicesData = (u16*)m_allocator.Allocate(count * sizeof(u16), alignof(u16));
 		const u16 iData[] = { 0, 2, 1, 1, 2, 3 };
-		memory::Copy(dMesh.mesh.indicesData, iData, count * sizeof(u16));
+		memory::Copy(dObject.mesh.indicesData, iData, count * sizeof(u16));
 
 		Path materialPath("materials/debug.material");
-		dMesh.mesh.material = m_engine.GetResourceManagement()->GetManager(ResourceType::Material)->Load(materialPath);
-		dMesh.mesh.renderDataHandle = CreateMeshData(dMesh.mesh);
-		dMesh.lifetime = lifetime;
+		dObject.mesh.material = m_engine.GetResourceManagement()->GetManager(ResourceType::Material)->Load(materialPath);
+		dObject.mesh.renderDataHandle = CreateMeshData(dObject.mesh);
+		dObject.lifetime = lifetime;
+
+		dObject.transform.position = (from + to) * 0.5f;
+		Vector3 rotAxis = Vector3::Cross(LineDir, Vector3::AXIS_Z);
+		rotAxis.Normalize();
+		float rotAngle = acosf(Vector3::Dot(LineDir, Vector3::AXIS_Z));
+		dObject.transform.rotation = Quaternion(rotAxis, rotAngle);
 
 		if (lifetime == -1.0f)
 		{
-			m_debugMeshes.Swap(m_debugMeshesStartDynamic, m_debugMeshes.GetSize() - 1);
+			m_debugObjects.Swap(m_debugMeshesStartDynamic, m_debugObjects.GetSize() - 1);
 			m_debugMeshesStartDynamic++;
 		}
 		else
 		{
-			dMesh.lifetime *= 1000.0f;
+			dObject.lifetime *= 1000.0f;
+		}
+	}
+
+
+	void AddDebugSquare(Vector3 position, Color color, float size, float lifetime) override
+	{
+		DebugObject& dObject = m_debugObjects.PushBack();
+
+		dObject.mesh.varyings = ShaderVarying_Position | ShaderVarying_Color0;
+		dObject.mesh.verticesCount = 4;
+		const size_t bufferSize = (sizeof(Vector3) + sizeof(Color)) * dObject.mesh.verticesCount;
+		dObject.mesh.verticesData = (u8*)m_allocator.Allocate(bufferSize, alignof(float));
+		u8* vData = dObject.mesh.verticesData;
+
+		float sizeHalf = size * 0.5f;
+
+		Vector3 v1(-sizeHalf, sizeHalf, 0.0f);
+		Vector3 v2(sizeHalf, sizeHalf, 0.0f);
+		Vector3 v3(-sizeHalf, -sizeHalf, 0.0f);
+		Vector3 v4(sizeHalf, -sizeHalf, 0.0f);
+
+		memory::Copy(vData, &v1, 3 * sizeof(float));
+		vData += 3 * sizeof(float);
+		memory::Copy(vData, &color, sizeof(Color));
+		vData += sizeof(Color);
+		memory::Copy(vData, &v3, 3 * sizeof(float));
+		vData += 3 * sizeof(float);
+		memory::Copy(vData, &color, sizeof(Color));
+		vData += sizeof(Color);
+
+		memory::Copy(vData, &v2, 3 * sizeof(float));
+		vData += 3 * sizeof(float);
+		memory::Copy(vData, &color, sizeof(Color));
+		vData += sizeof(Color);
+		memory::Copy(vData, &v4, 3 * sizeof(float));
+		vData += 3 * sizeof(float);
+		memory::Copy(vData, &color, sizeof(Color));
+		vData += sizeof(Color);
+
+		dObject.mesh.indicesCount = 2;
+		size_t count = dObject.mesh.indicesCount * 3;//triangles
+		dObject.mesh.indicesData = (u16*)m_allocator.Allocate(count * sizeof(u16), alignof(u16));
+		const u16 iData[] = { 0, 2, 1, 1, 2, 3 };
+		memory::Copy(dObject.mesh.indicesData, iData, count * sizeof(u16));
+
+		Path materialPath("materials/debug.material");
+		dObject.mesh.material = m_engine.GetResourceManagement()->GetManager(ResourceType::Material)->Load(materialPath);
+		dObject.mesh.renderDataHandle = CreateMeshData(dObject.mesh);
+		dObject.lifetime = lifetime;
+
+		dObject.transform.position = position;
+
+		if (lifetime == -1.0f)
+		{
+			m_debugObjects.Swap(m_debugMeshesStartDynamic, m_debugObjects.GetSize() - 1);
+			m_debugMeshesStartDynamic++;
+		}
+		else
+		{
+			dObject.lifetime *= 1000.0f;
 		}
 	}
 
@@ -1118,15 +1191,15 @@ public:
 
 	void RenderDebug() override
 	{
-		Matrix44 transform = Matrix44::IDENTITY;
-		bgfx::setTransform(&transform);
-
-		for (int i = 0; i < m_debugMeshes.GetSize(); ++i)
+		for (int i = 0; i < m_debugObjects.GetSize(); ++i)
 		{
-			const Mesh& mesh = m_debugMeshes[i].mesh;
+			const Mesh& mesh = m_debugObjects[i].mesh;
 			const Material* material = (Material*)m_materialManager->GetResource(mesh.material);
 			if (material->GetState() == Resource::State::Ready)
 			{
+				Matrix44 transform = m_debugObjects[i].transform.ToMatrix44();
+				bgfx::setTransform(&transform);
+
 				MeshData& meshData = m_meshData.Get((u64)mesh.renderDataHandle);
 				bgfx::setVertexBuffer(0, meshData.vertexBufferHandle);
 				bgfx::setIndexBuffer(meshData.indexBufferHandle);
@@ -1166,7 +1239,7 @@ private:
 
 	///////////////////// DEBUG STUFF
 	resourceHandle m_debugShader = INVALID_RESOURCE_HANDLE;
-	Array<DebugMesh> m_debugMeshes;
+	Array<DebugObject> m_debugObjects;
 	size_t m_debugMeshesStartDynamic = 0;
 	/////////////////////
 	u32 m_width = 0;

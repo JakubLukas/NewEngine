@@ -287,7 +287,8 @@ public:
 				i++;
 			}
 		}
-		renderSystem->AddDebugLine(Vector3(10, 0, 25), Vector3(-10, 0, -5), Color(0, 255, 255, 255), 0.1f, -1.0f);
+		renderSystem->AddDebugLine(Vector3(10, 0, 25), Vector3(-10, 0, -5), Color(0, 255, 255, 255), 0.8f, -1.0f);
+		renderSystem->AddDebugSquare(Vector3(5, -5, 15), Color(0, 128, 128, 255), 0.8f, -1.0f);
 	}
 
 	void Update(float deltaTime) override
@@ -297,7 +298,7 @@ public:
 			const ScriptScene::ScriptItem* scripts = sceneNode.value->GetScripts();
 			for (int i = 0; i < sceneNode.value->GetScriptsCount(); ++i)
 			{
-				if(scripts[i].active)//TODO: change from map to array and keep unactive on end ?
+				if(scripts[i].active)//TODO: change from map to array and keep inactive on end ?
 					scripts[i].script.updateFunction(scriptMemory, m_engine, deltaTime);
 			}
 		}

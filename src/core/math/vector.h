@@ -59,6 +59,7 @@ struct Vector3
 
 	float Length() const;
 	void Normalize();
+	Vector3 Normalized() const;
 
 	static float Dot(const Vector3& vec1, const Vector3& vec2);
 	static Vector3 Cross(const Vector3& vec1, const Vector3& vec2);
@@ -102,6 +103,7 @@ struct FORCE_ALIGNMENT(16) Vector4
 
 	float Length() const;
 	void Normalize();
+	Vector4 Normalized() const;
 
 	Vector3 GetXYZ() const;
 	Vector3 GetVector3() const;

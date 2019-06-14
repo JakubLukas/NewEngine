@@ -179,6 +179,16 @@ void Vector3::Normalize()
 	z *= invLength;
 }
 
+Vector3 Vector3::Normalized() const
+{
+	float invLength = 1.0f / Length();
+	return Vector3(
+		x * invLength,
+		y * invLength,
+		z * invLength
+	);
+}
+
 
 float Vector3::Dot(const Vector3& vec1, const Vector3& vec2)
 {
@@ -344,6 +354,18 @@ void Vector4::Normalize()
 	x *= invLength;
 	y *= invLength;
 	z *= invLength;
+	w *= invLength;
+}
+
+Vector4 Vector4::Normalized() const
+{
+	float invLength = 1.0f / Length();
+	return Vector4(
+		x * invLength,
+		y * invLength,
+		z * invLength,
+		w * invLength
+	);
 }
 
 

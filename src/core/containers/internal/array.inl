@@ -199,7 +199,7 @@ void Array<Type>::Swap(size_t index1, size_t index2)
 	if (index1 == index2)
 		return;
 
-	Type tmp(m_data[index1]);
+	Type tmp(Utils::Move(m_data[index1]));
 	NEW_PLACEMENT(m_data + index1, Type)(Utils::Move(m_data[index2]));
 	NEW_PLACEMENT(m_data + index2, Type)(Utils::Move(tmp));
 }
