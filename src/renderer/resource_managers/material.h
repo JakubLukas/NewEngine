@@ -15,7 +15,9 @@ const materialRenderHandle INVALID_MATERIAL_RENDER_HANDLE = (materialRenderHandl
 
 struct Material : public Resource
 {
-	Material() : Resource(ResourceType::Material) {}
+	static ResourceType RESOURCE_TYPE;
+
+	Material() : Resource(RESOURCE_TYPE) {}
 
 	static const u8 MAX_UNIFORMS = 4;
 	static const u8 MAX_TEXTURES = 4;

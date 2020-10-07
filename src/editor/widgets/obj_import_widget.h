@@ -7,7 +7,7 @@ namespace Veng
 {
 
 class Engine;
-class IAllocator;
+class Allocator;
 
 namespace Editor
 {
@@ -28,25 +28,23 @@ public:
 			CounterClockWise,
 		};
 
-		IAllocator* allocator;
+		Allocator* allocator;
 		CoordSystemHandness coordSystem = CoordSystemHandness::Right;
 		TriangleDefinition triangleDef = TriangleDefinition::ClockWise;
 	};
 
 public:
-	ObjImportWidget(IAllocator& allocator);
+	ObjImportWidget(Allocator& allocator);
 	~ObjImportWidget() override;
 	void Init(Engine& engine, EditorInterface& editor) override;
 	void Deinit() override;
 
 	void Update(EventQueue& queue) override;
-
-protected:
-	void RenderInternal(EventQueue& queue) override;
+	void Render(EventQueue& queue) override;
 	const char* GetName() const override { return "ObjImporter"; };
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	ConvertParams m_params;
 };
 

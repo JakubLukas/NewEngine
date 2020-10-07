@@ -1,6 +1,10 @@
 #include "editor_interface.h"
 
 #include "core/asserts.h"
+#include "core/string.h"
+#include "core/engine.h"
+#include "core/resource/resource_manager.h"
+#include "editor/event_queue.h"
 
 #include "../external/imgui/imgui.h"
 #include "../external/imgui/imgui_internal.h"
@@ -22,6 +26,12 @@ static ImGuiInputTextFlags ResolveFlags(EditorInterface::EditFlags flags)
 
 	return imFlags;
 }
+
+
+EditorInterface::EditorInterface(Engine& engine, Editor::EventQueue& message_queue)
+	: m_engine(engine)
+	, m_queue(message_queue)
+{}
 
 
 bool EditorInterface::EditI32(const char* name, i32& value, EditFlags flags)
@@ -49,28 +59,22 @@ bool EditorInterface::EditFloat(const char* name, float& value, EditFlags flags)
 	return ImGui::InputScalar(name, ImGuiDataType_Float, &value, 0, 0, 0, ResolveFlags(flags));
 }
 
-bool EditorInterface::EditPointer(const char* name, void* value, EditFlags flags)
+bool EditorInterface::EditString(const char* name, char* buffer, size_t bufferLength, EditFlags flags)
 {
-	if (sizeof(value) == 4)
-		return ImGui::InputScalar(name, ImGuiDataType_U32, value, 0, 0, 0, ResolveFlags(flags));
-	else if (sizeof(value) == 8)
-		return ImGui::InputScalar(name, ImGuiDataType_U64, value, 0, 0, 0, ResolveFlags(flags));
-	else
-		ASSERT2(false, "Invalid size of pointer");
-	return false;
+	return ImGui::InputText("path", buffer, bufferLength, ResolveFlags(flags));
 }
 
-bool EditorInterface::EditColor(const char* name, u32& abgrColor, EditFlags flags)
+bool EditorInterface::EditColor(const char* name, Color& color, EditFlags flags)
 {
 	float rgba[4] = {
-		(abgrColor >> 24 & 0xFF) / 255.0f,
-		(abgrColor >> 16 & 0xFF) / 255.0f,
-		(abgrColor >> 8 & 0xFF) / 255.0f,
-		(abgrColor & 0xFF) / 255.0f
+		(color.abgr & 0xFF) / 255.0f,
+		(color.abgr >> 8 & 0xFF) / 255.0f,
+		(color.abgr >> 16 & 0xFF) / 255.0f,
+		(color.abgr >> 24 & 0xFF) / 255.0f
 	};
 	if (ImGui::ColorEdit4(name, rgba, ImGuiColorEditFlags_None))
 	{
-		abgrColor = u32(rgba[3] * 255) << 24
+		color.abgr = u32(rgba[3] * 255) << 24
 			| u32(rgba[2] * 255) << 16
 			| u32(rgba[1] * 255) << 8
 			| u32(rgba[0] * 255);
@@ -100,25 +104,44 @@ bool EditorInterface::EditEnum(const char* name, u32& idx, const char* values[],
 	return changed;
 }
 
-bool EditorInterface::EditString(const char* name, char* buffer, size_t bufferLength, EditFlags flags)
+bool EditorInterface::EditResource(const char* name, ResourceType type, resourceHandle& handle, EditFlags flags)
 {
-	return ImGui::InputText("path", buffer, bufferLength, ResolveFlags(flags));
-}
+	ResourceManager* manager = m_engine.GetResourceManager(type);
+	Resource* resource = manager->GetResource(handle);
+	bool pathChanged = false;
+	char pathBuffer[Path::BUFFER_LENGTH] = { 0 };
+	if (handle != INVALID_RESOURCE_HANDLE)
+		memory::Copy(pathBuffer, resource->GetPath().GetPath(), Path::BUFFER_LENGTH);
 
-bool EditorInterface::DragDropTarget(const char* acceptPayload, void(*callback)(void* ctx, void* data), void* userCtx)
-{
-	bool dropped = false;
-	if(ImGui::BeginDragDropTarget())
+	if (EditString("path", pathBuffer, Path::BUFFER_LENGTH))
+		pathChanged = true;
+	for (size_t i = 0; i < manager->GetSupportedFileExtCount(); ++i)
 	{
-		const ImGuiPayload* data = ImGui::AcceptDragDropPayload(acceptPayload, ImGuiDragDropFlags_None);
-		if(data != nullptr)
+		if (ImGui::BeginDragDropTarget())
 		{
-			callback(userCtx, data->Data);
-			dropped = true;
+			const ImGuiPayload* data = ImGui::AcceptDragDropPayload(manager->GetSupportedFileExt()[i], ImGuiDragDropFlags_None);
+			if (data != nullptr)
+			{
+				string::Copy(pathBuffer, (char*)data->Data);
+				pathChanged = true;
+			}
+			ImGui::EndDragDropTarget();
 		}
-		ImGui::EndDragDropTarget();
 	}
-	return dropped;
+	if (pathChanged)
+	{
+		Path newPath(pathBuffer);
+		resourceHandle newHandle = manager->Load(newPath);
+		resourceHandle oldHandle = handle;
+		handle = newHandle;
+		if (oldHandle != INVALID_RESOURCE_HANDLE)
+			manager->Unload(oldHandle);
+	}
+	if (ImGui::Button("Open in editor"))
+	{
+		m_queue.PushEvent(Editor::EventSelectResource{ type, handle });
+	}
+	return pathChanged;
 }
 
 

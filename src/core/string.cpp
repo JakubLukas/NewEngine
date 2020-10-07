@@ -113,12 +113,12 @@ const char* FindStrR(const char* haystack, const char* needle)
 
 
 
-String::String(IAllocator& allocator)
+String::String(Allocator& allocator)
 	: m_allocator(allocator)
 {
 }
 
-String::String(IAllocator& allocator, const char* str)
+String::String(Allocator& allocator, const char* str)
 	: m_allocator(allocator)
 {
 	m_size = string::Length(str);
@@ -127,7 +127,7 @@ String::String(IAllocator& allocator, const char* str)
 	m_data[m_size] = '\0';
 }
 
-String::String(IAllocator& allocator, const char* str, unsigned length)
+String::String(Allocator& allocator, const char* str, unsigned length)
 	: m_allocator(allocator)
 	, m_size(length)
 {
@@ -233,7 +233,7 @@ void String::Set(const char* str)
 }
 
 
-void String::Set(const char* str, unsigned length)
+void String::Set(const char* str, size_t length)
 {
 	if (m_size == length)
 	{

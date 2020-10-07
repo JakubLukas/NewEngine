@@ -39,8 +39,11 @@ namespace Veng
 {
 
 
-TextureManager::TextureManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
-	: ResourceManager(allocator, fileSystem, depManager)
+ResourceType Texture::RESOURCE_TYPE("texture");
+
+
+TextureManager::TextureManager(Allocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
+	: ResourceManager(Texture::RESOURCE_TYPE, allocator, fileSystem, depManager)
 {
 	stbImageAllocator = NEW_OBJECT(m_allocator, ProxyAllocator)(m_allocator);
 	stbImageAllocator->SetDebugName("stb image");
@@ -114,7 +117,7 @@ void TextureManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	texture->renderDataHandle = m_renderSystem->CreateTextureData(*texture);
 
 	texture->SetState(Resource::State::Ready);
-	m_depManager->ResourceLoaded(ResourceType::Texture, GetResourceHandle(texture));
+	m_depManager->ResourceLoaded(Texture::RESOURCE_TYPE, GetResourceHandle(texture));
 }
 
 

@@ -1,6 +1,6 @@
 #include "event_queue.h"
 
-#include "core/iallocator.h"
+#include "core/allocator.h"
 #include "core/asserts.h"
 #include "core/memory.h"
 
@@ -12,7 +12,7 @@ namespace Editor
 {
 
 
-EventQueue::EventQueue(IAllocator& allocator)
+EventQueue::EventQueue(Allocator& allocator)
 	: m_allocator(allocator)
 {}
 
@@ -47,7 +47,7 @@ void EventQueue::FrameUpdate()
 }
 
 
-void EventQueue::PushEvent(Event& event)
+void EventQueue::PushEvent(const Event& event)
 {
 	if (m_pushPosition + event.size >= (u8*)m_pushBuffer + m_capacity * sizeof(Event))
 		Enlarge();

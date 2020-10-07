@@ -2,7 +2,7 @@
 
 #include "../widget_register.h"
 #include "../external/imgui/imgui.h"
-#include "core/iallocator.h"
+#include "core/allocator.h"
 #include "core/engine.h"
 #include "core/resource/resource_management.h"
 #include "core/resource/resource_manager.h"
@@ -17,7 +17,7 @@ namespace Editor
 {
 
 
-ModelWidget::ModelWidget(IAllocator& allocator)
+ModelWidget::ModelWidget(Allocator& allocator)
 	: m_allocator(allocator)
 {
 }
@@ -34,7 +34,7 @@ void ModelWidget::Init(Engine& engine, EditorInterface& editor)
 void ModelWidget::Deinit()
 {
 	if (m_modelHandle != INVALID_RESOURCE_HANDLE)
-		m_manager->UnloadResource(ResourceType::Model, m_modelHandle);
+		m_manager->UnloadResource(Model::RESOURCE_TYPE, m_modelHandle);
 
 	m_modelHandle = INVALID_RESOURCE_HANDLE;
 	m_manager = nullptr;
@@ -49,7 +49,7 @@ void ModelWidget::Update(EventQueue& queue)
 		if (event->type == EventType::SelectResource)
 		{
 			const EventSelectResource* eventResource = (EventSelectResource*)event;
-			if (eventResource->type == ResourceType::Model)
+			if (eventResource->type == Model::RESOURCE_TYPE)
 			{
 				m_modelHandle = eventResource->resource;
 			}
@@ -58,11 +58,11 @@ void ModelWidget::Update(EventQueue& queue)
 }
 
 
-void ModelWidget::RenderInternal(EventQueue& queue)
+void ModelWidget::Render(EventQueue& queue)
 {
 	char pathBuffer[Path::BUFFER_LENGTH] = {0};
 	Model* model = nullptr;
-	ResourceManager* modelManager = m_manager->GetManager(ResourceType::Model);
+	ResourceManager* modelManager = m_manager->GetManager(Model::RESOURCE_TYPE);
 
 	if (m_modelHandle != INVALID_RESOURCE_HANDLE)
 	{
@@ -98,15 +98,12 @@ void ModelWidget::RenderInternal(EventQueue& queue)
 				Mesh& mesh = model->meshes[i];
 				ImGui::InputScalar("material", ImGuiDataType_U64, &mesh.material, NULL, NULL, NULL, ImGuiInputTextFlags_ReadOnly);
 
-				Resource* material = m_manager->GetResource(ResourceType::Material, mesh.material);
+				Resource* material = m_manager->GetResource(Material::RESOURCE_TYPE, mesh.material);
 				memory::Copy(pathBuffer, material->GetPath().GetPath(), Path::BUFFER_LENGTH);
 				ImGui::InputText("path", pathBuffer, Path::BUFFER_LENGTH);
 				if (ImGui::Button("Open in editor"))
 				{
-					EventSelectResource event;
-					event.type = ResourceType::Material;
-					event.resource = mesh.material;
-					queue.PushEvent(event);
+					queue.PushEvent(EventSelectResource(Material::RESOURCE_TYPE, mesh.material));
 				}
 
 				ImGui::TreePop();

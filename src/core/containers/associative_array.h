@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/iallocator.h"
+#include "core/allocator.h"
 #include "core/asserts.h"
 #include "core/memory.h"
 
@@ -13,7 +13,7 @@ template<class KeyType, class ValueType>
 class AssociativeArray final
 {
 public:
-	explicit AssociativeArray(IAllocator& allocator);
+	explicit AssociativeArray(Allocator& allocator);
 	AssociativeArray(AssociativeArray&) = delete;
 	AssociativeArray(AssociativeArray&& other);
 	AssociativeArray& operator =(AssociativeArray&) = delete;
@@ -57,7 +57,7 @@ private:
 	size_t GetIndex(const KeyType& key) const;
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	size_t m_capacity = 0;
 	size_t m_size = 0;
 	KeyType* m_keys = nullptr;

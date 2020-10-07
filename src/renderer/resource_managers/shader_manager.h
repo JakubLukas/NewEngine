@@ -15,11 +15,8 @@ class RenderSystem;
 class ShaderInternalManager final : public ResourceManager
 {
 public:
-	ShaderInternalManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
+	ShaderInternalManager(Allocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
 	~ShaderInternalManager() override;
-
-
-	ResourceType GetType() const override { return ResourceType::ShaderInternal; };
 
 	const char* const * GetSupportedFileExt() const override;
 	size_t GetSupportedFileExtCount() const override;
@@ -42,6 +39,15 @@ private:
 
 class ShaderManager final : public ResourceManager
 {
+public:
+	ShaderManager(Allocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
+	~ShaderManager() override;
+
+	const char* const * GetSupportedFileExt() const override;
+	size_t GetSupportedFileExtCount() const override;
+
+	void SetRenderSystem(RenderSystem* renderSystem);
+
 private:
 	struct LoadingOp
 	{
@@ -56,18 +62,6 @@ private:
 		resourceHandle fsHandle;
 		u8 shadersToLoad = Shader_None;
 	};
-
-public:
-	ShaderManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
-	~ShaderManager() override;
-
-
-	ResourceType GetType() const override { return ResourceType::Shader; };
-
-	const char* const * GetSupportedFileExt() const override;
-	size_t GetSupportedFileExtCount() const override;
-
-	void SetRenderSystem(RenderSystem* renderSystem);
 
 private:
 	Resource* CreateResource() override;

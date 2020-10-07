@@ -17,7 +17,7 @@ namespace Editor
 {
 
 
-FileBrowserWidget::FileBrowserWidget(IAllocator& allocator)
+FileBrowserWidget::FileBrowserWidget(Allocator& allocator)
 	: m_allocator(allocator)
 	, m_workingDirFiles(m_allocator)
 {
@@ -149,7 +149,7 @@ void FileBrowserWidget::BuildFileBrowser(StaticInputBuffer<Path::MAX_LENGTH>& pa
 }
 
 
-void FileBrowserWidget::RenderInternal(EventQueue& queue)
+void FileBrowserWidget::Render(EventQueue& queue)
 {
 	if (m_workingDirFiles.GetSize() < 2)
 		return;
@@ -159,7 +159,7 @@ void FileBrowserWidget::RenderInternal(EventQueue& queue)
 }
 
 
-REGISTER_WIDGET(file_browser)
+REGISTER_WIDGET(FileBrowserWidget)
 {
 	return NEW_OBJECT(allocator, FileBrowserWidget)(allocator);
 }

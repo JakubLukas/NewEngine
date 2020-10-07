@@ -5,6 +5,7 @@
 #include "core/containers/array.h"
 #include "core/containers/handle_array.h"
 #include "core/containers/associative_array.h"
+#include "core/hashes.h"
 #include "core/logs.h"
 #include "core/file/path.h"
 #include "core/math/matrix.h"
@@ -83,36 +84,25 @@ struct DebugObject
 };
 
 
-componentHandle RenderScene::GetComponentHandle(Component comp)
-{
-	return (componentHandle)comp;
-}
-
-
 class RenderSceneImpl : public RenderScene
 {
 public:
-	RenderSceneImpl(IAllocator& allocator, RenderSystem& renderSystem)
+	friend class RenderSceneEditorImpl;
+
+	struct ModelItem
+	{
+		Entity entity;
+		resourceHandle model;
+	};
+
+public:
+	RenderSceneImpl(Allocator& allocator, RenderSystem& renderSystem)
 		: m_allocator(allocator)
 		, m_renderSystem(renderSystem)
 		, m_models(m_allocator)
 		, m_cameras(m_allocator)
-		, m_componentInfos(m_allocator)
 		, m_directionalLights(m_allocator)
 	{
-		ComponentInfo* compInfoModel;
-
-		compInfoModel = &m_componentInfos.EmplaceBack();
-		compInfoModel->handle = RenderScene::GetComponentHandle(Component::Model);
-		compInfoModel->name = "model";
-
-		compInfoModel = &m_componentInfos.EmplaceBack();
-		compInfoModel->handle = RenderScene::GetComponentHandle(Component::Camera);
-		compInfoModel->name = "camera";
-
-		compInfoModel = &m_componentInfos.EmplaceBack();
-		compInfoModel->handle = RenderScene::GetComponentHandle(Component::DirectionalLight);
-		compInfoModel->name = "directional_light";
 	}
 
 	~RenderSceneImpl() override
@@ -123,325 +113,169 @@ public:
 		}
 	}
 
+	void Serialize(OutputBlob& serializer) const override
+	{
+		SerializeModels(serializer);
+		SerializeCameras(serializer);
+		SerializeDirLights(serializer);
+		serializer.Write(m_activeCamera);
+	}
+
+	virtual void Deserialize(InputBlob& serializer)
+	{
+		DeserializeModels(serializer);
+		DeserializeCameras(serializer);
+		DeserializeDirLights(serializer);
+		serializer.Read(m_activeCamera);
+	}
+
+	void Clear() override
+	{}
 
 	void Update(float deltaTime) override
 	{}
 
 
-	size_t GetComponentCount() const override { return m_componentInfos.GetSize(); }
-
-	const ComponentInfo* GetComponentInfos() const override { return m_componentInfos.Begin(); }
-
-	const ComponentInfo* GetComponentInfo(componentHandle handle) const override { return &m_componentInfos[(size_t)handle]; }
-
-	componentHandle GetComponentHandle(const char* name) const override
+	void AddModel(Entity entity) override
 	{
-		if (string::Equal(name, "model"))
+		m_models.Insert(entity, { entity, INVALID_RESOURCE_HANDLE });
+	}
+
+	void RemoveModel(Entity entity) override
+	{
+		m_models.Erase(entity);
+	}
+
+	bool HasModel(Entity entity) const override
+	{
+		ModelItem* model;
+		return m_models.Find(entity, model);
+	}
+
+	ModelData GetModelData(Entity entity) const override
+	{
+		ModelItem* modelItem = nullptr;
+		if (m_models.Find(entity, modelItem))
 		{
-			return RenderScene::GetComponentHandle(Component::Model);
-		}
-		else if (string::Equal(name, "camera"))
-		{
-			return RenderScene::GetComponentHandle(Component::Camera);
-		}
-		else if (string::Equal(name, "directional_light"))
-		{
-			return RenderScene::GetComponentHandle(Component::DirectionalLight);
+			Resource* res = m_renderSystem.GetModelManager().GetResource(modelItem->model);
+			return ModelData{ res->GetPath() };
 		}
 		else
 		{
-			return INVALID_COMPONENT_HANDLE;
+			Log(LogType::Warning, "Model component for entity %d was not found", (u64)entity);
+			return ModelData();
 		}
 	}
 
-
-	void AddComponent(componentHandle handle, Entity entity) override
+	void SetModelData(Entity entity, const ModelData& data) override
 	{
-		switch ((u8)handle)
+		ModelItem* modelItem;
+		if (m_models.Find(entity, modelItem))
 		{
-		case (u8)RenderScene::Component::Model:
-		{
-			m_models.Insert(entity, { entity, INVALID_RESOURCE_HANDLE });
-			break;
+			modelItem->model = m_renderSystem.GetModelManager().Load(data.path);
 		}
-		case (u8)RenderScene::Component::Camera:
+		else
 		{
-			m_cameras.Insert(entity, { entity, Camera() });
-			break;
-		}
-		case (u8)RenderScene::Component::DirectionalLight:
-		{
-			m_directionalLights.Insert(entity, { entity, DirectionalLight() });
-			break;
-		}
-		default:
-			ASSERT2(false, "Unrecognized componentHandle");
+			Log(LogType::Warning, "Model component for entity %d was not found", (u64)entity);
 		}
 	}
 
-	void RemoveComponent(componentHandle handle, Entity entity) override
+	void SerializeModels(OutputBlob& serializer) const
 	{
-		switch ((u8)handle)
+		serializer.Write((u64)m_models.GetSize());
+		for (const ModelItem& model : m_models)
 		{
-		case (u8)RenderScene::Component::Model:
-		{
-			m_models.Erase(entity);
-			break;
-		}
-		case (u8)RenderScene::Component::Camera:
-		{
-			m_cameras.Erase(entity);
-			break;
-		}
-		case (u8)RenderScene::Component::DirectionalLight:
-		{
-			m_directionalLights.Erase(entity);
-			break;
-		}
-		default:
-			ASSERT2(false, "Unrecognized componentHandle");
+			serializer.Write(model.entity);
+			Resource* res = m_renderSystem.GetModelManager().GetResource(model.model);
+			serializer.Write(res->GetPath());
 		}
 	}
 
-	bool HasComponent(componentHandle handle, Entity entity) const override
+	void DeserializeModels(InputBlob& serializer)
 	{
-		switch ((u8)handle)
+		u64 count;
+		serializer.Read(count);
+
+		for (u64 i = 0; i < count; ++i)
 		{
-		case (u8)RenderScene::Component::Model:
-		{
-			ModelItem* model;
-			return m_models.Find(entity, model);
-		}
-		case (u8)RenderScene::Component::Camera:
-		{
-			CameraItem* cam;
-			return m_cameras.Find(entity, cam);
-		}
-		case (u8)RenderScene::Component::DirectionalLight:
-		{
-			DirectionalLightItem* light;
-			return m_directionalLights.Find(entity, light);
-		}
-		default:
-			ASSERT2(false, "Unrecognized componentHandle");
-			return false;
+			Entity entity;
+			serializer.Read(entity);
+			ModelItem* item = m_models.Insert(entity, ModelItem{ entity });
+			Path resPath;
+			serializer.Read(resPath);
+			item->model = m_renderSystem.GetModelManager().Load(resPath);
 		}
 	}
-
-	void EditComponent(EditorInterface* editor, componentHandle handle, Entity entity) override
+	
+	const ModelItem* GetModels(size_t& out_count) const
 	{
-		switch ((u8)handle)
-		{
-		case (u8)RenderScene::Component::Model:
-		{
-			ModelItem* modelItem;
-			if (m_models.Find(entity, modelItem))
-			{
-				auto dropCallback = [](void* path, void* payload)
-				{
-					string::Copy((char*)path, (char*)payload);
-				};
-
-				resourceHandle* handle = &modelItem->model;
-
-				editor->EditU64("model handle", *(u64*)&modelItem->model, EditorInterface::EditFlag_ReadOnly);
-
-				ModelManager& manager = m_renderSystem.GetModelManager();
-				Resource* resource = manager.GetResource(*handle);
-
-				bool pathChanged = false;
-				char pathBuffer[Path::BUFFER_LENGTH];
-				memory::Copy(pathBuffer, resource->GetPath().GetPath(), Path::BUFFER_LENGTH);
-				if (editor->EditString("path", pathBuffer, Path::BUFFER_LENGTH))
-					pathChanged = true;
-				for(size_t i = 0; i < manager.GetSupportedFileExtCount(); ++i)
-				{
-					if (editor->DragDropTarget(manager.GetSupportedFileExt()[i], dropCallback, pathBuffer))
-						pathChanged = true;
-				}
-				if (pathChanged)
-				{
-					Path newPath(pathBuffer);
-					resourceHandle newHandle = manager.Load(newPath);
-					resourceHandle oldHandle = *handle;
-					*handle = newHandle;
-					manager.Unload(oldHandle);
-				}
-				/*
-				if(ImGui::Button("Open in editor"))
-				{
-					EventSelectResource event;
-					event.type = type;
-					event.resource = *handle;
-					queue.PushEvent(event);
-				}*/
-			}
-			else
-			{
-				Log(LogType::Warning, "Model component for entity %d was not found", (u64)entity);
-			}
-			break;
-		}
-		case (u8)RenderScene::Component::Camera:
-		{
-			CameraItem* cameraItem;
-			if (m_cameras.Find(entity, cameraItem))
-			{
-				Camera& camera = cameraItem->camera;
-				const char* cameraTypeNames[] = { "Orthogonal" , "Perspective" };
-				u32 typeIdx = (u32)camera.type;
-				if (editor->EditEnum("type", typeIdx, cameraTypeNames, sizeof(cameraTypeNames) / sizeof(cameraTypeNames[0])))
-					camera.type = (Camera::Type)typeIdx;
-				editor->EditFloat("screen width", camera.screenWidth, EditorInterface::EditFlag_ReadOnly);
-				editor->EditFloat("screen height", camera.screenHeight, EditorInterface::EditFlag_ReadOnly);
-				editor->EditFloat("near plane", camera.nearPlane);
-				editor->EditFloat("far plane", camera.farPlane);
-				if (camera.type == Camera::Type::Perspective)
-				{
-					float fovDeg = toDeg(camera.fov);
-					if (editor->EditFloat("fov", fovDeg))
-						camera.fov = toRad(fovDeg);
-
-				}
-			}
-			else
-			{
-				Log(LogType::Warning, "Camera component for entity %d was not found", (u64)entity);
-			}
-			break;
-		}
-		case (u8)RenderScene::Component::DirectionalLight:
-		{
-			DirectionalLightItem* lightItem;
-			if (m_directionalLights.Find(entity, lightItem))
-			{
-				DirectionalLight& light = lightItem->light;
-				editor->EditColor("diffuse color", light.diffuseColor.abgr, EditorInterface::EditFlag_None);
-				editor->EditColor("specular color", light.specularColor.abgr, EditorInterface::EditFlag_None);
-			}
-			else
-			{
-				Log(LogType::Warning, "Directional light component for entity %d was not found", (u64)entity);
-			}
-			break;
-		}
-		default:
-			ASSERT2(false, "Unrecognized componentHandle");
-		}
-	}
-
-	void* GetComponentData(componentHandle handle, Entity entity) const override
-	{
-		switch ((u8)handle)
-		{
-		case (u8)RenderScene::Component::Model:
-		{
-			ModelItem* modelItem;
-			if (m_models.Find(entity, modelItem))
-			{
-				return &modelItem->model;
-			}
-			else
-			{
-				Log(LogType::Warning, "Model component for entity %d was not found", (u64)entity);
-			}
-			break;
-		}
-		case (u8)RenderScene::Component::Camera:
-		{
-			CameraItem* cameraItem;
-			if (m_cameras.Find(entity, cameraItem))
-			{
-				return &cameraItem->camera;
-			}
-			else
-			{
-				Log(LogType::Warning, "Camera component for entity %d was not found", (u64)entity);
-			}
-			break;
-		}
-		case (u8)RenderScene::Component::DirectionalLight:
-		{
-			DirectionalLightItem* lightItem;
-			if (m_directionalLights.Find(entity, lightItem))
-			{
-				return &lightItem->light;
-			}
-			else
-			{
-				Log(LogType::Warning, "Directional light component for entity %d was not found", (u64)entity);
-			}
-			break;
-		}
-		default:
-			ASSERT2(false, "Unrecognized componentHandle");
-		}
-
-		return nullptr;
-	}
-
-	void SetComponentData(componentHandle handle, Entity entity, void* data) override
-	{
-		switch ((u8)handle)
-		{
-		case (u8)RenderScene::Component::Model:
-		{
-			ModelItem* modelItem;
-			if (m_models.Find(entity, modelItem))
-			{
-				resourceHandle* modelhandle = (resourceHandle*)data;
-				modelItem->model = *modelhandle;
-			}
-			else
-			{
-				Log(LogType::Warning, "Model component for entity %d was not found", (u64)entity);
-			}
-			break;
-		}
-		case (u8)RenderScene::Component::Camera:
-		{
-			CameraItem* cameraItem;
-			if (m_cameras.Find(entity, cameraItem))
-			{
-				Camera* camera = (Camera*)data;
-				cameraItem->camera = *camera;
-			}
-			else
-			{
-				Log(LogType::Warning, "Camera component for entity %d was not found", (u64)entity);
-			}
-			break;
-		}
-		case (u8)RenderScene::Component::DirectionalLight:
-		{
-			DirectionalLightItem* lightItem;
-			if (m_directionalLights.Find(entity, lightItem))
-			{
-				DirectionalLight* light = (DirectionalLight*)data;
-				lightItem->light = *light;
-			}
-			else
-			{
-				Log(LogType::Warning, "Directional light component for entity %d was not found", (u64)entity);
-			}
-			break;
-		}
-		default:
-			ASSERT2(false, "Unrecognized componentHandle");
-		}
-	}
-
-
-	size_t GetModelsCount() const override
-	{
-		return m_models.GetSize();
-	}
-
-	const ModelItem* GetModels() const override
-	{
+		out_count = m_models.GetSize();
 		return m_models.GetValues();
 	}
 
+
+	void AddCamera(Entity entity) override
+	{
+		m_cameras.Insert(entity, { entity, Camera() });
+	}
+
+	void RemoveCamera(Entity entity) override
+	{
+		m_cameras.Erase(entity);
+	}
+
+	bool HasCamera(Entity entity) const override
+	{
+		CameraItem* cam;
+		return m_cameras.Find(entity, cam);
+	}
+
+	const CameraItem* GetCameraData(Entity entity) const override
+	{
+		CameraItem* cameraItem = nullptr;
+		if (!m_cameras.Find(entity, cameraItem))
+		{
+			Log(LogType::Warning, "Camera component for entity %d was not found", (u64)entity);
+		}
+		return cameraItem;
+	}
+
+	void SetCameraData(Entity entity, const CameraItem& data) override
+	{
+		CameraItem* cameraItem;
+		if (m_cameras.Find(entity, cameraItem))
+		{
+			cameraItem->camera = data.camera;
+		}
+		else
+		{
+			Log(LogType::Warning, "Camera component for entity %d was not found", (u64)entity);
+		}
+	}
+
+	void SerializeCameras(OutputBlob& serializer) const
+	{
+		serializer.Write((u64)m_cameras.GetSize());
+		for (const CameraItem& camera : m_cameras)
+		{
+			serializer.Write(camera.entity);
+			serializer.Write(camera.camera);
+		}
+	}
+
+	void DeserializeCameras(InputBlob& serializer)
+	{
+		u64 count;
+		serializer.Read(count);
+
+		for (u64 i = 0; i < count; ++i)
+		{
+			Entity entity;
+			serializer.Read(entity);
+			CameraItem* item = m_cameras.Insert(entity, { entity });
+			serializer.Read(item->camera);
+		}
+	}
 
 	size_t GetCamerasCount() const override
 	{
@@ -453,7 +287,7 @@ public:
 		return m_cameras.GetValues();
 	}
 
-	void SetMainCamera(Entity entity) override
+	void SetActiveCamera(Entity entity) override
 	{
 		CameraItem* cam;
 		if(!m_cameras.Find(entity, cam))
@@ -461,21 +295,84 @@ public:
 			Log(LogType::Warning, "Given entity doesn't have component Camera");
 			ASSERT(false);
 		}
-		m_mainCamera = entity;
+		m_activeCamera = entity;
 	}
 
-	const CameraItem* GetMainCamera() const override
+	const CameraItem* GetActiveCamera() const override
 	{
-		if(m_mainCamera == INVALID_ENTITY)
+		if(m_activeCamera == INVALID_ENTITY)
 			return nullptr;
 
 		CameraItem* cam;
-		if(m_cameras.Find(m_mainCamera, cam))
+		if(m_cameras.Find(m_activeCamera, cam))
 			return cam;
 		else
 			return nullptr;
 	}
 
+
+	void AddDirectionalLight(Entity entity) override
+	{
+		m_directionalLights.Insert(entity, { entity, DirectionalLight() });
+	}
+
+	void RemoveDirectionalLight(Entity entity) override
+	{
+		m_directionalLights.Erase(entity);
+	}
+
+	bool HasDirectionalLight(Entity entity) const override
+	{
+		DirectionalLightItem* light;
+		return m_directionalLights.Find(entity, light);
+	}
+
+	const DirectionalLightItem* GetDirectionalLightData(Entity entity) const override
+	{
+		DirectionalLightItem* lightItem = nullptr;
+		if (m_directionalLights.Find(entity, lightItem))
+		{
+			Log(LogType::Warning, "Directional light component for entity %d was not found", (u64)entity);
+		}
+		return lightItem;
+	}
+
+	void SetDirectionalLightData(Entity entity, const DirectionalLightItem& data) override
+	{
+		DirectionalLightItem* lightItem;
+		if (m_directionalLights.Find(entity, lightItem))
+		{
+			lightItem->light = data.light;
+		}
+		else
+		{
+			Log(LogType::Warning, "Directional light component for entity %d was not found", (u64)entity);
+		}
+	}
+
+	void SerializeDirLights(OutputBlob& serializer) const
+	{
+		serializer.Write((u64)m_directionalLights.GetSize());
+		for (const DirectionalLightItem& light : m_directionalLights)
+		{
+			serializer.Write(light.entity);
+			serializer.Write(light.light);
+		}
+	}
+
+	void DeserializeDirLights(InputBlob& serializer)
+	{
+		u64 count;
+		serializer.Read(count);
+
+		for (u64 i = 0; i < count; ++i)
+		{
+			Entity entity;
+			serializer.Read(entity);
+			DirectionalLightItem* item = m_directionalLights.Insert(entity, { entity });
+			serializer.Read(item->light);
+		}
+	}
 
 	size_t GetDirectionalLightsCount() const override
 	{
@@ -487,7 +384,7 @@ public:
 	}
 
 
-	virtual bool RaycastModels(const Ray& ray, const ModelItem* hitModel) const override
+	virtual bool RaycastModels(const Ray& ray, RayHit* out_hitModel = nullptr) const override
 	{
 		World* world = m_renderSystem.GetEngine().GetWorld(worldId(0));
 
@@ -571,7 +468,9 @@ public:
 					if (Vector3::Dot(normal, C) < 0.0f)
 						continue;//point is outside of line
 
-					hitModel = &item;
+					if (out_hitModel)
+						*out_hitModel = { item.entity, intersection, normal };/////////////TODO: find closest, not first
+
 					return true;
 				}
 			}
@@ -580,22 +479,100 @@ public:
 	}
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	RenderSystem& m_renderSystem;
-	Array<ComponentInfo> m_componentInfos;
 
 	AssociativeArray<Entity, ModelItem> m_models;
 	AssociativeArray<Entity, CameraItem> m_cameras;
-	Entity m_mainCamera = INVALID_ENTITY;
+	Entity m_activeCamera = INVALID_ENTITY;
 	AssociativeArray<Entity, DirectionalLightItem> m_directionalLights;
 };
 
+//----------------------------------------------------------------------------------
+
+
+class RenderSceneEditorImpl : public RenderSceneEditor
+{
+public:
+	RenderSceneEditorImpl(RenderSystem& system) : m_system(system) {}
+	~RenderSceneEditorImpl() override {}
+
+	void EditComponent(EditorInterface& editor, const ComponentBase& component, worldId world, Entity entity) override
+	{
+		RenderSceneImpl* scene = static_cast<RenderSceneImpl*>(m_system.GetScene(world));
+		ASSERT(scene);
+
+		switch (component.type)
+		{
+		case crc32_string("Model"):
+		{
+			RenderSceneImpl::ModelItem* modelItem;
+			if (scene->m_models.Find(entity, modelItem))
+			{
+				editor.EditResource("model", Model::RESOURCE_TYPE, modelItem->model, EditorInterface::EditFlag_None);
+			}
+			else {
+				ASSERT2(false, "Entity does not have model component");
+			}
+		}
+		break;
+		case crc32_string("Camera"):
+		{
+			RenderScene::CameraItem* cameraItem;
+			if (scene->m_cameras.Find(entity, cameraItem))
+			{
+				Camera& camera = cameraItem->camera;
+				const char* cameraTypeNames[] = { "Orthogonal" , "Perspective" };
+				u32 typeIdx = (u32)camera.type;
+				if (editor.EditEnum("type", typeIdx, cameraTypeNames, sizeof(cameraTypeNames) / sizeof(cameraTypeNames[0])))
+					camera.type = (Camera::Type)typeIdx;
+				editor.EditFloat("screen width", camera.screenWidth, EditorInterface::EditFlag_ReadOnly);
+				editor.EditFloat("screen height", camera.screenHeight, EditorInterface::EditFlag_ReadOnly);
+				editor.EditFloat("near plane", camera.nearPlane);
+				editor.EditFloat("far plane", camera.farPlane);
+				if (camera.type == Camera::Type::Perspective)
+				{
+					float fovDeg = toDeg(camera.fov);
+					if (editor.EditFloat("fov", fovDeg))
+						camera.fov = toRad(fovDeg);
+
+				}
+			}
+			else {
+				ASSERT2(false, "Entity does not have camera component");
+			}
+		}
+		break;
+		case crc32_string("Directional light"):
+		{
+			RenderScene::DirectionalLightItem* lightItem;
+			if (scene->m_directionalLights.Find(entity, lightItem))
+			{
+				DirectionalLight& light = lightItem->light;
+				editor.EditColor("diffuse color", light.diffuseColor, EditorInterface::EditFlag_None);
+				editor.EditColor("specular color", light.specularColor, EditorInterface::EditFlag_None);
+			}
+		}
+		break;
+		}
+	}
+
+private:
+	RenderSystem& m_system;
+
+};
 
 //----------------------------------------------------------------------------------
 
 
 class RenderSystemImpl : public RenderSystem
 {
+	enum class Version : u32
+	{
+		First = 0,
+		Latest
+	};
+
 public:
 	RenderSystemImpl(Engine& engine)
 		: m_allocator(engine.GetAllocator())
@@ -609,6 +586,12 @@ public:
 		, m_screenSizeFrameBuffers(m_allocator)
 		, m_scenes(m_allocator, &HashWorldId)
 		, m_debugObjects(m_allocator)
+		, m_sceneEditor(*this)
+		, m_shaderInternalManager(m_allocator, *engine.GetFileSystem(), engine.GetResourceManagement())
+		, m_shaderManager(m_allocator, *engine.GetFileSystem(), engine.GetResourceManagement())
+		, m_materialManager(m_allocator, *engine.GetFileSystem(), engine.GetResourceManagement())
+		, m_modelManager(m_allocator, *engine.GetFileSystem(), engine.GetResourceManagement())
+		, m_textureManager(m_allocator, *engine.GetFileSystem(), engine.GetResourceManagement())
 	{
 		m_allocator.SetDebugName("Renderer");
 
@@ -633,16 +616,16 @@ public:
 		invalidshaderData.handle = BGFX_INVALID_HANDLE;
 		m_shaderData.Add(Utils::Move(invalidshaderData));
 
-		m_shaderInternalManager = static_cast<ShaderInternalManager*>(m_engine.GetResourceManager(ResourceType::ShaderInternal));
-		m_shaderInternalManager->SetRenderSystem(this);
-		m_shaderManager = static_cast<ShaderManager*>(m_engine.GetResourceManager(ResourceType::Shader));
-		m_shaderManager->SetRenderSystem(this);
-		m_materialManager = static_cast<MaterialManager*>(m_engine.GetResourceManager(ResourceType::Material));
-		m_materialManager->SetRenderSystem(this);
-		m_modelManager = static_cast<ModelManager*>(m_engine.GetResourceManager(ResourceType::Model));
-		m_modelManager->SetRenderSystem(this);
-		m_textureManager = static_cast<TextureManager*>(m_engine.GetResourceManager(ResourceType::Texture));
-		m_textureManager->SetRenderSystem(this);
+		m_shaderInternalManager.SetRenderSystem(this);
+		engine.AddResourceManager(m_shaderInternalManager);
+		m_shaderManager.SetRenderSystem(this);
+		engine.AddResourceManager(m_shaderManager);
+		m_materialManager.SetRenderSystem(this);
+		engine.AddResourceManager(m_materialManager);
+		m_modelManager.SetRenderSystem(this);
+		engine.AddResourceManager(m_modelManager);
+		m_textureManager.SetRenderSystem(this);
+		engine.AddResourceManager(m_textureManager);
 	}
 
 
@@ -653,7 +636,7 @@ public:
 			DestroyMeshData(dObject.mesh.renderDataHandle);
 			m_allocator.Deallocate(dObject.mesh.verticesData);
 			m_allocator.Deallocate(dObject.mesh.indicesData);
-			m_engine.GetResourceManagement()->UnloadResource(ResourceType::Material, dObject.mesh.material);
+			m_engine.GetResourceManagement()->UnloadResource(Material::RESOURCE_TYPE, dObject.mesh.material);
 		}
 
 		for (const auto& scene : m_scenes)
@@ -662,6 +645,37 @@ public:
 		bgfx::destroy(m_cameraPos);
 		bgfx::destroy(m_dirLightsDirs);
 		bgfx::destroy(m_dirLightsColor);
+	}
+
+
+	u32 GetVersion() const override { return (u32)Version::Latest; }
+
+	void Serialize(OutputBlob& serializer) const override
+	{
+		serializer.Write((u32)m_scenes.GetSize());
+		for (const auto& item : m_scenes)
+		{
+			serializer.Write(item.key);
+			item.value->Serialize(serializer);
+		}
+	}
+
+	void Deserialize(InputBlob& serializer) override
+	{
+		for (const auto& scene : m_scenes)
+			DELETE_OBJECT(m_allocator, scene.value);
+		m_scenes.Clear();
+
+		u32 count;
+		serializer.Read(count);
+		for (u32 i = 0; i < count; ++i)
+		{
+			worldId world;
+			serializer.Read(world);
+			RenderSceneImpl* scene = NEW_OBJECT(m_allocator, RenderSceneImpl)(m_allocator, *this);
+			scene->Deserialize(serializer);
+			m_scenes.Insert(world, scene);
+		}
 	}
 
 
@@ -686,7 +700,7 @@ public:
 				DestroyMeshData(dMesh.mesh.renderDataHandle);
 				m_allocator.Deallocate(dMesh.mesh.verticesData);
 				m_allocator.Deallocate(dMesh.mesh.indicesData);
-				m_engine.GetResourceManagement()->UnloadResource(ResourceType::Material, dMesh.mesh.material);
+				m_engine.GetResourceManagement()->UnloadResource(Material::RESOURCE_TYPE, dMesh.mesh.material);
 				m_debugObjects.Erase(i);
 			}
 		}
@@ -696,13 +710,30 @@ public:
 	const char* GetName() const override { return "renderer"; }
 
 
-	IScene* GetScene(worldId world) const override
+	Scene* GetScene(worldId world) const override
 	{
 		RenderSceneImpl** scene;
 		if (m_scenes.Find(world, scene))
 			return *scene;
 		else
 			return nullptr;
+	}
+
+	const ComponentBase** GetComponents(uint& count) const override
+	{
+		static Component<RenderScene, &RenderScene::AddModel, &RenderScene::RemoveModel, &RenderScene::HasModel> model("Model");
+		static Component<RenderScene, &RenderScene::AddCamera, &RenderScene::RemoveCamera, &RenderScene::HasCamera> camera("Camera");
+		static Component<RenderScene, &RenderScene::AddDirectionalLight, &RenderScene::RemoveDirectionalLight, &RenderScene::HasDirectionalLight> dirLight("Directional light");
+
+		static const ComponentBase* components[] = { &model, &camera, &dirLight };
+		count = sizeof(components) / sizeof(components[0]);
+
+		return components;
+	}
+
+	SceneEditor* GetEditor() override
+	{
+		return &m_sceneEditor;
 	}
 
 
@@ -718,10 +749,10 @@ public:
 	}
 
 
-	MaterialManager& GetMaterialManager() const override { return *m_materialManager; }
-	ShaderManager& GetShaderManager() const override { return *m_shaderManager; }
-	ModelManager& GetModelManager() const override { return *m_modelManager; }
-	TextureManager& GetTextureManager() const override { return *m_textureManager; }
+	MaterialManager& GetMaterialManager() override { return m_materialManager; }
+	ShaderManager& GetShaderManager() override { return m_shaderManager; }
+	ModelManager& GetModelManager() override { return m_modelManager; }
+	TextureManager& GetTextureManager() override { return m_textureManager; }
 
 
 	meshRenderHandle CreateMeshData(Mesh& mesh) override
@@ -939,7 +970,7 @@ public:
 		memory::Copy(dObject.mesh.indicesData, iData, count * sizeof(u16));
 
 		Path materialPath("materials/debug.material");
-		dObject.mesh.material = m_engine.GetResourceManagement()->GetManager(ResourceType::Material)->Load(materialPath);
+		dObject.mesh.material = m_engine.GetResourceManagement()->GetManager(Material::RESOURCE_TYPE)->Load(materialPath);
 		dObject.mesh.renderDataHandle = CreateMeshData(dObject.mesh);
 		dObject.lifetime = lifetime;
 
@@ -1003,7 +1034,7 @@ public:
 		memory::Copy(dObject.mesh.indicesData, iData, count * sizeof(u16));
 
 		Path materialPath("materials/debug.material");
-		dObject.mesh.material = m_engine.GetResourceManagement()->GetManager(ResourceType::Material)->Load(materialPath);
+		dObject.mesh.material = m_engine.GetResourceManagement()->GetManager(Material::RESOURCE_TYPE)->Load(materialPath);
 		dObject.mesh.renderDataHandle = CreateMeshData(dObject.mesh);
 		dObject.lifetime = lifetime;
 
@@ -1098,8 +1129,7 @@ public:
 		Matrix44 view;
 		Matrix44 proj;
 		RenderSceneImpl* scene = (RenderSceneImpl*)GetScene(world.GetId());
-		//Camera* camera = scene->GetComponentData(componentHandle(1), ) ////////////////////////////////////////////////////////
-		const RenderScene::CameraItem* cameraItem = scene->GetMainCamera();
+		const RenderScene::CameraItem* cameraItem = scene->GetCameraData(camera);
 		if (cameraItem != nullptr)
 		{
 			const Camera& cam = cameraItem->camera;
@@ -1108,6 +1138,9 @@ public:
 			if (cam.type == Camera::Type::Perspective)
 			{
 				proj.SetPerspective(cam.fov, cam.aspect, cam.nearPlane, cam.farPlane, bgfx::getCaps()->homogeneousDepth);
+				Vector4 foo = proj * Vector4(2, 0, 2, 1);
+				foo = foo / foo.w;
+				foo = foo;
 			}
 			else if (cam.type == Camera::Type::Orthogonal)
 			{
@@ -1137,9 +1170,9 @@ public:
 		);
 	}
 
-	void RenderModels(World& world, const RenderScene::ModelItem* models, size_t count)
+	void RenderModels(World& world)
 	{
-		const RenderScene* scene = (RenderScene*)GetScene(world.GetId());
+		const RenderSceneImpl* scene = (RenderSceneImpl*)GetScene(world.GetId());
 		if(scene->GetDirectionalLightsCount() > 0)
 		{
 			const RenderScene::DirectionalLightItem* dirLight = scene->GetDirectionalLights();
@@ -1150,6 +1183,8 @@ public:
 			bgfx::setUniform(m_dirLightsColor, &dirLight->light);
 		}
 
+		size_t count;
+		const RenderSceneImpl::ModelItem* models = scene->GetModels(count);
 		for (size_t i = 0; i < count; ++i)
 		{
 
@@ -1157,12 +1192,13 @@ public:
 			Matrix44 mtx = trans.ToMatrix44();
 			bgfx::setTransform(&mtx.m11);// Set model matrix for rendering.
 
-			const Model* model = (Model*)m_modelManager->GetResource(models[i].model);
+			if (models[i].model == INVALID_RESOURCE_HANDLE) continue; //TODO: can't do this comparsion
+			const Model* model = (Model*)m_modelManager.GetResource(models[i].model);
 			if (model->GetState() == Resource::State::Ready)
 			{
 				for (const Mesh& mesh : model->meshes)
 				{
-					const Material* material = (Material*)m_materialManager->GetResource(mesh.material);
+					const Material* material = (Material*)m_materialManager.GetResource(mesh.material);
 					if (material->GetState() == Resource::State::Ready)
 					{
 						MeshData& meshData = m_meshData.Get((u64)mesh.renderDataHandle);
@@ -1172,7 +1208,7 @@ public:
 						MaterialData& materialData = m_materialData.Get((u64)material->renderDataHandle);
 						for(int i = 0; i < materialData.textureCount; ++i)
 						{
-							const Texture* texture = (Texture*)m_textureManager->GetResource(material->textures[i]);
+							const Texture* texture = (Texture*)m_textureManager.GetResource(material->textures[i]);
 							TextureData& texData = m_textureData.Get((u64)texture->renderDataHandle);
 							bgfx::setTexture(i, materialData.textureUniforms[i], texData.handle);
 						}
@@ -1180,7 +1216,7 @@ public:
 						uint64_t state = BGFX_STATE_DEFAULT;// BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_MSAA;
 						bgfx::setState(state);
 
-						const Shader* shader = (Shader*)m_shaderManager->GetResource(material->shader);
+						const Shader* shader = (Shader*)m_shaderManager.GetResource(material->shader);
 						ShaderData& shaderData = m_shaderData.Get((u64)shader->renderDataHandle);
 						bgfx::submit(m_currentView, shaderData.handle);
 					}
@@ -1194,7 +1230,7 @@ public:
 		for (int i = 0; i < m_debugObjects.GetSize(); ++i)
 		{
 			const Mesh& mesh = m_debugObjects[i].mesh;
-			const Material* material = (Material*)m_materialManager->GetResource(mesh.material);
+			const Material* material = (Material*)m_materialManager.GetResource(mesh.material);
 			if (material->GetState() == Resource::State::Ready)
 			{
 				Matrix44 transform = m_debugObjects[i].transform.ToMatrix44();
@@ -1207,7 +1243,7 @@ public:
 				uint64_t state = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_MSAA | BGFX_STATE_DEPTH_TEST_LESS;
 				bgfx::setState(state);
 
-				const Shader* shader = (Shader*)m_shaderManager->GetResource(material->shader);
+				const Shader* shader = (Shader*)m_shaderManager.GetResource(material->shader);
 				ShaderData& shaderData = m_shaderData.Get((u64)shader->renderDataHandle);
 				bgfx::submit(m_currentView, shaderData.handle);
 			}
@@ -1231,12 +1267,13 @@ private:
 	HandleArray<ShaderInternalData, u32> m_shaderInternalData;
 	HandleArray<ShaderData, u32> m_shaderData;
 
-	ShaderInternalManager* m_shaderInternalManager = nullptr;
-	ShaderManager* m_shaderManager = nullptr;
-	MaterialManager* m_materialManager = nullptr;
-	ModelManager* m_modelManager = nullptr;
-	TextureManager* m_textureManager = nullptr;
+	ShaderInternalManager m_shaderInternalManager;
+	ShaderManager m_shaderManager;
+	MaterialManager m_materialManager;
+	ModelManager m_modelManager;
+	TextureManager m_textureManager;
 
+	RenderSceneEditorImpl m_sceneEditor;
 	///////////////////// DEBUG STUFF
 	resourceHandle m_debugShader = INVALID_RESOURCE_HANDLE;
 	Array<DebugObject> m_debugObjects;
@@ -1263,7 +1300,7 @@ RenderSystem* RenderSystem::Create(Engine& engine)
 
 void RenderSystem::Destroy(RenderSystem* system)
 {
-	IAllocator& allocator = system->GetEngine().GetAllocator();
+	Allocator& allocator = system->GetEngine().GetAllocator();
 	DELETE_OBJECT(allocator, system);
 }
 

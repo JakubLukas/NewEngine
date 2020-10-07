@@ -19,7 +19,7 @@ WidgetRegistry::WidgetRegistry(createFunction creator)
 }
 
 
-WidgetRegistry* GetRegistries()
+WidgetRegistry* GetWidgetRegistries()
 {
 	return s_registriesList;
 }

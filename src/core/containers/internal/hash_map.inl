@@ -45,7 +45,7 @@ typename HashMap<KeyType, ValueType>::HashNode& HashMap<KeyType, ValueType>::Has
 
 
 template<class KeyType, class ValueType>
-HashMap<KeyType, ValueType>::HashMap(IAllocator& allocator, HashFunction hashFunc)
+HashMap<KeyType, ValueType>::HashMap(Allocator& allocator, HashFunction hashFunc)
 	: m_allocator(allocator)
 	, m_hashFunction(hashFunc)
 {}
@@ -246,10 +246,10 @@ void HashMap<KeyType, ValueType>::Rehash(unsigned bucketSize)
 
 
 template<class KeyType, class ValueType>
-unsigned HashMap<KeyType, ValueType>::GetBucketsSize() const { return m_bucketSize; }
+size_t HashMap<KeyType, ValueType>::GetBucketsSize() const { return m_bucketSize; }
 
 template<class KeyType, class ValueType>
-unsigned HashMap<KeyType, ValueType>::GetSize() const { return m_size; }
+size_t HashMap<KeyType, ValueType>::GetSize() const { return m_size; }
 
 
 template<class KeyType, class ValueType>

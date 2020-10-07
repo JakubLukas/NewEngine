@@ -1,11 +1,13 @@
 #include "script.h"
 
 #include "core/engine.h"
-#include "core/iallocator.h"
+#include "core/allocator.h"
 #include "core/allocators.h"
 #include "core/containers/associative_array.h"
 #include "core/logs.h"
 #include "core/string.h"
+#include "core/hashes.h"
+#include "core/file/blob.h"
 
 #include "editor/editor_interface.h"
 
@@ -29,168 +31,157 @@ static u32 HashWorldId(const worldId& world)
 }
 
 
-static void DummyScriptUpdate(void* data, Engine& engine, float deltaTime) {}
-
-
-componentHandle ScriptScene::GetComponentHandle(Component comp)
+struct DummyScriptClass :ScriptClassBase
 {
-	return (componentHandle)comp;
-}
+	void Init(class Engine& engine) override {}
+	void Deinit() override {}
+	void Update(float deltaTime) override {}
+};
+static DummyScriptClass s_dummyScript;
+
+
+struct ScriptItem
+{
+	Entity entity;
+	bool active;
+	ScriptScene::ScriptData data;
+	ScriptClassBase* script = nullptr;
+};
 
 
 class ScriptSceneImpl : public ScriptScene
 {
 public:
-	ScriptSceneImpl(IAllocator& allocator, ScriptSystem& scriptSystem)
+	ScriptSceneImpl(Allocator& allocator, ScriptSystem& scriptSystem)
 		: m_allocator(allocator)
 		, m_scriptSystem(scriptSystem)
-		, m_componentInfos(m_allocator)
 		, m_scripts(m_allocator)
 	{
-		ComponentInfo* compInfoModel;
-
-		compInfoModel = &m_componentInfos.EmplaceBack();
-		compInfoModel->handle = ScriptScene::GetComponentHandle(Component::Script);
-		compInfoModel->name = "script";
 	}
 
-	~ScriptSceneImpl() override {}
+	~ScriptSceneImpl() override
+	{
+		for (auto& script : m_scripts)
+		{
+			if (*script.data.className != '\0')
+				DELETE_OBJECT(m_allocator, script.script);
+		}
+	}
+
+	virtual void Serialize(class OutputBlob& serializer) const override
+	{
+		SerializeScripts(serializer);
+	}
+
+	virtual void Deserialize(class InputBlob& serializer) override
+	{
+		DeserializeScripts(serializer);
+	}
+
+	void Clear() override {}
 
 	void Update(float deltaTime) override
 	{}
 
-	size_t GetComponentCount() const override { return m_componentInfos.GetSize(); }
 
-	const ComponentInfo* GetComponentInfos() const override { return m_componentInfos.Begin(); }
-
-	const ComponentInfo* GetComponentInfo(componentHandle handle) const override { return &m_componentInfos[(size_t)handle]; }
-
-	componentHandle GetComponentHandle(const char* name) const override
+	void AddScript(Entity entity) override
 	{
-		if (string::Equal(name, "model"))
+		ScriptItem* item = m_scripts.Insert(entity, { entity, false, {}, &s_dummyScript });
+		ASSERT2(item != nullptr, "entity already has script component");
+	}
+
+	void RemoveScript(Entity entity) override
+	{
+		m_scripts.Erase(entity);
+	}
+
+	bool HasScript(Entity entity) const override
+	{
+		ScriptItem* script;
+		return m_scripts.Find(entity, script);
+	}
+
+	ScriptData* GetScriptData(Entity entity) const override
+	{
+		ScriptItem* item = nullptr;
+		if (m_scripts.Find(entity, item))
 		{
-			return ScriptScene::GetComponentHandle(Component::Script);
+			return &item->data;
 		}
 		else
 		{
-			return INVALID_COMPONENT_HANDLE;
+			Log(LogType::Warning, "Script component for entity %d was not found", (u64)entity);
+			return nullptr;
 		}
 	}
 
-	void AddComponent(componentHandle handle, Entity entity) override
+	ScriptClassBase* InstantiateScript(const char* className)
 	{
-		switch ((u8)handle)
+		u32 newNameHash = crc32_string(className);
+		ScriptClassRegistry* firstReg = GetScriptRegistries();
+		while (firstReg != nullptr)
 		{
-		case (u8)ScriptScene::Component::Script:
-		{
-			ScriptItem* item = m_scripts.Insert(entity, { entity, true, ScriptClass() });
-			ASSERT2(item != nullptr, "entity already has script component");
-			item->script.updateFunction = DummyScriptUpdate;
-			break;
-		}
-		default:
-			ASSERT2(false, "Unrecognized componentHandle");
-		}
-	}
+			if (firstReg->nameHash == newNameHash)
+				return firstReg->creator(m_allocator);
 
-	void RemoveComponent(componentHandle handle, Entity entity) override
-	{
-		switch ((u8)handle)
-		{
-		case (u8)ScriptScene::Component::Script:
-		{
-			m_scripts.Erase(entity);
-			break;
+			firstReg = firstReg->next;
 		}
-		default:
-			ASSERT2(false, "Unrecognized componentHandle");
-		}
-	}
-
-	bool HasComponent(componentHandle handle, Entity entity) const override
-	{
-		switch ((u8)handle)
-		{
-		case (u8)RenderScene::Component::Model:
-		{
-			ScriptItem* script;
-			return m_scripts.Find(entity, script);
-		}
-		default:
-			ASSERT2(false, "Unrecognized componentHandle");
-			return false;
-		}
-	}
-
-	void EditComponent(EditorInterface* editor, componentHandle handle, Entity entity) override
-	{
-		switch ((u8)handle)
-		{
-		case (u8)RenderScene::Component::Model:
-		{
-			ScriptItem* scriptItem;
-			if (m_scripts.Find(entity, scriptItem))
-			{
-				char strBuffer[36] = "Script edit";
-				editor->EditString("Script edit", strBuffer, 36);
-			}
-			else
-			{
-				Log(LogType::Warning, "Script component for entity %d was not found", (u64)entity);
-			}
-			break;
-		}
-		default:
-			ASSERT2(false, "Unrecognized componentHandle");
-		}
-	}
-
-	void* GetComponentData(componentHandle handle, Entity entity) const override
-	{
-		switch ((u8)handle)
-		{
-		case (u8)ScriptScene::Component::Script:
-		{
-			ScriptItem* item;
-			if (m_scripts.Find(entity, item))
-			{
-				return &item->script;
-			}
-			else
-			{
-				Log(LogType::Warning, "Script component for entity %d was not found", (u64)entity);
-			}
-			break;
-		}
-		default:
-			ASSERT2(false, "Unrecognized componentHandle");
-		}
-
 		return nullptr;
 	}
 
-	void SetComponentData(componentHandle handle, Entity entity, void* data) override
+	void SetScriptData(Entity entity, const ScriptData& data) override
 	{
-		switch ((u8)handle)
+		ScriptItem* item;
+		if (m_scripts.Find(entity, item))
 		{
-		case (u8)ScriptScene::Component::Script:
-		{
-			ScriptClass* dataScript = (ScriptClass*)data;
-
-			ScriptItem* item;
-			if (m_scripts.Find(entity, item))
+			if (string::Compare(item->data.className, data.className) != 0)
 			{
-				//TODO: set script memory
-				item->script.updateFunction = dataScript->updateFunction;
+				string::Copy(item->data.className, data.className);
+				ScriptClassBase* script = InstantiateScript(data.className);
+				if (script != nullptr) {
+					item->script = script;
+					script->Init(m_scriptSystem.GetEngine());
+				}
+				else {
+					item->active = false;
+					Log(LogType::Warning, "Could not instantiate script \"%s\"", data.className);
+				}
 			}
-			else
-			{
-				Log(LogType::Warning, "Script component for entity %d was not found", (u64)entity);
-			}
-			break;
 		}
-		default:
-			ASSERT2(false, "Unrecognized componentHandle");
+		else
+		{
+			Log(LogType::Warning, "Script component for entity %d was not found", (u64)entity);
+		}
+	}
+
+	void SerializeScripts(OutputBlob& serializer) const
+	{
+		serializer.Write((u64)m_scripts.GetSize());
+		for (const ScriptItem& script : m_scripts)
+		{
+			serializer.Write(script.entity);
+			serializer.Write(script.active);
+			serializer.Write(script.data.className, string::Length(script.data.className) + 1);
+		}
+	}
+
+	void DeserializeScripts(InputBlob& serializer)
+	{
+		StackAllocator<128> allocator;
+
+		u64 count;
+		serializer.Read(count);
+		for (u64 i = 0; i < count; ++i)
+		{
+			Entity entity;
+			serializer.Read(entity);
+			ScriptItem* script = m_scripts.Insert(entity, { entity });
+			serializer.Read(script->active);
+			String className(allocator);
+			serializer.Read(className);
+			ScriptData data;
+			string::Copy(data.className, className.Cstr(), 64);
+			SetScriptData(entity, data);
 		}
 	}
 
@@ -211,29 +202,87 @@ public:
 	const ScriptItem* GetScripts() const { return m_scripts.GetValues(); }
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	ScriptSystem& m_scriptSystem;
-	Array<ComponentInfo> m_componentInfos;
 
 	AssociativeArray<Entity, ScriptItem> m_scripts;
 	size_t m_activeScriptsCount = 0;
 };
 
+//----------------------------------------------------------------------------------
+
+
+class ScriptSceneEditorImpl : public ScriptSceneEditor
+{
+public:
+	ScriptSceneEditorImpl(ScriptSystem& system) : m_system(system) {}
+	~ScriptSceneEditorImpl() override {}
+
+	void EditComponent(EditorInterface& editor, const ComponentBase& component, worldId world, Entity entity) override
+	{
+
+	}
+
+private:
+	ScriptSystem& m_system;
+};
+
+//----------------------------------------------------------------------------------
+
 
 class ScriptSystemImpl : public ScriptSystem
 {
+	enum class Version : u32
+	{
+		First = 0,
+		Latest
+	};
+
 public:
 	ScriptSystemImpl(Engine& engine)
 		: m_allocator(engine.GetAllocator())
 		, m_engine(engine)
 		, m_scenes(m_allocator, &HashWorldId)
-	{
-	}
+		, m_sceneEditor(*this)
+	{}
+
 	~ScriptSystemImpl() override
 	{
 		for (const auto& scene : m_scenes)
 			DELETE_OBJECT(m_allocator, scene.value);
 	}
+
+
+	u32 GetVersion() const override { return (u32)Version::Latest; }
+
+	void Serialize(OutputBlob& serializer) const override
+	{
+		serializer.Write((u32)m_scenes.GetSize());
+		for (const auto& item : m_scenes)
+		{
+			serializer.Write(item.key);
+			item.value->Serialize(serializer);
+		}
+	}
+
+	void Deserialize(InputBlob& serializer) override
+	{
+		for (const auto& scene : m_scenes)
+			DELETE_OBJECT(m_allocator, scene.value);
+		m_scenes.Clear();
+
+		u32 count;
+		serializer.Read(count);
+		for (u32 i = 0; i < count; ++i)
+		{
+			worldId world;
+			serializer.Read(world);
+			ScriptSceneImpl* scene = NEW_OBJECT(m_allocator, ScriptSceneImpl)(m_allocator, *this);
+			scene->Deserialize(serializer);
+			m_scenes.Insert(world, scene);
+		}
+	}
+
 
 	void Init() override
 	{
@@ -249,10 +298,10 @@ public:
 		DirectionalLight dirLightData;
 		dirLightData.diffuseColor = Color(255, 255, 255, 255);
 		dirLightData.specularColor = Color(255, 255, 255, 255);
-		renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::DirectionalLight), dirLight);
-		renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::DirectionalLight), dirLight, &dirLightData);
+		renderScene->AddDirectionalLight(dirLight);
+		renderScene->SetDirectionalLightData(dirLight, { dirLight, dirLightData });
 
-		resourceHandle modelHandle = INVALID_RESOURCE_HANDLE;
+		Path modelPath;
 
 		int i = 0;
 		for (unsigned yy = 0; yy < 1/*11*/; ++yy)
@@ -261,19 +310,19 @@ public:
 			{
 				m_entities[i] = world->CreateEntity();
 				Transform& trans = world->GetEntityTransform(m_entities[i]);
-				renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Model), m_entities[i]);
+				renderScene->AddModel(m_entities[i]);
 				float scale = 1.0f;
 				if (i % 2 == 0)
 				{
-					modelHandle = renderSystem->GetModelManager().Load(Path("models/square.model"));
+					modelPath = Path("models/square.model");
 					scale = 10;
 				}
 				else
 				{
-					modelHandle = renderSystem->GetModelManager().Load(Path("models/sphere.model"));
+					modelPath = Path("models/sphere.model");
 					scale = 0.09f;
 				}
-				renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Model), m_entities[i], &modelHandle);
+				renderScene->SetModelData(m_entities[i], { modelPath });
 
 				Quaternion rot = Quaternion::IDENTITY;
 				//rot = rot * Quaternion(Vector3::AXIS_X, xx*0.21f);
@@ -295,11 +344,11 @@ public:
 	{
 		for (auto& sceneNode : m_scenes)
 		{
-			const ScriptScene::ScriptItem* scripts = sceneNode.value->GetScripts();
+			const ScriptItem* scripts = sceneNode.value->GetScripts();
 			for (int i = 0; i < sceneNode.value->GetScriptsCount(); ++i)
 			{
 				if(scripts[i].active)//TODO: change from map to array and keep inactive on end ?
-					scripts[i].script.updateFunction(scriptMemory, m_engine, deltaTime);
+					scripts[i].script->Update(deltaTime);
 			}
 		}
 
@@ -319,7 +368,7 @@ public:
 
 	const char* GetName() const override { return "script"; }
 
-	IScene* GetScene(worldId world) const override
+	Scene* GetScene(worldId world) const override
 	{
 		ScriptSceneImpl** scene;
 		if (m_scenes.Find(world, scene))
@@ -327,11 +376,28 @@ public:
 		else
 			return nullptr;
 	}
+
+	const ComponentBase** GetComponents(uint& count) const override
+	{
+		static Component<ScriptScene, &ScriptScene::AddScript, &ScriptScene::RemoveScript, &ScriptScene::HasScript> script("script");
+
+		static const ComponentBase* components[] = { &script };
+
+		count = sizeof(components) / sizeof(components[0]);
+		return components;
+	}
+
+	SceneEditor* GetEditor() override
+	{
+		return &m_sceneEditor;
+	}
+
 	void OnWorldAdded(worldId world) override
 	{
 		ScriptSceneImpl* scene = NEW_OBJECT(m_allocator, ScriptSceneImpl)(m_allocator, *this);
 		m_scenes.Insert(world, scene);
 	}
+
 	void OnWorldRemoved(worldId world) override
 	{
 		m_scenes.Erase(world);
@@ -344,9 +410,9 @@ private:
 	Engine& m_engine;
 	HashMap<worldId, ScriptSceneImpl*> m_scenes;
 
-	void* scriptMemory = nullptr;
+	ScriptSceneEditorImpl m_sceneEditor;
 
-	worldId m_world;
+	worldId m_world = INVALID_WORLD_ID;
 	Entity m_entities[121];
 };
 
@@ -358,7 +424,7 @@ ScriptSystem* ScriptSystem::Create(Engine& engine)
 
 void ScriptSystem::Destroy(ScriptSystem* system)
 {
-	IAllocator& allocator = system->GetEngine().GetAllocator();
+	Allocator& allocator = system->GetEngine().GetAllocator();
 	DELETE_OBJECT(allocator, system);
 }
 

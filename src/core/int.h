@@ -21,6 +21,7 @@ namespace Veng
 #	error Platform not supported
 #endif
 
+typedef unsigned int uint;
 
 typedef char i8;
 typedef unsigned char u8;

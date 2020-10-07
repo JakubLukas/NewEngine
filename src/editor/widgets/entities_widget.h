@@ -20,10 +20,10 @@ public:
 	void Deinit() override;
 
 	void Update(EventQueue& queue) override;
+	void Render(EventQueue& queue) override;
 
-protected:
-	void RenderInternal(EventQueue& queue) override;
 	const char* GetName() const override { return "Entities"; };
+	bool HasMenuBar() const override { return true; }
 
 private:
 	Engine* m_engine = nullptr;

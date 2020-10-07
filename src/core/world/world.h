@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/iallocator.h"
+#include "core/allocator.h"
 #include "core/containers/array.h"
 #include "core/int.h"
 
@@ -25,13 +25,13 @@ public:
 			: m_world(world)
 		{}
 
-		bool GetNext(Entity& entity)
+		bool GetNext(Entity& outEntity)
 		{
 			for (m_index; m_index < m_world.m_entities.GetSize(); ++m_index)
 			{
 				if (m_world.m_entities[m_index].alive)
 				{
-					entity = m_world.m_entities[m_index].entity;
+					outEntity = m_world.m_entities[m_index].entity;
 					m_index++;
 					return true;
 				}
@@ -45,14 +45,18 @@ public:
 	};
 
 public:
-	explicit World(IAllocator& allocator, worldId id);
+	World(Allocator& allocator, worldId id);
 	World(World&& world);
 	~World();
 
 	worldId GetId() const { return m_id; }
 
+	void Serialize(class OutputBlob& serializer) const;
+	void Deserialize(class InputBlob& serializer);
+
 	Entity CreateEntity();
 	void DestroyEntity(Entity entity);
+	bool ExistsEntity(Entity entity);
 	Transform& GetEntityTransform(Entity entity);
 	EntityIterator GetEntities() const;
 
@@ -68,7 +72,7 @@ private:
 	};
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	worldId m_id;
 	i64 m_unusedEntity = -1;
 	Array<EntityItem> m_entities;

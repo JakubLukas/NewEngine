@@ -370,6 +370,23 @@ void SetMouseCursorPos(int x, int y)
 	}
 }
 
+void ClipMouseCursor(int x, int y, int width, int height)
+{
+	RECT r;
+	RECT* param = nullptr;
+	if (width >= 0 && height >= 0) {
+		r = { x, y, x + width, y + height };
+		param = &r;
+	}
+
+	if (::ClipCursor(param) == 0)
+	{
+		DWORD errId = ::GetLastError();
+		LogErrorMessage(errId);
+		ASSERT2(false, "SetCursorPos failed");
+	}
+}
+
 void ShowMouseCursor(bool show)
 {
 	::ShowCursor(show);

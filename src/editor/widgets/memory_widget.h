@@ -7,7 +7,7 @@
 namespace Veng
 {
 
-class IAllocator;
+class Allocator;
 
 
 namespace Editor
@@ -19,20 +19,18 @@ struct MemoryWidgetData;
 class MemoryWidget : public WidgetBase
 {
 public:
-	MemoryWidget(IAllocator& allocator);
+	MemoryWidget(Allocator& allocator);
 	~MemoryWidget() override;
 	void Init(Engine& engine, EditorInterface& editor) override;
 	void Deinit() override;
 
 	void Update(EventQueue& queue) override;
-
-protected:
-	void RenderInternal(EventQueue& queue) override;
-	const char* GetName() const override { return "MemoryManager"; };
+	void Render(EventQueue& queue) override;
+	const char* GetName() const override { return "Memory viewer"; };
 
 private:
-	IAllocator& m_allocator;
-	const IAllocator* m_selected = nullptr;
+	Allocator& m_allocator;
+	const Allocator* m_selected = nullptr;
 	MemoryWidgetData* m_data = nullptr;
 };
 

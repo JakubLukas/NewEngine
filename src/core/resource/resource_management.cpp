@@ -4,17 +4,22 @@
 
 #include "core/allocators.h"
 #include "core/containers/array.h"
+#include "core/containers/hash_map.h"
 
 
 namespace Veng
 {
 
 
+static u32 HashResourceType(const ResourceType& key) { return key.hash; }
+
+
 class ResourceManagementImpl : public ResourceManagement
 {
 public:
-	ResourceManagementImpl(IAllocator& allocator)
+	ResourceManagementImpl(Allocator& allocator)
 		: m_allocator(allocator)
+		, m_managers(m_allocator, &HashResourceType)
 		, m_dependencyAsyncOps(allocator)
 	{}
 
@@ -24,34 +29,37 @@ public:
 
 	bool RegisterManager(ResourceType type, ResourceManager* manager)
 	{
-		if (m_managers[(size_t)type] != nullptr)
+		ResourceManager** res;
+		if (m_managers.Find(type, res))
 			return false;
 
-		m_managers[(size_t)type] = manager;
+		m_managers.Insert(type, manager);
 		return true;
 	}
 
 
 	bool UnregisterManager(ResourceType type)
 	{
-		if (m_managers[(size_t)type] == nullptr)
-			return false;
-
-		m_managers[(size_t)type] = nullptr;
-		return true;
+		return m_managers.Erase(type);
 	}
 
 
 	ResourceManager* GetManager(ResourceType type) const override
 	{
-		ASSERT2(m_managers[(size_t)type] != nullptr, "Manager of requested type is not registered.");
-		return m_managers[(size_t)type];
+		ResourceManager** res;
+		if (!m_managers.Find(type, res))
+		{
+			ASSERT2(false, "Manager of requested type is not registered.");
+			return nullptr;
+		}
+
+		return *res;
 	}
 
 
 	resourceHandle LoadResource(ResourceType requestedType, ResourceType resourceType, const Path& path) override
 	{
-		ResourceManager* manager = m_managers[(size_t)resourceType];
+		ResourceManager* manager = GetManager(resourceType);
 		if (manager != nullptr)
 		{
 			ResourceManager* parentManager = GetManager(requestedType);
@@ -63,10 +71,7 @@ public:
 			}
 			else
 			{
-				DependencyAsyncOp& asyncOp = m_dependencyAsyncOps.PushBack();
-				asyncOp.parent = parentManager;
-				asyncOp.childType = resourceType;
-				asyncOp.childHandle = resHandle;
+				DependencyAsyncOp& asyncOp = m_dependencyAsyncOps.PushBack({ parentManager, resourceType, resHandle });
 				return asyncOp.childHandle;
 			}
 		}
@@ -80,11 +85,17 @@ public:
 
 	bool UnloadResource(ResourceType resourceType, resourceHandle handle) override
 	{
-		if (m_managers[(size_t)resourceType] == nullptr)
+		ResourceManager* manager = GetManager(resourceType);
+		if (manager != nullptr)
+		{
+			manager->Unload(handle);
+			return true;
+		}
+		else
+		{
+			ASSERT2(false, "Resource manager of given type isn't registered");
 			return false;
-
-		m_managers[(size_t)resourceType]->Unload(handle);
-		return true;
+		}
 	}
 
 
@@ -116,7 +127,7 @@ public:
 
 	Resource* GetResource(ResourceType resourceType, resourceHandle handle) override
 	{
-		ResourceManager* manager = m_managers[(size_t)resourceType];
+		ResourceManager* manager = GetManager(resourceType);
 		if (manager != nullptr)
 		{
 			return manager->GetResource(handle);
@@ -138,19 +149,19 @@ private:
 	};
 
 private:
-	IAllocator& m_allocator;
-	ResourceManager* m_managers[(size_t)ResourceType::Count] = { nullptr };
+	Allocator& m_allocator;
+	HashMap<ResourceType, ResourceManager*> m_managers;
 	Array<DependencyAsyncOp> m_dependencyAsyncOps;
 };
 
 
-ResourceManagement* ResourceManagement::Create(IAllocator& allocator)
+ResourceManagement* ResourceManagement::Create(Allocator& allocator)
 {
 	return NEW_OBJECT(allocator, ResourceManagementImpl)(allocator);
 }
 
 
-void ResourceManagement::Destroy(ResourceManagement* system, IAllocator& allocator)
+void ResourceManagement::Destroy(ResourceManagement* system, Allocator& allocator)
 {
 	DELETE_OBJECT(allocator, system);
 }

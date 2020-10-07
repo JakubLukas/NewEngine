@@ -2,7 +2,7 @@
 
 #include "../widget_register.h"
 #include "../external/imgui/imgui.h"
-#include "core/iallocator.h"
+#include "core/allocator.h"
 #include "core/engine.h"
 #include "renderer/pipeline.h"
 #include "renderer/renderer.h"
@@ -26,7 +26,7 @@ struct MaterialWidgetData
 };
 
 
-MaterialWidget::MaterialWidget(IAllocator& allocator)
+MaterialWidget::MaterialWidget(Allocator& allocator)
 	: m_allocator(allocator)
 {
 }
@@ -37,7 +37,7 @@ MaterialWidget::~MaterialWidget()
 
 void MaterialWidget::Init(Engine& engine, EditorInterface& editor)
 {
-	m_manager = engine.GetResourceManager(ResourceType::Material);
+	m_manager = engine.GetResourceManager(Material::RESOURCE_TYPE);
 
 	RenderSystem* renderSystem = static_cast<RenderSystem*>(engine.GetSystem("renderer"));
 	m_pipeline = Pipeline::Create(m_allocator, engine, *renderSystem);
@@ -49,10 +49,9 @@ void MaterialWidget::Init(Engine& engine, EditorInterface& editor)
 
 	Entity entity = world->CreateEntity();
 	Transform& trans = world->GetEntityTransform(entity);
-	renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Model), entity);
+	renderScene->AddModel(entity);
 
-	resourceHandle modelHandle = renderSystem->GetModelManager().Load(Path("models/cube.model"));
-	renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Model), entity, &modelHandle);
+	renderScene->SetModelData(entity, { Path("models/cube.model") });
 
 	Entity camera = world->CreateEntity();
 	Transform& camTrans = world->GetEntityTransform(camera);
@@ -66,9 +65,9 @@ void MaterialWidget::Init(Engine& engine, EditorInterface& editor)
 		10.0f,
 		60.0_deg,
 	};
-	renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Camera), camera);
-	renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Camera), camera, &cam);
-	renderScene->SetMainCamera(camera);
+	renderScene->AddCamera(camera);
+	renderScene->SetCameraData(camera, { camera, cam });
+	renderScene->SetActiveCamera(camera);
 }
 
 void MaterialWidget::Deinit()
@@ -88,7 +87,7 @@ void MaterialWidget::Update(EventQueue& queue)
 		if (event->type == EventType::SelectResource)
 		{
 			const EventSelectResource* eventResource = (EventSelectResource*)event;
-			if (eventResource->type == ResourceType::Material)
+			if (eventResource->type == Material::RESOURCE_TYPE)
 			{
 				m_material = eventResource->resource;
 			}
@@ -97,7 +96,7 @@ void MaterialWidget::Update(EventQueue& queue)
 }
 
 
-void MaterialWidget::RenderInternal(EventQueue& queue)
+void MaterialWidget::Render(EventQueue& queue)
 {
 	if (m_material != INVALID_RESOURCE_HANDLE)
 	{

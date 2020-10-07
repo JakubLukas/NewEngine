@@ -1,6 +1,6 @@
 #pragma once
 
-#include "iallocator.h"
+#include "allocator.h"
 #include "asserts.h"
 #include "threading/threads.h"
 
@@ -26,8 +26,8 @@ struct AllocatorDebugData
 	bool operator>(const AllocatorDebugData& other) const { return allocator > other.allocator; }
 	bool operator>=(const AllocatorDebugData& other) const { return allocator >= other.allocator; }
 
-	IAllocator* parent = nullptr;
-	IAllocator* allocator = nullptr;
+	Allocator* parent = nullptr;
+	Allocator* allocator = nullptr;
 };
 
 const Array<AllocatorDebugData>& GetAllocators();
@@ -37,7 +37,7 @@ const Array<AllocatorDebugData>& GetAllocators();
 //-----------------------------------------------
 
 
-class MainAllocator : public IAllocator
+class MainAllocator : public Allocator
 {
 public:
 	MainAllocator();
@@ -74,10 +74,10 @@ private:
 };
 
 
-class ProxyAllocator : public IAllocator
+class ProxyAllocator : public Allocator
 {
 public:
-	ProxyAllocator(IAllocator& allocator);
+	ProxyAllocator(Allocator& allocator);
 	ProxyAllocator(ProxyAllocator&) = delete;
 	ProxyAllocator(ProxyAllocator&&) = delete;
 	ProxyAllocator& operator=(ProxyAllocator&) = delete;
@@ -103,7 +103,7 @@ public:
 #endif
 
 private:
-	IAllocator& m_source;
+	Allocator& m_source;
 	SpinLock m_lock;
 #if DEBUG_ALLOCATORS
 	const char* m_name = "Heap";
@@ -117,7 +117,7 @@ private:
 
 
 template<int maxSize>
-class StackAllocator : public IAllocator
+class StackAllocator : public Allocator
 {
 public:
 	StackAllocator();
@@ -152,10 +152,10 @@ private:
 };
 
 
-/*class FrameAllocator : public IAllocator
+/*class FrameAllocator : public Allocator
 {
 public:
-	FrameAllocator(IAllocator& allocator);
+	FrameAllocator(Allocator& allocator);
 	FrameAllocator(FrameAllocator&) = delete;
 	FrameAllocator(FrameAllocator&&) = delete;
 	FrameAllocator& operator=(FrameAllocator&) = delete;
@@ -186,7 +186,7 @@ private:
 	static const size_t BLOCK_SIZE = 1'048'576;
 
 private:
-	IAllocator& m_source;
+	Allocator& m_source;
 	SpinLock m_lock;
 	void* m_buffer;
 #if DEBUG_ALLOCATORS

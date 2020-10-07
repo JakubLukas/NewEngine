@@ -12,8 +12,13 @@ namespace Veng
 {
 
 
-MaterialManager::MaterialManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
-	: ResourceManager(allocator, fileSystem, depManager)
+ResourceType Material::RESOURCE_TYPE("material");
+static ResourceType SHADER_TYPE("shader");
+static ResourceType TEXTURE_TYPE("texture");
+
+
+MaterialManager::MaterialManager(Allocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
+	: ResourceManager(Material::RESOURCE_TYPE, allocator, fileSystem, depManager)
 	, m_loadingOp(m_allocator)
 {
 
@@ -55,11 +60,11 @@ void MaterialManager::DestroyResource(Resource* resource)
 	Material* material = static_cast<Material*>(resource);
 
 	m_renderSystem->DestroyMaterialData(material->renderDataHandle);
-	m_depManager->UnloadResource(ResourceType::Shader, material->shader);
+	m_depManager->UnloadResource(SHADER_TYPE, material->shader);
 
 	for(int i = 0; i < material->textureCount; ++i)
 	{
-		m_depManager->UnloadResource(ResourceType::Texture, material->textures[i]);
+		m_depManager->UnloadResource(TEXTURE_TYPE, material->textures[i]);
 	}
 
 	DELETE_OBJECT(m_allocator, material);
@@ -87,7 +92,7 @@ void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	ASSERT(shader != nullptr && JsonIsString(&shader->value));
 	Path shaderPath(JsonGetString(&shader->value));
 
-	material->shader = m_depManager->LoadResource(ResourceType::Material, ResourceType::Shader, shaderPath);
+	material->shader = m_depManager->LoadResource(Material::RESOURCE_TYPE, SHADER_TYPE, shaderPath);
 	op.shader = material->shader;
 	Resource* shaderRes = GetResource(material->shader);
 	if(shaderRes->GetState() == Resource::State::Ready || shaderRes->GetState() == Resource::State::Failure)
@@ -113,7 +118,7 @@ void MaterialManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 
 			ASSERT(JsonIsString(&val->value));
 			const Path path(JsonGetString(&val->value));
-			material->textures[idx] = m_depManager->LoadResource(ResourceType::Material, ResourceType::Texture, path);
+			material->textures[idx] = m_depManager->LoadResource(Material::RESOURCE_TYPE, TEXTURE_TYPE, path);
 			op.textures[idx] = material->textures[idx];
 			op.textureCount++;
 			Resource* textureRes = GetResource(material->textures[idx]);
@@ -141,12 +146,12 @@ void MaterialManager::ChildResourceLoaded(resourceHandle handle, ResourceType ty
 	{
 		LoadingOp& op = m_loadingOp[i];
 
-		if (type == ResourceType::Shader)
+		if (type == SHADER_TYPE)
 		{
 			if (op.shader == handle)
 				op.shaderLoaded = 1;
 		}
-		else if (type == ResourceType::Texture)
+		else if (type == TEXTURE_TYPE)
 		{
 			for (size_t i = 0; i < op.textureCount; ++i)
 			{
@@ -168,7 +173,7 @@ void MaterialManager::ChildResourceLoaded(resourceHandle handle, ResourceType ty
 void MaterialManager::FinalizeMaterial(Material* material)
 {
 	material->SetState(Resource::State::Ready);
-	m_depManager->ResourceLoaded(ResourceType::Material, GetResourceHandle(material));
+	m_depManager->ResourceLoaded(Material::RESOURCE_TYPE, GetResourceHandle(material));
 }
 
 

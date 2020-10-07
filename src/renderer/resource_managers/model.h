@@ -28,8 +28,10 @@ struct Mesh
 
 struct Model : public Resource
 {
-	Model(IAllocator& allocator)
-		: Resource(ResourceType::Model)
+	static ResourceType RESOURCE_TYPE;
+
+	Model(Allocator& allocator)
+		: Resource(ResourceType("model"))
 		, meshes(allocator)
 	{}
 

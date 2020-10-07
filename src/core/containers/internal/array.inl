@@ -3,7 +3,7 @@ namespace Veng
 
 
 template<class Type>
-Array<Type>::Array(IAllocator& allocator)
+Array<Type>::Array(Allocator& allocator)
 	: m_allocator(allocator)
 {
 }
@@ -37,7 +37,7 @@ Array<Type>& Array<Type>::operator =(Array&& other)
 	other.m_size = size;
 	other.m_data = data;
 
-	return *this
+	return *this;
 }
 
 template<class Type>
@@ -92,6 +92,17 @@ Type& Array<Type>::PushBack(const Type& value)
 		Enlarge();
 
 	NEW_PLACEMENT(m_data + m_size, Type)(value);
+
+	return m_data[m_size++];
+}
+
+template<class Type>
+Type& Array<Type>::PushBack(Type&& value)
+{
+	if (m_size == m_capacity)
+		Enlarge();
+
+	NEW_PLACEMENT(m_data + m_size, Type)(Utils::Forward<Type>(value));
 
 	return m_data[m_size++];
 }

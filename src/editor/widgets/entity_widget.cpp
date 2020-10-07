@@ -9,7 +9,6 @@
 #include "core/math/math_ext.h"
 
 #include "renderer/renderer.h"///////////////
-#include "renderer/camera.h"///////////////////
 
 #include "core/resource/resource_management.h"///////////
 #include "core/resource/resource_manager.h"
@@ -51,13 +50,14 @@ void EntityWidget::Update(EventQueue& queue)
 		else if(event->type == EventType::SelectEntity)
 		{
 			const EventSelectEntity* eventEntity = (EventSelectEntity*)event;
+			m_world = m_engine->GetWorld(eventEntity->worldId);
 			m_entity = eventEntity->entity;
 		}
 	}
 }
 
 
-void EntityWidget::RenderInternal(EventQueue& queue)
+void EntityWidget::Render(EventQueue& queue)
 {
 	if (m_world == nullptr)
 	{
@@ -69,8 +69,14 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 		ImGui::Text("No Entity selected");
 		return;
 	}
+	if (!m_world->ExistsEntity(m_entity))
+	{
+		m_entity = INVALID_ENTITY;
+		ImGui::Text("No Entity selected");
+		return;
+	}
 
-	if (ImGui::TreeNodeEx("transform", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnDoubleClick))
+	if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		Transform& entityTrans = m_world->GetEntityTransform(m_entity);
 		ImGui::InputFloat3("position", &entityTrans.position.x, "%.2f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
@@ -85,145 +91,63 @@ void EntityWidget::RenderInternal(EventQueue& queue)
 		}
 
 		ImGui::InputFloat("scale", &entityTrans.scale, 0.1f, 1.0f, "%.2f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+
 		ImGui::Separator();
-		ImGui::TreePop();
 	}
 
-	ISystem* const* systems = m_engine->GetSystems();
+	System* const* systems = m_engine->GetSystems();
 	for (size_t i = 0; i < m_engine->GetSystemCount(); ++i)
 	{
-		ISystem* system = systems[i];
-		IScene* scene = system->GetScene(m_world->GetId());
+		System* system = systems[i];
+		Scene* scene = system->GetScene(m_world->GetId());
 
-		if (scene == nullptr)
-			continue;
+		if (scene == nullptr) continue;
 
-		const ComponentInfo* componentInfos = scene->GetComponentInfos();
-		for (int i = 0; i < scene->GetComponentCount(); ++i)
+		SceneEditor* editor = system->GetEditor();
+
+		uint count;
+		const ComponentBase** components = system->GetComponents(count);
+		for (size_t j = 0; j < count; ++j)
 		{
-			const ComponentInfo& info = componentInfos[i];
-
-			if (!scene->HasComponent(info.handle, m_entity))
-				continue;
-
-			//char buffer[1024];
-			//char* data = buffer;
-			//ASSERT2(sizeof(buffer) >= info.dataSize, "Buffer is not large enough");
-			//scene->GetComponentData(info.handle, m_entity, data);
-
-			if (!ImGui::TreeNodeEx(info.name, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnDoubleClick))
-				continue;
-
-			scene->EditComponent(m_editorInterface, info.handle, m_entity);
-
-			//bool changed = false;
-			/*for (const ComponentInfo::Value& value : info.values)
+			if (components[j]->Has(*scene, m_entity))
 			{
-				switch (value.type)
-				{
-				case ComponentInfo::ValueType::ResourceHandle:
-				{
-					ResourceType type = *(ResourceType*)data;
-					resourceHandle* handle = (resourceHandle*)(data + sizeof(ResourceType));
-
-					ImGui::InputScalar(value.name, ImGuiDataType_U64, handle, NULL, NULL, NULL, ImGuiInputTextFlags_ReadOnly);
-
-					ResourceManager* manager = m_engine->GetResourceManager(type);
-					Resource* resource = manager->GetResource(*handle);
-
-					char pathBuffer[Path::BUFFER_LENGTH];
-					memory::Copy(pathBuffer, resource->GetPath().GetPath(), Path::BUFFER_LENGTH);
-					ImGui::InputText("path", pathBuffer, Path::BUFFER_LENGTH);
-					for (size_t i = 0; i < manager->GetSupportedFileExtCount(); ++i)
-					{
-						if (ImGui::BeginDragDropTarget())
-						{
-							const ImGuiPayload* data = ImGui::AcceptDragDropPayload(manager->GetSupportedFileExt()[i], ImGuiDragDropFlags_None);
-							if (data != nullptr)
-							{
-								Path path((char*)data->Data);
-								if (resource->GetPath() != path)
-								{
-									resourceHandle newResource = manager->Load(path);
-									*handle = newResource;
-									changed = true;
-								}
-							}
-							ImGui::EndDragDropTarget();
-						}
-					}
-					if (ImGui::Button("Open in editor"))
-					{
-						EventSelectResource event;
-						event.type = type;
-						event.resource = *handle;
-						queue.PushEvent(event);
-					}
-
-					data = data + sizeof(ResourceType) + sizeof(resourceHandle);
-					break;
+				bool result = ImGui::CollapsingHeader(components[j]->name, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowItemOverlap);
+				ImGui::SameLine(ImGui::GetContentRegionAvail().x - 3);
+				if (ImGui::Button("x")) {
+					components[j]->Destroy(*scene, m_entity);
+					result = false;
 				}
-				case ComponentInfo::ValueType::Int:
+				if (result)
 				{
-					int& val = *(int*)data;
-					if (ImGui::InputInt(value.name, &val, 1, 10, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
-						changed = true;
-					data = data + sizeof(int);
-					break;
-				}
-				case ComponentInfo::ValueType::Float:
-				{
-					float& val = *(float*)data;
-					if (ImGui::InputFloat(value.name, &val, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
-						changed = true;
-					data = data + sizeof(float);
-					break;
-				}
-				case ComponentInfo::ValueType::Angle:
-				{
-					float val = toDeg(*(float*)data);
-					if (ImGui::InputFloat(value.name, &val, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
-						changed = true;
-					*(float*)data = toRad(val);
-					data = data + sizeof(float);
-					break;
-				}
-				case ComponentInfo::ValueType::String:
-				{
-					ASSERT2(false, "Not implemented yet");
-				}
-				case ComponentInfo::ValueType::Vector3:
-				{
-					Vector3& val = *(Vector3*)data;
-					if (ImGui::InputFloat3(value.name, &val.x, "%.3f", ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
-						changed = true;
-					data = data + sizeof(Vector3);
-					break;
-				}
-				case ComponentInfo::ValueType::Color:
-				{
-					Color& val = *(Color*)data;
-					if (ImGui::InputScalar(value.name, ImGuiDataType_U32, &val.abgr, NULL, NULL, NULL, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
-						changed = true;
-					data = data + sizeof(Color);
-					break;
-				}
-				default:
-					break;
+					editor->EditComponent(*m_editorInterface, *components[j], m_world->GetId(), m_entity);
+					ImGui::Separator();
 				}
 			}
-
-			if(changed)
-				scene->SetComponentData(info.handle, m_entity, buffer);*/
-
-			ImGui::TreePop();
 		}
+	}
 
+	ImGui::Button("Add component");
+	if (ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonLeft))
+	{
+		for (size_t i = 0; i < m_engine->GetSystemCount(); ++i)
+		{
+			System* system = systems[i];
+
+			uint count;
+			const ComponentBase** components = system->GetComponents(count);
+
+			for (size_t j = 0; j < count; ++j)
+			{
+				if (ImGui::Selectable(components[j]->name))
+					components[j]->Create(*system->GetScene(m_world->GetId()), m_entity);
+			}
+		}
+		ImGui::EndPopup();
 	}
 }
 
 
-REGISTER_WIDGET(entity)
+REGISTER_WIDGET(EntityWidget)
 {
 	return NEW_OBJECT(allocator, EntityWidget)();
 }

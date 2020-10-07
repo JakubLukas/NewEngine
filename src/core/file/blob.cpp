@@ -1,7 +1,7 @@
 #include "blob.h"
 
 #include "core/memory.h"
-#include "core/iallocator.h"
+#include "core/allocator.h"
 #include "core/asserts.h"
 
 
@@ -35,76 +35,32 @@ bool InputBlob::Read(void* data, size_t size)
 	}
 }
 
-
-bool InputBlob::ReadString(char* data, size_t maxSize)
+bool InputBlob::ReadString(char* buffer, size_t buffer_size)
 {
-	size_t maxRead = (m_position + maxSize - 1 <= m_size) ? (m_position + maxSize - 1) : m_size;
-	size_t charsReaded = 0;
-	while (charsReaded < maxRead && m_data[m_position] != '\0')
-	{
-		data[charsReaded++] = m_data[m_position++];
-	}
-	m_position++;//skip zero termination char
+	size_t strLen = 0;
+	size_t pos = m_position;
+	while (pos < m_size && m_data[pos++] != '\0') strLen++;
 
-	data[charsReaded] = '\0';
-	return (charsReaded <= maxSize);
+	if (strLen >= buffer_size || pos == m_size) return false;
+
+	string::Copy(buffer, (char*)(m_data + m_position), strLen + 1);
+	m_position += strLen + 1;
+
+	return true;
 }
 
-
-bool InputBlob::Read(i32& value)
+bool InputBlob::ReadString(String& out_string)
 {
-	if (m_position + sizeof(i32) <= m_size)
-	{
-		memory::Copy(&value, m_data + m_position, sizeof(i32));
-		m_position += sizeof(i32);
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
+	size_t strLen = 0;
+	size_t pos = m_position;
+	while (pos < m_size && m_data[pos++] != '\0') strLen++;
 
-bool InputBlob::Read(u32& value)
-{
-	if (m_position + sizeof(u32) <= m_size)
-	{
-		memory::Copy(&value, m_data + m_position, sizeof(u32));
-		m_position += sizeof(u32);
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
+	if (pos == m_size) return false;
 
-bool InputBlob::Read(size_t& value)
-{
-	if (m_position + sizeof(size_t) <= m_size)
-	{
-		memory::Copy(&value, m_data + m_position, sizeof(size_t));
-		m_position += sizeof(size_t);
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
+	out_string.Set((char*)(m_data + m_position), strLen);
+	m_position += strLen + 1;
 
-bool InputBlob::Read(float& value)
-{
-	if (m_position + sizeof(float) <= m_size)
-	{
-		memory::Copy(&value, m_data + m_position, sizeof(float));
-		m_position += sizeof(float);
-		return true;
-	}
-	else
-	{
-		return false;
-	}
+	return true;
 }
 
 void InputBlob::Skip(size_t size)
@@ -140,7 +96,7 @@ const void* InputBlob::GetData() const
 //
 
 
-static void Reallocate(IAllocator& allocator, u8*& ptr, size_t& size)
+static void Reallocate(Allocator& allocator, u8*& ptr, size_t& size)
 {
 	if (size == 0)
 	{
@@ -160,7 +116,7 @@ static void Reallocate(IAllocator& allocator, u8*& ptr, size_t& size)
 
 // OUTPUT BLOB
 
-OutputBlob::OutputBlob(IAllocator& allocator)
+OutputBlob::OutputBlob(Allocator& allocator)
 	: m_allocator(allocator)
 	, m_data(nullptr)
 	, m_size(0)
@@ -184,6 +140,22 @@ void OutputBlob::Write(const void* data, size_t size)
 	m_position += size;
 }
 
+void OutputBlob::WriteAtPos(const void* data, size_t size, size_t pos)
+{
+	if (pos > m_position) {
+		ASSERT2(false, "Position is outside of filled buffer");
+		return;
+	}
+
+	if (pos + size < m_position) {
+		memory::Copy(m_data + pos, data, size);
+	}
+	else {
+		size_t overSize = m_position - pos;
+		memory::Copy(m_data + pos, data, overSize);
+		Write((u8*)data + overSize, size - overSize);
+	}
+}
 
 void OutputBlob::WriteString(const char* data)
 {
@@ -201,44 +173,12 @@ void OutputBlob::WriteString(const char* data)
 }
 
 
-void OutputBlob::Write(i32 value)
-{
-	if (m_position + sizeof(i32) >= m_size)
-		Reallocate(m_allocator, m_data, m_size);
-
-	memory::Copy(m_data + m_position, &value, sizeof(i32));
-	m_position += sizeof(i32);
-}
-
-void OutputBlob::Write(u32 value)
-{
-	if (m_position + sizeof(u32) >= m_size)
-		Reallocate(m_allocator, m_data, m_size);
-
-	memory::Copy(m_data + m_position, &value, sizeof(u32));
-	m_position += sizeof(u32);
-}
-
-void OutputBlob::Write(size_t value)
-{
-	if (m_position + sizeof(size_t) >= m_size)
-		Reallocate(m_allocator, m_data, m_size);
-
-	memory::Copy(m_data + m_position, &value, sizeof(size_t));
-	m_position += sizeof(size_t);
-}
-
-void OutputBlob::Write(float value)
-{
-	if (m_position + sizeof(float) >= m_size)
-		Reallocate(m_allocator, m_data, m_size);
-
-	memory::Copy(m_data + m_position, &value, sizeof(float));
-	m_position += sizeof(float);
-}
-
-
 size_t OutputBlob::GetSize() const
+{
+	return m_position;
+}
+
+size_t OutputBlob::GetPosition() const
 {
 	return m_position;
 }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "core/iallocator.h"
 #include "core/file/path.h"
 #include "core/file/file_system.h"
 #include "core/function.h"

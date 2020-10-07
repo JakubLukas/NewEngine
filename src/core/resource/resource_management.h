@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/iallocator.h"
+#include "core/allocator.h"
 
 #include "dependency_manager.h"
 
@@ -12,8 +12,8 @@ namespace Veng
 class ResourceManagement : public DependencyManager
 {
 public:
-	static ResourceManagement* Create(IAllocator& allocator);
-	static void Destroy(ResourceManagement* system, IAllocator& allocator);
+	static ResourceManagement* Create(Allocator& allocator);
+	static void Destroy(ResourceManagement* system, Allocator& allocator);
 
 public:
 	virtual ~ResourceManagement() {}

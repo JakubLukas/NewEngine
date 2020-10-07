@@ -13,11 +13,8 @@ class RenderSystem;
 class ModelManager final : public ResourceManager
 {
 public:
-	ModelManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
+	ModelManager(Allocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
 	~ModelManager() override;
-
-
-	ResourceType GetType() const override { return ResourceType::Model; };
 
 	const char* const * GetSupportedFileExt() const override;
 	size_t GetSupportedFileExtCount() const override;

@@ -2,7 +2,7 @@
 
 #include "core/int.h"
 #include "core/math/vector.h"
-#include "renderer/color.h"
+#include "core/color.h"
 
 
 namespace Veng

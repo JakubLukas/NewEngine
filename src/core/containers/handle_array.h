@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/int.h"
-#include "core/iallocator.h"
+#include "core/allocator.h"
 #include "core/asserts.h"
 #include "core/utility.h"
 
@@ -17,7 +17,7 @@ template<class Type, class UnusedType = i32>
 class HandleArray final
 {
 public:
-	explicit HandleArray(IAllocator& allocator);
+	explicit HandleArray(Allocator& allocator);
 	HandleArray(HandleArray&) = delete;
 	HandleArray(HandleArray&& other);
 	HandleArray& operator =(const HandleArray&) = delete;
@@ -57,7 +57,7 @@ private:
 	void Enlarge();
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	size_t m_capacity = 0;
 	size_t m_size = 0;
 	DataType* m_data = nullptr;

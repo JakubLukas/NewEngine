@@ -3,7 +3,7 @@ namespace Veng
 
 
 template<class KeyType, class ValueType>
-AssociativeArray<KeyType, ValueType>::AssociativeArray(IAllocator& allocator)
+AssociativeArray<KeyType, ValueType>::AssociativeArray(Allocator& allocator)
 	: m_allocator(allocator)
 {
 }

@@ -8,8 +8,9 @@ namespace Veng
 {
 
 
-ResourceManager::ResourceManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
+ResourceManager::ResourceManager(ResourceType type, Allocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
 	: m_allocator(allocator)
+	, m_type(type)
 	, m_fileSystem(fileSystem)
 	, m_asyncOps(m_allocator, &HashFileHandle)
 	, m_resources(m_allocator, &HashU32)

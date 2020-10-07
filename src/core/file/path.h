@@ -33,6 +33,9 @@ public:
 	bool operator!=(const Path& other) const;
 
 private:
+	void FixSlashes();
+
+private:
 	char m_path[BUFFER_LENGTH] = { '\0' };
 	Hash m_hash;
 };

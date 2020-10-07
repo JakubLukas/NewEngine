@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/iallocator.h"
+#include "core/allocator.h"
 #include "core/asserts.h"
 #include "core/utility.h"
 #include "core/memory.h"
@@ -14,7 +14,7 @@ template<class Type>
 class Array final
 {
 public:
-	explicit Array(IAllocator& allocator);
+	explicit Array(Allocator& allocator);
 	Array(Array&) = delete;
 	Array(Array&& other);
 	Array& operator =(Array&) = delete;
@@ -31,6 +31,7 @@ public:
 
 	Type& PushBack();
 	Type& PushBack(const Type& value);
+	Type& PushBack(Type&& value);
 
 	Type& AddOrdered(const Type& value);
 
@@ -74,7 +75,7 @@ private:
 	void Enlarge();
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	size_t m_capacity = 0;
 	size_t m_size = 0;
 	Type* m_data = nullptr;

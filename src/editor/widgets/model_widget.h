@@ -7,7 +7,7 @@
 namespace Veng
 {
 
-class IAllocator;
+class Allocator;
 class Engine;
 class ResourceManagement;
 
@@ -19,19 +19,17 @@ namespace Editor
 class ModelWidget : public WidgetBase
 {
 public:
-	ModelWidget(IAllocator& allocator);
+	ModelWidget(Allocator& allocator);
 	~ModelWidget() override;
 	void Init(Engine& engine, EditorInterface& editor) override;
 	void Deinit() override;
 
 	void Update(EventQueue& queue) override;
-
-protected:
-	void RenderInternal(EventQueue& queue) override;
+	void Render(EventQueue& queue) override;
 	const char* GetName() const override { return "ModelEditor"; };
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	ResourceManagement* m_manager;
 	resourceHandle m_modelHandle = INVALID_RESOURCE_HANDLE;
 };

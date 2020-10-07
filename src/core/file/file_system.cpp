@@ -26,7 +26,7 @@ struct File
 class FileSystemImpl : public FileSystem
 {
 public:
-	FileSystemImpl(IAllocator& allocator)
+	FileSystemImpl(Allocator& allocator)
 		: m_allocator(allocator)
 		, m_filePool(m_allocator)
 		, m_files(m_allocator)
@@ -187,7 +187,7 @@ private:
 	}
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	nativeAsyncHandle m_asyncHandle;
 	ObjectPool<File> m_filePool;
 	Array<File*> m_files;
@@ -196,13 +196,13 @@ private:
 };
 
 
-FileSystem* FileSystem::Create(IAllocator& allocator)
+FileSystem* FileSystem::Create(Allocator& allocator)
 {
 	return NEW_OBJECT(allocator, FileSystemImpl)(allocator);
 }
 
 
-void FileSystem::Destroy(FileSystem* system, IAllocator& allocator)
+void FileSystem::Destroy(FileSystem* system, Allocator& allocator)
 {
 	DELETE_OBJECT(allocator, system);
 }

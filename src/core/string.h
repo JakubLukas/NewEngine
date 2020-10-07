@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core.h"
-#include "iallocator.h"
+#include "allocator.h"
 
 
 namespace Veng
@@ -40,9 +40,9 @@ const char* FindStrR(const char* haystack, const char* needle);
 class String
 {
 public:
-	explicit String(IAllocator& allocator);
-	String(IAllocator& allocator, const char* str);
-	String(IAllocator& allocator, const char* str, unsigned length);
+	explicit String(Allocator& allocator);
+	String(Allocator& allocator, const char* str);
+	String(Allocator& allocator, const char* str, unsigned length);
 	String(String&) = delete;
 	String(String&& other);
 	String& operator =(String&) = delete;
@@ -56,13 +56,13 @@ public:
 	String& Cat(const char* str, unsigned length);
 
 	void Set(const char* str);
-	void Set(const char* str, unsigned length);
+	void Set(const char* str, size_t length);
 
 	const char* Cstr() const { return m_data; }
 	size_t Length() const { return m_size; }
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	char* m_data = nullptr;
 	size_t m_size = 0;
 };

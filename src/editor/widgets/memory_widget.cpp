@@ -24,7 +24,7 @@ struct MemoryWidgetAllocData
 
 struct MemoryWidgetData
 {
-	MemoryWidgetData(IAllocator& allocator)
+	MemoryWidgetData(Allocator& allocator)
 		: allocData(allocator, &HashPointer)
 	{}
 
@@ -38,7 +38,7 @@ struct MemoryWidgetData
 };
 
 
-MemoryWidget::MemoryWidget(IAllocator& allocator)
+MemoryWidget::MemoryWidget(Allocator& allocator)
 	: m_allocator(allocator)
 {
 	m_data = NEW_OBJECT(m_allocator, MemoryWidgetData)(m_allocator);
@@ -62,7 +62,7 @@ void MemoryWidget::Update(EventQueue& queue)
 {}
 
 
-void BuildAllocatorTree(const Array<AllocatorDebugData>& allocators, const IAllocator* parent, const IAllocator*& selected)
+void BuildAllocatorTree(const Array<AllocatorDebugData>& allocators, const Allocator* parent, const Allocator*& selected)
 {
 	for (int i = 0; i < allocators.GetSize(); ++i)
 	{
@@ -106,7 +106,7 @@ void BuildAllocatorTree(const Array<AllocatorDebugData>& allocators, const IAllo
 	}
 }
 
-void MemoryWidget::RenderInternal(EventQueue& queue)
+void MemoryWidget::Render(EventQueue& queue)
 {
 	BuildAllocatorTree(GetAllocators(), nullptr, m_selected);
 

@@ -10,8 +10,12 @@ namespace Veng
 {
 
 
-ModelManager::ModelManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
-	: ResourceManager(allocator, fileSystem, depManager)
+ResourceType Model::RESOURCE_TYPE("model");
+static ResourceType MATERIAL_TYPE("material");
+
+
+ModelManager::ModelManager(Allocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
+	: ResourceManager(Model::RESOURCE_TYPE, allocator, fileSystem, depManager)
 {}
 
 
@@ -53,7 +57,7 @@ void ModelManager::DestroyResource(Resource* resource)
 		m_renderSystem->DestroyMeshData(mesh.renderDataHandle);
 		m_allocator.Deallocate(mesh.verticesData);
 		m_allocator.Deallocate(mesh.indicesData);
-		m_depManager->UnloadResource(ResourceType::Material, static_cast<resourceHandle>(mesh.material));
+		m_depManager->UnloadResource(MATERIAL_TYPE, static_cast<resourceHandle>(mesh.material));
 	}
 
 	DELETE_OBJECT(m_allocator, model);
@@ -236,7 +240,7 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 		ASSERT(JsonIsString(&material->value));
 		const char* materialRawStr = JsonGetString(&material->value);
 		Path materialPath(materialRawStr);
-		mesh.material = m_depManager->LoadResource(ResourceType::Model, ResourceType::Material, materialPath);
+		mesh.material = m_depManager->LoadResource(Model::RESOURCE_TYPE, MATERIAL_TYPE, materialPath);
 		Resource* material = GetResource(mesh.material);
 		if(material->GetState() == Resource::State::Ready || material->GetState() == Resource::State::Failure)
 		{
@@ -266,7 +270,7 @@ void ModelManager::ChildResourceLoaded(resourceHandle handle, ResourceType type)
 void ModelManager::FinalizeModel(Model* model)
 {
 	model->SetState(Resource::State::Ready);
-	m_depManager->ResourceLoaded(ResourceType::Model, GetResourceHandle(model));
+	m_depManager->ResourceLoaded(Model::RESOURCE_TYPE, GetResourceHandle(model));
 }
 
 

@@ -1,7 +1,7 @@
 #include "clob.h"
 
 #include "core/memory.h"
-#include "core/iallocator.h"
+#include "core/allocator.h"
 #include "core/asserts.h"
 #include "core/file/blob.h"
 
@@ -218,7 +218,7 @@ const char* InputClob::GetData() const
 //
 
 
-static void Reallocate(IAllocator& allocator, char*& ptr, size_t& size)
+static void Reallocate(Allocator& allocator, char*& ptr, size_t& size)
 {
 	if (size == 0)
 	{
@@ -238,7 +238,7 @@ static void Reallocate(IAllocator& allocator, char*& ptr, size_t& size)
 
 // OUTPUT CLOB
 
-OutputClob::OutputClob(IAllocator& allocator)
+OutputClob::OutputClob(Allocator& allocator)
 	: m_allocator(allocator)
 	, m_data(nullptr)
 	, m_size(0)

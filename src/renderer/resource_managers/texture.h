@@ -12,7 +12,9 @@ const textureRenderHandle INVALID_TEXTURE_RENDER_HANDLE = (textureRenderHandle)0
 
 struct Texture : public Resource
 {
-	Texture() : Resource(ResourceType::Texture) {}
+	static ResourceType RESOURCE_TYPE;
+
+	Texture() : Resource(ResourceType("texture")) {}
 
 	u32 width = 0;
 	u32 height = 0;

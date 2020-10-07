@@ -38,7 +38,7 @@ struct Command
 class PipelineImpl : public Pipeline
 {
 public:
-	PipelineImpl(IAllocator& allocator, Engine& engine, RenderSystem& renderer)
+	PipelineImpl(Allocator& allocator, Engine& engine, RenderSystem& renderer)
 		: m_sourceAllocator(allocator)
 		, m_allocator(allocator)
 		, m_engine(engine)
@@ -208,18 +208,16 @@ public:
 				{
 					const RenderScene* scene = (RenderScene*)m_renderer.GetScene(cmd->world);
 					World* world = m_engine.GetWorld(cmd->world);
-					const RenderScene::ModelItem* modelItems = scene->GetModels();
-					const RenderScene::CameraItem* cameraItem = scene->GetMainCamera();
+					const RenderScene::CameraItem* cameraItem = scene->GetActiveCamera();
 					m_renderer.SetCamera(*world, cameraItem->entity);
-					m_renderer.RenderModels(*world, modelItems, scene->GetModelsCount());
+					m_renderer.RenderModels(*world);
 					break;
 				}
 				case CommandType::RenderDebug:
 				{
 					const RenderScene* scene = (RenderScene*)m_renderer.GetScene(worldId(0));
 					World* world = m_engine.GetWorld(worldId(0));
-					const RenderScene::ModelItem* modelItems = scene->GetModels();
-					const RenderScene::CameraItem* cameraItem = scene->GetMainCamera();
+					const RenderScene::CameraItem* cameraItem = scene->GetActiveCamera();
 					m_renderer.SetCamera(*world, cameraItem->entity);
 					m_renderer.RenderDebug();
 					break;
@@ -237,10 +235,10 @@ public:
 		return m_renderer.GetNativeFrameBufferHandle(*fbh);
 	}
 
-	IAllocator& GetSourceAllocator() { return m_sourceAllocator; }
+	Allocator& GetSourceAllocator() { return m_sourceAllocator; }
 
 private:
-	IAllocator& m_sourceAllocator;
+	Allocator& m_sourceAllocator;
 	ProxyAllocator m_allocator;
 	Engine& m_engine;
 	RenderSystem& m_renderer;
@@ -250,7 +248,7 @@ private:
 };
 
 
-Pipeline* Pipeline::Create(IAllocator& allocator, Engine& engine, RenderSystem& renderer)
+Pipeline* Pipeline::Create(Allocator& allocator, Engine& engine, RenderSystem& renderer)
 {
 	return NEW_OBJECT(allocator, PipelineImpl)(allocator, engine, renderer);
 }
@@ -258,7 +256,7 @@ Pipeline* Pipeline::Create(IAllocator& allocator, Engine& engine, RenderSystem& 
 void Pipeline::Destroy(Pipeline* pipeline)
 {
 	PipelineImpl* pipe = static_cast<PipelineImpl*>(pipeline);
-	IAllocator& allocator = pipe->GetSourceAllocator();
+	Allocator& allocator = pipe->GetSourceAllocator();
 	DELETE_OBJECT(allocator, pipe);
 }
 

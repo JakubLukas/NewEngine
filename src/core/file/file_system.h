@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/int.h"
-#include "core/iallocator.h"
+#include "core/allocator.h"
 #include "path.h"
 #include "core/function.h"
 
@@ -65,8 +65,8 @@ const fileHandle INVALID_FILE_HANDLE = (fileHandle)0;
 class FileSystem
 {
 public:
-	static FileSystem* Create(IAllocator& allocator);
-	static void Destroy(FileSystem* system, IAllocator& allocator);
+	static FileSystem* Create(Allocator& allocator);
+	static void Destroy(FileSystem* system, Allocator& allocator);
 
 public:
 	virtual ~FileSystem() {}

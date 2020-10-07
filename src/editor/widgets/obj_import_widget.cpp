@@ -4,7 +4,7 @@
 #include "../external/imgui/imgui.h"
 #include "../external/imgui/imgui_internal.h"
 
-#include "core/iallocator.h"
+#include "core/allocator.h"
 #include "core/asserts.h"
 #include "core/logs.h"
 #include "core/string.h"
@@ -36,10 +36,8 @@ static bool FileOpenDialog(Path& path)
 	
 	bool result = ShowOpenFileDialog(data);
 	if (result)
-	{
-		os::PathToEnginePath(data.fileName);
 		path.SetPath(data.fileName);
-	}
+
 	return result;
 }
 
@@ -53,10 +51,8 @@ static bool FileSaveDialog(Path& path)
 
 	bool result = ShowSaveFileDialog(data);
 	if (result)
-	{
-		os::PathToEnginePath(data.fileName);
 		path.SetPath(data.fileName);
-	}
+
 	return result;
 }
 
@@ -88,7 +84,8 @@ static bool ConvertObj(const ObjImportWidget::ConvertParams& params, const Path&
 			return false;
 		}
 		ASSERT2(fSize == charsRead, "Read size is not equal file size of input file");
-		ASSERT2(FS::CloseFileSync(fh), "Closing of input file failed");
+		if (!FS::CloseFileSync(fh))
+			ASSERT2(false, "Closing of input file failed");
 	}
 
 	struct Face
@@ -227,7 +224,7 @@ static bool ConvertObj(const ObjImportWidget::ConvertParams& params, const Path&
 
 	JsonPrintContext prtCtx = JsonPrintContextInit(params.allocator);
 
-	unsigned int outBufferSize;
+	uint outBufferSize;
 	char* outBuffer = JsonValuePrint(&prtCtx, &modelObj, true, &outBufferSize);
 
 	{
@@ -268,7 +265,7 @@ static bool ConvertObj(const ObjImportWidget::ConvertParams& params, const Path&
 }
 
 
-ObjImportWidget::ObjImportWidget(IAllocator& allocator)
+ObjImportWidget::ObjImportWidget(Allocator& allocator)
 	: m_allocator(allocator)
 {
 	m_params.allocator = &m_allocator;
@@ -291,7 +288,7 @@ void ObjImportWidget::Update(EventQueue& queue)
 {}
 
 
-void ObjImportWidget::RenderInternal(EventQueue& queue)
+void ObjImportWidget::Render(EventQueue& queue)
 {
 	ImGui::PushID("input");
 	static char iPathBuffer[Path::BUFFER_LENGTH];

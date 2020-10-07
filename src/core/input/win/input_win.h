@@ -31,16 +31,16 @@ namespace Keyboard
 namespace Scancode_PS2
 {
 
-static const unsigned int MAX_MAKECODE = 0xff;
-static const unsigned int E0 = 0xE000; //E0 bits
-static const unsigned int E1 = 0xE100; //E1 bits
-static const unsigned int PAUSE_PART1 = 0xE11D; //The pause scancode consists from 2 parts
-static const unsigned int PAUSE_PART2 = 0x45; //WM_INPUT with 0xE11D and one WM_INPUT with 0x45
+static const uint MAX_MAKECODE = 0xff;
+static const uint E0 = 0xE000; //E0 bits
+static const uint E1 = 0xE100; //E1 bits
+static const uint PAUSE_PART1 = 0xE11D; //The pause scancode consists from 2 parts
+static const uint PAUSE_PART2 = 0x45; //WM_INPUT with 0xE11D and one WM_INPUT with 0x45
 
-static const unsigned int IGNORE1 = 0xE02A; //0xE02A: first part of the Print Screen scancode if no Shift, Control or Alt keys are pressed
-static const unsigned int IGNORE2 = 0xE0AA; //0xE02A, 0xE0AA, 0xE036, 0xE0B6: generated in addition of Insert, Delete, Home, End, Page Up, Page Down, Up, Down, Left, Right when num lock is on; or when num lock is off but one or both shift keys are pressed
-static const unsigned int IGNORE3 = 0xE036; //0xE02A, 0xE0AA, 0xE036, 0xE0B6: generated in addition of Numpad Divide and one or both Shift keys are pressed
-static const unsigned int IGNORE4 = 0xE0B6; //some of those a break scancode, so we ignore them
+static const uint IGNORE1 = 0xE02A; //0xE02A: first part of the Print Screen scancode if no Shift, Control or Alt keys are pressed
+static const uint IGNORE2 = 0xE0AA; //0xE02A, 0xE0AA, 0xE036, 0xE0B6: generated in addition of Insert, Delete, Home, End, Page Up, Page Down, Up, Down, Left, Right when num lock is on; or when num lock is off but one or both shift keys are pressed
+static const uint IGNORE3 = 0xE036; //0xE02A, 0xE0AA, 0xE036, 0xE0B6: generated in addition of Numpad Divide and one or both Shift keys are pressed
+static const uint IGNORE4 = 0xE0B6; //some of those a break scancode, so we ignore them
 
 enum : u32
 {

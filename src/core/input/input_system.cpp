@@ -81,7 +81,7 @@ struct InputDevice
 class InputSystemImpl : public InputSystem
 {
 public:
-	InputSystemImpl(IAllocator& allocator)
+	InputSystemImpl(Allocator& allocator)
 		: m_allocator(allocator)
 		, m_devices(allocator)
 		, m_events(allocator)
@@ -224,9 +224,6 @@ public:
 
 	void Update(float deltaTime) override
 	{
-		if (m_mouseLocked)
-			os::SetMouseCursorPos(m_mousePositon.x, m_mousePositon.y);
-
 		m_events.Clear();
 	}
 
@@ -234,12 +231,18 @@ public:
 	void LockCursor(bool lock) override
 	{
 		m_mouseLocked = lock;
-		os::GetMouseCursorPos(m_mousePositon.x, m_mousePositon.y);
+		if (lock) {
+			os::GetMouseCursorPos(m_mousePositon.x, m_mousePositon.y);
+			os::ClipMouseCursor(m_mousePositon.x, m_mousePositon.y, 1, 1);
+		}
+		else {
+			os::ClipMouseCursor(-1, -1, -1, -1);
+		}
 	}
 
-	void HideCursor(bool hide) override
+	void ShowCursor(bool show) override
 	{
-		os::ShowMouseCursor(!hide);
+		os::ShowMouseCursor(show);
 	}
 
 
@@ -261,7 +264,7 @@ public:
 	}
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	AssociativeArray<inputDeviceHandle, InputDevice> m_devices;
 	Array<InputEvent> m_events;
 	MousePos m_mousePositon;
@@ -270,12 +273,12 @@ private:
 };
 
 
-InputSystem* InputSystem::Create(IAllocator& allocator)
+InputSystem* InputSystem::Create(Allocator& allocator)
 {
 	return NEW_OBJECT(allocator, InputSystemImpl)(allocator);
 }
 
-void InputSystem::Destroy(InputSystem* system, IAllocator& allocator)
+void InputSystem::Destroy(InputSystem* system, Allocator& allocator)
 {
 	DELETE_OBJECT(allocator, system);
 }

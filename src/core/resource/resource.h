@@ -10,15 +10,14 @@ namespace Veng
 {
 
 
-enum class ResourceType : u8
+struct ResourceType
 {
-	ShaderInternal,
-	Shader,
-	Material,
-	Model,
-	Texture,
+	explicit ResourceType(const char* name);
 
-	Count
+	bool operator ==(const ResourceType& other) const { return hash == other.hash; }
+	bool operator !=(const ResourceType& other) const { return hash != other.hash; }
+
+	u32 hash;
 };
 
 
@@ -49,7 +48,7 @@ public:
 
 private:
 	Path m_path;
-	fileHandle m_fileHandle;
+	fileHandle m_fileHandle = INVALID_FILE_HANDLE;
 	ResourceType m_type;
 	State m_state = State::Empty;
 	volatile u32 m_refCount = 0;

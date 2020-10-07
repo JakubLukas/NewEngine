@@ -10,7 +10,7 @@ const float HandleArray<Type, UnusedType>::ENLARGE_MULTIPLIER = 1.5f;
 
 
 template<class Type, class UnusedType>
-HandleArray<Type, UnusedType>::HandleArray(IAllocator& allocator)
+HandleArray<Type, UnusedType>::HandleArray(Allocator& allocator)
 	: m_allocator(allocator)
 {
 }

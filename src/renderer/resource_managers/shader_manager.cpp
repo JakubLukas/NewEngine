@@ -22,6 +22,8 @@ const char* const SHADER_FRAG_FILE_EXT = ".fsr";
 const char* const SHADER_VERT_FILE_EXT_RET = ".vs";
 const char* const SHADER_FRAG_FILE_EXT_RET = ".fs";
 
+ResourceType ShaderInternal::RESOURCE_TYPE("shader_internal");
+
 
 static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& outPath)
 {
@@ -104,8 +106,8 @@ static bool CompileShader(const FileSystem& fileSystem, const Path& path, Path& 
 
 
 
-ShaderInternalManager::ShaderInternalManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
-	: ResourceManager(allocator, fileSystem, depManager)
+ShaderInternalManager::ShaderInternalManager(Allocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
+	: ResourceManager(ShaderInternal::RESOURCE_TYPE, allocator, fileSystem, depManager)
 {}
 
 
@@ -160,15 +162,17 @@ void ShaderInternalManager::ResourceLoaded(resourceHandle handle, InputBlob& dat
 
 	shaderInt->renderDataHandle = m_renderSystem->CreateShaderInternalData(data);
 
-	m_depManager->ResourceLoaded(ResourceType::ShaderInternal, handle);
+	m_depManager->ResourceLoaded(ShaderInternal::RESOURCE_TYPE, handle);
 }
 
 
 //=============================================================================
 
+ResourceType Shader::RESOURCE_TYPE("shader");
 
-ShaderManager::ShaderManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
-	: ResourceManager(allocator, fileSystem, depManager)
+
+ShaderManager::ShaderManager(Allocator& allocator, FileSystem& fileSystem, DependencyManager* depManager)
+	: ResourceManager(Shader::RESOURCE_TYPE, allocator, fileSystem, depManager)
 	, m_loadingOp(allocator)
 {
 
@@ -208,8 +212,8 @@ void ShaderManager::DestroyResource(Resource* resource)
 {
 	Shader* shader = static_cast<Shader*>(resource);
 	
-	m_depManager->UnloadResource(ResourceType::ShaderInternal, static_cast<resourceHandle>(shader->vsHandle));
-	m_depManager->UnloadResource(ResourceType::ShaderInternal, static_cast<resourceHandle>(shader->fsHandle));
+	m_depManager->UnloadResource(ShaderInternal::RESOURCE_TYPE, static_cast<resourceHandle>(shader->vsHandle));
+	m_depManager->UnloadResource(ShaderInternal::RESOURCE_TYPE, static_cast<resourceHandle>(shader->fsHandle));
 
 	m_renderSystem->DestroyShaderData(shader->renderDataHandle);
 
@@ -322,7 +326,7 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 
 	Path vOutPath;
 	ASSERT(CompileShader(GetFileSystem(), vsPath, vOutPath));
-	shader->vsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, vOutPath);
+	shader->vsHandle = m_depManager->LoadResource(Shader::RESOURCE_TYPE, ShaderInternal::RESOURCE_TYPE, vOutPath);
 	op.vsHandle = shader->vsHandle;
 	Resource* vRes = GetResource(shader->vsHandle);
 	if(vRes->GetState() != Resource::State::Ready && vRes->GetState() != Resource::State::Failure)
@@ -330,7 +334,7 @@ void ShaderManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 
 	Path fOutPath;
 	ASSERT(CompileShader(GetFileSystem(), fsPath, fOutPath));
-	shader->fsHandle = m_depManager->LoadResource(ResourceType::Shader, ResourceType::ShaderInternal, fOutPath);
+	shader->fsHandle = m_depManager->LoadResource(Shader::RESOURCE_TYPE, ShaderInternal::RESOURCE_TYPE, fOutPath);
 	op.fsHandle = shader->fsHandle;
 	Resource* fRes = GetResource(shader->fsHandle);
 	if(fRes->GetState() != Resource::State::Ready && fRes->GetState() != Resource::State::Failure)
@@ -367,14 +371,14 @@ void ShaderManager::ChildResourceLoaded(resourceHandle handle, ResourceType type
 
 void ShaderManager::FinalizeShader(Shader* shader)
 {
-	const Resource* vsRes = m_depManager->GetResource(ResourceType::ShaderInternal, static_cast<resourceHandle>(shader->vsHandle));
-	const Resource* fsRes = m_depManager->GetResource(ResourceType::ShaderInternal, static_cast<resourceHandle>(shader->fsHandle));
+	const Resource* vsRes = m_depManager->GetResource(ShaderInternal::RESOURCE_TYPE, static_cast<resourceHandle>(shader->vsHandle));
+	const Resource* fsRes = m_depManager->GetResource(ShaderInternal::RESOURCE_TYPE, static_cast<resourceHandle>(shader->fsHandle));
 	const ShaderInternal* vs = static_cast<const ShaderInternal*>(vsRes);
 	const ShaderInternal* fs = static_cast<const ShaderInternal*>(fsRes);
 	
 	shader->renderDataHandle = m_renderSystem->CreateShaderData(vs->renderDataHandle, fs->renderDataHandle);
 
-	m_depManager->ResourceLoaded(ResourceType::Shader, GetResourceHandle(shader));
+	m_depManager->ResourceLoaded(Shader::RESOURCE_TYPE, GetResourceHandle(shader));
 }
 
 

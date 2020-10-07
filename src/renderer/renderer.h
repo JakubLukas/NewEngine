@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/int.h"
-#include "core/isystem.h"
+#include "core/system.h"
 #include "core/world/world.h"
 #include "resource_managers/model.h"
 #include "resource_managers/texture.h"
@@ -14,7 +14,7 @@
 namespace Veng
 {
 
-class IAllocator;
+class Allocator;
 class Engine;
 class Path;
 class InputBlob;
@@ -38,24 +38,12 @@ enum FramebufferTypeBits : FramebufferTypeFlags
 };
 
 
-class RenderScene : public IScene
+class RenderScene : public Scene
 {
 public:
-	enum class Component : u8
+	struct ModelData
 	{
-		Model = 0,
-		Camera = 1,
-		DirectionalLight = 2,
-
-		Count
-	};
-
-	static componentHandle GetComponentHandle(Component comp);
-
-	struct ModelItem
-	{
-		Entity entity;
-		resourceHandle model;
+		Path path;
 	};
 
 	struct CameraItem
@@ -71,61 +59,59 @@ public:
 	};
 
 public:
-	virtual ~RenderScene() override {}
 
-	virtual void Update(float deltaTime) override = 0;
+	// model
+	virtual void AddModel(Entity entity) = 0;
+	virtual void RemoveModel(Entity entity) = 0;
+	virtual bool HasModel(Entity entity) const = 0;
+	virtual ModelData GetModelData(Entity entity) const = 0;
+	virtual void SetModelData(Entity entity, const ModelData& data) = 0;
 
-	virtual size_t GetComponentCount() const override = 0;
-	virtual const ComponentInfo* GetComponentInfos() const override = 0;
-	virtual const ComponentInfo* GetComponentInfo(componentHandle handle) const override = 0;
-	virtual componentHandle GetComponentHandle(const char* name) const override = 0;
-
-	virtual void AddComponent(componentHandle handle, Entity entity) override = 0;
-	virtual void RemoveComponent(componentHandle handle, Entity entity) override = 0;
-	virtual bool HasComponent(componentHandle handle, Entity entity) const override = 0;
-	virtual void EditComponent(EditorInterface* editor, componentHandle handle, Entity entity) override = 0;
-	virtual void* GetComponentData(componentHandle handle, Entity entity) const override = 0;
-	virtual void SetComponentData(componentHandle handle, Entity entity, void* data) override = 0;
-
-	virtual size_t GetModelsCount() const = 0;
-	virtual const ModelItem* GetModels() const = 0;
-
+	// camera
+	virtual void AddCamera(Entity entity) = 0;
+	virtual void RemoveCamera(Entity entity) = 0;
+	virtual bool HasCamera(Entity entity) const = 0;
+	virtual const CameraItem* GetCameraData(Entity entity) const = 0;
+	virtual void SetCameraData(Entity entity, const CameraItem& data) = 0;
 	virtual size_t GetCamerasCount() const = 0;
 	virtual const CameraItem* GetCameras() const = 0;
-	virtual void SetMainCamera(Entity entity) = 0;
-	virtual const CameraItem* GetMainCamera() const = 0;
+	virtual void SetActiveCamera(Entity entity) = 0;
+	virtual const CameraItem* GetActiveCamera() const = 0;
 
+	// directional light
+	virtual void AddDirectionalLight(Entity entity) = 0;
+	virtual void RemoveDirectionalLight(Entity entity) = 0;
+	virtual bool HasDirectionalLight(Entity entity) const = 0;
+	virtual const DirectionalLightItem* GetDirectionalLightData(Entity entity) const = 0;
+	virtual void SetDirectionalLightData(Entity entity, const DirectionalLightItem& data) = 0;
 	virtual size_t GetDirectionalLightsCount() const = 0;
 	virtual const DirectionalLightItem* GetDirectionalLights() const = 0;
 
-	virtual bool RaycastModels(const Ray& ray, const ModelItem* hitModel) const = 0;
+	// raycasts
+	virtual bool RaycastModels(const Ray& ray, RayHit* out_hitModel = nullptr) const = 0;
 };
 
 
+class RenderSceneEditor : public SceneEditor
+{
+public:
+	virtual ~RenderSceneEditor() override {}
 
-class RenderSystem : public ISystem
+	virtual void EditComponent(EditorInterface& editor, const ComponentBase& component, worldId world, Entity entity) override = 0;
+};
+
+
+class RenderSystem : public System
 {
 public:
 	static RenderSystem* Create(Engine& engine);
 	static void Destroy(RenderSystem* system);
 
 public:
-	virtual ~RenderSystem() override {}
-
-	virtual void Init() override = 0;
-
-	virtual void Update(float deltaTime) override = 0;
-	virtual const char* GetName() const override = 0;
-
-	virtual IScene* GetScene(worldId world) const override = 0;
-
-	virtual void OnWorldAdded(worldId world) override = 0;
-	virtual void OnWorldRemoved(worldId world) override = 0;
-
-	virtual MaterialManager& GetMaterialManager() const = 0;
-	virtual ShaderManager& GetShaderManager() const = 0;
-	virtual ModelManager& GetModelManager() const = 0;
-	virtual TextureManager& GetTextureManager() const = 0;
+	virtual MaterialManager& GetMaterialManager() = 0;
+	virtual ShaderManager& GetShaderManager() = 0;
+	virtual ModelManager& GetModelManager() = 0;
+	virtual TextureManager& GetTextureManager() = 0;
 
 	virtual meshRenderHandle CreateMeshData(Mesh& mesh) = 0;
 	virtual void DestroyMeshData(meshRenderHandle handle) = 0;
@@ -159,7 +145,7 @@ public:
 	virtual void SetFramebuffer(FramebufferHandle handle) = 0;
 	virtual void SetCamera(World& world, Entity camera) = 0;
 	virtual void Clear() = 0;
-	virtual void RenderModels(World& world, const RenderScene::ModelItem* models, size_t count) = 0;
+	virtual void RenderModels(World& world) = 0;
 	virtual void RenderDebug() = 0;
 
 	virtual void* GetNativeFrameBufferHandle(FramebufferHandle handle) = 0;

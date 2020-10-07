@@ -5,16 +5,26 @@
 #include "resource/resource_manager.h"
 #include "resource/resource_management.h"
 #include "string.h"
+#include "file/blob.h"
+#include "logs.h"
 
 
 namespace Veng
 {
 
+static const u32 SERIALIZE_MAGIC = ('!' << 24) + ('N' << 16) + ('e' << 8) + ('N');
+enum class Version : u32
+{
+	First = 0,
+
+	Latest
+};
+
 
 class EngineImpl : public Engine
 {
 public:
-	EngineImpl(IAllocator& allocator)
+	EngineImpl(Allocator& allocator)
 		: m_allocator(allocator)
 		, m_systems(m_allocator)
 		, m_worlds(m_allocator)
@@ -32,11 +42,85 @@ public:
 	}
 
 
+	bool Serialize(OutputBlob& serializer) const override
+	{
+		serializer.Write(SERIALIZE_MAGIC);
+		serializer.Write(Version::Latest);
+
+		serializer.Write((u32)m_worlds.GetSize());
+		for (const auto& world : m_worlds)
+		{
+			serializer.Write(world.GetId());
+			world.Serialize(serializer);
+		}
+
+		serializer.Write((u32)m_systems.GetSize());
+		for (const System* system : m_systems)
+		{
+			serializer.Write(system->GetName());
+			serializer.Write(system->GetVersion());
+			size_t system_pos = serializer.GetPosition();
+			serializer.Write((u64)system_pos);
+			system->Serialize(serializer);
+			serializer.WriteAtPos((u64)(serializer.GetPosition() - system_pos), system_pos);
+		}
+		return true;
+	}
+
+	bool Deserialize(InputBlob& serializer) override
+	{
+		u32 magic;
+		serializer.Read(magic);
+		if (magic != SERIALIZE_MAGIC) return false;
+		Version version;
+		serializer.Read(version);
+		if (version != Version::Latest) return false;
+
+		u32 count;
+		serializer.Read(count);
+		for (u32 i = 0; i < count; ++i)
+		{
+			worldId wId;
+			serializer.Read(wId);
+			World& world = m_worlds.EmplaceBack(m_allocator, wId);
+			world.Deserialize(serializer);
+		}
+
+		serializer.Read(count);
+		for (u32 i = 0; i < count; ++i)
+		{
+			String systemName(m_allocator);
+			serializer.Read(systemName);
+			u32 version;
+			serializer.Read(version);
+			u64 bytesSerialized;
+			serializer.Read(bytesSerialized);
+
+			System* system = GetSystem(systemName.Cstr());
+			if (system == nullptr)
+			{
+				Log(LogType::Warning, "During deserialization, \"%s\" system was not found in registered systems. Skipping system's serialized data.", systemName.Cstr());
+				serializer.Skip(bytesSerialized);
+			}
+			else if (version != system->GetVersion())
+			{
+				Log(LogType::Warning, "During deserialization, \"%s\" system version mismatch. Skipping system's serialized data.", systemName.Cstr());
+				serializer.Skip(bytesSerialized);
+			}
+			else
+			{
+				system->Deserialize(serializer);
+			}
+		}
+		return true;
+	}
+
+
 	worldId AddWorld() override
 	{
 		World& world = m_worlds.EmplaceBack(m_allocator, (worldId)m_worlds.GetSize());
 
-		for (ISystem* system : m_systems)
+		for (System* system : m_systems)
 			system->OnWorldAdded(world.GetId());
 
 		return world.GetId();
@@ -53,7 +137,7 @@ public:
 
 		if (idx != m_worlds.GetSize())
 		{
-			for (ISystem* system : m_systems)
+			for (System* system : m_systems)
 				system->OnWorldRemoved(id);
 
 			m_worlds.Erase(idx);
@@ -83,7 +167,7 @@ public:
 	}
 
 
-	bool AddSystem(ISystem* system) override
+	bool AddSystem(System* system) override
 	{
 		m_systems.PushBack(system);
 		return true;
@@ -102,7 +186,7 @@ public:
 		return false;
 	}
 
-	ISystem* GetSystem(const char* name) const override
+	System* GetSystem(const char* name) const override
 	{
 		for (unsigned i = 0; i < m_systems.GetSize(); ++i)
 		{
@@ -120,7 +204,7 @@ public:
 		return m_systems.GetSize();
 	}
 
-	ISystem* const* GetSystems() const override
+	System* const* GetSystems() const override
 	{
 		return m_systems.Begin();
 	}
@@ -149,7 +233,7 @@ public:
 
 	void Update(float deltaTime) override
 	{
-		for (ISystem* plugin : m_systems)
+		for (System* plugin : m_systems)
 		{
 			plugin->Update(deltaTime);
 		}
@@ -158,7 +242,7 @@ public:
 	}
 
 
-	IAllocator& GetAllocator() const override
+	Allocator& GetAllocator() const override
 	{
 		return m_allocator;
 	}
@@ -176,22 +260,22 @@ public:
 	}
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	FileSystem* m_fileSystem;
 	InputSystem* m_inputSystem;
 	ResourceManagement* m_resourceManager;
-	Array<ISystem*> m_systems;
+	Array<System*> m_systems;
 	Array<World> m_worlds;
 };
 
 
-Engine* Engine::Create(IAllocator& allocator)
+Engine* Engine::Create(Allocator& allocator)
 {
 	return NEW_OBJECT(allocator, EngineImpl)(allocator);
 }
 
 
-void Engine::Destroy(Engine* engine, IAllocator& allocator)
+void Engine::Destroy(Engine* engine, Allocator& allocator)
 {
 	EngineImpl* ptr = static_cast<EngineImpl*>(engine);
 	DELETE_OBJECT(allocator, ptr);

@@ -3,7 +3,7 @@ namespace Veng
 
 
 template<class Type>
-ObjectPool<Type>::ObjectPool(IAllocator& allocator)
+ObjectPool<Type>::ObjectPool(Allocator& allocator)
 	: m_allocator(allocator)
 {
 }

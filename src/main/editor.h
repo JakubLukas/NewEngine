@@ -8,7 +8,7 @@
 namespace Veng
 {
 
-class IAllocator;
+class Allocator;
 class Engine;
 
 
@@ -19,8 +19,8 @@ namespace Editor
 class EditorApp
 {
 public:
-	static EditorApp* Create(IAllocator& allocator, App& app);
-	static void Destroy(EditorApp* editor, IAllocator& allocator);
+	static EditorApp* Create(Allocator& allocator, App& app);
+	static void Destroy(EditorApp* editor, Allocator& allocator);
 
 public:
 	virtual ~EditorApp() {}

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/iallocator.h"
+#include "core/allocator.h"
 #include "core/containers/hash_map.h"
 #include "core/file/file_system.h"
 
@@ -26,10 +26,8 @@ class ResourceManager
 	friend class ResourceManagementImpl;
 
 public:
-	ResourceManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
+	ResourceManager(ResourceType type, Allocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
 	virtual ~ResourceManager();
-
-	virtual ResourceType GetType() const = 0;
 
 	virtual const char* const * GetSupportedFileExt() const = 0;
 	virtual size_t GetSupportedFileExtCount() const = 0;
@@ -37,6 +35,8 @@ public:
 	resourceHandle Load(const Path& path);
 	void Unload(resourceHandle handle);
 	void Reload(resourceHandle handle);
+
+	ResourceType GetType() const { return m_type; }
 
 	Resource* GetResource(resourceHandle handle) const;
 	resourceHandle GetResourceHandle(Resource* resource) const;
@@ -56,7 +56,7 @@ private:
 	void FileSystemCallback(fileHandle handle);
 
 protected:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	HashMap<Path::Hash, Resource*> m_resources;
 	DependencyManager* m_depManager;
 	ResourceType m_type;

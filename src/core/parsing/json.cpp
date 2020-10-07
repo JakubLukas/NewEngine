@@ -1,4 +1,4 @@
-#include "core/iallocator.h"
+#include "core/allocator.h"
 
 
 namespace Veng
@@ -7,13 +7,13 @@ namespace Veng
 
 static void* json_allocate(void* context, size_t size)
 {
-	IAllocator& allocator = *(IAllocator*)context;
+	Allocator& allocator = *(Allocator*)context;
 	return allocator.Allocate(size, 16);
 }
 
 static void json_deallocate(void* context, void* ptr)
 {
-	IAllocator& allocator = *(IAllocator*)context;
+	Allocator& allocator = *(Allocator*)context;
 	allocator.Deallocate(ptr);
 }
 

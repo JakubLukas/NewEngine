@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/int.h"
-#include "core/iallocator.h"
+#include "core/allocator.h"
 #include "core/math/vector.h"
 
 #include "core/input/devices/input_device_mouse.h"
@@ -68,8 +68,8 @@ struct InputEvent
 class InputSystem
 {
 public:
-	static InputSystem* Create(IAllocator& allocator);
-	static void Destroy(InputSystem* system, IAllocator& allocator);
+	static InputSystem* Create(Allocator& allocator);
+	static void Destroy(InputSystem* system, Allocator& allocator);
 
 public:
 	virtual ~InputSystem() {}
@@ -88,7 +88,7 @@ public:
 	virtual void Update(float deltaTime) = 0;
 
 	virtual void LockCursor(bool lock) = 0;
-	virtual void HideCursor(bool hide) = 0;
+	virtual void ShowCursor(bool show) = 0;
 
 	virtual bool IsDeviceActive(inputDeviceID id) const = 0;
 	virtual const Array<InputEvent>& GetInputEventBuffer() const = 0;

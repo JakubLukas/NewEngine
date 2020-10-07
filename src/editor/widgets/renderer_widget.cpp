@@ -1,7 +1,7 @@
 #include "renderer_widget.h"
 
 #include "../widget_register.h"
-#include "core/iallocator.h"
+#include "core/allocator.h"
 #include "core/engine.h"
 #include "renderer/pipeline.h"
 #include "renderer/renderer.h"
@@ -9,6 +9,7 @@
 #include "core/math/math.h"
 #include "core/math/matrix.h"
 #include "core/math/quaternion.h"
+#include "core/string.h"
 
 #include "core/input/input_system.h"
 
@@ -22,76 +23,92 @@ namespace Veng
 {
 
 
-static void ScriptCameraUpdate(void* data, Engine& engine, float deltaTime)
+struct CameraUpdateScript : ScriptClassBase
 {
-	deltaTime = 1.0f / deltaTime;
-
-	static float angleYaw = 0.0f;
-	static float anglePitch = 0.0f;
-	static float speed = 1.0f;
-	static bool forward = false;
-	static bool backward = false;
-	static bool left = false;
-	static bool right = false;
-	static bool up = false;
-	static bool down = false;
-
-	World* world = engine.GetWorld(worldId(0));
-	RenderScene* renderScene = static_cast<RenderScene*>(engine.GetSystem("renderer")->GetScene(worldId(0)));
-	const RenderScene::CameraItem* camera = renderScene->GetMainCamera();
-	Transform& camTrans = world->GetEntityTransform(camera->entity);
-
-	InputSystem* input = engine.GetInputSystem();
-	const Array<InputEvent>& events = input->GetInputEventBuffer();
-	for (const InputEvent event : events)
+	void Init(class Engine& engine) override
 	{
-		if (event.deviceCategory == InputDeviceCategory::Keyboard)
-		{
-			if (event.kbCode == KeyboardDevice::Button::W)
-				forward = event.pressed;
-			if (event.kbCode == KeyboardDevice::Button::S)
-				backward = event.pressed;
-			if (event.kbCode == KeyboardDevice::Button::A)
-				left = event.pressed;
-			if (event.kbCode == KeyboardDevice::Button::D)
-				right = event.pressed;
-			if (event.kbCode == KeyboardDevice::Button::Space)
-				up = event.pressed;
-			if (event.kbCode == KeyboardDevice::Button::ControlLeft)
-				down = event.pressed;
-		}
-		if (event.deviceCategory == InputDeviceCategory::Mouse)
-		{
-			if (event.type == InputEvent::Type::AxisChanged)
-			{
-				if (event.maCode == MouseDevice::Axis::Movement)
-				{
-					angleYaw += event.axis.x * deltaTime * 0.1f;
-					anglePitch += event.axis.y * deltaTime * 0.1f;
-
-					Quaternion rotYaw(Vector3::AXIS_Y, angleYaw);
-					Quaternion rotPitch(Vector3::AXIS_X, anglePitch);
-
-					camTrans.rotation = rotYaw * rotPitch;
-				}
-				if (event.maCode == MouseDevice::Axis::Wheel)
-					speed = Max(speed + event.axis.x * 0.1f, 0.0f);
-			}
-		}
+		m_engine = &engine;
 	}
 
-	if (forward)
-		camTrans.position += Quaternion::Multiply(camTrans.rotation, Vector3::AXIS_Z) * speed;
-	if (backward)
-		camTrans.position -= Quaternion::Multiply(camTrans.rotation, Vector3::AXIS_Z) * speed;
-	if (right)
-		camTrans.position += Quaternion::Multiply(camTrans.rotation, Vector3::AXIS_X) * speed;
-	if (left)
-		camTrans.position -= Quaternion::Multiply(camTrans.rotation, Vector3::AXIS_X) * speed;
-	if (up)
-		camTrans.position += Vector3::AXIS_Y * speed;
-	if (down)
-		camTrans.position -= Vector3::AXIS_Y * speed;
+	void Deinit() override {}
+
+	void Update(float deltaTime) override
+	{
+		deltaTime = 1.0f / deltaTime;
+
+		World* world = m_engine->GetWorld(worldId(0));
+		RenderScene* renderScene = static_cast<RenderScene*>(m_engine->GetSystem("renderer")->GetScene(worldId(0)));
+		const RenderScene::CameraItem* camera = renderScene->GetActiveCamera();
+		Transform& camTrans = world->GetEntityTransform(camera->entity);
+
+		InputSystem* input = m_engine->GetInputSystem();
+		const Array<InputEvent>& events = input->GetInputEventBuffer();
+		for (const InputEvent event : events)
+		{
+			if (event.deviceCategory == InputDeviceCategory::Keyboard)
+			{
+				if (event.kbCode == KeyboardDevice::Button::W)
+					forward = event.pressed;
+				if (event.kbCode == KeyboardDevice::Button::S)
+					backward = event.pressed;
+				if (event.kbCode == KeyboardDevice::Button::A)
+					left = event.pressed;
+				if (event.kbCode == KeyboardDevice::Button::D)
+					right = event.pressed;
+				if (event.kbCode == KeyboardDevice::Button::Space)
+					up = event.pressed;
+				if (event.kbCode == KeyboardDevice::Button::ControlLeft)
+					down = event.pressed;
+			}
+			if (event.deviceCategory == InputDeviceCategory::Mouse)
+			{
+				if (event.type == InputEvent::Type::AxisChanged)
+				{
+					if (event.maCode == MouseDevice::Axis::Movement)
+					{
+						angleYaw += event.axis.x * deltaTime * 0.01f;
+						anglePitch += event.axis.y * deltaTime * 0.01f;
+
+						Quaternion rotYaw(Vector3::AXIS_Y, angleYaw);
+						Quaternion rotPitch(Vector3::AXIS_X, anglePitch);
+
+						camTrans.rotation = rotYaw * rotPitch;
+					}
+					if (event.maCode == MouseDevice::Axis::Wheel)
+						speed = Max(speed + event.axis.x * 0.1f, 0.0f);
+				}
+			}
+		}
+
+		if (forward)
+			camTrans.position += Quaternion::Multiply(camTrans.rotation, Vector3::AXIS_Z) * speed;
+		if (backward)
+			camTrans.position -= Quaternion::Multiply(camTrans.rotation, Vector3::AXIS_Z) * speed;
+		if (right)
+			camTrans.position += Quaternion::Multiply(camTrans.rotation, Vector3::AXIS_X) * speed;
+		if (left)
+			camTrans.position -= Quaternion::Multiply(camTrans.rotation, Vector3::AXIS_X) * speed;
+		if (up)
+			camTrans.position += Vector3::AXIS_Y * speed;
+		if (down)
+			camTrans.position -= Vector3::AXIS_Y * speed;
+	}
+
+
+	Engine* m_engine;
+	float angleYaw = 0.0f;
+	float anglePitch = 0.0f;
+	float speed = 1.0f;
+	bool forward = false;
+	bool backward = false;
+	bool left = false;
+	bool right = false;
+	bool up = false;
+	bool down = false;
+};
+
+REGISTER_SCRIPT(RenderWidget_CameraUpdateScript) {
+	return NEW_OBJECT(allocator, CameraUpdateScript)();
 }
 
 
@@ -99,7 +116,7 @@ namespace Editor
 {
 
 
-RendererWidget::RendererWidget(IAllocator& allocator)
+RendererWidget::RendererWidget(Allocator& allocator)
 	: m_allocator(allocator)
 {
 
@@ -116,35 +133,33 @@ void RendererWidget::Init(Engine& engine, EditorInterface& editor)
 	m_pipeline = Pipeline::Create(m_allocator, *m_engine, *m_renderer);
 	m_pipeline->Load(Path("pipelines/main.pipeline"));
 
-	for (size_t i = 0; i < /*m_engine->GetWorldCount()*/1; ++i)
+
+	World* world = m_engine->GetWorld(m_world);
+	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene(m_world));
+	m_camera = world->CreateEntity();
+	Transform& camTrans = world->GetEntityTransform(m_camera);
+	camTrans.position = Vector3(0, 0, 0);
+	Camera cam
 	{
-		World& world = m_engine->GetWorlds()[i];
-		RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene(world.GetId()));
-		m_camera = world.CreateEntity();
-		Transform& camTrans = world.GetEntityTransform(m_camera);
-		camTrans.position = Vector3(0, 0, 0);
-		Camera cam
-		{
-			Camera::Type::Perspective,
-			40.0f,
-			40.0f,
-			0.1f,
-			1000.0f,
-			60.0_deg,
-		};
-		renderScene->AddComponent(RenderScene::GetComponentHandle(RenderScene::Component::Camera), m_camera);
-		renderScene->SetComponentData(RenderScene::GetComponentHandle(RenderScene::Component::Camera), m_camera, &cam);
-		renderScene->SetMainCamera(m_camera);
+		Camera::Type::Perspective,
+		40.0f,
+		40.0f,
+		0.1f,
+		1000.0f,
+		90.0_deg,
+	};
+	renderScene->AddCamera(m_camera);
+	renderScene->SetCameraData(m_camera, { m_camera, cam });
+	renderScene->SetActiveCamera(m_camera);
 
-		ScriptScene::ScriptClass camScript;
-		camScript.updateFunction = ScriptCameraUpdate;
+	ScriptScene::ScriptData camScript;
+	string::Copy(camScript.className, "RenderWidget_CameraUpdateScript");
 
-		ScriptSystem* scriptSystem = static_cast<ScriptSystem*>(m_engine->GetSystem("script"));
-		ScriptScene* scriptScene = static_cast<ScriptScene*>(scriptSystem->GetScene(world.GetId()));
-		scriptScene->AddComponent(ScriptScene::GetComponentHandle(ScriptScene::Component::Script), m_camera);
-		scriptScene->SetComponentData(ScriptScene::GetComponentHandle(ScriptScene::Component::Script), m_camera, &camScript);
-		scriptScene->SetScriptActive(m_camera, false);
-	}
+	ScriptSystem* scriptSystem = static_cast<ScriptSystem*>(m_engine->GetSystem("script"));
+	ScriptScene* scriptScene = static_cast<ScriptScene*>(scriptSystem->GetScene(m_world));
+	scriptScene->AddScript(m_camera);
+	scriptScene->SetScriptData(m_camera, camScript);
+	scriptScene->SetScriptActive(m_camera, false);
 }
 
 
@@ -168,7 +183,7 @@ void RendererWidget::Update(EventQueue& queue)
 }
 
 
-void RendererWidget::RenderInternal(EventQueue& queue)
+void RendererWidget::Render(EventQueue& queue)
 {
 	if (nullptr == m_renderer)
 	{
@@ -177,23 +192,12 @@ void RendererWidget::RenderInternal(EventQueue& queue)
 	}
 
 	ImVec2 windowSize = ImGui::GetContentRegionAvail();
+	if (windowSize.x <= 0) windowSize.x = 1.0f;
+	if (windowSize.y <= 0) windowSize.y = 1.0f;
 	if (windowSize != m_size)
 	{
 		m_size = windowSize;
 		OnResize();
-		m_changedSize = true;
-	}
-	else
-	{
-		m_changedSize = false;
-	}
-
-	if (ImGui::IsKeyPressed((int)KeyboardDevice::Button::Escape, false))
-	{
-		m_focused = false;
-		m_engine->GetInputSystem()->LockCursor(false);
-		//m_engine->GetInputSystem()->HideCursor(false);
-		((ScriptScene*)(m_engine->GetSystem("script")->GetScene((worldId)0)))->SetScriptActive(m_camera, false);
 	}
 
 	ImVec2 cursorPos = ImGui::GetCursorPos();
@@ -202,54 +206,35 @@ void RendererWidget::RenderInternal(EventQueue& queue)
 	ImGui::Image(m_pipeline->GetMainFrameBuffer(), windowSize);
 
 	ImGui::SetCursorPos(cursorPos);
-	if (ImGui::InvisibleButton("##raycast_trigger", windowSize))
+	if (ImGui::InvisibleButton("##raycast_trigger", windowSize) && !m_cameraControl)
 	{
-		if (!m_focused)
+		ImVec2 mousePosAbs = ImGui::GetMousePos();
+		ImVec2 mousePosRel = mousePosAbs - ImGui::GetWindowPos() - cursorPos;
+
+		RenderScene* renderScene = (RenderScene*)m_renderer->GetScene(m_world);
+		const RenderScene::CameraItem* camItem = renderScene->GetCameraData(m_camera);
+		const Transform& cameraTransform = m_engine->GetWorld(m_world)->GetEntityTransform(m_camera);
+
+		Ray ray = ray_from_screen_coords(cameraTransform, camItem->camera, Vector2(mousePosRel.x, mousePosRel.y));
+
+		RayHit hit;
+		if (renderScene->RaycastModels(ray, &hit))
 		{
-			m_focused = true;
-			m_engine->GetInputSystem()->LockCursor(true);
-			//m_engine->GetInputSystem()->HideCursor(true);
-			((ScriptScene*)(m_engine->GetSystem("script")->GetScene((worldId)0)))->SetScriptActive(m_camera, true);
+			queue.PushEvent(EventSelectEntity(m_world, hit.entity));
 		}
-		else
-		{
-			ImVec2 mousePosAbs = ImGui::GetMousePos();
-			ImVec2 mousePosRel = mousePosAbs - ImGui::GetWindowPos() - cursorPos;
+	}
 
-			RenderScene* renderScene = (RenderScene*)m_renderer->GetScene((worldId)0);//TODO FIX WORLD ID ///////////////////
-			const componentHandle cameraComponentHandle = renderScene->GetComponentHandle("camera"); ////////////////////////////
-			Camera* cam = (Camera*)renderScene->GetComponentData(cameraComponentHandle, m_camera);
-			const Transform& cameraTransform = m_engine->GetWorld((worldId)0)->GetEntityTransform(m_camera);//////////////////////////////
-
-			Ray ray;
-			ray.origin = cameraTransform.position;
-			//compute correct ray
-			float mx = (mousePosRel.x - cam->screenWidth * 0.5f) * (1.0f / cam->screenWidth) * 2.0f;
-			float my = -(mousePosRel.y - cam->screenHeight * 0.5f) * (1.0f / cam->screenHeight) * 2.0f;
-
-			Vector3 camRight = Quaternion::Multiply(cameraTransform.rotation, Vector3::AXIS_X);
-			Vector3 camUp = Quaternion::Multiply(cameraTransform.rotation, Vector3::AXIS_Y);
-			Vector3 camDir = Quaternion::Multiply(cameraTransform.rotation, Vector3::AXIS_Z);
-
-			Vector3 screenCenter = cameraTransform.position + camDir * cam->nearPlane;
-			Vector3 screenRightDir = camRight * tanf(cam->fov * 0.5f) * cam->nearPlane;
-			Vector3 screenUpDir = camUp * tanf(cam->fov * 0.5f) * cam->nearPlane / cam->aspect;
-			Vector3 screenPoint = screenCenter + screenRightDir * mx + screenUpDir * my;
-			ray.direction = screenPoint - cameraTransform.position;
-			ray.direction.Normalize();
-
-			RenderScene::ModelItem hitModel;
-			if (renderScene->RaycastModels(ray, &hitModel))
-			{
-				//ASSERT(false);
-				Log(LogType::Info, "Model hit\n");
-				//m_renderer->AddDebugLine(Vector3(0, 0, 25), Vector3(0, 0, 45), Color(0, 255, 0), 0);
-			}
-
-			m_renderer->AddDebugLine(ray.origin, ray.origin + ray.direction * 100, Color(0, 255, 0), 0.05f, 10.0f);
-			//ImGui::SetCursorPos(mousePosRel);
-			//ImGui::Button("test");
-		}
+	if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+		m_engine->GetInputSystem()->LockCursor(true);
+		m_engine->GetInputSystem()->ShowCursor(false);
+		((ScriptScene*)(m_engine->GetSystem("script")->GetScene((worldId)0)))->SetScriptActive(m_camera, true);
+		m_cameraControl = true;
+	}
+	else if (ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
+		m_engine->GetInputSystem()->LockCursor(false);
+		m_engine->GetInputSystem()->ShowCursor(true);
+		((ScriptScene*)(m_engine->GetSystem("script")->GetScene((worldId)0)))->SetScriptActive(m_camera, false);
+		m_cameraControl = false;
 	}
 }
 
@@ -257,13 +242,12 @@ void RendererWidget::RenderInternal(EventQueue& queue)
 void RendererWidget::OnResize()
 {
 	m_renderer->Resize((i32)m_size.x, (i32)m_size.y);
-	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene(worldId(0)));///////////////////////////////////////
-	const componentHandle cameraComponentHandle = renderScene->GetComponentHandle("camera");///////////////////////////////////////
-	Camera* cam = (Camera*)renderScene->GetComponentData(cameraComponentHandle, m_camera);
-	cam->screenWidth = m_size.x;
-	cam->screenHeight = m_size.y;
-	cam->aspect = cam->screenWidth / cam->screenHeight;
-	//renderScene->SetComponentData(componentHandle(1), m_camera, &cam);/////////////////////////////////////
+	RenderScene* renderScene = static_cast<RenderScene*>(m_renderer->GetScene(m_world));
+	RenderScene::CameraItem cam = *renderScene->GetCameraData(m_camera);
+	cam.camera.screenWidth = m_size.x;
+	cam.camera.screenHeight = m_size.y;
+	cam.camera.aspect = cam.camera.screenWidth / cam.camera.screenHeight;
+	renderScene->SetCameraData(m_camera, cam);
 }
 
 

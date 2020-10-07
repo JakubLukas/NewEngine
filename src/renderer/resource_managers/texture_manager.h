@@ -13,11 +13,8 @@ class RenderSystem;
 class TextureManager final : public ResourceManager
 {
 public:
-	TextureManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
+	TextureManager(Allocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
 	~TextureManager() override;
-
-
-	ResourceType GetType() const override { return ResourceType::Texture; }
 
 	const char* const * GetSupportedFileExt() const override;
 	size_t GetSupportedFileExtCount() const override;

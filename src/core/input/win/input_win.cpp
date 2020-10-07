@@ -664,9 +664,9 @@ u32 GetScancodePS2Name(u32 scancodePS2, char* buffer, u32 bufferLength)
 	//- bit 16 - 23 contains the first byte of the scancode
 	//- bit 24 indicates that the scancode is 2 bytes (extended)
 
-	unsigned int result = 0;
-	unsigned int extended = scancodePS2 & 0xffff00;
-	unsigned int lParam = 0;
+	uint result = 0;
+	uint extended = scancodePS2 & 0xffff00;
+	uint lParam = 0;
 
 	if (extended != 0)
 	{

@@ -12,7 +12,7 @@ namespace Veng
 
 enum class worldId : u32;
 
-class IAllocator;
+class Allocator;
 
 
 namespace Editor
@@ -20,7 +20,7 @@ namespace Editor
 
 // ----------------------------------------------
 
-enum EventType : u32
+enum class EventType : u32
 {
 	SelectWorld,
 	SelectEntity,
@@ -33,38 +33,55 @@ enum EventType : u32
 
 struct Event
 {
-	Event() {}
-	Event(EventType type, u32 size) : type(type), size(size) {}
+	Event(EventType type, u32 size)
+		: type(type)
+		, size(size)
+	{}
 
 	EventType type;
-	u32 size;
+	u32 size = 0;
 };
 
 
 struct EventSelectWorld : public Event
 {
-	EventSelectWorld() : Event(EventType::SelectWorld, sizeof(EventSelectWorld)) {}
+	EventSelectWorld(worldId id)
+		: Event(EventType::SelectWorld, sizeof(EventSelectWorld))
+		, id(id)
+	{}
 
 	worldId id;
 };
 
 struct EventSelectEntity : public Event
 {
-	EventSelectEntity() : Event(EventType::SelectEntity, sizeof(EventSelectEntity)) {}
+	EventSelectEntity(worldId worldId, Entity entity)
+		: Event(EventType::SelectEntity, sizeof(EventSelectEntity))
+		, worldId(worldId)
+		, entity(entity)
+	{}
 
+	worldId worldId;
 	Entity entity;
 };
 
 struct EventSelectCamera : public Event
 {
-	EventSelectCamera() : Event(EventType::SelectCamera, sizeof(EventSelectCamera)) {}
+	EventSelectCamera(Entity camera)
+		: Event(EventType::SelectCamera, sizeof(EventSelectCamera))
+		, camera(camera)
+	{}
 
 	Entity camera;
 };
 
 struct EventChangedSize : public Event
 {
-	EventChangedSize() : Event(EventType::ChangedSize, sizeof(EventChangedSize)) {}
+	EventChangedSize(u32 width, u32 height)
+		: Event(EventType::ChangedSize, sizeof(EventChangedSize))
+		, width(width)
+		, height(height)
+	{}
 
 	u32 width;
 	u32 height;
@@ -72,7 +89,11 @@ struct EventChangedSize : public Event
 
 struct EventSelectResource : public Event
 {
-	EventSelectResource() : Event(EventType::SelectResource, sizeof(EventSelectResource)) {}
+	EventSelectResource(ResourceType type, resourceHandle resource)
+		: Event(EventType::SelectResource, sizeof(EventSelectResource))
+		, type(type)
+		, resource(resource)
+	{}
 
 	ResourceType type;
 	resourceHandle resource;
@@ -83,12 +104,12 @@ struct EventSelectResource : public Event
 class EventQueue final
 {
 public:
-	explicit EventQueue(IAllocator& allocator);
+	explicit EventQueue(Allocator& allocator);
 	~EventQueue();
 
 	void FrameUpdate();
 
-	void PushEvent(Event& event);
+	void PushEvent(const Event& event);
 
 	Event** PullEvents() const;
 	size_t GetPullEventsSize() const;
@@ -105,7 +126,7 @@ private:
 	void Enlarge();
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	void* m_pushBuffer = nullptr;
 	void* m_pullBuffer = nullptr;
 	Event** m_pullEvents = nullptr;

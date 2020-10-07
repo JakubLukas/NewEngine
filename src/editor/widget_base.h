@@ -5,7 +5,6 @@
 namespace Veng
 {
 
-class IAllocator;
 class Engine;
 class EditorInterface;
 
@@ -22,11 +21,10 @@ public:
 	virtual void Deinit() = 0;
 
 	virtual void Update(EventQueue& queue) = 0;
-	void Render(EventQueue& queue);
+	virtual void Render(EventQueue& queue) = 0;
 
-protected:
-	virtual void RenderInternal(EventQueue& queue) = 0;
 	virtual const char* GetName() const = 0;
+	virtual bool HasMenuBar() const { return false; }
 };
 
 

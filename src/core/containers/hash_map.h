@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/int.h"
-#include "core/iallocator.h"
+#include "core/allocator.h"
 #include "core/asserts.h"
 #include "core/utility.h"
 
@@ -61,7 +61,7 @@ public:
 	};
 
 public:
-	explicit HashMap(IAllocator& allocator, HashFunction hashFunc);
+	explicit HashMap(Allocator& allocator, HashFunction hashFunc);
 	HashMap(HashMap&) = delete;
 	HashMap(HashMap&& other);
 	HashMap& operator =(HashMap&) = delete;
@@ -84,9 +84,9 @@ public:
 
 	void Rehash(unsigned bucketSize);
 
-	unsigned GetBucketsSize() const;
+	size_t GetBucketsSize() const;
 
-	unsigned GetSize() const;
+	size_t GetSize() const;
 
 
 private:
@@ -106,7 +106,7 @@ private:
 	HashNode* GetNode(unsigned index);
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	HashFunction m_hashFunction;
 	int* m_buckets = nullptr;
 	unsigned m_bucketSize = 0;

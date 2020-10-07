@@ -10,6 +10,8 @@
 #include "core/file/blob.h"
 #include "core/containers/associative_array.h"
 
+#include "core/os/os_utils.h"
+
 
 #include "renderer/renderer.h"////////////////////////
 #include "script/script.h"////////////////////////////
@@ -20,14 +22,6 @@
 #include "core/memory.h"/////////////////////
 #include "core/time.h"////////////////////////////
 #include "core/math/matrix.h"////////////////////////////////////
-
-#include "core/resource/resource.h"
-#include "core/resource/resource_manager.h"
-#include "core/resource/resource_management.h"
-#include "renderer/resource_managers/shader_manager.h"
-#include "renderer/resource_managers/material_manager.h"
-#include "renderer/resource_managers/model_manager.h"
-#include "renderer/resource_managers/texture_manager.h"
 
 #include "core/input/devices/input_device_keyboard.h"
 
@@ -95,7 +89,7 @@ struct BGFXAllocator : public bx::AllocatorI
 {
 	static const size_t NATURAL_ALIGNEMENT = 8;
 
-	explicit BGFXAllocator(IAllocator& source)
+	explicit BGFXAllocator(Allocator& source)
 		: m_source(source)
 	{}
 
@@ -125,7 +119,7 @@ struct BGFXAllocator : public bx::AllocatorI
 	}
 
 
-	IAllocator& m_source;
+	Allocator& m_source;
 };
 
 
@@ -173,7 +167,7 @@ namespace ImGui
 
 void* Allocate(size_t sz, void* userData)
 {
-	Veng::IAllocator* allocator = static_cast<Veng::IAllocator*>(userData);
+	Veng::Allocator* allocator = static_cast<Veng::Allocator*>(userData);
 	return allocator->Allocate(sz, alignof(char));
 }
 
@@ -181,7 +175,7 @@ void Deallocate(void* ptr, void* userData)
 {
 	if (ptr != nullptr)
 	{
-		Veng::IAllocator* allocator = static_cast<Veng::IAllocator*>(userData);
+		Veng::Allocator* allocator = static_cast<Veng::Allocator*>(userData);
 		allocator->Deallocate(ptr);
 	}
 }
@@ -251,20 +245,44 @@ namespace Veng
 {
 
 
+static bool FileOpenDialog(Path& path)
+{
+	os::FileDialogData data;
+	data.filter = "Project file,.neproj";
+	os::GetWorkingDir(data.fileName, Path::MAX_LENGTH);
+	string::Copy(data.fileName + string::Length(data.fileName), "/*.neproj");
+	os::PathToNativePath(data.fileName);
+
+	bool result = ShowOpenFileDialog(data);
+	if (result)
+		path.SetPath(data.fileName);
+
+	return result;
+}
+
+static bool FileSaveDialog(Path& path)
+{
+	os::FileDialogData data;
+	data.filter = "Project file,.neproj";
+	os::GetWorkingDir(data.fileName, Path::MAX_LENGTH);
+	string::Copy(data.fileName + string::Length(data.fileName), "/*.neproj");
+	os::PathToNativePath(data.fileName);
+
+	bool result = ShowSaveFileDialog(data);
+	if (result)
+		path.SetPath(data.fileName);
+
+	return result;
+}
+
+
 RenderSystem* m_renderSystem = nullptr;////////////////////////////////
 ScriptSystem* m_scriptSystem = nullptr;////////////////////////////////
-
-ShaderInternalManager* m_shaderInternalManager = nullptr;////////////////////////////////
-ShaderManager* m_shaderManager = nullptr;////////////////////////////////
-MaterialManager* m_materialManager = nullptr;////////////////////////////////
-ModelManager* m_modelManager = nullptr;////////////////////////////////
-TextureManager* m_textureManager = nullptr;////////////////////////////////
 
 
 namespace Editor
 {
 
-static const Path IMGUI_DOCK_DATA_PATH = Path("imgui_dock_data.bin");
 
 struct Input
 {
@@ -272,10 +290,10 @@ struct Input
 	ImGui::MouseButtonFlags mouseButtons = ImGui::MouseButton_None;
 	ImGui::ModifierKeyFlags modifierKeys = ImGui::ModifierKey_None;
 	static const size_t KEYBOARD_BUFFER_SIZE = 32;
-	u8 keyboardBuffer[KEYBOARD_BUFFER_SIZE];
+	u8 keyboardBuffer[KEYBOARD_BUFFER_SIZE] = { 0 };
 	int keyboardBufferPos = 0;
 	static const size_t CHARACTER_BUFFER_SIZE = 16;
-	u8 characterBuffer[CHARACTER_BUFFER_SIZE];
+	u8 characterBuffer[CHARACTER_BUFFER_SIZE] = { 0 };
 	int characterBufferPos = 0;
 	float scroll = 0.0f;
 };
@@ -294,7 +312,7 @@ struct ImguiBgfxData
 	bgfx::UniformHandle textureUniform;
 };
 
-static bgfx::ProgramHandle LoadProgram(const Path& vertexPath, const Path& fragmentPath, IAllocator& allocator)
+static bgfx::ProgramHandle LoadProgram(const Path& vertexPath, const Path& fragmentPath, Allocator& allocator)
 {
 	const FileMode fileMode{
 		FileMode::Access::Read,
@@ -346,7 +364,7 @@ static bgfx::ProgramHandle LoadProgram(const Path& vertexPath, const Path& fragm
 class EditorAppImpl : public EditorApp
 {
 public:
-	EditorAppImpl(IAllocator& allocator, App& app)
+	EditorAppImpl(Allocator& allocator, App& app)
 		: m_allocator(allocator)
 		, m_app(app)
 		, m_engineAllocator(m_allocator)
@@ -366,14 +384,14 @@ public:
 		InitRender();
 		InitImgui();
 		InitEngine();
-
+		m_editorInterface = NEW_OBJECT(m_allocator, EditorInterface)(*m_engine, m_eventQueue);
 		InitWidgets();
 	}
 
 	void Deinit() override
 	{
 		DeinitWidgets();
-
+		DELETE_OBJECT(m_allocator, m_editorInterface);
 		DeinitEngine();//TODO: shut down engine gracefully
 
 		DeinitImgui();
@@ -387,9 +405,9 @@ public:
 		m_engine->Update(deltaTime);
 		m_eventQueue.FrameUpdate();
 
-		for(WidgetBase* widget : m_widgets)
+		for(WidgetItem& widget : m_widgets)
 		{
-			widget->Update(m_eventQueue);
+			widget.instance->Update(m_eventQueue);
 		}
 		
 		UpdateImgui();
@@ -595,23 +613,23 @@ public:
 
 	void InitWidgets()
 	{
-		WidgetRegistry* registry = GetRegistries();
+		WidgetRegistry* registry = GetWidgetRegistries();
 
 		while (registry != nullptr)
 		{
 			WidgetBase* widget = registry->creator(m_allocator);
-			widget->Init(*m_engine, m_editorInterface);
-			m_widgets.PushBack(widget);
+			widget->Init(*m_engine, *m_editorInterface);
+			m_widgets.PushBack({ true, widget });
 			registry = registry->next;
 		}
 	}
 
 	void DeinitWidgets()
 	{
-		for (WidgetBase* widget : m_widgets)
+		for (WidgetItem& widget : m_widgets)
 		{
-			widget->Deinit();
-			DELETE_OBJECT(m_allocator, widget);
+			widget.instance->Deinit();
+			DELETE_OBJECT(m_allocator, widget.instance);
 		}
 	}
 
@@ -632,20 +650,6 @@ public:
 	void InitSystems()
 	{
 		ASSERT(m_engine != nullptr);
-		
-		//resource managers
-		ResourceManagement* resourceManagement = m_engine->GetResourceManagement();
-		m_shaderInternalManager = NEW_OBJECT(m_allocator, ShaderInternalManager)(m_allocator, *m_engine->GetFileSystem(), resourceManagement);
-		m_shaderManager = NEW_OBJECT(m_allocator, ShaderManager)(m_allocator, *m_engine->GetFileSystem(), resourceManagement);
-		m_materialManager = NEW_OBJECT(m_allocator, MaterialManager)(m_allocator, *m_engine->GetFileSystem(), resourceManagement);
-		m_modelManager = NEW_OBJECT(m_allocator, ModelManager)(m_allocator, *m_engine->GetFileSystem(), resourceManagement);
-		m_textureManager = NEW_OBJECT(m_allocator, TextureManager)(m_allocator, *m_engine->GetFileSystem(), resourceManagement);
-
-		resourceManagement->RegisterManager(ResourceType::ShaderInternal, m_shaderInternalManager);
-		resourceManagement->RegisterManager(ResourceType::Shader, m_shaderManager);
-		resourceManagement->RegisterManager(ResourceType::Material, m_materialManager);
-		resourceManagement->RegisterManager(ResourceType::Model, m_modelManager);
-		resourceManagement->RegisterManager(ResourceType::Texture, m_textureManager);
 
 		//systems
 		m_renderSystem = RenderSystem::Create(*m_engine);
@@ -662,12 +666,6 @@ public:
 		m_engine->RemoveSystem(m_renderSystem->GetName());
 		ScriptSystem::Destroy(m_scriptSystem);
 		RenderSystem::Destroy(m_renderSystem);
-
-		DELETE_OBJECT(m_allocator, m_modelManager);
-		DELETE_OBJECT(m_allocator, m_materialManager);
-		DELETE_OBJECT(m_allocator, m_shaderManager);
-		DELETE_OBJECT(m_allocator, m_shaderInternalManager);
-		DELETE_OBJECT(m_allocator, m_textureManager);
 	}
 
 	// RENDERING
@@ -708,7 +706,8 @@ public:
 		ImGui::SetAllocatorFunctions(&ImGui::Allocate, &ImGui::Deallocate, &m_imguiAllocator);
 		m_imgui = ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO();
-		io.IniFilename = nullptr;
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		io.IniFilename = "imgui.ini";
 
 		io.KeyMap[ImGuiKey_Tab] = (int)KeyboardDevice::Button::Tab;
 		io.KeyMap[ImGuiKey_LeftArrow] = (int)KeyboardDevice::Button::ArrowLeft;
@@ -781,17 +780,10 @@ public:
 			, bgfx::copy(fontTextureData, fontTextureWidth * fontTextureHeight * fontTextureBPP)
 		);
 		ASSERT(isValid(m_imguiBgfxData.textureFont));
-
-		ImGui::CreateDockContext();
-
-		LoadImguiSettings();
 	}
 
 	void DeinitImgui()
 	{
-		SaveImguiSettings();
-
-		ImGui::DestroyDockContext();
 		ImGui::DestroyContext(m_imgui);
 		bgfx::destroy(m_imguiBgfxData.program);
 		bgfx::destroy(m_imguiBgfxData.textureUniform);
@@ -802,11 +794,129 @@ public:
 	{
 		ImGui::NewFrame();
 
-		ImGui::RootDock(ImVec2(0, 0), ImGui::GetIO().DisplaySize);
+		ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
+			ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus |
+			ImGuiWindowFlags_NoDocking;
+		ImGuiIO& io = ImGui::GetIO();
+		ImGui::SetNextWindowSize(io.DisplaySize);
+		ImGui::SetNextWindowPos(ImVec2(0, 0));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::Begin("Dockspace", nullptr, flags);
+		ImGui::PopStyleVar();
 
-		for (WidgetBase* widget : m_widgets)
+		float menu_height = 0;
+		if (ImGui::BeginMainMenuBar())
 		{
-			widget->Render(m_eventQueue);
+			if (ImGui::BeginMenu("File"))
+			{
+				if (ImGui::MenuItem("Save"))
+				{
+					Path path;
+					if (FileSaveDialog(path))
+					{
+						static const FileMode fileMode{
+							FileMode::Access::Write,
+							FileMode::ShareMode::ShareWrite,
+							FileMode::CreationDisposition::CreateAlways,
+							FileMode::FlagNone
+						};
+
+						nativeFileHandle fHandle;
+						if (FS::OpenFileSync(fHandle, path, fileMode))
+						{
+							OutputBlob blob(m_allocator);
+							ASSERT(m_engine != nullptr);
+							m_engine->Serialize(blob);
+
+							if (!FS::WriteFileSync(fHandle, 0, blob.GetData(), blob.GetSize())) {
+								ASSERT(false);
+								Log(LogType::Error, "Could not write to save file");
+							}
+							if (!FS::CloseFileSync(fHandle)) {
+								ASSERT(false);
+								Log(LogType::Error, "Could not close save file");
+							}
+						}
+						else
+						{
+							Log(LogType::Error, "Could not open save file");
+						}
+					}
+				}
+				if (ImGui::MenuItem("Load"))
+				{
+					Path path;
+					if (FileOpenDialog(path))
+					{
+						const FileMode fMode{
+							FileMode::Access::Read,
+							FileMode::ShareMode::ShareRead,
+							FileMode::CreationDisposition::OpenExisting,
+							FileMode::FlagNone
+						};
+
+						nativeFileHandle fh;
+						if (FS::OpenFileSync(fh, path, fMode))
+						{
+
+							size_t fSize = FS::GetFileSize(fh);
+							void* fileBuffer = m_allocator.Allocate(fSize, alignof(u8));
+							size_t bytesRead = 0;
+							if (FS::ReadFileSync(fh, 0, fileBuffer, fSize, bytesRead))
+							{
+								ASSERT2(fSize == bytesRead, "Read size is not equal file size of input file");
+
+								InputBlob blob(fileBuffer, fSize);
+								ASSERT(m_engine != nullptr);
+								m_engine->Deserialize(blob);
+							}
+							else
+							{
+								ASSERT(false);
+								Log(LogType::Error, "Could not read from save file");
+							}
+
+							if (!FS::CloseFileSync(fh)) {
+								ASSERT(false);
+								Log(LogType::Error, "Could not close load file");
+							}
+
+							m_allocator.Deallocate(fileBuffer);
+						}
+						else
+						{
+							ASSERT(false);
+							Log(LogType::Error, "Could not open input file");
+						}
+					}
+				}
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Widgets"))
+			{
+				for (WidgetItem& widget : m_widgets)
+					ImGui::MenuItem(widget.instance->GetName(), nullptr, &widget.isOpen);
+				ImGui::EndMenu();
+			}
+			menu_height = ImGui::GetWindowSize().y;
+			ImGui::EndMainMenuBar();
+		}
+
+		ImGui::SetCursorPosY(menu_height);
+		ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
+		ImGui::DockSpace(dockspace_id, ImVec2(0, 0));
+		ImGui::End();
+
+		for (WidgetItem& widget : m_widgets)
+		{
+			if (!widget.isOpen) continue;
+
+			ImGuiWindowFlags flags = widget.instance->HasMenuBar() ? ImGuiWindowFlags_MenuBar : ImGuiWindowFlags_None;
+			if (ImGui::Begin(widget.instance->GetName(), &widget.isOpen, flags)) {
+				widget.instance->Render(m_eventQueue);
+			}
+			ImGui::End();
 		}
 
 		ImGui::Render();
@@ -821,7 +931,7 @@ public:
 			u8 inputChar = m_inputBuffer.characterBuffer[i];
 			if(inputChar < 0x7f)
 			{
-				io.AddInputCharacter(inputChar); // ASCII or GTFO! :(
+				io.AddInputCharacter(inputChar); // ASCII only! :(
 			}
 		}
 
@@ -941,56 +1051,16 @@ public:
 		}
 	}
 
-	void SaveImguiSettings()
+private:
+	struct WidgetItem
 	{
-		static const FileMode fileMode{
-			FileMode::Access::Write,
-			FileMode::ShareMode::ShareWrite,
-			FileMode::CreationDisposition::CreateAlways,
-			FileMode::FlagNone
-		};
-
-		nativeFileHandle fHandle;
-		if(FS::OpenFileSync(fHandle, IMGUI_DOCK_DATA_PATH, fileMode))
-		{
-			OutputBlob blob(m_allocator);
-			ImGui::SerializeDock(blob);
-
-			ASSERT(FS::WriteFileSync(fHandle, 0, blob.GetData(), blob.GetSize()));
-			ASSERT(FS::CloseFileSync(fHandle));
-		}
-	}
-
-	void LoadImguiSettings()
-	{
-		static const FileMode fileMode{
-			FileMode::Access::Read,
-			FileMode::ShareMode::ShareRead,
-			FileMode::CreationDisposition::OpenExisting,
-			FileMode::FlagNone
-		};
-
-		nativeFileHandle fHandle;
-		if(FS::OpenFileSync(fHandle, IMGUI_DOCK_DATA_PATH, fileMode))
-		{
-			size_t fileSize = FS::GetFileSize(fHandle);
-			u8* data = (u8*)m_allocator.Allocate(fileSize, alignof(u8));
-			size_t fileSizeRead = 0;
-			ASSERT(FS::ReadFileSync(fHandle, 0, data, fileSize, fileSizeRead));
-			ASSERT(fileSize == fileSizeRead);
-			ASSERT(FS::CloseFileSync(fHandle));
-
-			InputBlob blob(data, fileSize);
-			ImGui::DeserializeDock(blob);
-
-			m_allocator.Deallocate(data);
-		}
-	}
-
+		bool isOpen;
+		WidgetBase* instance;
+	};
 
 private:
-	IAllocator& m_allocator;
-	EditorInterface m_editorInterface;
+	Allocator& m_allocator;
+	EditorInterface* m_editorInterface = nullptr;
 	App& m_app;
 	ProxyAllocator m_engineAllocator;
 	Engine* m_engine = nullptr;
@@ -1001,10 +1071,10 @@ private:
 	ProxyAllocator m_imguiAllocator;
 	Input m_inputBuffer;
 	ImGuiContext* m_imgui;
-	//widgets
 
+	//widgets
 	EventQueue m_eventQueue;
-	Array<WidgetBase*> m_widgets;
+	Array<WidgetItem> m_widgets;
 
 	//bgfx for imgui
 	ImguiBgfxData m_imguiBgfxData;
@@ -1018,12 +1088,12 @@ private:
 };
 
 
-EditorApp* EditorApp::Create(IAllocator& allocator, App& app)
+EditorApp* EditorApp::Create(Allocator& allocator, App& app)
 {
 	return NEW_OBJECT(allocator, EditorAppImpl)(allocator, app);
 }
 
-void EditorApp::Destroy(EditorApp* editor, IAllocator& allocator)
+void EditorApp::Destroy(EditorApp* editor, Allocator& allocator)
 {
 	DELETE_OBJECT(allocator, editor);
 }

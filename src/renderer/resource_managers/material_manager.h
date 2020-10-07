@@ -14,6 +14,15 @@ class RenderSystem;
 
 class MaterialManager final : public ResourceManager
 {
+public:
+	MaterialManager(Allocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
+	~MaterialManager() override;
+
+	const char* const * GetSupportedFileExt() const override;
+	size_t GetSupportedFileExtCount() const override;
+
+	void SetRenderSystem(RenderSystem* renderSystem);
+
 private:
 	struct LoadingOp
 	{
@@ -24,17 +33,6 @@ private:
 		u8 shaderLoaded = 0;
 		u8 texturesToLoad = 0;//TODO: ^ merge to one bitflag field
 	};
-
-public:
-	MaterialManager(IAllocator& allocator, FileSystem& fileSystem, DependencyManager* depManager);
-	~MaterialManager() override;
-
-	ResourceType GetType() const override { return ResourceType::Material; };
-
-	const char* const * GetSupportedFileExt() const override;
-	size_t GetSupportedFileExtCount() const override;
-
-	void SetRenderSystem(RenderSystem* renderSystem);
 
 private:
 	Resource* CreateResource() override;

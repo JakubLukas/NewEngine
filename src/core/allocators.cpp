@@ -213,7 +213,7 @@ size_t MainAllocator::GetAllocSize() const
 // ---------------- PROXY ALLOCATOR ----------------
 
 
-ProxyAllocator::ProxyAllocator(IAllocator& allocator)
+ProxyAllocator::ProxyAllocator(Allocator& allocator)
 	: m_source(allocator)
 #if DEBUG_ALLOCATORS
 	, m_allocations(allocator)
@@ -396,7 +396,7 @@ size_t ProxyAllocator::GetBlockSize() const { return GetAllocInfo().pageSize; }
 // ---------------- FRAME ALLOCATOR ----------------
 
 
-/*FrameAllocator::FrameAllocator(IAllocator& allocator)
+/*FrameAllocator::FrameAllocator(Allocator& allocator)
 	: m_source(allocator)
 {
 #if DEBUG_ALLOCATORS
@@ -502,7 +502,7 @@ void* operator new(size_t, Veng::NewPlaceholder, void* where)
 }
 
 
-void* operator new(size_t size, Veng::IAllocator& allocator, size_t alignment)
+void* operator new(size_t size, Veng::Allocator& allocator, size_t alignment)
 {
 	return allocator.Allocate(size, alignment);
 }

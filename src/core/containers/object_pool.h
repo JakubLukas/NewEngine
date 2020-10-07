@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/iallocator.h"
+#include "core/allocator.h"
 
 
 namespace Veng
@@ -11,7 +11,7 @@ template<class Type>
 class ObjectPool final
 {
 public:
-	explicit ObjectPool(IAllocator& allocator);
+	explicit ObjectPool(Allocator& allocator);
 	ObjectPool(ObjectPool&) = delete;
 	ObjectPool(ObjectPool&& other);
 	ObjectPool& operator =(ObjectPool&) = delete;
@@ -54,7 +54,7 @@ private:
 	void Enlarge();
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	Batch* m_batches = nullptr;
 	size_t m_size = 0;
 	size_t m_batchCount = 0;

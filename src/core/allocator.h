@@ -34,10 +34,10 @@ struct AllocationDebugData
 void* AlignPointer(void* ptr, size_t alignment);
 
 
-class IAllocator
+class Allocator
 {
 public:
-	virtual ~IAllocator() {}
+	virtual ~Allocator() {}
 
 	virtual void* Allocate(size_t size, size_t alignment) = 0;
 	virtual void* Reallocate(void* ptr, size_t size, size_t alignment) = 0;
@@ -77,7 +77,7 @@ struct NewPlaceholder {};
 
 void* operator new(size_t size, Veng::NewPlaceholder, void* where);
 
-void* operator new(size_t size, Veng::IAllocator& allocator, size_t alignment);
+void* operator new(size_t size, Veng::Allocator& allocator, size_t alignment);
 
 
 template<class Type>
@@ -90,7 +90,7 @@ void DeleteObject(Type* ptr)
 }
 
 template<class Type>
-void DeleteObject(Veng::IAllocator& allocator, Type* ptr)
+void DeleteObject(Veng::Allocator& allocator, Type* ptr)
 {
 	if(ptr != nullptr)
 	{

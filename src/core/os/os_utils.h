@@ -79,7 +79,12 @@ u32 GetCallStack(u32 framesToSkip, u32 framesToCapture, void** callstack);
 
 
 void GetMouseCursorPos(int& x, int& y);
+
 void SetMouseCursorPos(int x, int y);
+
+// if width or height is negative -> unclip cursor
+void ClipMouseCursor(int x, int y, int width, int height);
+
 void ShowMouseCursor(bool show);
 
 }

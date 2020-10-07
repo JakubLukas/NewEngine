@@ -17,15 +17,13 @@ namespace Editor
 class FileBrowserWidget : public WidgetBase
 {
 public:
-	FileBrowserWidget(IAllocator& allocator);
+	FileBrowserWidget(Allocator& allocator);
 	~FileBrowserWidget() override;
 	void Init(Engine& engine, EditorInterface& editor) override;
 	void Deinit() override;
 
 	void Update(EventQueue& queue) override;
-
-protected:
-	void RenderInternal(EventQueue& queue) override;
+	void Render(EventQueue& queue) override;
 	const char* GetName() const override { return "ResourceManager"; };
 
 private:
@@ -41,7 +39,7 @@ private:
 	};
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	Array<File> m_workingDirFiles;
 };
 

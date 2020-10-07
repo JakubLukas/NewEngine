@@ -6,7 +6,7 @@
 namespace Veng
 {
 
-class IAllocator;
+class Allocator;
 class InputBlob;
 
 
@@ -39,7 +39,7 @@ private:
 class OutputClob
 {
 public:
-	OutputClob(IAllocator& allocator);
+	OutputClob(Allocator& allocator);
 	~OutputClob();
 
 	void Write(const char* data, size_t size);
@@ -53,7 +53,7 @@ public:
 	const char* GetData() const;
 
 private:
-	IAllocator& m_allocator;
+	Allocator& m_allocator;
 	char* m_data;
 	size_t m_size;
 	size_t m_position;

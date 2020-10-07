@@ -21,9 +21,7 @@ public:
 	void Deinit() override;
 
 	void Update(EventQueue& queue) override;
-
-protected:
-	void RenderInternal(EventQueue& queue) override;
+	void Render(EventQueue& queue) override;
 	const char* GetName() const override { return "Entity"; };
 
 private:

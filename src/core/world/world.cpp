@@ -3,13 +3,14 @@
 #include "scene.h"
 #include "core/math/matrix.h"
 #include "core/utility.h"
+#include "core/file/blob.h"
 
 
 namespace Veng
 {
 
 
-World::World(IAllocator& allocator, worldId id)
+World::World(Allocator& allocator, worldId id)
 	: m_allocator(allocator)
 	, m_entities(m_allocator)
 	, m_id(id)
@@ -32,6 +33,32 @@ World::World(World&& world)
 World::~World()
 {
 
+}
+
+
+void World::Serialize(OutputBlob& serializer) const
+{
+	serializer.Write(m_unusedEntity);
+
+	serializer.Write((u64)m_entities.GetSize());
+	serializer.Write(m_entities.Begin(), sizeof(EntityItem) * m_entities.GetSize());
+
+	serializer.Write((u64)m_entitiesTransform.GetSize());
+	serializer.Write(m_entitiesTransform.Begin(), sizeof(Transform) * m_entitiesTransform.GetSize());
+}
+
+void World::Deserialize(InputBlob& serializer)
+{
+	serializer.Read(m_unusedEntity);
+
+	u64 count;
+	serializer.Read(count);
+	m_entities.Resize(count);
+	serializer.Read(m_entities.Begin(), sizeof(EntityItem) * count);
+
+	serializer.Read(count);
+	m_entitiesTransform.Resize(count);
+	serializer.Read(m_entitiesTransform.Begin(), sizeof(Transform) * count);
 }
 
 
@@ -68,11 +95,19 @@ void World::DestroyEntity(Entity entity)
 	m_unusedEntity = (i64)id;
 }
 
+bool World::ExistsEntity(Entity entity)
+{
+	size_t idx = (size_t)entity;
+	ASSERT2(idx < m_entities.GetSize(), "Invalid entity");
+	return m_entities[idx].alive;
+}
+
 Transform& World::GetEntityTransform(Entity entity)
 {
-	size_t id = (size_t)entity;
-	ASSERT2(id < m_entities.GetSize(), "Invalid entity");
-	return m_entitiesTransform[id];
+	size_t idx = (size_t)entity;
+	ASSERT2(idx < m_entities.GetSize(), "Invalid entity");
+	ASSERT2(m_entities[idx].alive, "Entity is destroyed");
+	return m_entitiesTransform[idx];
 }
 
 

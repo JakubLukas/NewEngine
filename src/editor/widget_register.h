@@ -4,7 +4,7 @@
 namespace Veng
 {
 
-class IAllocator;
+class Allocator;
 
 namespace Editor
 {
@@ -14,7 +14,7 @@ class WidgetBase;
 
 struct WidgetRegistry
 {
-	typedef WidgetBase*(*createFunction)(IAllocator& allocator);
+	typedef WidgetBase*(*createFunction)(Allocator& allocator);
 
 	WidgetRegistry(createFunction creator);
 
@@ -23,7 +23,7 @@ struct WidgetRegistry
 };
 
 
-WidgetRegistry* GetRegistries();
+WidgetRegistry* GetWidgetRegistries();
 
 
 }
@@ -31,7 +31,7 @@ WidgetRegistry* GetRegistries();
 }
 
 
-#define REGISTER_WIDGET(name) \
-	static WidgetBase* CreateWidget(IAllocator& allocator); \
-	static WidgetRegistry s_registry(CreateWidget); \
-	static WidgetBase* CreateWidget(IAllocator& allocator)
+#define REGISTER_WIDGET(ClassName) \
+	static WidgetBase* CreateWidget_##ClassName(Allocator& allocator); \
+	static WidgetRegistry s_registry_##ClassName(CreateWidget_##ClassName); \
+	static WidgetBase* CreateWidget_##ClassName(Allocator& allocator)

@@ -1,16 +1,16 @@
 #pragma once
 
-#include "iallocator.h"
+#include "allocator.h"
 
 
 namespace Veng
 {
 
 
-/*class DebugAllocator : public IAllocator
+/*class DebugAllocator : public Allocator
 {
 public:
-	DebugAllocator(IAllocator& allocator);
+	DebugAllocator(Allocator& allocator);
 	~DebugAllocator();
 
 	void* Allocate(size_t size, size_t alignment) override;
@@ -19,7 +19,7 @@ public:
 	size_t GetSize(void* ptr) const override;
 
 private:
-	IAllocator& m_source;
+	Allocator& m_source;
 	i32 m_allocCount;
 };*/
 

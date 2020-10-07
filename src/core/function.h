@@ -23,9 +23,17 @@ public:
 	{}
 
 	Function(const Function<ReturnType(Arguments...)>&) = default;
-	//Function(const Function<ReturnType(Arguments...)>&&) = default;
 	Function& operator=(const Function<ReturnType(Arguments...)>&) = default;
-	//Function& operator=(const Function<ReturnType(Arguments...)>&&) = default;
+
+	Function(const Function<ReturnType(Arguments...)>&& other)
+		: m_functionStub(other.m_functionStub)
+		, m_instance(other.m_instance)
+	{}
+	Function& operator=(const Function<ReturnType(Arguments...)>&& other)
+	{
+		m_functionStub = other.m_functionStub;
+		m_instance = other.m_instance;
+	}
 
 
 	template<ReturnType(*function)(Arguments...)>
