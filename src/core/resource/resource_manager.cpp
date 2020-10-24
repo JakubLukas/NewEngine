@@ -12,8 +12,8 @@ ResourceManager::ResourceManager(ResourceType type, Allocator& allocator, FileSy
 	: m_allocator(allocator)
 	, m_type(type)
 	, m_fileSystem(fileSystem)
-	, m_asyncOps(m_allocator, &HashFileHandle)
-	, m_resources(m_allocator, &HashU32)
+	, m_asyncOps(m_allocator)
+	, m_resources(m_allocator)
 	, m_depManager(depManager)
 {
 }

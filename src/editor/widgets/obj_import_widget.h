@@ -3,6 +3,8 @@
 #include "../widget_base.h"
 
 
+namespace ofbx { struct IScene; }
+
 namespace Veng
 {
 
@@ -41,10 +43,11 @@ public:
 
 	void Update(EventQueue& queue) override;
 	void Render(EventQueue& queue) override;
-	const char* GetName() const override { return "ObjImporter"; };
+	const char* GetName() const override { return "Object importer"; };
 
 private:
 	Allocator& m_allocator;
+	ofbx::IScene* m_scene = nullptr;
 	ConvertParams m_params;
 };
 

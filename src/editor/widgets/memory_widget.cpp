@@ -25,7 +25,7 @@ struct MemoryWidgetAllocData
 struct MemoryWidgetData
 {
 	MemoryWidgetData(Allocator& allocator)
-		: allocData(allocator, &HashPointer)
+		: allocData(allocator)
 	{}
 
 	HashMap<void*, MemoryWidgetAllocData> allocData;

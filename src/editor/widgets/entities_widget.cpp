@@ -55,7 +55,9 @@ void EntitiesWidget::Render(EventQueue& queue)
 	if (ImGui::BeginMenuBar())
 	{
 		if (ImGui::MenuItem("Add world")) m_world = m_engine->GetWorld(m_engine->AddWorld());
-		if (m_world && ImGui::MenuItem("Create Entity")) m_world->CreateEntity();//todo: make button disabled, do not hide
+		if (m_world == nullptr) ImGui::PushItemsDisabled();
+		if (ImGui::MenuItem("Create Entity")) m_world->CreateEntity();//todo: make button disabled, do not hide
+		if (m_world == nullptr) ImGui::PopItemsDisabled();
 		ImGui::EndMenuBar();
 	}
 

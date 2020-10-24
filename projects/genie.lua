@@ -42,6 +42,7 @@ solution "NewEngine"
 	
 	defines {
 		"_ITERATOR_DEBUG_LEVEL=0",
+		"_HAS_EXCEPTIONS=0"
 	}
 	
 	configuration "Debug"
@@ -128,6 +129,12 @@ project "main"
 		SRC_DIR .. "editor/**.h",
 		SRC_DIR .. "editor/**.inl",
 		SRC_DIR .. "editor/**.cpp",
+		
+		SRC_DIR .. "../external/bgfx/**.h",
+		SRC_DIR .. "../external/json/**.h",
+		SRC_DIR .. "../external/stb/**.h",
+		SRC_DIR .. "../external/OpenFBX/**.h",
+		SRC_DIR .. "../external/OpenFBX/**.c*",
 		SRC_DIR .. "../external/imgui/**.h",
 		SRC_DIR .. "../external/imgui/**.inl",
 		SRC_DIR .. "../external/imgui/**.cpp",

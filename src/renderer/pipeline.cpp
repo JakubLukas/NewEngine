@@ -43,7 +43,7 @@ public:
 		, m_allocator(allocator)
 		, m_engine(engine)
 		, m_renderer(renderer)
-		, m_frameBuffers(m_allocator, &HashU32)
+		, m_frameBuffers(m_allocator)
 		, m_commands(m_allocator)
 	{
 		m_allocator.SetDebugName("Pipeline");
@@ -206,8 +206,8 @@ public:
 				}
 				case CommandType::RenderModels:
 				{
-					const RenderScene* scene = (RenderScene*)m_renderer.GetScene(cmd->world);
 					World* world = m_engine.GetWorld(cmd->world);
+					const RenderScene* scene = (RenderScene*)m_renderer.GetScene(cmd->world);
 					const RenderScene::CameraItem* cameraItem = scene->GetActiveCamera();
 					m_renderer.SetCamera(*world, cameraItem->entity);
 					m_renderer.RenderModels(*world);

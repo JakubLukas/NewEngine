@@ -3,22 +3,22 @@ namespace Veng
 {
 
 
-template<class KeyType, class ValueType>
-HashMap<KeyType, ValueType>::HashNode::HashNode(const KeyType& key, const ValueType& value)
+template<class KeyType, class ValueType, class Hasher>
+HashMap<KeyType, ValueType, Hasher>::HashNode::HashNode(const KeyType& key, const ValueType& value)
 	: key(key)
 	, value(value)
 	, next(INVALID_INDEX)
 {}
 
-template<class KeyType, class ValueType>
-HashMap<KeyType, ValueType>::HashNode::HashNode(const KeyType& key, const ValueType& value, int next)
+template<class KeyType, class ValueType, class Hasher>
+HashMap<KeyType, ValueType, Hasher>::HashNode::HashNode(const KeyType& key, const ValueType& value, int next)
 	: key(key)
 	, value(value)
 	, next(next)
 {}
 
-template<class KeyType, class ValueType>
-HashMap<KeyType, ValueType>::HashNode::HashNode(HashNode&& other)
+template<class KeyType, class ValueType, class Hasher>
+HashMap<KeyType, ValueType, Hasher>::HashNode::HashNode(HashNode&& other)
 	: key(other.key)
 	, value(other.value)
 	, next(other.next)
@@ -26,8 +26,8 @@ HashMap<KeyType, ValueType>::HashNode::HashNode(HashNode&& other)
 	other.next = INVALID_INDEX;
 }
 
-template<class KeyType, class ValueType>
-typename HashMap<KeyType, ValueType>::HashNode& HashMap<KeyType, ValueType>::HashNode::operator=(typename HashMap<KeyType, ValueType>::HashNode&& other)
+template<class KeyType, class ValueType, class Hasher>
+typename HashMap<KeyType, ValueType, Hasher>::HashNode& HashMap<KeyType, ValueType, Hasher>::HashNode::operator=(typename HashMap<KeyType, ValueType, Hasher>::HashNode&& other)
 {
 	KeyType k = key;
 	ValueType v = value;
@@ -44,14 +44,13 @@ typename HashMap<KeyType, ValueType>::HashNode& HashMap<KeyType, ValueType>::Has
 }
 
 
-template<class KeyType, class ValueType>
-HashMap<KeyType, ValueType>::HashMap(Allocator& allocator, HashFunction hashFunc)
+template<class KeyType, class ValueType, class Hasher>
+HashMap<KeyType, ValueType, Hasher>::HashMap(Allocator& allocator)
 	: m_allocator(allocator)
-	, m_hashFunction(hashFunc)
 {}
 
-template<class KeyType, class ValueType>
-HashMap<KeyType, ValueType>::HashMap(HashMap<KeyType, ValueType>&& other)
+template<class KeyType, class ValueType, class Hasher>
+HashMap<KeyType, ValueType, Hasher>::HashMap(HashMap<KeyType, ValueType, Hasher>&& other)
 	: m_allocator(other.m_allocator)
 	, m_buckets(other.m_buckets)
 	, m_bucketSize(other.m_bucketSize)
@@ -64,8 +63,8 @@ HashMap<KeyType, ValueType>::HashMap(HashMap<KeyType, ValueType>&& other)
 	other.m_size = 0;
 }
 
-template<class KeyType, class ValueType>
-HashMap<KeyType, ValueType>& HashMap<KeyType, ValueType>::operator=(HashMap<KeyType, ValueType>&& other)
+template<class KeyType, class ValueType, class Hasher>
+HashMap<KeyType, ValueType, Hasher>& HashMap<KeyType, ValueType, Hasher>::operator=(HashMap<KeyType, ValueType, Hasher>&& other)
 {
 	int* buckets = m_buckets;
 	unsigned bucketSize = m_bucketSize;
@@ -86,8 +85,8 @@ HashMap<KeyType, ValueType>& HashMap<KeyType, ValueType>::operator=(HashMap<KeyT
 	return *this;
 }
 
-template<class KeyType, class ValueType>
-HashMap<KeyType, ValueType>::~HashMap()
+template<class KeyType, class ValueType, class Hasher>
+HashMap<KeyType, ValueType, Hasher>::~HashMap()
 {
 	for (unsigned i = 0; i < m_size; ++i)
 	{
@@ -98,8 +97,8 @@ HashMap<KeyType, ValueType>::~HashMap()
 }
 
 
-template<class KeyType, class ValueType>
-void HashMap<KeyType, ValueType>::Clear()
+template<class KeyType, class ValueType, class Hasher>
+void HashMap<KeyType, ValueType, Hasher>::Clear()
 {
 	for (unsigned i = 0; i < m_bucketSize; ++i)
 	{
@@ -113,21 +112,21 @@ void HashMap<KeyType, ValueType>::Clear()
 }
 
 
-template<class KeyType, class ValueType>
-typename HashMap<KeyType, ValueType>::HashNode* HashMap<KeyType, ValueType>::Begin() { return m_table; }
+template<class KeyType, class ValueType, class Hasher>
+typename HashMap<KeyType, ValueType, Hasher>::HashNode* HashMap<KeyType, ValueType, Hasher>::Begin() { return m_table; }
 
-template<class KeyType, class ValueType>
-typename HashMap<KeyType, ValueType>::HashNode* HashMap<KeyType, ValueType>::End() { return m_table + m_size; }
+template<class KeyType, class ValueType, class Hasher>
+typename HashMap<KeyType, ValueType, Hasher>::HashNode* HashMap<KeyType, ValueType, Hasher>::End() { return m_table + m_size; }
 
-template<class KeyType, class ValueType>
-typename const HashMap<KeyType, ValueType>::HashNode* HashMap<KeyType, ValueType>::Begin() const { return m_table; }
+template<class KeyType, class ValueType, class Hasher>
+typename const HashMap<KeyType, ValueType, Hasher>::HashNode* HashMap<KeyType, ValueType, Hasher>::Begin() const { return m_table; }
 
-template<class KeyType, class ValueType>
-typename const HashMap<KeyType, ValueType>::HashNode* HashMap<KeyType, ValueType>::End() const { return m_table + m_size; }
+template<class KeyType, class ValueType, class Hasher>
+typename const HashMap<KeyType, ValueType, Hasher>::HashNode* HashMap<KeyType, ValueType, Hasher>::End() const { return m_table + m_size; }
 
 
-template<class KeyType, class ValueType>
-bool HashMap<KeyType, ValueType>::Find(const KeyType& key, ValueType*& value) const
+template<class KeyType, class ValueType, class Hasher>
+bool HashMap<KeyType, ValueType, Hasher>::Find(const KeyType& key, ValueType*& value) const
 {
 	if (m_size == 0)
 		return false;
@@ -155,8 +154,8 @@ bool HashMap<KeyType, ValueType>::Find(const KeyType& key, ValueType*& value) co
 }
 
 
-template<class KeyType, class ValueType>
-ValueType* HashMap<KeyType, ValueType>::Insert(const KeyType& key, const ValueType& value)
+template<class KeyType, class ValueType, class Hasher>
+ValueType* HashMap<KeyType, ValueType, Hasher>::Insert(const KeyType& key, const ValueType& value)
 {
 	if (m_bucketSize == 0)
 		Rehash(INITIAL_SIZE);
@@ -167,8 +166,8 @@ ValueType* HashMap<KeyType, ValueType>::Insert(const KeyType& key, const ValueTy
 	return Insert(bucketIdx, key, value);
 }
 
-template<class KeyType, class ValueType>
-bool HashMap<KeyType, ValueType>::Erase(const KeyType& key)
+template<class KeyType, class ValueType, class Hasher>
+bool HashMap<KeyType, ValueType, Hasher>::Erase(const KeyType& key)
 {
 	unsigned bucketIdx = GetIndex(key);
 
@@ -213,8 +212,8 @@ bool HashMap<KeyType, ValueType>::Erase(const KeyType& key)
 }
 
 
-template<class KeyType, class ValueType>
-void HashMap<KeyType, ValueType>::Rehash(unsigned bucketSize)
+template<class KeyType, class ValueType, class Hasher>
+void HashMap<KeyType, ValueType, Hasher>::Rehash(unsigned bucketSize)
 {
 	ASSERT(bucketSize > m_bucketSize);
 
@@ -245,15 +244,15 @@ void HashMap<KeyType, ValueType>::Rehash(unsigned bucketSize)
 }
 
 
-template<class KeyType, class ValueType>
-size_t HashMap<KeyType, ValueType>::GetBucketsSize() const { return m_bucketSize; }
+template<class KeyType, class ValueType, class Hasher>
+size_t HashMap<KeyType, ValueType, Hasher>::GetBucketsSize() const { return m_bucketSize; }
 
-template<class KeyType, class ValueType>
-size_t HashMap<KeyType, ValueType>::GetSize() const { return m_size; }
+template<class KeyType, class ValueType, class Hasher>
+size_t HashMap<KeyType, ValueType, Hasher>::GetSize() const { return m_size; }
 
 
-template<class KeyType, class ValueType>
-ValueType* HashMap<KeyType, ValueType>::Insert(unsigned bucketIdx, const KeyType& key, const ValueType& value)
+template<class KeyType, class ValueType, class Hasher>
+ValueType* HashMap<KeyType, ValueType, Hasher>::Insert(unsigned bucketIdx, const KeyType& key, const ValueType& value)
 {
 	ASSERT(m_size < m_bucketSize);
 
@@ -283,44 +282,44 @@ ValueType* HashMap<KeyType, ValueType>::Insert(unsigned bucketIdx, const KeyType
 }
 
 
-template<class KeyType, class ValueType>
-unsigned HashMap<KeyType, ValueType>::GetIndex(const KeyType& key) const
+template<class KeyType, class ValueType, class Hasher>
+unsigned HashMap<KeyType, ValueType, Hasher>::GetIndex(const KeyType& key) const
 {
-	auto hash = m_hashFunction(key);
+	auto hash = Hasher::get(key);
 	return hash % m_bucketSize;
 }
 
-template<class KeyType, class ValueType>
-typename HashMap<KeyType, ValueType>::HashNode* HashMap<KeyType, ValueType>::GetNode(unsigned index)
+template<class KeyType, class ValueType, class Hasher>
+typename HashMap<KeyType, ValueType, Hasher>::HashNode* HashMap<KeyType, ValueType, Hasher>::GetNode(unsigned index)
 {
 	ASSERT(index < m_bucketSize);
 	return &m_table[index];
 }
 
 
-template<class KeyType, class ValueType>
-inline typename HashMap<KeyType, ValueType>::HashNode* begin(HashMap<KeyType, ValueType>& a)
+template<class KeyType, class ValueType, class Hasher>
+inline typename HashMap<KeyType, ValueType, Hasher>::HashNode* begin(HashMap<KeyType, ValueType, Hasher>& a)
 {
 	return a.Begin();
 }
 
 
-template<class KeyType, class ValueType>
-inline typename HashMap<KeyType, ValueType>::HashNode* end(HashMap<KeyType, ValueType>& a)
+template<class KeyType, class ValueType, class Hasher>
+inline typename HashMap<KeyType, ValueType, Hasher>::HashNode* end(HashMap<KeyType, ValueType, Hasher>& a)
 {
 	return a.End();
 }
 
 
-template<class KeyType, class ValueType>
-inline typename const HashMap<KeyType, ValueType>::HashNode* begin(const HashMap<KeyType, ValueType>& a)
+template<class KeyType, class ValueType, class Hasher>
+inline typename const HashMap<KeyType, ValueType, Hasher>::HashNode* begin(const HashMap<KeyType, ValueType, Hasher>& a)
 {
 	return a.Begin();
 }
 
 
-template<class KeyType, class ValueType>
-inline typename const HashMap<KeyType, ValueType>::HashNode* end(const HashMap<KeyType, ValueType>& a)
+template<class KeyType, class ValueType, class Hasher>
+inline typename const HashMap<KeyType, ValueType, Hasher>::HashNode* end(const HashMap<KeyType, ValueType, Hasher>& a)
 {
 	return a.End();
 }

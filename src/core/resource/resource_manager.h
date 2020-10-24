@@ -15,9 +15,13 @@ class InputBlob;
 class DependencyManager;
 
 
-static u32 HashFileHandle(const fileHandle& key)
+template<>
+struct HashFunc<fileHandle>
 {
-	return static_cast<u32>(key) * 37;
+	static u32 get(const fileHandle& key)
+	{
+		return static_cast<u32>(key) * 37;
+	}
 };
 
 

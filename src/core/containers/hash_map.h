@@ -10,33 +10,51 @@ namespace Veng
 {
 
 
-inline u32 HashU32(u32 const& key)
+template <class Key>
+struct HashFunc
 {
-	//TODO: just dummy value to test
-	return key;
-}
+	static u32 get(const Key& key);
+};
 
-inline u32 HashChar(char* const& key)
+template <>
+struct HashFunc<u32>
 {
-	const char* k = key;
-	//TODO: just dummy value to test
-	u32 result = 1;
-	while (*k != '\0')
+	static u32 get(const u32& key)
 	{
-		result *= *k;
-		k++;
+		//TODO: just dummy value to test
+		return key;
 	}
-	return result;
-}
+};
 
-inline u32 HashPointer(void* const& ptr)
+template <>
+struct HashFunc<char*>
 {
-	uintptr p = (uintptr)ptr;
-	return (u32)(p >> 32) * (u32)(p);
-}
+	static u32 get(const char* key)
+	{
+		const char* k = key;
+		//TODO: just dummy value to test
+		u32 result = 1;
+		while (*k != '\0')
+		{
+			result *= *k;
+			k++;
+		}
+		return result;
+	}
+};
+
+template <class T>
+struct HashFunc<T*>
+{
+	static u32 get(const void* ptr)
+	{
+		uintptr p = (uintptr)ptr;
+		return (u32)(p >> 32) * (u32)(p);
+	}
+};
 
 
-template<class KeyType, class ValueType>
+template<class KeyType, class ValueType, class Hasher = HashFunc<KeyType>>
 class HashMap final
 {
 public:
@@ -61,7 +79,7 @@ public:
 	};
 
 public:
-	explicit HashMap(Allocator& allocator, HashFunction hashFunc);
+	explicit HashMap(Allocator& allocator);
 	HashMap(HashMap&) = delete;
 	HashMap(HashMap&& other);
 	HashMap& operator =(HashMap&) = delete;
@@ -107,7 +125,6 @@ private:
 
 private:
 	Allocator& m_allocator;
-	HashFunction m_hashFunction;
 	int* m_buckets = nullptr;
 	unsigned m_bucketSize = 0;
 	HashNode* m_table = nullptr;

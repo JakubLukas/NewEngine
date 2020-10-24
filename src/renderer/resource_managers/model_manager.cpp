@@ -75,6 +75,7 @@ void ModelManager::ResourceLoaded(resourceHandle handle, InputBlob& data)
 	Model* model = static_cast<Model*>(GetResource(handle));
 	
 	Mesh& mesh = model->meshes.PushBack();
+	mesh.type = Mesh::PrimitiveType::Triangles;//todo: read from mesh
 
 	char errorBuffer[64] = { 0 };
 	JsonValue parsedJson;

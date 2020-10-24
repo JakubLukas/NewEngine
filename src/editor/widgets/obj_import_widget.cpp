@@ -16,7 +16,8 @@
 #include "core/os/os_utils.h"
 #include "core/file/file.h"
 
-#include <cstdio>
+//#include <cstdio>
+#include "../external/OpenFBX/ofbx.h"
 
 
 namespace Veng
@@ -29,9 +30,9 @@ namespace Editor
 static bool FileOpenDialog(Path& path)
 {
 	os::FileDialogData data;
-	data.filter = "Wavefront obj,.obj";
+	data.filter = "Autodesk fbx,.fbx";
 	os::GetWorkingDir(data.fileName, Path::MAX_LENGTH);
-	string::Copy(data.fileName + string::Length(data.fileName), "/*.obj");
+	string::Copy(data.fileName + string::Length(data.fileName), "/*.fbx");
 	os::PathToNativePath(data.fileName);
 	
 	bool result = ShowOpenFileDialog(data);
@@ -56,7 +57,41 @@ static bool FileSaveDialog(Path& path)
 	return result;
 }
 
-static bool ConvertObj(const ObjImportWidget::ConvertParams& params, const Path& inPath, const Path& outPath, char error[64])
+static u8* LoadFile(Allocator& allocator, const Path& path, size_t out_dataSize, char error[64])
+{
+	static const FileMode fMode{
+			FileMode::Access::Read,
+			FileMode::ShareMode::ShareRead,
+			FileMode::CreationDisposition::OpenExisting,
+			FileMode::FlagNone
+	};
+
+	nativeFileHandle fh;
+	if (!FS::OpenFileSync(fh, path, fMode))
+	{
+		ASSERT(false);
+		string::Copy(error, "Could not open input file");
+		return nullptr;
+	}
+
+	size_t fSize = FS::GetFileSize(fh);
+	u8* fileBuffer = (u8*)(allocator.Allocate(fSize, alignof(u8)));
+	size_t charsRead = 0;
+	if (!FS::ReadFileSync(fh, 0, fileBuffer, fSize, charsRead))
+	{
+		ASSERT(false);
+		string::Copy(error, "Could not read from input file");
+		return nullptr;
+	}
+	ASSERT2(fSize == charsRead, "Read size is not equal file size of input file");
+	if (!FS::CloseFileSync(fh))
+		ASSERT2(false, "Closing of input file failed");
+
+	out_dataSize = fSize;
+	return fileBuffer;
+}
+
+/*static bool ConvertObj(const ObjImportWidget::ConvertParams& params, const Path& inPath, const Path& outPath, char error[64])
 {
 	char* fileBuffer = nullptr;
 	{
@@ -262,7 +297,7 @@ static bool ConvertObj(const ObjImportWidget::ConvertParams& params, const Path&
 	JsonDeinit(&modelObj);
 
 	return true;
-}
+}*/
 
 
 ObjImportWidget::ObjImportWidget(Allocator& allocator)
@@ -305,63 +340,84 @@ void ObjImportWidget::Render(EventQueue& queue)
 	ImGui::SameLine();
 	if (ImGui::Button("Browse"))
 	{
-		Path objFile;
-		if(FileOpenDialog(objFile))
-			string::Copy(iPathBuffer, objFile.GetPath());
+		Path filePath;
+		if(FileOpenDialog(filePath))
+			string::Copy(iPathBuffer, filePath.GetPath());
 	}
-	ImGui::SameLine();
-	ImGui::Text("input");
+
+
+
+	//ImGui::SameLine();
+	//ImGui::Text("input");
 	ImGui::PopID();
-	
-	ImGui::PushID("output");
-	static char oPathBuffer[Path::BUFFER_LENGTH];
-	ImGui::InputText("##output", oPathBuffer, Path::BUFFER_LENGTH);
-	ImGui::SameLine();
-	if (ImGui::Button("Browse"))
-	{
-		Path objFile;
-		if (FileSaveDialog(objFile))
-			string::Copy(oPathBuffer, objFile.GetPath());
-	}
-	ImGui::SameLine();
-	ImGui::Text("output");
-	ImGui::PopID();
-
-	static const char* coordSystems[] = { "Right hand", "Left hand" };
-	if (ImGui::BeginCombo("coordinate system", coordSystems[(int)m_params.coordSystem], ImGuiComboFlags_None))
-	{
-		for (int i = 0; i < sizeof(coordSystems) / sizeof(*coordSystems); ++i)
-		{
-			bool isSelected = m_params.coordSystem == ConvertParams::CoordSystemHandness(i);
-			if (ImGui::Selectable(coordSystems[i], isSelected))
-				m_params.coordSystem = ConvertParams::CoordSystemHandness(i);
-			if (isSelected)
-				ImGui::SetItemDefaultFocus();
-		}
-		ImGui::EndCombo();
-	}
-
-	static const char* triangleDefs[] = { "Clock wise", "Counter clock wise" };
-	if (ImGui::BeginCombo("triangle definition", triangleDefs[(int)m_params.triangleDef], ImGuiComboFlags_None))
-	{
-		for (int i = 0; i < sizeof(triangleDefs) / sizeof(*triangleDefs); ++i)
-		{
-			bool isSelected = m_params.triangleDef == ConvertParams::TriangleDefinition(i);
-			if (ImGui::Selectable(triangleDefs[i], isSelected))
-				m_params.triangleDef = ConvertParams::TriangleDefinition(i);
-			if (isSelected)
-				ImGui::SetItemDefaultFocus();
-		}
-		ImGui::EndCombo();
-	}
-
+	//
+	//ImGui::PushID("output");
+	//static char oPathBuffer[Path::BUFFER_LENGTH];
+	//ImGui::InputText("##output", oPathBuffer, Path::BUFFER_LENGTH);
+	//ImGui::SameLine();
+	//if (ImGui::Button("Browse"))
+	//{
+	//	Path objFile;
+	//	if (FileSaveDialog(objFile))
+	//		string::Copy(oPathBuffer, objFile.GetPath());
+	//}
+	//ImGui::SameLine();
+	//ImGui::Text("output");
+	//ImGui::PopID();
+	//
+	//static const char* coordSystems[] = { "Right hand", "Left hand" };
+	//if (ImGui::BeginCombo("coordinate system", coordSystems[(int)m_params.coordSystem], ImGuiComboFlags_None))
+	//{
+	//	for (int i = 0; i < sizeof(coordSystems) / sizeof(*coordSystems); ++i)
+	//	{
+	//		bool isSelected = m_params.coordSystem == ConvertParams::CoordSystemHandness(i);
+	//		if (ImGui::Selectable(coordSystems[i], isSelected))
+	//			m_params.coordSystem = ConvertParams::CoordSystemHandness(i);
+	//		if (isSelected)
+	//			ImGui::SetItemDefaultFocus();
+	//	}
+	//	ImGui::EndCombo();
+	//}
+	//
+	//static const char* triangleDefs[] = { "Clock wise", "Counter clock wise" };
+	//if (ImGui::BeginCombo("triangle definition", triangleDefs[(int)m_params.triangleDef], ImGuiComboFlags_None))
+	//{
+	//	for (int i = 0; i < sizeof(triangleDefs) / sizeof(*triangleDefs); ++i)
+	//	{
+	//		bool isSelected = m_params.triangleDef == ConvertParams::TriangleDefinition(i);
+	//		if (ImGui::Selectable(triangleDefs[i], isSelected))
+	//			m_params.triangleDef = ConvertParams::TriangleDefinition(i);
+	//		if (isSelected)
+	//			ImGui::SetItemDefaultFocus();
+	//	}
+	//	ImGui::EndCombo();
+	//}
+	//
 	if(ImGui::Button("Convert"))
 	{
+		size_t fileBufferSize = 0;
 		char errorBuffer[64] = {0};
-		if(!ConvertObj(m_params, Path(iPathBuffer), Path(oPathBuffer), errorBuffer))
+		u8* fileBuffer = LoadFile(m_allocator, Path(iPathBuffer), fileBufferSize, errorBuffer);
+		if (fileBuffer == nullptr)
 		{
 			ASSERT(false);
 			Log(LogType::Warning, "Error while parsing file \"%s\": %s", iPathBuffer, errorBuffer);
+		}
+		else
+		{
+			m_scene = ofbx::load((ofbx::u8*)fileBuffer, (int)fileBufferSize, (ofbx::u64)ofbx::LoadFlags::TRIANGULATE);
+			if (m_scene == nullptr)
+			{
+				ASSERT(false);
+				Log(LogType::Error, "Error while ofbx::load \"%s\"", ofbx::getError());
+
+			}
+
+			const ofbx::Object* root = m_scene->getRoot();
+			if (root)
+			{
+				ofbx::Object::Type objType = root->getType();
+			}
 		}
 	}
 }

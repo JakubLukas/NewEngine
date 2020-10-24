@@ -10,8 +10,14 @@
 namespace Veng
 {
 
-
-static u32 HashResourceType(const ResourceType& key) { return key.hash; }
+template<>
+struct HashFunc<ResourceType>
+{
+	static u32 get(const ResourceType& key)
+	{
+		return key.hash;
+	}
+};
 
 
 class ResourceManagementImpl : public ResourceManagement
@@ -19,7 +25,7 @@ class ResourceManagementImpl : public ResourceManagement
 public:
 	ResourceManagementImpl(Allocator& allocator)
 		: m_allocator(allocator)
-		, m_managers(m_allocator, &HashResourceType)
+		, m_managers(m_allocator)
 		, m_dependencyAsyncOps(allocator)
 	{}
 

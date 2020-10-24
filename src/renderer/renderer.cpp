@@ -31,10 +31,14 @@ namespace Veng
 {
 
 
-static u32 HashWorldId(const worldId& world)
+template<>
+struct HashFunc<worldId>
 {
-	return HashU32((u32)world);
-}
+	static u32 get(const worldId& world)
+	{
+		return HashFunc<u32>::get((u32)world);
+	}
+};
 
 
 struct MeshData
@@ -397,6 +401,7 @@ public:
 			for (size_t meshIdx = 0, meshCount = model->meshes.GetSize(); meshIdx < meshCount; ++meshIdx)
 			{
 				const Mesh& mesh = model->meshes[meshIdx];
+				ASSERT(mesh.type == Mesh::PrimitiveType::Triangles);
 
 				u8* vertices = mesh.verticesData;
 				size_t vertexOffset = 3 * sizeof(float);
@@ -584,7 +589,7 @@ public:
 		, m_shaderData(m_allocator)
 		, m_framebuffers(m_allocator)
 		, m_screenSizeFrameBuffers(m_allocator)
-		, m_scenes(m_allocator, &HashWorldId)
+		, m_scenes(m_allocator)
 		, m_debugObjects(m_allocator)
 		, m_sceneEditor(*this)
 		, m_shaderInternalManager(m_allocator, *engine.GetFileSystem(), engine.GetResourceManagement())
@@ -790,7 +795,7 @@ public:
 
 		meshData.vertexBufferHandle = bgfx::createVertexBuffer(bgfx::copy(mesh.verticesData, (uint32_t)bufferSize), meshData.vertex_decl);
 
-		bufferSize = mesh.indicesCount * 3 * sizeof(u16);
+		bufferSize = mesh.indicesCount * (size_t)mesh.type * sizeof(u16);
 		meshData.indexBufferHandle = bgfx::createIndexBuffer(bgfx::copy(mesh.indicesData, (uint32_t)(bufferSize)));
 
 		return (meshRenderHandle)m_meshData.Add(Utils::Move(meshData));
@@ -926,59 +931,36 @@ public:
 
 	void AddDebugLine(Vector3 from, Vector3 to, Color color, float width, float lifetime) override
 	{
+		auto addVertex = [](u8*& buffer, const Vector3& pos, Color color) {
+			memory::Copy(buffer, &pos.x, sizeof(Vector3));
+			buffer += sizeof(Vector3);
+			memory::Copy(buffer, &color, sizeof(Color));
+			buffer += sizeof(Color);
+		};
+
 		DebugObject& dObject = m_debugObjects.PushBack();
 
 		dObject.mesh.varyings = ShaderVarying_Position | ShaderVarying_Color0;
-		dObject.mesh.verticesCount = 4;
+		dObject.mesh.type = Mesh::PrimitiveType::Lines;
+
+		dObject.mesh.verticesCount = 2;
 		const size_t bufferSize = (sizeof(Vector3) + sizeof(Color)) * dObject.mesh.verticesCount;
 		dObject.mesh.verticesData = (u8*)m_allocator.Allocate(bufferSize, alignof(float));
 		u8* vData = dObject.mesh.verticesData;
 
-		Vector3 LineDir = to - from;
-		float lineLength = LineDir.Length();
-		LineDir = LineDir / lineLength;
-		float lineLengthHalf = lineLength * 0.5f;
-		float widthHalf = width * 0.5f;
+		addVertex(vData, from, color);
+		addVertex(vData, to, color);
 
-		Vector3 from1(0.0f, -widthHalf, -lineLengthHalf);
-		Vector3 from2(0.0f, widthHalf, -lineLengthHalf);
-		Vector3 to1(0.0f, -widthHalf, lineLengthHalf);
-		Vector3 to2(0.0f, widthHalf, lineLengthHalf);
-
-		memory::Copy(vData, &from1, 3 * sizeof(float));
-		vData += 3 * sizeof(float);
-		memory::Copy(vData, &color, sizeof(Color));
-		vData += sizeof(Color);
-		memory::Copy(vData, &to1, 3 * sizeof(float));
-		vData += 3 * sizeof(float);
-		memory::Copy(vData, &color, sizeof(Color));
-		vData += sizeof(Color);
-
-		memory::Copy(vData, &from2, 3 * sizeof(float));
-		vData += 3 * sizeof(float);
-		memory::Copy(vData, &color, sizeof(Color));
-		vData += sizeof(Color);
-		memory::Copy(vData, &to2, 3 * sizeof(float));
-		vData += 3 * sizeof(float);
-		memory::Copy(vData, &color, sizeof(Color));
-		vData += sizeof(Color);
-
-		dObject.mesh.indicesCount = 2;
-		size_t count = dObject.mesh.indicesCount * 3;//triangles
+		dObject.mesh.indicesCount = 1;
+		size_t count = dObject.mesh.indicesCount * 2;
 		dObject.mesh.indicesData = (u16*)m_allocator.Allocate(count * sizeof(u16), alignof(u16));
-		const u16 iData[] = { 0, 2, 1, 1, 2, 3 };
+		const u16 iData[] = { 0, 1 };
 		memory::Copy(dObject.mesh.indicesData, iData, count * sizeof(u16));
 
 		Path materialPath("materials/debug.material");
 		dObject.mesh.material = m_engine.GetResourceManagement()->GetManager(Material::RESOURCE_TYPE)->Load(materialPath);
 		dObject.mesh.renderDataHandle = CreateMeshData(dObject.mesh);
 		dObject.lifetime = lifetime;
-
-		dObject.transform.position = (from + to) * 0.5f;
-		Vector3 rotAxis = Vector3::Cross(LineDir, Vector3::AXIS_Z);
-		rotAxis.Normalize();
-		float rotAngle = acosf(Vector3::Dot(LineDir, Vector3::AXIS_Z));
-		dObject.transform.rotation = Quaternion(rotAxis, rotAngle);
 
 		if (lifetime == -1.0f)
 		{
@@ -994,9 +976,18 @@ public:
 
 	void AddDebugSquare(Vector3 position, Color color, float size, float lifetime) override
 	{
+		auto addVertex = [](u8*& buffer, const Vector3& pos, Color color) {
+			memory::Copy(buffer, &pos.x, sizeof(Vector3));
+			buffer += sizeof(Vector3);
+			memory::Copy(buffer, &color, sizeof(Color));
+			buffer += sizeof(Color);
+		};
+
 		DebugObject& dObject = m_debugObjects.PushBack();
 
 		dObject.mesh.varyings = ShaderVarying_Position | ShaderVarying_Color0;
+		dObject.mesh.type = Mesh::PrimitiveType::Lines;
+
 		dObject.mesh.verticesCount = 4;
 		const size_t bufferSize = (sizeof(Vector3) + sizeof(Color)) * dObject.mesh.verticesCount;
 		dObject.mesh.verticesData = (u8*)m_allocator.Allocate(bufferSize, alignof(float));
@@ -1004,33 +995,15 @@ public:
 
 		float sizeHalf = size * 0.5f;
 
-		Vector3 v1(-sizeHalf, sizeHalf, 0.0f);
-		Vector3 v2(sizeHalf, sizeHalf, 0.0f);
-		Vector3 v3(-sizeHalf, -sizeHalf, 0.0f);
-		Vector3 v4(sizeHalf, -sizeHalf, 0.0f);
+		addVertex(vData, { -sizeHalf, sizeHalf, 0.0f }, color);
+		addVertex(vData, { sizeHalf, sizeHalf, 0.0f }, color);
+		addVertex(vData, { sizeHalf, -sizeHalf, 0.0f }, color);
+		addVertex(vData, { -sizeHalf, -sizeHalf, 0.0f }, color);
 
-		memory::Copy(vData, &v1, 3 * sizeof(float));
-		vData += 3 * sizeof(float);
-		memory::Copy(vData, &color, sizeof(Color));
-		vData += sizeof(Color);
-		memory::Copy(vData, &v3, 3 * sizeof(float));
-		vData += 3 * sizeof(float);
-		memory::Copy(vData, &color, sizeof(Color));
-		vData += sizeof(Color);
-
-		memory::Copy(vData, &v2, 3 * sizeof(float));
-		vData += 3 * sizeof(float);
-		memory::Copy(vData, &color, sizeof(Color));
-		vData += sizeof(Color);
-		memory::Copy(vData, &v4, 3 * sizeof(float));
-		vData += 3 * sizeof(float);
-		memory::Copy(vData, &color, sizeof(Color));
-		vData += sizeof(Color);
-
-		dObject.mesh.indicesCount = 2;
-		size_t count = dObject.mesh.indicesCount * 3;//triangles
+		dObject.mesh.indicesCount = 4;
+		size_t count = dObject.mesh.indicesCount * 2;
 		dObject.mesh.indicesData = (u16*)m_allocator.Allocate(count * sizeof(u16), alignof(u16));
-		const u16 iData[] = { 0, 2, 1, 1, 2, 3 };
+		static const u16 iData[] = { 0, 1, 1, 2, 2, 3, 3, 0 };
 		memory::Copy(dObject.mesh.indicesData, iData, count * sizeof(u16));
 
 		Path materialPath("materials/debug.material");
@@ -1138,9 +1111,6 @@ public:
 			if (cam.type == Camera::Type::Perspective)
 			{
 				proj.SetPerspective(cam.fov, cam.aspect, cam.nearPlane, cam.farPlane, bgfx::getCaps()->homogeneousDepth);
-				Vector4 foo = proj * Vector4(2, 0, 2, 1);
-				foo = foo / foo.w;
-				foo = foo;
 			}
 			else if (cam.type == Camera::Type::Orthogonal)
 			{
@@ -1240,7 +1210,7 @@ public:
 				bgfx::setVertexBuffer(0, meshData.vertexBufferHandle);
 				bgfx::setIndexBuffer(meshData.indexBufferHandle);
 
-				uint64_t state = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_MSAA | BGFX_STATE_DEPTH_TEST_LESS;
+				uint64_t state = BGFX_STATE_WRITE_RGB | BGFX_STATE_PT_LINES | BGFX_STATE_LINEAA | BGFX_STATE_BLEND_ALPHA;
 				bgfx::setState(state);
 
 				const Shader* shader = (Shader*)m_shaderManager.GetResource(material->shader);

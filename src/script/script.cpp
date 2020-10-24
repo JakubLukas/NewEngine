@@ -25,10 +25,14 @@ namespace Veng
 {
 
 
-static u32 HashWorldId(const worldId& world)
+template<>
+struct HashFunc<worldId>
 {
-	return HashU32((u32)world);
-}
+	static u32 get(const worldId& world)
+	{
+		return HashFunc<u32>::get((u32)world);
+	}
+};
 
 
 struct DummyScriptClass :ScriptClassBase
@@ -242,7 +246,7 @@ public:
 	ScriptSystemImpl(Engine& engine)
 		: m_allocator(engine.GetAllocator())
 		, m_engine(engine)
-		, m_scenes(m_allocator, &HashWorldId)
+		, m_scenes(m_allocator)
 		, m_sceneEditor(*this)
 	{}
 
